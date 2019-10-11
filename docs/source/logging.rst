@@ -1,8 +1,6 @@
 How to report a bug?
 ====================
 
-Bugs can be reported on github or via private communications.
-
 Steps
 -----
 
@@ -18,7 +16,7 @@ Logging module to understand failures
 
 Syntax of bibtex files is simple but there are many possible variations. This library probably fails for some of them.
 
-Bibtexparser includes a large quantity of debug messages which helps to understand why and where the parser fails.
+Bibdeskparser includes a large quantity of debug messages which helps to understand why and where the parser fails.
 The example below can be used to print these messages in the console.
 
 .. code-block:: python
@@ -73,7 +71,7 @@ The example below can be used to print these messages in the console.
         with open('/tmp/bibtex.bib', 'w') as bibfile:
             bibfile.write(bibtex)
 
-        from bibtexparser.bparser import BibTexParser
+        from bibdeskparser.bparser import BibTexParser
 
         with open('/tmp/bibtex.bib', 'r') as bibfile:
             bp = BibTexParser(bibfile.read())

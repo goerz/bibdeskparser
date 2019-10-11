@@ -4,40 +4,49 @@
 from __future__ import unicode_literals
 import unittest
 
-from bibtexparser.customization import getnames, convert_to_unicode, homogenize_latex_encoding, page_double_hyphen, keyword, add_plaintext_fields
+from bibdeskparser.customization import (
+    getnames,
+    convert_to_unicode,
+    homogenize_latex_encoding,
+    page_double_hyphen,
+    keyword,
+    add_plaintext_fields,
+)
 
 
-class TestBibtexParserMethod(unittest.TestCase):
+class TestbibdeskparserMethod(unittest.TestCase):
 
     ###########
     # getnames
     ###########
     def test_getnames(self):
-        names = ['Foo Bar',
-                 'Foo B. Bar',
-                 'F. B. Bar',
-                 'F.B. Bar',
-                 'F. Bar',
-                 'Jean de Savigny',
-                 'Jean la Tour',
-                 'Jean le Tour',
-                 'Mike ben Akar',
-                 #'Jean de la Tour',
-                 #'Johannes Diderik van der Waals',
-                 ]
+        names = [
+            'Foo Bar',
+            'Foo B. Bar',
+            'F. B. Bar',
+            'F.B. Bar',
+            'F. Bar',
+            'Jean de Savigny',
+            'Jean la Tour',
+            'Jean le Tour',
+            'Mike ben Akar',
+            #'Jean de la Tour',
+            #'Johannes Diderik van der Waals',
+        ]
         result = getnames(names)
-        expected = ['Bar, Foo',
-                    'Bar, Foo B.',
-                    'Bar, F. B.',
-                    'Bar, F. B.',
-                    'Bar, F.',
-                    'de Savigny, Jean',
-                    'la Tour, Jean',
-                    'le Tour, Jean',
-                    'ben Akar, Mike',
-                    #'de la Tour, Jean',
-                    #'van der Waals, Johannes Diderik',
-                    ]
+        expected = [
+            'Bar, Foo',
+            'Bar, Foo B.',
+            'Bar, F. B.',
+            'Bar, F. B.',
+            'Bar, F.',
+            'de Savigny, Jean',
+            'la Tour, Jean',
+            'le Tour, Jean',
+            'ben Akar, Mike',
+            #'de la Tour, Jean',
+            #'van der Waals, Johannes Diderik',
+        ]
         self.assertEqual(result, expected)
 
     @unittest.skip('Bug #9')
@@ -121,7 +130,7 @@ class TestBibtexParserMethod(unittest.TestCase):
         record = {
             'title': 'On-line {Recognition} of {Handwritten} {Mathematical} {Symbols}',
             'foobar': ['{FFT} {Foobar}', '{foobar}'],
-            'foobar2': {'item1': '{FFT} {Foobar}', 'item2': '{foobar}'}
+            'foobar2': {'item1': '{FFT} {Foobar}', 'item2': '{foobar}'},
         }
         result = add_plaintext_fields(record)
         expected = {
@@ -130,7 +139,7 @@ class TestBibtexParserMethod(unittest.TestCase):
             'foobar': ['{FFT} {Foobar}', '{foobar}'],
             'plain_foobar': ['FFT Foobar', 'foobar'],
             'foobar2': {'item1': '{FFT} {Foobar}', 'item2': '{foobar}'},
-            'plain_foobar2': {'item1': 'FFT Foobar', 'item2': 'foobar'}
+            'plain_foobar2': {'item1': 'FFT Foobar', 'item2': 'foobar'},
         }
         self.assertEqual(result, expected)
 
@@ -142,6 +151,7 @@ class TestBibtexParserMethod(unittest.TestCase):
         result = keyword(record)
         expected = {'keyword': ['a b'] * 6}
         self.assertEqual(result, expected)
+
 
 if __name__ == '__main__':
     unittest.main()

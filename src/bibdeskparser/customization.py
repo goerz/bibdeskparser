@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 A set of functions useful for customizing bibtex fields.
 You can find inspiration from these functions to design yours.
@@ -12,19 +9,36 @@ import logging
 
 from builtins import str
 
-from bibtexparser.latexenc import latex_to_unicode, string_to_latex, protect_uppercase
+from bibdeskparser.latexenc import (
+    latex_to_unicode,
+    string_to_latex,
+    protect_uppercase,
+)
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['splitname', 'getnames', 'author', 'editor', 'journal', 'keyword',
-           'link', 'page_double_hyphen', 'doi', 'type', 'convert_to_unicode',
-           'homogenize_latex_encoding', 'add_plaintext_fields']
+__all__ = [
+    'splitname',
+    'getnames',
+    'author',
+    'editor',
+    'journal',
+    'keyword',
+    'link',
+    'page_double_hyphen',
+    'doi',
+    'type',
+    'convert_to_unicode',
+    'homogenize_latex_encoding',
+    'add_plaintext_fields',
+]
 
 
 class InvalidName(ValueError):
-    """Exception raised by :py:func:`customization.splitname` when an invalid name is input.
+    """Exception raised by :func:`splitname` when an invalid name is input.
 
     """
+
     pass
 
 
@@ -32,10 +46,10 @@ def splitname(name, strict_mode=True):
     """
     Break a name into its constituent parts: First, von, Last, and Jr.
 
-    :param string name: a string containing a single name
-    :param Boolean strict_mode: whether to use strict mode
+    :param str name: a string containing a single name
+    :param bool strict_mode: whether to use strict mode
     :returns: dictionary of constituent parts
-    :raises `customization.InvalidName`: If an invalid name is given and
+    :raises `InvalidName`: If an invalid name is given and
                                          ``strict_mode = True``.
 
     In BibTeX, a name can be represented in any of three forms:
@@ -51,7 +65,7 @@ def splitname(name, strict_mode=True):
 
     It is capable of detecting some errors with the input name. If the
     ``strict_mode`` parameter is ``True``, which is the default, this results in
-    a :class:`customization.InvalidName` exception being raised. If it is
+    a :class:`~.InvalidName` exception being raised. If it is
     ``False``, the function continues, working around the error as best it can.
     The errors that can be detected are listed below along with the handling
     for non-strict mode:
@@ -73,14 +87,14 @@ def splitname(name, strict_mode=True):
     # We'll iterate over the input once, dividing it into a list of words for
     # each comma-separated section. We'll also calculate the case of each word
     # as we work.
-    sections = [[]]      # Sections of the name.
-    cases = [[]]         # 1 = uppercase, 0 = lowercase, -1 = caseless.
-    word = []            # Current word.
-    case = -1            # Case of the current word.
-    level = 0            # Current brace level.
-    bracestart = False   # Will the next character be the first within a brace?
-    controlseq = True    # Are we currently processing a control sequence?
-    specialchar = None   # Are we currently processing a special character?
+    sections = [[]]  # Sections of the name.
+    cases = [[]]  # 1 = uppercase, 0 = lowercase, -1 = caseless.
+    word = []  # Current word.
+    case = -1  # Case of the current word.
+    level = 0  # Current brace level.
+    bracestart = False  # Will the next character be the first within a brace?
+    controlseq = True  # Are we currently processing a control sequence?
+    specialchar = None  # Are we currently processing a special character?
 
     # Using an iterator allows us to deal with escapes in a simple manner.
     nameiter = iter(name)
@@ -134,7 +148,9 @@ def splitname(name, strict_mode=True):
                 level -= 1
             else:
                 if strict_mode:
-                    raise InvalidName("Unmatched closing brace in name {{{0}}}.".format(name))
+                    raise InvalidName(
+                        "Unmatched closing brace in name {{{0}}}.".format(name)
+                    )
                 word.insert(0, '{')
 
             # Update the state, append the character, and move on.
@@ -180,7 +196,9 @@ def splitname(name, strict_mode=True):
                     sections.append([])
                     cases.append([])
                 elif strict_mode:
-                    raise InvalidName("Too many commas in the name {{{0}}}.".format(name))
+                    raise InvalidName(
+                        "Too many commas in the name {{{0}}}.".format(name)
+                    )
             continue
 
         # Regular character.
@@ -194,7 +212,9 @@ def splitname(name, strict_mode=True):
     # Unterminated brace?
     if level:
         if strict_mode:
-            raise InvalidName("Unterminated opening brace in the name {{{0}}}.".format(name))
+            raise InvalidName(
+                "Unterminated opening brace in the name {{{0}}}.".format(name)
+            )
         while level:
             word.append('}')
             level -= 1
@@ -208,7 +228,9 @@ def splitname(name, strict_mode=True):
     if not sections[-1]:
         # Trailing comma?
         if (len(sections) > 1) and strict_mode:
-            raise InvalidName("Trailing comma at end of name {{{0}}}.".format(name))
+            raise InvalidName(
+                "Trailing comma at end of name {{{0}}}.".format(name)
+            )
         sections.pop(-1)
         cases.pop(-1)
 
@@ -247,12 +269,12 @@ def splitname(name, strict_mode=True):
                 firstl = cases.index(0) - len(cases)
                 lastl = -cases[::-1].index(0) - 1
                 if lastl == -1:
-                    lastl -= 1      # Cannot consume the rest of the string.
+                    lastl -= 1  # Cannot consume the rest of the string.
 
                 # Pull the parts out.
                 parts['first'] = p0[:firstl]
-                parts['von'] = p0[firstl:lastl+1]
-                parts['last'] = p0[lastl+1:]
+                parts['von'] = p0[firstl : lastl + 1]
+                parts['last'] = p0[lastl + 1 :]
 
             # No lowercase: last is the last word, first is everything else.
             else:
@@ -288,7 +310,7 @@ def splitname(name, strict_mode=True):
             if 0 in lcases:
                 split = len(lcases) - lcases[::-1].index(0)
                 if split == len(lcases):
-                    split = 0            # Last cannot be empty.
+                    split = 0  # Last cannot be empty.
                 parts['von'] = sections[0][:split]
                 parts['last'] = sections[0][split:]
 
@@ -346,7 +368,12 @@ def author(record):
     """
     if "author" in record:
         if record["author"]:
-            record["author"] = getnames([i.strip() for i in record["author"].replace('\n', ' ').split(" and ")])
+            record["author"] = getnames(
+                [
+                    i.strip()
+                    for i in record["author"].replace('\n', ' ').split(" and ")
+                ]
+            )
         else:
             del record["author"]
     return record
@@ -364,9 +391,20 @@ def editor(record):
     """
     if "editor" in record:
         if record["editor"]:
-            record["editor"] = getnames([i.strip() for i in record["editor"].replace('\n', ' ').split(" and ")])
+            record["editor"] = getnames(
+                [
+                    i.strip()
+                    for i in record["editor"].replace('\n', ' ').split(" and ")
+                ]
+            )
             # convert editor to object
-            record["editor"] = [{"name": i, "ID": i.replace(',', '').replace(' ', '').replace('.', '')} for i in record["editor"]]
+            record["editor"] = [
+                {
+                    "name": i,
+                    "ID": i.replace(',', '').replace(' ', '').replace('.', ''),
+                }
+                for i in record["editor"]
+            ]
         else:
             del record["editor"]
     return record
@@ -386,7 +424,10 @@ def page_double_hyphen(record):
         separators = [u'‐', u'‑', u'–', u'—', u'-', u'−']
         for separator in separators:
             if separator in record["pages"]:
-                p = [i.strip().strip(separator) for i in record["pages"].split(separator)]
+                p = [
+                    i.strip().strip(separator)
+                    for i in record["pages"].split(separator)
+                ]
                 record["pages"] = p[0] + '--' + p[-1]
     return record
 
@@ -408,7 +449,7 @@ def type(record):
 def journal(record):
     """
     Turn the journal field into a dict composed of the original journal name
-    and a journal id (without coma or blank).
+    and a journal id (without comma or blank).
 
     :param record: the record.
     :type record: dict
@@ -418,7 +459,13 @@ def journal(record):
     if "journal" in record:
         # switch journal to object
         if record["journal"]:
-            record["journal"] = {"name": record["journal"], "ID": record["journal"].replace(',', '').replace(' ', '').replace('.', '')}
+            record["journal"] = {
+                "name": record["journal"],
+                "ID": record["journal"]
+                .replace(',', '')
+                .replace(' ', '')
+                .replace('.', ''),
+            }
 
     return record
 
@@ -430,12 +477,15 @@ def keyword(record, sep=',|;'):
     :param record: the record.
     :type record: dict
     :param sep: pattern used for the splitting regexp.
-    :type record: string, optional
+    :type record: str
     :returns: dict -- the modified record.
 
     """
     if "keyword" in record:
-        record["keyword"] = [i.strip() for i in re.split(sep, record["keyword"].replace('\n', ''))]
+        record["keyword"] = [
+            i.strip()
+            for i in re.split(sep, record["keyword"].replace('\n', ''))
+        ]
 
     return record
 
@@ -449,7 +499,9 @@ def link(record):
 
     """
     if "link" in record:
-        links = [i.strip().replace("  ", " ") for i in record["link"].split('\n')]
+        links = [
+            i.strip().replace("  ", " ") for i in record["link"].split('\n')
+        ]
         record['link'] = []
         for link in links:
             parts = link.split(" ")
@@ -497,9 +549,7 @@ def convert_to_unicode(record):
     """
     for val in record:
         if isinstance(record[val], list):
-            record[val] = [
-                latex_to_unicode(x) for x in record[val]
-            ]
+            record[val] = [latex_to_unicode(x) for x in record[val]]
         elif isinstance(record[val], dict):
             record[val] = {
                 k: latex_to_unicode(v) for k, v in record[val].items()
@@ -519,7 +569,7 @@ def homogenize_latex_encoding(record):
     :type record: dict
     :returns: dict -- the modified record.
     """
-    # First, we convert everything to unicode
+    #  First, we convert everything to unicode
     record = convert_to_unicode(record)
     # And then, we fall back
     for val in record:
@@ -544,6 +594,7 @@ def add_plaintext_fields(record):
     :type record: dict
     :returns: dict -- the modified record.
     """
+
     def _strip_string(string):
         for stripped in ['{', '}']:
             string = string.replace(stripped, "")
@@ -562,8 +613,7 @@ def add_plaintext_fields(record):
             }
         elif isinstance(record[plain_key], list):
             record[plain_key] = [
-                _strip_string(value)
-                for value in record[plain_key]
+                _strip_string(value) for value in record[plain_key]
             ]
 
     return record

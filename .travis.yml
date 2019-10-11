@@ -1,39 +1,38 @@
-dist: trusty
+dist: xenial
 language: python
+env:
+  global:
+    - secure: "vJ6ISg78UUTBzNwc44bsf+VGciI9fKqnrThYGEDPiSSIbzG5Il1YCv7aSaNAsOf/QpaSbSlO8iNpkNVZ2o6P0zy4CLdiYAyBzmNm5QTaXcRKmF9sAVK7hPSt9Z5KhBQbpSxlrzxO46KwRh8ux9BIXXy07mHo9pz88dEOhMS4egiHahDCa/AzraupsJ9CaTJAnz8O6IWLM71l6cbqkyUldxNY3oO7QQ4Y0iyS/XaMzvB8znQKWOnH8ylz/HGLltd2Mk681vIHL4QQEpa4wZKucv/BfNUq6yxjwOXEV0UB7JasN3e7Cocw9Wyd7whImwY3ygBTM5nbx9tlI4OrZ83UURGAIJqe4Bx3HM6EPSYMZKAkiZsqt8AXKJRD4q/knK5l6qGbpEx5aKPYpGOEvQxPFl4CQn9OSsKjW5jw655bFVFO317U+jVB3X5QS3/rleMDdiwfC9FcYuquwcl7lSYAC6kA/9nEIRi4VIm7UWKwb8uBDdkuqeJQsZG3oQdgf0C9dLmerloQMLGl+DS/epeiiQgHnYyPHANQSCOa443ZTSqutdZVecFmALvJhgftdJtyV7IbLpFJYec4p6ofvU9pARAkDs35XCGEXw7ZmX1TsgjlOKH1NCZUwrH7zyPONA2mF+ptjDw502ckZdnecizHqeYkFnlNyz4WgqPNhAVq/S4="
 matrix:
   include:
-    - python: "2.7"
-      env: TEST_SUITE=suite_2_7
-    - python: "3.3"
-      env: TEST_SUITE=suite_3_3
-    - python: "3.4"
-      env: TEST_SUITE=suite_3_4
-    - python: "3.5"
-      env: TEST_SUITE=suite_3_5
-    - python: "3.6"
-      env: TEST_SUITE=suite_3_6
-    - python: "3.7"
-      dist: xenial # Required for Python 3.7
-      sudo: true   # travis-ci/travis-ci#9069
-      env: TEST_SUITE=suite_3_7
-    - python: "pypy-5.7.1"
-      env: TEST_SUITE=suite_pypy
-    - python: "pypy3.5-5.8.0"
-      env: TEST_SUITE=suite_pypy3
+    - name: Python 3.6 Tests
+      python: "3.6"
+      env: POSARGS="" TOXENV="py36"
+    - name: Python 3.7 Tests
+      python: "3.7"
+      env: POSARGS="" TOXENV="py37"
+    - name: Documentation
+      python: "3.7"
+      env: DOCS="true"
 install:
-  - if [[ $TEST_SUITE == suite_3_6 ]]; then
-        pip install sphinx;
-    fi;
-  - pip install coverage
-  - pip install -r requirements.txt
-  - python setup.py install
+  - export PATH=/tmp/texlive/bin/x86_64-linux:$PATH
+  - travis_wait source .travis/texlive/texlive_install.sh
+  - pip install tox
+  - pip install codecov
+  - pip freeze
+  - printenv
+cache:
+  directories:
+    - /tmp/texlive
+    - $HOME/.texlive
 script:
-  - nosetests --with-coverage  --cover-erase --cover-package=bibtexparser
-  - if [[ $TEST_SUITE == suite_3_6 ]]; then
-        cd docs;
-        make html;
-    fi;
-
+  - set -e
+  - |
+    if [[ "${DOCS}" == "true" ]]; then
+      source .travis/docs.sh
+    else
+      tox -e $TOXENV -- $POSARGS
+    fi
+  - echo "DONE"
 after_success:
-  - pip install coveralls
-  - coveralls
+  - if [[ "${DOCS}" != "true" ]]; then codecov; fi

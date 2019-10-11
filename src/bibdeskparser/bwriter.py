@@ -1,13 +1,19 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+"""
+Module providing the BibTeX writer.
+
+You can instantiate new writers to tune the defaults.
+"""
 # Author: Francois Boulogne
 # License:
 
 
 import logging
-from bibtexparser.bibdatabase import (BibDatabase, COMMON_STRINGS,
-                                      BibDataString,
-                                      BibDataStringExpression)
+from bibdeskparser.bibdatabase import (
+    BibDatabase,
+    COMMON_STRINGS,
+    BibDataString,
+    BibDataStringExpression,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -31,22 +37,21 @@ def _str_or_expr_to_bibtex(e):
         return '{' + e + '}'
 
 
-class BibTexWriter(object):
+class BibTexWriter:
     """
-    Writer to convert a :class:`BibDatabase` object to a string or file formatted as a BibTeX file.
+    Writer to convert a :class:`~.BibDatabase` object to a string or file
+    formatted as a BibTeX file.
 
     Example::
 
-        from bibtexparser.bwriter import BibTexWriter
-
-        bib_database = ...
-
-        writer = BibTexWriter()
-        writer.contents = ['comments', 'entries']
-        writer.indent = '  '
-        writer.order_entries_by = ('ENTRYTYPE', 'author', 'year')
-        bibtex_str = bibtexparser.dumps(bib_database, writer)
-
+        >>> import bibdeskparser
+        >>> from bibdeskparser.bwriter import BibTexWriter
+        >>> bib_database = BibDatabase()
+        >>> writer = BibTexWriter()
+        >>> writer.contents = ['comments', 'entries']
+        >>> writer.indent = '  '
+        >>> writer.order_entries_by = ('ENTRYTYPE', 'author', 'year')
+        >>> bibtex_str = bibdeskparser.dumps(bib_database, writer)
     """
 
     _valid_contents = ['entries', 'comments', 'preambles', 'strings']
@@ -62,7 +67,7 @@ class BibTexWriter(object):
         #: Characters(s) for separating BibTeX entries. Default: new line.
         self.entry_separator = '\n'
         #: Tuple of fields for ordering BibTeX entries. Set to `None` to disable sorting. Default: BibTeX key `('ID', )`.
-        self.order_entries_by = ('ID', )
+        self.order_entries_by = ('ID',)
         #: Tuple of fields for display order in a single BibTeX entry. Fields not listed here will be displayed
         #: alphabetically at the end. Set to '[]' for alphabetical order. Default: '[]'
         self.display_order = []
@@ -85,23 +90,33 @@ class BibTexWriter(object):
         :param bib_database: bibliographic database to be converted to a BibTeX string
         :type bib_database: BibDatabase
         :return: BibTeX-formatted string
-        :rtype: str or unicode
+        :rtype: str
         """
         bibtex = ''
         for content in self.contents:
             try:
                 # Add each element set (entries, comments)
-                bibtex += getattr(self, '_' + content + '_to_bibtex')(bib_database)
+                bibtex += getattr(self, '_' + content + '_to_bibtex')(
+                    bib_database
+                )
             except AttributeError:
-                logger.warning("BibTeX item '{}' does not exist and will not be written. Valid items are {}."
-                               .format(content, self._valid_contents))
+                logger.warning(
+                    "BibTeX item '{}' does not exist and will not be written. Valid items are {}.".format(
+                        content, self._valid_contents
+                    )
+                )
         return bibtex
 
     def _entries_to_bibtex(self, bib_database):
         bibtex = ''
         if self.order_entries_by:
             # TODO: allow sort field does not exist for entry
-            entries = sorted(bib_database.entries, key=lambda x: BibDatabase.entry_sort_key(x, self.order_entries_by))
+            entries = sorted(
+                bib_database.entries,
+                key=lambda x: BibDatabase.entry_sort_key(
+                    x, self.order_entries_by
+                ),
+            )
         else:
             entries = bib_database.entries
 
@@ -123,46 +138,69 @@ class BibTexWriter(object):
         # first those keys which are both in self.display_order and in entry.keys
         display_order = [i for i in self.display_order if i in entry]
         # then all the other fields sorted alphabetically
-        display_order += [i for i in sorted(entry) if i not in self.display_order]
+        display_order += [
+            i for i in sorted(entry) if i not in self.display_order
+        ]
         if self.comma_first:
             field_fmt = u"\n{indent}, {field:<{field_max_w}} = {value}"
         else:
             field_fmt = u",\n{indent}{field:<{field_max_w}} = {value}"
         # Write field = value lines
-        for field in [i for i in display_order if i not in ['ENTRYTYPE', 'ID']]:
+        for field in [
+            i for i in display_order if i not in ['ENTRYTYPE', 'ID']
+        ]:
             try:
                 bibtex += field_fmt.format(
                     indent=self.indent,
                     field=field,
                     field_max_w=self._max_field_width,
-                    value=_str_or_expr_to_bibtex(entry[field]))
+                    value=_str_or_expr_to_bibtex(entry[field]),
+                )
             except TypeError:
-                raise TypeError(u"The field %s in entry %s must be a string"
-                                % (field, entry['ID']))
+                raise TypeError(
+                    u"The field %s in entry %s must be a string"
+                    % (field, entry['ID'])
+                )
         if self.add_trailing_comma:
             if self.comma_first:
-                bibtex += '\n'+self.indent+','
+                bibtex += '\n' + self.indent + ','
             else:
                 bibtex += ','
         bibtex += "\n}\n" + self.entry_separator
         return bibtex
 
     def _comments_to_bibtex(self, bib_database):
-        return ''.join(['@comment{{{0}}}\n{1}'.format(comment, self.entry_separator)
-                        for comment in bib_database.comments])
+        return ''.join(
+            [
+                '@comment{{{0}}}\n{1}'.format(comment, self.entry_separator)
+                for comment in bib_database.comments
+            ]
+        )
 
     def _preambles_to_bibtex(self, bib_database):
-        return ''.join(['@preamble{{"{0}"}}\n{1}'.format(preamble, self.entry_separator)
-                        for preamble in bib_database.preambles])
+        return ''.join(
+            [
+                '@preamble{{"{0}"}}\n{1}'.format(
+                    preamble, self.entry_separator
+                )
+                for preamble in bib_database.preambles
+            ]
+        )
 
     def _strings_to_bibtex(self, bib_database):
-        return ''.join([
-            u'@string{{{name} = {value}}}\n{sep}'.format(
-                name=name,
-                value=_str_or_expr_to_bibtex(value),
-                sep=self.entry_separator)
-            for name, value in bib_database.strings.items()
-            if (self.common_strings or
-                name not in COMMON_STRINGS or  # user defined string
-                value != COMMON_STRINGS[name]  # string has been updated
-                )])
+        return ''.join(
+            [
+                u'@string{{{name} = {value}}}\n{sep}'.format(
+                    name=name,
+                    value=_str_or_expr_to_bibtex(value),
+                    sep=self.entry_separator,
+                )
+                for name, value in bib_database.strings.items()
+                if (
+                    self.common_strings
+                    or name not in COMMON_STRINGS
+                    or value  # user defined string
+                    != COMMON_STRINGS[name]  # string has been updated
+                )
+            ]
+        )

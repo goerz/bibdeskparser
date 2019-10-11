@@ -1,20 +1,21 @@
 # coding: utf-8
 import tempfile
 import unittest
-import bibtexparser
-from bibtexparser.bwriter import BibTexWriter
-from bibtexparser.bibdatabase import BibDatabase
+import bibdeskparser
+from bibdeskparser.bwriter import BibTexWriter
+from bibdeskparser.bibdatabase import BibDatabase
 
 
 class TestBibTexWriter(unittest.TestCase):
     def test_content_entries_only(self):
-        with open('bibtexparser/tests/data/multiple_entries_and_comments.bib') as bibtex_file:
-            bib_database = bibtexparser.load(bibtex_file)
+        with open(
+            'tests/data/multiple_entries_and_comments.bib'
+        ) as bibtex_file:
+            bib_database = bibdeskparser.load(bibtex_file)
         writer = BibTexWriter()
         writer.contents = ['entries']
-        result = bibtexparser.dumps(bib_database, writer)
-        expected = \
-"""@book{Toto3000,
+        result = bibdeskparser.dumps(bib_database, writer)
+        expected = """@book{Toto3000,
  author = {Toto, A and Titi, B},
  title = {A title}
 }
@@ -43,13 +44,14 @@ class TestBibTexWriter(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_content_comment_only(self):
-        with open('bibtexparser/tests/data/multiple_entries_and_comments.bib') as bibtex_file:
-            bib_database = bibtexparser.load(bibtex_file)
+        with open(
+            'tests/data/multiple_entries_and_comments.bib'
+        ) as bibtex_file:
+            bib_database = bibdeskparser.load(bibtex_file)
         writer = BibTexWriter()
         writer.contents = ['comments']
-        result = bibtexparser.dumps(bib_database, writer)
-        expected = \
-"""@comment{}
+        result = bibdeskparser.dumps(bib_database, writer)
+        expected = """@comment{}
 
 @comment{A comment}
 
@@ -58,14 +60,13 @@ class TestBibTexWriter(unittest.TestCase):
 
     def test_indent(self):
         bib_database = BibDatabase()
-        bib_database.entries = [{'ID': 'abc123',
-                                 'ENTRYTYPE': 'book',
-                                 'author': 'test'}]
+        bib_database.entries = [
+            {'ID': 'abc123', 'ENTRYTYPE': 'book', 'author': 'test'}
+        ]
         writer = BibTexWriter()
         writer.indent = '  '
-        result = bibtexparser.dumps(bib_database, writer)
-        expected = \
-"""@book{abc123,
+        result = bibdeskparser.dumps(bib_database, writer)
+        expected = """@book{abc123,
   author = {test}
 }
 
@@ -74,15 +75,18 @@ class TestBibTexWriter(unittest.TestCase):
 
     def test_align(self):
         bib_database = BibDatabase()
-        bib_database.entries = [{'ID': 'abc123',
-                                 'ENTRYTYPE': 'book',
-                                 'author': 'test',
-                                 'thisisaverylongkey': 'longvalue'}]
+        bib_database.entries = [
+            {
+                'ID': 'abc123',
+                'ENTRYTYPE': 'book',
+                'author': 'test',
+                'thisisaverylongkey': 'longvalue',
+            }
+        ]
         writer = BibTexWriter()
         writer.align_values = True
-        result = bibtexparser.dumps(bib_database, writer)
-        expected = \
-"""@book{abc123,
+        result = bibdeskparser.dumps(bib_database, writer)
+        expected = """@book{abc123,
  author             = {test},
  thisisaverylongkey = {longvalue}
 }
@@ -90,14 +94,15 @@ class TestBibTexWriter(unittest.TestCase):
 """
         self.assertEqual(result, expected)
 
-        with open('bibtexparser/tests/data/multiple_entries_and_comments.bib') as bibtex_file:
-            bib_database = bibtexparser.load(bibtex_file)
+        with open(
+            'tests/data/multiple_entries_and_comments.bib'
+        ) as bibtex_file:
+            bib_database = bibdeskparser.load(bibtex_file)
         writer = BibTexWriter()
         writer.contents = ['entries']
         writer.align_values = True
-        result = bibtexparser.dumps(bib_database, writer)
-        expected = \
-"""@book{Toto3000,
+        result = bibdeskparser.dumps(bib_database, writer)
+        expected = """@book{Toto3000,
  author    = {Toto, A and Titi, B},
  title     = {A title}
 }
@@ -125,31 +130,30 @@ class TestBibTexWriter(unittest.TestCase):
 """
         self.assertEqual(result, expected)
 
-
     def test_entry_separator(self):
         bib_database = BibDatabase()
-        bib_database.entries = [{'ID': 'abc123',
-                                 'ENTRYTYPE': 'book',
-                                 'author': 'test'}]
+        bib_database.entries = [
+            {'ID': 'abc123', 'ENTRYTYPE': 'book', 'author': 'test'}
+        ]
         writer = BibTexWriter()
         writer.entry_separator = ''
-        result = bibtexparser.dumps(bib_database, writer)
-        expected = \
-"""@book{abc123,
+        result = bibdeskparser.dumps(bib_database, writer)
+        expected = """@book{abc123,
  author = {test}
 }
 """
         self.assertEqual(result, expected)
 
     def test_display_order(self):
-        with open('bibtexparser/tests/data/multiple_entries_and_comments.bib') as bibtex_file:
-            bib_database = bibtexparser.load(bibtex_file)
+        with open(
+            'tests/data/multiple_entries_and_comments.bib'
+        ) as bibtex_file:
+            bib_database = bibdeskparser.load(bibtex_file)
         writer = BibTexWriter()
         writer.contents = ['entries']
         writer.display_order = ['year', 'publisher', 'title']
-        result = bibtexparser.dumps(bib_database, writer)
-        expected = \
-"""@book{Toto3000,
+        result = bibdeskparser.dumps(bib_database, writer)
+        expected = """@book{Toto3000,
  title = {A title},
  author = {Toto, A and Titi, B}
 }
@@ -180,59 +184,55 @@ class TestBibTexWriter(unittest.TestCase):
 
 class TestEntrySorting(unittest.TestCase):
     bib_database = BibDatabase()
-    bib_database.entries = [{'ID': 'b',
-                             'ENTRYTYPE': 'article'},
-                            {'ID': 'c',
-                             'ENTRYTYPE': 'book'},
-                            {'ID': 'a',
-                             'ENTRYTYPE': 'book'}]
+    bib_database.entries = [
+        {'ID': 'b', 'ENTRYTYPE': 'article'},
+        {'ID': 'c', 'ENTRYTYPE': 'book'},
+        {'ID': 'a', 'ENTRYTYPE': 'book'},
+    ]
 
     def test_sort_default(self):
-        result = bibtexparser.dumps(self.bib_database)
+        result = bibdeskparser.dumps(self.bib_database)
         expected = "@book{a\n}\n\n@article{b\n}\n\n@book{c\n}\n\n"
         self.assertEqual(result, expected)
 
     def test_sort_none(self):
         writer = BibTexWriter()
         writer.order_entries_by = None
-        result = bibtexparser.dumps(self.bib_database, writer)
+        result = bibdeskparser.dumps(self.bib_database, writer)
         expected = "@article{b\n}\n\n@book{c\n}\n\n@book{a\n}\n\n"
         self.assertEqual(result, expected)
 
     def test_sort_id(self):
         writer = BibTexWriter()
-        writer.order_entries_by = ('ID', )
-        result = bibtexparser.dumps(self.bib_database, writer)
+        writer.order_entries_by = ('ID',)
+        result = bibdeskparser.dumps(self.bib_database, writer)
         expected = "@book{a\n}\n\n@article{b\n}\n\n@book{c\n}\n\n"
         self.assertEqual(result, expected)
 
     def test_sort_type(self):
         writer = BibTexWriter()
-        writer.order_entries_by = ('ENTRYTYPE', )
-        result = bibtexparser.dumps(self.bib_database, writer)
+        writer.order_entries_by = ('ENTRYTYPE',)
+        result = bibdeskparser.dumps(self.bib_database, writer)
         expected = "@article{b\n}\n\n@book{c\n}\n\n@book{a\n}\n\n"
         self.assertEqual(result, expected)
 
     def test_sort_type_id(self):
         writer = BibTexWriter()
         writer.order_entries_by = ('ENTRYTYPE', 'ID')
-        result = bibtexparser.dumps(self.bib_database, writer)
+        result = bibdeskparser.dumps(self.bib_database, writer)
         expected = "@article{b\n}\n\n@book{a\n}\n\n@book{c\n}\n\n"
         self.assertEqual(result, expected)
 
     def test_sort_missing_field(self):
         bib_database = BibDatabase()
-        bib_database.entries = [{'ID': 'b',
-                                 'ENTRYTYPE': 'article',
-                                 'year': '2000'},
-                                {'ID': 'c',
-                                 'ENTRYTYPE': 'book',
-                                 'year': '2010'},
-                                {'ID': 'a',
-                                 'ENTRYTYPE': 'book'}]
+        bib_database.entries = [
+            {'ID': 'b', 'ENTRYTYPE': 'article', 'year': '2000'},
+            {'ID': 'c', 'ENTRYTYPE': 'book', 'year': '2010'},
+            {'ID': 'a', 'ENTRYTYPE': 'book'},
+        ]
         writer = BibTexWriter()
-        writer.order_entries_by = ('year', )
-        result = bibtexparser.dumps(bib_database, writer)
+        writer.order_entries_by = ('year',)
+        result = bibdeskparser.dumps(bib_database, writer)
         expected = "@book{a\n}\n\n@article{b,\n year = {2000}\n}\n\n@book{c,\n year = {2010}\n}\n\n"
         self.assertEqual(result, expected)
 
@@ -256,8 +256,7 @@ class TestEntrySorting(unittest.TestCase):
             year = {2013}
         }
         """
-        bibdb = bibtexparser.loads(bibtex)
+        bibdb = bibdeskparser.loads(bibtex)
         with tempfile.TemporaryFile(mode='w+') as bibtex_file:
-            bibtexparser.dump(bibdb, bibtex_file)
+            bibdeskparser.dump(bibdb, bibtex_file)
             # No exception should be raised
-

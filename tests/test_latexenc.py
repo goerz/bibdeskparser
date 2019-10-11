@@ -18,7 +18,7 @@
 from __future__ import unicode_literals
 import unittest
 
-from bibtexparser.latexenc import (string_to_latex, latex_to_unicode,
+from bibdeskparser.latexenc import (string_to_latex, latex_to_unicode,
                                    protect_uppercase)
 
 

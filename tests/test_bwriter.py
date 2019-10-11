@@ -10,17 +10,16 @@ import os
 import io
 import sys
 
-from bibtexparser.bparser import BibTexParser
-from bibtexparser.bwriter import BibTexWriter, to_bibtex
-from bibtexparser.customization import author
+from bibdeskparser.bparser import BibTexParser
+from bibdeskparser.bwriter import BibTexWriter, to_bibtex
+from bibdeskparser.customization import author
 
 
 def _data_path(filename):
-    return os.path.join('bibtexparser/tests/data', filename)
+    return os.path.join('tests/data', filename)
 
 
 class TestBibtexWriterList(unittest.TestCase):
-
     def test_article(self):
         with io.open(_data_path('article.bib'), 'r') as bibfile:
             bib = BibTexParser(bibfile.read())
@@ -32,11 +31,14 @@ class TestBibtexWriterList(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def test_article_with_annotation(self):
-        with io.open(_data_path('article_with_annotation.bib'), 'r') as bibfile:
+        with io.open(
+            _data_path('article_with_annotation.bib'), 'r'
+        ) as bibfile:
             bib = BibTexParser(bibfile.read())
 
-        with io.open(_data_path('article_with_annotation_output.bib'), 'r') \
-                as bibfile:
+        with io.open(
+            _data_path('article_with_annotation_output.bib'), 'r'
+        ) as bibfile:
             expected = bibfile.read()
         result = to_bibtex(bib)
         self.maxDiff = None
@@ -69,7 +71,9 @@ class TestBibtexWriterList(unittest.TestCase):
         with io.open(_data_path('multiple_entries.bib'), 'r') as bibfile:
             bib = BibTexParser(bibfile.read())
 
-        with io.open(_data_path('multiple_entries_output.bib'), 'r') as bibfile:
+        with io.open(
+            _data_path('multiple_entries_output.bib'), 'r'
+        ) as bibfile:
             expected = bibfile.read()
         result = to_bibtex(bib)
         self.maxDiff = None
@@ -82,10 +86,12 @@ class TestBibtexWriterList(unittest.TestCase):
 
     def test_with_strings(self):
         with io.open(_data_path('article_with_strings.bib'), 'r') as bibfile:
-            bib = BibTexParser(bibfile.read(), common_strings=True,
-                               interpolate_strings=False)
-        with io.open(_data_path(
-                'article_with_strings_output.bib'), 'r') as bibfile:
+            bib = BibTexParser(
+                bibfile.read(), common_strings=True, interpolate_strings=False
+            )
+        with io.open(
+            _data_path('article_with_strings_output.bib'), 'r'
+        ) as bibfile:
             expected = bibfile.read()
         result = to_bibtex(bib)
         self.maxDiff = None
@@ -95,7 +101,9 @@ class TestBibtexWriterList(unittest.TestCase):
         with io.open(_data_path('article.bib'), 'r') as bibfile:
             bib = BibTexParser(bibfile.read())
 
-        with io.open(_data_path('article_trailing_comma_output.bib'), 'r') as bibfile:
+        with io.open(
+            _data_path('article_trailing_comma_output.bib'), 'r'
+        ) as bibfile:
             expected = bibfile.read()
         writer = BibTexWriter()
         writer.add_trailing_comma = True
@@ -107,7 +115,10 @@ class TestBibtexWriterList(unittest.TestCase):
         with io.open(_data_path('article.bib'), 'r') as bibfile:
             bib = BibTexParser(bibfile.read())
 
-        with io.open(_data_path('article_comma_first_and_trailing_comma_output.bib'), 'r') as bibfile:
+        with io.open(
+            _data_path('article_comma_first_and_trailing_comma_output.bib'),
+            'r',
+        ) as bibfile:
             expected = bibfile.read()
         writer = BibTexWriter()
         writer.add_trailing_comma = True

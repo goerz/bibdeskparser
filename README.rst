@@ -1,43 +1,45 @@
-python-bibtexparser
-===================
+BibDeskParser
+=============
 
-Python library to parse `bibtex <https://en.wikipedia.org/wiki/BibTeX>`_ files.
+.. image:: https://img.shields.io/badge/github-goerz/bibdeskparser-blue.svg
+   :alt: Source code on Github
+   :target: https://github.com/goerz/bibdeskparser
+.. image:: https://img.shields.io/badge/docs-doctr-blue.svg
+   :alt: Documentation
+   :target: https://goerz.github.io/bibdeskparser
+.. image:: https://img.shields.io/travis/goerz/bibdeskparser.svg
+   :alt: Travis Continuous Integration
+   :target: https://travis-ci.org/goerz/bibdeskparser
+.. image:: https://codecov.io/gh/goerz/bibdeskparser/branch/master/graph/badge.svg
+   :alt: Codecov
+   :target: https://codecov.io/gh/goerz/bibdeskparser
+.. image:: https://img.shields.io/badge/License-BSD-green.svg
+   :alt: BSD License
+   :target: https://opensource.org/licenses/BSD-3-Clause
 
+Python library to parse BibDesk_ files.
 
-IMPORTANT: the library is looking for new maintainers. Please, manifest yourself if you are interested.
+This is a fork of https://github.com/sciunto-org/python-bibtexparser
+
 
 .. contents::
 
 
-Bibtexparser relies on `pyparsing <https://pypi.python.org/pypi/pyparsing>`_ and is compatible with Python 2.7 and 3.3 or newer.
+BibDeskParser relies on pyparsing_ and is compatible with Python>=3.6
 
-Documentation
--------------
 
-Our documentation includes the installation procedure, a tutorial, the API and advices to report a bug.
-References, related projects and softwares based on bibtexparser are also listed. If you would like to appear on this list, feel free to open a ticket or send an email.
+History and Evolution
+---------------------
 
-`Documentation on readthedocs.io <https://bibtexparser.readthedocs.io/>`_
+BibDeskParser is a fork of bibtexparser_ by `François Boulogne`_, modified to work with BibDesk_ database files (which are valid bibtex files with some additional custom data and following slightly different conventions to those assumed by bibtexparser_). Modifications to bibtexparser_ (which was BSD/GPL dual licensed) are provided under a BSD license.
 
-Upgrading
----------
+The original source code of bibtexparser_ was part of bibserver from OKFN_. This project is released under the AGPLv3. OKFN_ and the original authors kindly provided the permission to use a subpart of their project (i.e. the bibtex parser) under LGPLv3. Many thanks to them!
 
-Please, read the changelog before upgrading regarding API modifications.
-Prior version 1.0, we do not hesitate to modify the API to get the best API from your feedbacks.
+The parser evolved to a new core based on pyparsing_.
 
-License
--------
+.. _bibtexparser: https://github.com/sciunto-org/python-bibtexparser
+.. _François Boulogne: https://github.com/sciunto
+.. _BibDesk: https://bibdesk.sourceforge.io
+.. _pyparsing: https://pypi.python.org/pypi/pyparsing
+.. _OKFN: http://github.com/okfn/bibserver
 
-Dual license (at your choice):
-
-* LGPLv3.
-* BSD
-
-See COPYING for details.
-
-History and evolutions
-----------------------
-
-The original source code was part of bibserver from `OKFN <http://github.com/okfn/bibserver>`_. This project is released under the AGPLv3. OKFN and the original authors kindly provided the permission to use a subpart of their project (ie the bibtex parser) under LGPLv3. Many thanks to them!
-
-The parser evolved to a new core based on pyparsing.

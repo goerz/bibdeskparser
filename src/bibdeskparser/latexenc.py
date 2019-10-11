@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # Original source: github.com/okfn/bibserver
 # Authors:
 # markmacgillivray
@@ -12,9 +9,14 @@ import re
 import sys
 import unicodedata
 
-__all__ = ['string_to_latex', 'latex_to_unicode', 'protect_uppercase',
-           'unicode_to_latex', 'unicode_to_crappy_latex1',
-           'unicode_to_crappy_latex2']
+__all__ = [
+    'string_to_latex',
+    'latex_to_unicode',
+    'protect_uppercase',
+    'unicode_to_latex',
+    'unicode_to_crappy_latex1',
+    'unicode_to_crappy_latex2',
+]
 
 
 def string_to_latex(string):
@@ -39,8 +41,9 @@ def _replace_latex(string, latex, unicod):
                 i, j = m.span()
                 # Insert after the following character,
                 if j < len(string):
-                    string = ''.join([
-                        string[:i], string[j], unicod, string[(j + 1):]])
+                    string = ''.join(
+                        [string[:i], string[j], unicod, string[(j + 1) :]]
+                    )
                 else:
                     # except if not in last position (nothing to modify)
                     string = string[:i]
@@ -64,8 +67,9 @@ def latex_to_unicode(string):
     :returns: string
     """
     if '\\' in string or '{' in string:
-        string = _replace_all_latex(string, itertools.chain(
-            unicode_to_crappy_latex1, unicode_to_latex))
+        string = _replace_all_latex(
+            string, itertools.chain(unicode_to_crappy_latex1, unicode_to_latex)
+        )
 
     # TODO Shouldn't this preserve escaped braces instead?
     # Remove any left braces
@@ -229,8 +233,8 @@ def prepare_unicode_to_latex():
         ("\u012F", "\\k{i}"),
         ("\u0130", "\\.{I}"),
         ("\u0131", "\\i "),
-#        (u"\u0132", "IJ"),
-#        (u"\u0133", "ij"),
+        #        (u"\u0132", "IJ"),
+        #        (u"\u0133", "ij"),
         ("\u0134", "\\^{J}"),
         ("\u0135", "\\^{\\j}"),
         ("\u0136", "\\c{K}"),
@@ -492,8 +496,8 @@ def prepare_unicode_to_latex():
         ("\u012F", "{\\k i}"),
         ("\u0130", "{\\. I}"),
         ("\u0131", "{\\i}"),
-#        (u"\u0132", "IJ"),
-#        (u"\u0133", "ij"),
+        #        (u"\u0132", "IJ"),
+        #        (u"\u0133", "ij"),
         ("\u0134", "{\\^J}"),
         ("\u0135", "{\\^\\j}"),
         ("\u0136", "{\\c K}"),
@@ -955,7 +959,7 @@ def prepare_unicode_to_latex():
         ("\u2020", "\\textdagger "),
         ("\u2021", "\\textdaggerdbl "),
         ("\u2022", "\\textbullet "),
-#        (u"\u2025", ".."),
+        #        (u"\u2025", ".."),
         ("\u2026", "\\ldots "),
         ("\u2030", "\\textperthousand "),
         ("\u2031", "\\textpertenthousand "),
@@ -1717,11 +1721,11 @@ def prepare_unicode_to_latex():
         ("\u3019", "\\ElsevierGlyph{3019}"),
         ("\u301A", "\\openbracketleft "),
         ("\u301B", "\\openbracketright "),
-#        (u"\uFB00", "ff"),
-#        (u"\uFB01", "fi"),
-#        (u"\uFB02", "fl"),
-#        (u"\uFB03", "ffi"),
-#        (u"\uFB04", "ffl"),
+        #        (u"\uFB00", "ff"),
+        #        (u"\uFB01", "fi"),
+        #        (u"\uFB02", "fl"),
+        #        (u"\uFB03", "ffi"),
+        #        (u"\uFB04", "ffl"),
         ("\uD400", "\\mathbf{A}"),
         ("\uD401", "\\mathbf{B}"),
         ("\uD402", "\\mathbf{C}"),
@@ -2692,9 +2696,15 @@ def prepare_unicode_to_latex():
         unicode_to_crappy_latex2 = to_crappy2
         unicode_to_latex_map = dict(unicode_to_latex)
     else:
-        unicode_to_latex = tuple((k.decode('unicode-escape'), v) for k, v in to_latex)
-        unicode_to_crappy_latex1 = tuple((k.decode('unicode-escape'), v) for k, v in to_crappy1)
-        unicode_to_crappy_latex2 = tuple((k.decode('unicode-escape'), v) for k, v in to_crappy2)
+        unicode_to_latex = tuple(
+            (k.decode('unicode-escape'), v) for k, v in to_latex
+        )
+        unicode_to_crappy_latex1 = tuple(
+            (k.decode('unicode-escape'), v) for k, v in to_crappy1
+        )
+        unicode_to_crappy_latex2 = tuple(
+            (k.decode('unicode-escape'), v) for k, v in to_crappy2
+        )
         unicode_to_latex_map = dict(unicode_to_latex)
 
 

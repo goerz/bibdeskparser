@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+"""
+Module providing the BibTeX parser.
 
+You can instantiate new parsers to tune the defaults.
+"""
 # Original source: github.com/okfn/bibserver
 # Authors:
 # markmacgillivray
@@ -11,19 +13,18 @@ import sys
 import io
 import logging
 
-from bibtexparser.bibdatabase import (BibDatabase, BibDataString, as_text,
-                                      BibDataStringExpression, STANDARD_TYPES)
-from bibtexparser.bibtexexpression import BibtexExpression
+from bibdeskparser.bibdatabase import (
+    BibDatabase,
+    BibDataString,
+    as_text,
+    BibDataStringExpression,
+    STANDARD_TYPES,
+)
+from bibdeskparser.bibtexexpression import BibtexExpression
 
 logger = logging.getLogger(__name__)
 
 __all__ = ['BibTexParser']
-
-
-if sys.version_info >= (3, 0):
-    ustr = str
-else:
-    ustr = unicode
 
 
 def parse(data, *args, **kwargs):
@@ -31,13 +32,13 @@ def parse(data, *args, **kwargs):
     return parser.parse(data)
 
 
-class BibTexParser(object):
+class BibTexParser:
     """
     A parser for reading BibTeX bibliographic data files.
 
     Example::
 
-        from bibtexparser.bparser import BibTexParser
+        from bibdeskparser.bparser import BibTexParser
 
         bibtex_str = ...
 
@@ -45,7 +46,7 @@ class BibTexParser(object):
         parser.ignore_nonstandard_types = False
         parser.homogenize_fields = False
         parser.common_strings = False
-        bib_database = bibtexparser.loads(bibtex_str, parser)
+        bib_database = bibdeskparser.loads(bibtex_str, parser)
 
     :param customization: function or None (default)
         Customization to apply to parsed entries.
@@ -77,13 +78,16 @@ class BibTexParser(object):
             # and return the `BibDatabase` object instead of the parser.
             return parse(data, **args)
 
-    def __init__(self, data=None,
-                 customization=None,
-                 ignore_nonstandard_types=True,
-                 homogenize_fields=False,
-                 interpolate_strings=True,
-                 common_strings=False,
-                 add_missing_from_crossref=False):
+    def __init__(
+        self,
+        data=None,
+        customization=None,
+        ignore_nonstandard_types=True,
+        homogenize_fields=False,
+        interpolate_strings=True,
+        common_strings=False,
+        add_missing_from_crossref=False,
+    ):
         """
         Creates a parser for rading BibTeX files
 
@@ -133,7 +137,7 @@ class BibTexParser(object):
             'link': u'url',
             'links': u'url',
             'subjects': u'subject',
-            'xref': u'crossref'
+            'xref': u'crossref',
         }
 
         # Setup the parser expression
@@ -143,10 +147,10 @@ class BibTexParser(object):
         """Parse a BibTeX string into an object
 
         :param bibtex_str: BibTeX string
-        :type: str or unicode
+        :type: str
         :param partial: If True, print errors only on parsing failures.
             If False, an exception is raised.
-        :type: boolean
+        :type: bool
         :return: bibliographic database
         :rtype: BibDatabase
         """
@@ -167,10 +171,10 @@ class BibTexParser(object):
         """Parse a BibTeX file into an object
 
         :param file: BibTeX file or file-like object
-        :type: file
+        :type: typing.IO
         :param partial: If True, print errors only on parsing failures.
             If False, an exception is raised.
-        :type: boolean
+        :type: bool
         :return: bibliographic database
         :rtype: BibDatabase
         """
@@ -184,16 +188,17 @@ class BibTexParser(object):
 
         # Handle string as BibDataString object
         self._expr.set_string_name_parse_action(
-            lambda s, l, t:
-                BibDataString(self.bib_database, t[0]))
+            lambda s, l, t: BibDataString(self.bib_database, t[0])
+        )
         if self.interpolate_strings:
             maybe_interpolate = lambda expr: as_text(expr)
         else:
             maybe_interpolate = lambda expr: expr
         self._expr.set_string_expression_parse_action(
-            lambda s, l, t:
-                maybe_interpolate(
-                    BibDataStringExpression.expression_if_needed(t)))
+            lambda s, l, t: maybe_interpolate(
+                BibDataStringExpression.expression_if_needed(t)
+            )
+        )
 
         # Add notice to logger
         self._expr.add_log_function(logger.debug)
@@ -201,27 +206,29 @@ class BibTexParser(object):
         # Set actions
         self._expr.entry.addParseAction(
             lambda s, l, t: self._add_entry(
-                t.get('EntryType'), t.get('Key'), t.get('Fields'))
+                t.get('EntryType'), t.get('Key'), t.get('Fields')
             )
+        )
         self._expr.implicit_comment.addParseAction(
             lambda s, l, t: self._add_comment(t[0])
-            )
+        )
         self._expr.explicit_comment.addParseAction(
             lambda s, l, t: self._add_comment(t[0])
-            )
+        )
         self._expr.preamble_decl.addParseAction(
             lambda s, l, t: self._add_preamble(t[0])
-            )
+        )
         self._expr.string_def.addParseAction(
-            lambda s, l, t: self._add_string(t['StringName'].name,
-                                             t['StringValue'])
+            lambda s, l, t: self._add_string(
+                t['StringName'].name, t['StringValue']
             )
+        )
 
     def _bibtex_file_obj(self, bibtex_str):
         # Some files have Byte-order marks inserted at the start
         byte = b'\xef\xbb\xbf'
-        if isinstance(bibtex_str, ustr):
-            byte = ustr(byte, self.encoding, 'ignore')
+        if isinstance(bibtex_str, str):
+            byte = str(byte, self.encoding, 'ignore')
             if bibtex_str[0] == byte:
                 bibtex_str = bibtex_str[1:]
         else:
@@ -242,15 +249,15 @@ class BibTexParser(object):
         return val
 
     def _clean_key(self, key):
-        """ Lowercase a key and return as unicode.
+        """ Lowercase a key and return as str.
 
         :param key: a key
-        :type key: string
-        :returns: (unicode) string -- value
+        :type key: str
+        :returns: (str) string-value
         """
         key = key.lower()
-        if not isinstance(key, ustr):
-            return ustr(key, 'utf-8')
+        if not isinstance(key, str):
+            return str(key, 'utf-8')
         else:
             return key
 
@@ -258,8 +265,8 @@ class BibTexParser(object):
         """ Clean a bibtex field key and homogenize alternative forms.
 
         :param key: a key
-        :type key: string
-        :returns: string -- value
+        :type key: str
+        :returns: string-value
         """
         key = self._clean_key(key)
         if self.homogenize_fields:
@@ -272,18 +279,19 @@ class BibTexParser(object):
         Includes checking type and fields, cleaning, applying customizations.
 
         :param entry_type: the entry type
-        :type entry_type: string
+        :type entry_type: str
         :param entry_id: the entry bibid
-        :type entry_id: string
+        :type entry_id: str
         :param fields: the fields and values
         :type fields: dictionary
-        :returns: string -- value
+        :returns: string-value
         """
         d = {}
         entry_type = self._clean_key(entry_type)
         if self.ignore_nonstandard_types and entry_type not in STANDARD_TYPES:
-            logger.warning('Entry type %s not standard. Not considered.',
-                           entry_type)
+            logger.warning(
+                'Entry type %s not standard. Not considered.', entry_type
+            )
             return
         for key in fields:
             d[self._clean_field_key(key)] = self._clean_val(fields[key])
@@ -305,10 +313,11 @@ class BibTexParser(object):
         Stores a comment in the list of comment.
 
         :param comment: the parsed comment
-        :type comment: string
+        :type comment: str
         """
-        logger.debug('Store comment in list of comments: ' +
-                     comment.__repr__())
+        logger.debug(
+            'Store comment in list of comments: ' + comment.__repr__()
+        )
         self.bib_database.comments.append(comment)
 
     def _add_string(self, string_key, string):
@@ -316,13 +325,14 @@ class BibTexParser(object):
         Stores a new string in the string dictionary.
 
         :param string_key: the string key
-        :type string_key: string
+        :type string_key: str
         :param string: the string value
-        :type string: string
+        :type string: str
         """
         if string_key in self.bib_database.strings:
-            logger.warning('Overwritting existing string for key: %s.',
-                           string_key)
+            logger.warning(
+                'Overwritting existing string for key: %s.', string_key
+            )
         logger.debug(u'Store string: {} -> {}'.format(string_key, string))
         self.bib_database.strings[string_key] = self._clean_val(string)
 
@@ -331,7 +341,7 @@ class BibTexParser(object):
         Stores a preamble.
 
         :param preamble: the parsed preamble
-        :type preamble: string
+        :type preamble: str
         """
         logger.debug('Store preamble in list of preambles')
         self.bib_database.preambles.append(preamble)

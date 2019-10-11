@@ -1,18 +1,24 @@
 import unittest
-from bibtexparser.bibdatabase import (BibDatabase, BibDataString,
-                                      BibDataStringExpression)
+from bibdeskparser.bibdatabase import (
+    BibDatabase,
+    BibDataString,
+    BibDataStringExpression,
+)
 
 
 class TestBibDatabase(unittest.TestCase):
-    entries = [{'ENTRYTYPE': 'book',
-                'year': '1987',
-                'edition': '2',
-                'publisher': 'Wiley Edition',
-                'ID': 'Bird1987',
-                'volume': '1',
-                'title': 'Dynamics of Polymeric Liquid',
-                'author': 'Bird, R.B. and Armstrong, R.C. and Hassager, O.'
-                }]
+    entries = [
+        {
+            'ENTRYTYPE': 'book',
+            'year': '1987',
+            'edition': '2',
+            'publisher': 'Wiley Edition',
+            'ID': 'Bird1987',
+            'volume': '1',
+            'title': 'Dynamics of Polymeric Liquid',
+            'author': 'Bird, R.B. and Armstrong, R.C. and Hassager, O.',
+        }
+    ]
 
     def test_entries_list_method(self):
         bib_db = BibDatabase()
@@ -26,7 +32,6 @@ class TestBibDatabase(unittest.TestCase):
 
 
 class TestBibDataString(unittest.TestCase):
-
     def setUp(self):
         self.bd = BibDatabase()
 
@@ -52,8 +57,9 @@ class TestBibDataString(unittest.TestCase):
 
     def test_get_value_string_is_defined_by_expression(self):
         self.bd.strings['name'] = 'string'
-        exp = BibDataStringExpression(['this is a ',
-                                       BibDataString(self.bd, 'name')])
+        exp = BibDataStringExpression(
+            ['this is a ', BibDataString(self.bd, 'name')]
+        )
         self.bd.strings['exp'] = exp
         bds = BibDataString(self.bd, 'exp')
         self.assertEqual(bds.get_value(), 'this is a string')
@@ -71,7 +77,6 @@ class TestBibDataString(unittest.TestCase):
 
 
 class TestBibDataStringExpression(unittest.TestCase):
-
     def setUp(self):
         self.bd = BibDatabase()
         self.bd.strings['name'] = 'value'
@@ -79,7 +84,8 @@ class TestBibDataStringExpression(unittest.TestCase):
 
     def test_get_value(self):
         exp = BibDataStringExpression(
-            ["The string has value: ", self.bds, '.'])
+            ["The string has value: ", self.bds, '.']
+        )
         self.assertEqual(exp.get_value(), 'The string has value: value.')
 
     def test_raises_KeyError(self):
@@ -93,7 +99,9 @@ class TestBibDataStringExpression(unittest.TestCase):
         a2 = BibDataString(self.bd, 'a')
         exp = BibDataStringExpression([a1, self.bds, 'text'])
         self.assertEqual(exp, BibDataStringExpression([a2, self.bds, 'text']))
-        self.assertNotEqual(exp, BibDataStringExpression(['foo', self.bds, 'text']))
+        self.assertNotEqual(
+            exp, BibDataStringExpression(['foo', self.bds, 'text'])
+        )
         self.assertNotEqual(exp, 'foovaluetext')
 
 

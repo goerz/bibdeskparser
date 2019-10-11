@@ -1,55 +1,55 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
+"""
+Module providing the bibliographic database object.
+"""
 from collections import OrderedDict
 import sys
 import logging
 
 logger = logging.getLogger(__name__)
 
-if sys.version_info >= (3, 0):
-    ustr = str
-else:
-    ustr = unicode
 
+STANDARD_TYPES = set(
+    [
+        'article',
+        'book',
+        'booklet',
+        'conference',
+        'inbook',
+        'incollection',
+        'inproceedings',
+        'manual',
+        'mastersthesis',
+        'misc',
+        'phdthesis',
+        'proceedings',
+        'techreport',
+        'unpublished',
+    ]
+)
 
-STANDARD_TYPES = set([
-    'article',
-    'book',
-    'booklet',
-    'conference',
-    'inbook',
-    'incollection',
-    'inproceedings',
-    'manual',
-    'mastersthesis',
-    'misc',
-    'phdthesis',
-    'proceedings',
-    'techreport',
-    'unpublished'])
-
-COMMON_STRINGS = OrderedDict([
-    ('jan', 'January'),
-    ('feb', 'February'),
-    ('mar', 'March'),
-    ('apr', 'April'),
-    ('may', 'May'),
-    ('jun', 'June'),
-    ('jul', 'July'),
-    ('aug', 'August'),
-    ('sep', 'September'),
-    ('oct', 'October'),
-    ('nov', 'November'),
-    ('dec', 'December'),
-    ])
+COMMON_STRINGS = OrderedDict(
+    [
+        ('jan', 'January'),
+        ('feb', 'February'),
+        ('mar', 'March'),
+        ('apr', 'April'),
+        ('may', 'May'),
+        ('jun', 'June'),
+        ('jul', 'July'),
+        ('aug', 'August'),
+        ('sep', 'September'),
+        ('oct', 'October'),
+        ('nov', 'November'),
+        ('dec', 'December'),
+    ]
+)
 
 
 class UndefinedString(KeyError):
     pass
 
 
-class BibDatabase(object):
+class BibDatabase:
     """
     Bibliographic database object that follows the data structure of a BibTeX file.
     """
@@ -66,7 +66,9 @@ class BibDatabase(object):
         #: List of BibTeX comment (`@comment{...}`) blocks.
         self.comments = []
         #: OrderedDict of BibTeX string definitions (`@string{...}`). In order of definition.
-        self.strings = OrderedDict()  # Not sure if order is import, keep order just in case
+        self.strings = (
+            OrderedDict()
+        )  # Not sure if order is import, keep order just in case
         #: List of BibTeX preamble (`@preamble{...}`) blocks.
         self.preambles = []
 
@@ -90,7 +92,9 @@ class BibDatabase(object):
     def entry_sort_key(entry, fields):
         result = []
         for field in fields:
-            result.append(ustr(entry.get(field, '')).lower())  # Sorting always as string
+            result.append(
+                str(entry.get(field, '')).lower()
+            )  # Sorting always as string
         return tuple(result)
 
     def _make_entries_dict(self):
@@ -111,25 +115,30 @@ class BibDatabase(object):
     def expand_string(self, name):
         try:
             return BibDataStringExpression.expand_if_expression(
-                self.strings[name])
+                self.strings[name]
+            )
         except KeyError:
-            raise(UndefinedString(name))
+            raise (UndefinedString(name))
 
     def _add_missing_from_crossref_entry(self, entry, dependencies=set()):
         if entry['ID'] in self._crossref_updated:
             return
 
         if entry['_crossref'] not in self.entries_dict:
-            logger.error("Crossref reference %s for %s is missing.",
-                         entry['_crossref'],
-                         entry['ID'])
+            logger.error(
+                "Crossref reference %s for %s is missing.",
+                entry['_crossref'],
+                entry['ID'],
+            )
             return
 
         if entry['_crossref'] in dependencies:
-            logger.error("Circular crossref dependency: %s->%s->%s.",
-                         "->".join(dependencies),
-                         entry['ID'],
-                         entry['_crossref'])
+            logger.error(
+                "Circular crossref dependency: %s->%s->%s.",
+                "->".join(dependencies),
+                entry['ID'],
+                entry['_crossref'],
+            )
             return
 
         crossref_entry = self.entries_dict[entry['_crossref']]
@@ -138,10 +147,12 @@ class BibDatabase(object):
             self._add_missing_from_crossref_entry(crossref_entry, dependencies)
             dependencies.remove(entry['ID'])
 
-        from_crossref = {bibfield: bibvalue
-                         for (bibfield, bibvalue) in crossref_entry.items()
-                         if bibfield not in entry.keys() and
-                            bibfield not in self._not_updated_by_crossref}
+        from_crossref = {
+            bibfield: bibvalue
+            for (bibfield, bibvalue) in crossref_entry.items()
+            if bibfield not in entry.keys()
+            and bibfield not in self._not_updated_by_crossref
+        }
 
         entry.update(from_crossref)
 
@@ -158,7 +169,7 @@ class BibDatabase(object):
                 self._add_missing_from_crossref_entry(entry)
 
 
-class BibDataString(object):
+class BibDataString:
     """
     Represents a bibtex string.
 
@@ -206,7 +217,7 @@ class BibDataString(object):
             return string_or_bibdatastring
 
 
-class BibDataStringExpression(object):
+class BibDataStringExpression:
     """
     Represents a bibtex string expression.
 
@@ -224,7 +235,10 @@ class BibDataStringExpression(object):
         self.expr = expression
 
     def __eq__(self, other):
-        return isinstance(other, BibDataStringExpression) and self.expr == other.expr
+        return (
+            isinstance(other, BibDataStringExpression)
+            and self.expr == other.expr
+        )
 
     def __repr__(self):
         return "BibDataStringExpression({})".format(self.expr.__repr__())
@@ -244,8 +258,9 @@ class BibDataStringExpression(object):
 
         :param fun: function from strings to strings
         """
-        self.expr = [s if isinstance(s, BibDataString) else fun(s)
-                     for s in self.expr]
+        self.expr = [
+            s if isinstance(s, BibDataString) else fun(s) for s in self.expr
+        ]
 
     @staticmethod
     def expand_if_expression(string_or_expression):
@@ -272,8 +287,9 @@ class BibDataStringExpression(object):
 
 
 def as_text(text_string_or_expression):
-    if isinstance(text_string_or_expression,
-                  (BibDataString, BibDataStringExpression)):
+    if isinstance(
+        text_string_or_expression, (BibDataString, BibDataStringExpression)
+    ):
         return text_string_or_expression.get_value()
     else:
-        return ustr(text_string_or_expression)
+        return str(text_string_or_expression)

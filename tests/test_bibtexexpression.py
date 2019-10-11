@@ -5,11 +5,10 @@
 from __future__ import unicode_literals
 import unittest
 
-from bibtexparser.bibtexexpression import BibtexExpression
+from bibdeskparser.bibtexexpression import BibtexExpression
 
 
 class TestBibtexExpression(unittest.TestCase):
-
     def setUp(self):
         self.expr = BibtexExpression()
 
@@ -33,12 +32,12 @@ class TestBibtexExpression(unittest.TestCase):
 
     def test_braced_with_new_line(self):
         result = self.expr.entry.parseString(
-            '@journal{key, name = {abc\ndef} }')
+            '@journal{key, name = {abc\ndef} }'
+        )
         self.assertEqual(result.get('Fields'), {'name': 'abc\ndef'})
 
     def test_braced_unicode(self):
-        result = self.expr.entry.parseString(
-            '@journal{key, name = {àbcđéf} }')
+        result = self.expr.entry.parseString('@journal{key, name = {àbcđéf} }')
         self.assertEqual(result.get('Fields'), {'name': 'àbcđéf'})
 
     def test_quoted(self):
@@ -47,12 +46,12 @@ class TestBibtexExpression(unittest.TestCase):
 
     def test_quoted_with_new_line(self):
         result = self.expr.entry.parseString(
-            '@journal{key, name = "abc\ndef" }')
+            '@journal{key, name = "abc\ndef" }'
+        )
         self.assertEqual(result.get('Fields'), {'name': 'abc\ndef'})
 
     def test_quoted_with_unicode(self):
-        result = self.expr.entry.parseString(
-            '@journal{key, name = "àbcđéf" }')
+        result = self.expr.entry.parseString('@journal{key, name = "àbcđéf" }')
         self.assertEqual(result.get('Fields'), {'name': 'àbcđéf'})
 
     def test_entry_declaration_after_space(self):
