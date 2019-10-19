@@ -1,0 +1,817 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>bibdeskparser.customization &mdash; BibDeskParser 2.0.0-dev documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script type="text/javascript" src="../../_static/version-menu.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> BibDeskParser
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.0.0-dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">How to install and test?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bibdeskparser.html">The bibdeskparser API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../logging.html">How to report a bug?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bibtex_conv.html">Bibtex tips, conventions and unrelated projects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">BibDeskParser</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../bibdeskparser.html">bibdeskparser</a> &raquo;</li>
+        
+      <li>bibdeskparser.customization</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for bibdeskparser.customization</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A set of functions useful for customizing bibtex fields.</span>
+<span class="sd">You can find inspiration from these functions to design yours.</span>
+<span class="sd">Each of them takes a record and return the modified record.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">builtins</span> <span class="k">import</span> <span class="nb">str</span>
+
+<span class="kn">from</span> <span class="nn">bibdeskparser.latexenc</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">latex_to_unicode</span><span class="p">,</span>
+    <span class="n">string_to_latex</span><span class="p">,</span>
+    <span class="n">protect_uppercase</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;splitname&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;getnames&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;author&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;editor&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;journal&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;keyword&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;link&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;page_double_hyphen&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;doi&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;type&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;convert_to_unicode&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;homogenize_latex_encoding&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;add_plaintext_fields&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="InvalidName"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.InvalidName">[docs]</a><span class="k">class</span> <span class="nc">InvalidName</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Exception raised by :py:func:`customization.splitname` when an invalid name is input.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="splitname"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.splitname">[docs]</a><span class="k">def</span> <span class="nf">splitname</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">strict_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Break a name into its constituent parts: First, von, Last, and Jr.</span>
+
+<span class="sd">    :param string name: a string containing a single name</span>
+<span class="sd">    :param Boolean strict_mode: whether to use strict mode</span>
+<span class="sd">    :returns: dictionary of constituent parts</span>
+<span class="sd">    :raises `customization.InvalidName`: If an invalid name is given and</span>
+<span class="sd">                                         ``strict_mode = True``.</span>
+
+<span class="sd">    In BibTeX, a name can be represented in any of three forms:</span>
+<span class="sd">        * First von Last</span>
+<span class="sd">        * von Last, First</span>
+<span class="sd">        * von Last, Jr, First</span>
+
+<span class="sd">    This function attempts to split a given name into its four parts. The</span>
+<span class="sd">    returned dictionary has keys of ``first``, ``last``, ``von`` and ``jr``.</span>
+<span class="sd">    Each value is a list of the words making up that part; this may be an empty</span>
+<span class="sd">    list.  If the input has no non-whitespace characters, a blank dictionary is</span>
+<span class="sd">    returned.</span>
+
+<span class="sd">    It is capable of detecting some errors with the input name. If the</span>
+<span class="sd">    ``strict_mode`` parameter is ``True``, which is the default, this results in</span>
+<span class="sd">    a :class:`customization.InvalidName` exception being raised. If it is</span>
+<span class="sd">    ``False``, the function continues, working around the error as best it can.</span>
+<span class="sd">    The errors that can be detected are listed below along with the handling</span>
+<span class="sd">    for non-strict mode:</span>
+
+<span class="sd">        * Name finishes with a trailing comma: delete the comma</span>
+<span class="sd">        * Too many parts (e.g., von Last, Jr, First, Error): merge extra parts</span>
+<span class="sd">          into First</span>
+<span class="sd">        * Unterminated opening brace: add closing brace to end of input</span>
+<span class="sd">        * Unmatched closing brace: add opening brace at start of word</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Useful references:</span>
+    <span class="c1"># http://maverick.inria.fr/~Xavier.Decoret/resources/xdkbibtex/bibtex_summary.html#names</span>
+    <span class="c1"># http://tug.ctan.org/info/bibtex/tamethebeast/ttb_en.pdf</span>
+
+    <span class="c1"># Whitespace characters that can separate words.</span>
+    <span class="n">whitespace</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="s1">&#39; ~</span><span class="se">\r\n\t</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="c1"># We&#39;ll iterate over the input once, dividing it into a list of words for</span>
+    <span class="c1"># each comma-separated section. We&#39;ll also calculate the case of each word</span>
+    <span class="c1"># as we work.</span>
+    <span class="n">sections</span> <span class="o">=</span> <span class="p">[[]]</span>  <span class="c1"># Sections of the name.</span>
+    <span class="n">cases</span> <span class="o">=</span> <span class="p">[[]]</span>  <span class="c1"># 1 = uppercase, 0 = lowercase, -1 = caseless.</span>
+    <span class="n">word</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Current word.</span>
+    <span class="n">case</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># Case of the current word.</span>
+    <span class="n">level</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Current brace level.</span>
+    <span class="n">bracestart</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Will the next character be the first within a brace?</span>
+    <span class="n">controlseq</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Are we currently processing a control sequence?</span>
+    <span class="n">specialchar</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Are we currently processing a special character?</span>
+
+    <span class="c1"># Using an iterator allows us to deal with escapes in a simple manner.</span>
+    <span class="n">nameiter</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">nameiter</span><span class="p">:</span>
+        <span class="c1"># An escape.</span>
+        <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&#39;</span><span class="p">:</span>
+            <span class="n">escaped</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">nameiter</span><span class="p">)</span>
+
+            <span class="c1"># BibTeX doesn&#39;t allow whitespace escaping. Copy the slash and fall</span>
+            <span class="c1"># through to the normal case to handle the whitespace.</span>
+            <span class="k">if</span> <span class="n">escaped</span> <span class="ow">in</span> <span class="n">whitespace</span><span class="p">:</span>
+                <span class="n">word</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+                <span class="n">char</span> <span class="o">=</span> <span class="n">escaped</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Is this the first character in a brace?</span>
+                <span class="k">if</span> <span class="n">bracestart</span><span class="p">:</span>
+                    <span class="n">bracestart</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="n">controlseq</span> <span class="o">=</span> <span class="n">escaped</span><span class="o">.</span><span class="n">isalpha</span><span class="p">()</span>
+                    <span class="n">specialchar</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="c1"># Can we use it to determine the case?</span>
+                <span class="k">elif</span> <span class="p">(</span><span class="n">case</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="n">escaped</span><span class="o">.</span><span class="n">isalpha</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">escaped</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+                        <span class="n">case</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">case</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="c1"># Copy the escape to the current word and go to the next</span>
+                <span class="c1"># character in the input.</span>
+                <span class="n">word</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+                <span class="n">word</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">escaped</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+        <span class="c1"># Start of a braced expression.</span>
+        <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s1">&#39;{&#39;</span><span class="p">:</span>
+            <span class="n">level</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">word</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+            <span class="n">bracestart</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">controlseq</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">specialchar</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># All the below cases imply this (and don&#39;t test its previous value).</span>
+        <span class="n">bracestart</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># End of a braced expression.</span>
+        <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s1">&#39;}&#39;</span><span class="p">:</span>
+            <span class="c1"># Check and reduce the level.</span>
+            <span class="k">if</span> <span class="n">level</span><span class="p">:</span>
+                <span class="n">level</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">strict_mode</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">InvalidName</span><span class="p">(</span>
+                        <span class="s2">&quot;Unmatched closing brace in name {{</span><span class="si">{0}</span><span class="s2">}}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="n">word</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;{&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Update the state, append the character, and move on.</span>
+            <span class="n">controlseq</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">specialchar</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">word</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Inside a braced expression.</span>
+        <span class="k">if</span> <span class="n">level</span><span class="p">:</span>
+            <span class="c1"># Is this the end of a control sequence?</span>
+            <span class="k">if</span> <span class="n">controlseq</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">char</span><span class="o">.</span><span class="n">isalpha</span><span class="p">():</span>
+                    <span class="n">controlseq</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="c1"># If it&#39;s a special character, can we use it for a case?</span>
+            <span class="k">elif</span> <span class="n">specialchar</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">case</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="n">char</span><span class="o">.</span><span class="n">isalpha</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">char</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+                        <span class="n">case</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">case</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="c1"># Append the character and move on.</span>
+            <span class="n">word</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># End of a word.</span>
+        <span class="c1"># NB. we know we&#39;re not in a brace here due to the previous case.</span>
+        <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s1">&#39;,&#39;</span> <span class="ow">or</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">whitespace</span><span class="p">:</span>
+            <span class="c1"># Don&#39;t add empty words due to repeated whitespace.</span>
+            <span class="k">if</span> <span class="n">word</span><span class="p">:</span>
+                <span class="n">sections</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">word</span><span class="p">))</span>
+                <span class="n">word</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">cases</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">case</span><span class="p">)</span>
+                <span class="n">case</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="n">controlseq</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">specialchar</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="c1"># End of a section.</span>
+            <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s1">&#39;,&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="n">sections</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+                    <span class="n">cases</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+                <span class="k">elif</span> <span class="n">strict_mode</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">InvalidName</span><span class="p">(</span>
+                        <span class="s2">&quot;Too many commas in the name {{</span><span class="si">{0}</span><span class="s2">}}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                    <span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Regular character.</span>
+        <span class="n">word</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">case</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="n">char</span><span class="o">.</span><span class="n">isalpha</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">char</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+                <span class="n">case</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">case</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Unterminated brace?</span>
+    <span class="k">if</span> <span class="n">level</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">strict_mode</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidName</span><span class="p">(</span>
+                <span class="s2">&quot;Unterminated opening brace in the name {{</span><span class="si">{0}</span><span class="s2">}}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">while</span> <span class="n">level</span><span class="p">:</span>
+            <span class="n">word</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;}&#39;</span><span class="p">)</span>
+            <span class="n">level</span> <span class="o">-=</span> <span class="mi">1</span>
+
+    <span class="c1"># Handle the final word.</span>
+    <span class="k">if</span> <span class="n">word</span><span class="p">:</span>
+        <span class="n">sections</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">word</span><span class="p">))</span>
+        <span class="n">cases</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">case</span><span class="p">)</span>
+
+    <span class="c1"># Get rid of trailing sections.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sections</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="c1"># Trailing comma?</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="n">strict_mode</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidName</span><span class="p">(</span>
+                <span class="s2">&quot;Trailing comma at end of name {{</span><span class="si">{0}</span><span class="s2">}}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">sections</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">cases</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># No non-whitespace input.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sections</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">section</span><span class="p">)</span> <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="c1"># Initialise the output dictionary.</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;first&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;last&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;von&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;jr&#39;</span><span class="p">:</span> <span class="p">[]}</span>
+
+    <span class="c1"># Form 1: &quot;First von Last&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">p0</span> <span class="o">=</span> <span class="n">sections</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># One word only: last cannot be empty.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;last&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p0</span>
+
+        <span class="c1"># Two words: must be first and last.</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">p0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;first&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p0</span><span class="p">[:</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;last&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p0</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="c1"># Need to use the cases to figure it out.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cases</span> <span class="o">=</span> <span class="n">cases</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c1"># First is the longest sequence of words starting with uppercase</span>
+            <span class="c1"># that is not the whole string. von is then the longest sequence</span>
+            <span class="c1"># whose last word starts with lowercase that is not the whole</span>
+            <span class="c1"># string. Last is the rest. NB., this means last cannot be empty.</span>
+
+            <span class="c1"># At least one lowercase letter.</span>
+            <span class="k">if</span> <span class="mi">0</span> <span class="ow">in</span> <span class="n">cases</span><span class="p">:</span>
+                <span class="c1"># Index from end of list of first and last lowercase word.</span>
+                <span class="n">firstl</span> <span class="o">=</span> <span class="n">cases</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span>
+                <span class="n">lastl</span> <span class="o">=</span> <span class="o">-</span><span class="n">cases</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">lastl</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">lastl</span> <span class="o">-=</span> <span class="mi">1</span>  <span class="c1"># Cannot consume the rest of the string.</span>
+
+                <span class="c1"># Pull the parts out.</span>
+                <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;first&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p0</span><span class="p">[:</span><span class="n">firstl</span><span class="p">]</span>
+                <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;von&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p0</span><span class="p">[</span><span class="n">firstl</span> <span class="p">:</span> <span class="n">lastl</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;last&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p0</span><span class="p">[</span><span class="n">lastl</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+
+            <span class="c1"># No lowercase: last is the last word, first is everything else.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;first&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p0</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;last&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p0</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="c1"># Form 2 (&quot;von Last, First&quot;) or 3 (&quot;von Last, jr, First&quot;)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># As long as there is content in the first name partition, use it as-is.</span>
+        <span class="n">first</span> <span class="o">=</span> <span class="n">sections</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">first</span> <span class="ow">and</span> <span class="n">first</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;first&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">first</span>
+
+        <span class="c1"># And again with the jr part.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sections</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">jr</span> <span class="o">=</span> <span class="n">sections</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">jr</span> <span class="ow">and</span> <span class="n">jr</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;jr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jr</span>
+
+        <span class="c1"># Last name cannot be empty; if there is only one word in the first</span>
+        <span class="c1"># partition, we have to use it for the last name.</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="n">sections</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">last</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;last&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">last</span>
+
+        <span class="c1"># Have to look at the cases to figure it out.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lcases</span> <span class="o">=</span> <span class="n">cases</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c1"># At least one lowercase: von is the longest sequence of whitespace</span>
+            <span class="c1"># separated words whose last word does not start with an uppercase</span>
+            <span class="c1"># word, and last is the rest.</span>
+            <span class="k">if</span> <span class="mi">0</span> <span class="ow">in</span> <span class="n">lcases</span><span class="p">:</span>
+                <span class="n">split</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lcases</span><span class="p">)</span> <span class="o">-</span> <span class="n">lcases</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">split</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">lcases</span><span class="p">):</span>
+                    <span class="n">split</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Last cannot be empty.</span>
+                <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;von&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sections</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="n">split</span><span class="p">]</span>
+                <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;last&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sections</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">split</span><span class="p">:]</span>
+
+            <span class="c1"># All uppercase =&gt; all last.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">parts</span><span class="p">[</span><span class="s1">&#39;last&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sections</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># Done.</span>
+    <span class="k">return</span> <span class="n">parts</span></div>
+
+
+<div class="viewcode-block" id="getnames"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.getnames">[docs]</a><span class="k">def</span> <span class="nf">getnames</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert people names as surname, firstnames</span>
+<span class="sd">    or surname, initials.</span>
+
+<span class="sd">    :param names: a list of names</span>
+<span class="sd">    :type names: list</span>
+<span class="sd">    :returns: list -- Correctly formated names</span>
+
+<span class="sd">    .. Note::</span>
+<span class="sd">        This function is known to be too simple to handle properly</span>
+<span class="sd">        the complex rules. We would like to enhance this in forthcoming</span>
+<span class="sd">        releases.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tidynames</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">namestring</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+        <span class="n">namestring</span> <span class="o">=</span> <span class="n">namestring</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">namestring</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="s1">&#39;,&#39;</span> <span class="ow">in</span> <span class="n">namestring</span><span class="p">:</span>
+            <span class="n">namesplit</span> <span class="o">=</span> <span class="n">namestring</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="n">namesplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">firsts</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">namesplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">namesplit</span> <span class="o">=</span> <span class="n">namestring</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="n">namesplit</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">firsts</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;. &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">namesplit</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">last</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;jnr&#39;</span><span class="p">,</span> <span class="s1">&#39;jr&#39;</span><span class="p">,</span> <span class="s1">&#39;junior&#39;</span><span class="p">]:</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="n">firsts</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">firsts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ben&#39;</span><span class="p">,</span> <span class="s1">&#39;van&#39;</span><span class="p">,</span> <span class="s1">&#39;der&#39;</span><span class="p">,</span> <span class="s1">&#39;de&#39;</span><span class="p">,</span> <span class="s1">&#39;la&#39;</span><span class="p">,</span> <span class="s1">&#39;le&#39;</span><span class="p">]:</span>
+                <span class="n">last</span> <span class="o">=</span> <span class="n">firsts</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="n">last</span>
+        <span class="n">tidynames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">last</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">firsts</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">tidynames</span></div>
+
+
+<div class="viewcode-block" id="author"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.author">[docs]</a><span class="k">def</span> <span class="nf">author</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Split author field into a list of &quot;Name, Surname&quot;.</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;author&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;author&quot;</span><span class="p">]:</span>
+            <span class="n">record</span><span class="p">[</span><span class="s2">&quot;author&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">getnames</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;author&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; and &quot;</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;author&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+<div class="viewcode-block" id="editor"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.editor">[docs]</a><span class="k">def</span> <span class="nf">editor</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Turn the editor field into a dict composed of the original editor name</span>
+<span class="sd">    and a editor id (without coma or blank).</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;editor&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;editor&quot;</span><span class="p">]:</span>
+            <span class="n">record</span><span class="p">[</span><span class="s2">&quot;editor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">getnames</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;editor&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; and &quot;</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+            <span class="c1"># convert editor to object</span>
+            <span class="n">record</span><span class="p">[</span><span class="s2">&quot;editor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span>
+                    <span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="n">i</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;editor&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;editor&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+<div class="viewcode-block" id="page_double_hyphen"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.page_double_hyphen">[docs]</a><span class="k">def</span> <span class="nf">page_double_hyphen</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Separate pages by a double hyphen (--).</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;pages&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+        <span class="c1"># hyphen, non-breaking hyphen, en dash, em dash, hyphen-minus, minus sign</span>
+        <span class="n">separators</span> <span class="o">=</span> <span class="p">[</span><span class="sa">u</span><span class="s1">&#39;‐&#39;</span><span class="p">,</span> <span class="sa">u</span><span class="s1">&#39;‑&#39;</span><span class="p">,</span> <span class="sa">u</span><span class="s1">&#39;–&#39;</span><span class="p">,</span> <span class="sa">u</span><span class="s1">&#39;—&#39;</span><span class="p">,</span> <span class="sa">u</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="sa">u</span><span class="s1">&#39;−&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">separator</span> <span class="ow">in</span> <span class="n">separators</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">separator</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;pages&quot;</span><span class="p">]:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="n">separator</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;pages&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">separator</span><span class="p">)</span>
+                <span class="p">]</span>
+                <span class="n">record</span><span class="p">[</span><span class="s2">&quot;pages&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;--&#39;</span> <span class="o">+</span> <span class="n">p</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+<div class="viewcode-block" id="type"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.type">[docs]</a><span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Put the type into lower case.</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;type&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+        <span class="n">record</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+<div class="viewcode-block" id="journal"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.journal">[docs]</a><span class="k">def</span> <span class="nf">journal</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Turn the journal field into a dict composed of the original journal name</span>
+<span class="sd">    and a journal id (without coma or blank).</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;journal&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+        <span class="c1"># switch journal to object</span>
+        <span class="k">if</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]:</span>
+            <span class="n">record</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
+                <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
+            <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+<div class="viewcode-block" id="keyword"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.keyword">[docs]</a><span class="k">def</span> <span class="nf">keyword</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;,|;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Split keyword field into a list.</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :param sep: pattern used for the splitting regexp.</span>
+<span class="sd">    :type record: string, optional</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;keyword&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+        <span class="n">record</span><span class="p">[</span><span class="s2">&quot;keyword&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sep</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;keyword&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+        <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+<div class="viewcode-block" id="link"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.link">[docs]</a><span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;link&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+        <span class="n">links</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;  &quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;link&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">record</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="n">links</span><span class="p">:</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">link</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
+            <span class="n">linkobj</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">linkobj</span><span class="p">[</span><span class="s2">&quot;anchor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">linkobj</span><span class="p">[</span><span class="s2">&quot;format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">linkobj</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">record</span><span class="p">[</span><span class="s2">&quot;link&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">linkobj</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+<div class="viewcode-block" id="doi"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.doi">[docs]</a><span class="k">def</span> <span class="nf">doi</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s1">&#39;doi&#39;</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;link&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+            <span class="n">record</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">nodoi</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="s1">&#39;doi&#39;</span> <span class="ow">in</span> <span class="n">item</span><span class="p">:</span>
+                <span class="n">nodoi</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">nodoi</span><span class="p">:</span>
+            <span class="n">link</span> <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="s1">&#39;doi&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">link</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;10&#39;</span><span class="p">):</span>
+                <span class="n">link</span> <span class="o">=</span> <span class="s1">&#39;http://dx.doi.org/&#39;</span> <span class="o">+</span> <span class="n">link</span>
+            <span class="n">record</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">link</span><span class="p">,</span> <span class="s2">&quot;anchor&quot;</span><span class="p">:</span> <span class="s2">&quot;doi&quot;</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+<div class="viewcode-block" id="convert_to_unicode"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.convert_to_unicode">[docs]</a><span class="k">def</span> <span class="nf">convert_to_unicode</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert accent from latex to unicode style.</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">latex_to_unicode</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">]]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="n">latex_to_unicode</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">]</span> <span class="o">=</span> <span class="n">latex_to_unicode</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+<div class="viewcode-block" id="homogenize_latex_encoding"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.homogenize_latex_encoding">[docs]</a><span class="k">def</span> <span class="nf">homogenize_latex_encoding</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Homogenize the latex enconding style for bibtex</span>
+
+<span class="sd">    This function is experimental.</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#  First, we convert everything to unicode</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">convert_to_unicode</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+    <span class="c1"># And then, we fall back</span>
+    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">record</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;ID&#39;</span><span class="p">,):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Apply string_to_latex to: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+            <span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">]</span> <span class="o">=</span> <span class="n">string_to_latex</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="s1">&#39;title&#39;</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Protect uppercase in title&#39;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Before: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">])</span>
+                <span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">]</span> <span class="o">=</span> <span class="n">protect_uppercase</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">])</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;After: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="n">val</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">record</span></div>
+
+
+<div class="viewcode-block" id="add_plaintext_fields"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.add_plaintext_fields">[docs]</a><span class="k">def</span> <span class="nf">add_plaintext_fields</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For each field in the record, add a `plain_` field containing the</span>
+<span class="sd">    plaintext, stripped from braces and similar. See</span>
+<span class="sd">    https://github.com/sciunto-org/python-bibtexparser/issues/116.</span>
+
+<span class="sd">    :param record: the record.</span>
+<span class="sd">    :type record: dict</span>
+<span class="sd">    :returns: dict -- the modified record.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_strip_string</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">stripped</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;{&#39;</span><span class="p">,</span> <span class="s1">&#39;}&#39;</span><span class="p">]:</span>
+            <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">stripped</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">string</span>
+
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="n">plain_key</span> <span class="o">=</span> <span class="s2">&quot;plain_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">record</span><span class="p">[</span><span class="n">plain_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="n">plain_key</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">record</span><span class="p">[</span><span class="n">plain_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_strip_string</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="n">plain_key</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="n">plain_key</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">record</span><span class="p">[</span><span class="n">plain_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">subkey</span><span class="p">:</span> <span class="n">_strip_string</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">subkey</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="n">plain_key</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="n">plain_key</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">record</span><span class="p">[</span><span class="n">plain_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">_strip_string</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">record</span><span class="p">[</span><span class="n">plain_key</span><span class="p">]</span>
+            <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">record</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Michael Goerz
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

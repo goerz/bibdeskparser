@@ -1,0 +1,602 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tutorial &mdash; BibDeskParser 2.0.0-dev documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script type="text/javascript" src="_static/version-menu.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The bibdeskparser API" href="bibdeskparser.html" />
+    <link rel="prev" title="How to install and test?" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BibDeskParser
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.0.0-dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">How to install and test?</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#step-0-vocabulary">Step 0: Vocabulary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-1-prepare-a-bibtex-file">Step 1: Prepare a BibTeX file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-2-parse-it">Step 2: Parse it!</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#simplest-call">Simplest call</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parse-a-string">Parse a string</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tune-parser-s-options">Tune parser’s options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#step-3-export">Step 3: Export</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-a-bibtex-file-or-string">Create a BibTeX file or string</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#call-the-writer">Call the writer</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#step-4-add-salt-and-pepper">Step 4: Add salt and pepper</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#customizations">Customizations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#accents-and-weird-characters">Accents and weird characters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-bibtex-strings">Using bibtex strings</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bibdeskparser.html">The bibdeskparser API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">How to report a bug?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bibtex_conv.html">Bibtex tips, conventions and unrelated projects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BibDeskParser</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Tutorial</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="step-0-vocabulary">
+<h2>Step 0: Vocabulary<a class="headerlink" href="#step-0-vocabulary" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>An <strong>entry</strong> designates for example <cite>&#64;book{...}</cite>, <cite>&#64;article{...}</cite>, etc.</p></li>
+<li><p>A <strong>comment</strong> is written as <cite>&#64;comment{...}</cite>.</p></li>
+<li><p>A <strong>preamble</strong> is a <cite>&#64;preamble{...}</cite> block.</p></li>
+<li><p>A <strong>string</strong> is <cite>&#64;string{...}</cite>.</p></li>
+</ul>
+<p>In an entry, you can find</p>
+<ul class="simple">
+<li><p>an <strong>entry type</strong> like <cite>article</cite>, <cite>book</cite>, etc.</p></li>
+<li><p><strong>entry keys</strong> or <strong>keys</strong> such as <cite>author</cite>, <cite>title</cite>, <cite>year</cite>...</p></li>
+<li><p>and also <strong>records</strong>, which designates the values of those keys.</p></li>
+</ul>
+</div>
+<div class="section" id="step-1-prepare-a-bibtex-file">
+<h2>Step 1: Prepare a BibTeX file<a class="headerlink" href="#step-1-prepare-a-bibtex-file" title="Permalink to this headline">¶</a></h2>
+<p>First, we prepare a BibTeX sample file. This is just for the purpose of illustration:</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bibtex</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;@ARTICLE{Cesar2013,</span>
+<span class="gp">... </span><span class="s2">  author = {Jean César},</span>
+<span class="gp">... </span><span class="s2">  title = {An amazing title},</span>
+<span class="gp">... </span><span class="s2">  year = </span><span class="si">{2013}</span><span class="s2">,</span>
+<span class="gp">... </span><span class="s2">  volume = </span><span class="si">{12}</span><span class="s2">,</span>
+<span class="gp">... </span><span class="s2">  pages = {12--23},</span>
+<span class="gp">... </span><span class="s2">  journal = {Nice Journal},</span>
+<span class="gp">... </span><span class="s2">  abstract = {This is an abstract. This line should be long enough to test</span>
+<span class="gp">... </span><span class="s2">       multilines...},</span>
+<span class="gp">... </span><span class="s2">  comments = {A comment},</span>
+<span class="gp">... </span><span class="s2">  keywords = {keyword1, keyword2}</span>
+<span class="gp">... </span><span class="s2">}</span>
+<span class="gp">... </span><span class="s2">&quot;&quot;&quot;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibfile</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">bibfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">bibtex</span><span class="p">)</span>
+<span class="go">317</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-2-parse-it">
+<h2>Step 2: Parse it!<a class="headerlink" href="#step-2-parse-it" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="simplest-call">
+<h3>Simplest call<a class="headerlink" href="#simplest-call" title="Permalink to this headline">¶</a></h3>
+<p>OK. Everything is in place. Let’s parse the BibTeX file.</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">bibdeskparser</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pprint</span> <span class="k">import</span> <span class="n">pprint</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibtex_file</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">bib_database</span> <span class="o">=</span> <span class="n">bibdeskparser</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">bibtex_file</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pprint</span><span class="p">(</span><span class="n">bib_database</span><span class="o">.</span><span class="n">entries</span><span class="p">)</span>
+<span class="go">[{&#39;ENTRYTYPE&#39;: &#39;article&#39;,</span>
+<span class="go">  &#39;ID&#39;: &#39;Cesar2013&#39;,</span>
+<span class="go">  &#39;abstract&#39;: &#39;This is an abstract. This line should be long enough to test\n&#39;</span>
+<span class="go">              &#39;multilines...&#39;,</span>
+<span class="go">  &#39;author&#39;: &#39;Jean César&#39;,</span>
+<span class="go">  &#39;comments&#39;: &#39;A comment&#39;,</span>
+<span class="go">  &#39;journal&#39;: &#39;Nice Journal&#39;,</span>
+<span class="go">  &#39;keywords&#39;: &#39;keyword1, keyword2&#39;,</span>
+<span class="go">  &#39;pages&#39;: &#39;12--23&#39;,</span>
+<span class="go">  &#39;title&#39;: &#39;An amazing title&#39;,</span>
+<span class="go">  &#39;volume&#39;: &#39;12&#39;,</span>
+<span class="go">  &#39;year&#39;: &#39;2013&#39;}]</span>
+</pre></div>
+</div>
+<p>Note that, by convention, uppercase keys (ID, ENTRYTYPE) are data generated by the parser, while lowercase keys come from the original bibtex file.</p>
+<p>You can also print comments, preambles and string:</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib_database</span><span class="o">.</span><span class="n">comments</span><span class="p">)</span>
+<span class="go">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib_database</span><span class="o">.</span><span class="n">preambles</span><span class="p">)</span>
+<span class="go">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib_database</span><span class="o">.</span><span class="n">strings</span><span class="p">)</span>
+<span class="go">OrderedDict()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If your bibtex contains months defined as strings such as <code class="code docutils literal notranslate"><span class="pre">month</span> <span class="pre">=</span> <span class="pre">jan</span></code>, you will need to parse it with the <code class="code docutils literal notranslate"><span class="pre">common_strings</span></code> option:
+<code class="code docutils literal notranslate"><span class="pre">bib_database</span> <span class="pre">=</span> <span class="pre">bibdeskparser.bparser.BibTexParser(common_strings=True).parse_file(bibtex_file)</span></code>. (More in <a class="reference internal" href="#using-bibtex-strings">Using bibtex strings</a>.)</p>
+</div>
+</div>
+<div class="section" id="parse-a-string">
+<h3>Parse a string<a class="headerlink" href="#parse-a-string" title="Permalink to this headline">¶</a></h3>
+<p>If for some reason, you prefer to parse a string, that’s also possible:</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibtex_file</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">bibtex_str</span> <span class="o">=</span> <span class="n">bibtex_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib_database</span> <span class="o">=</span> <span class="n">bibdeskparser</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">bibtex_str</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="tune-parser-s-options">
+<h3>Tune parser’s options<a class="headerlink" href="#tune-parser-s-options" title="Permalink to this headline">¶</a></h3>
+<p>In the previous snippet, several default options are used.
+You can tweak them as you wish.</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bparser</span> <span class="k">import</span> <span class="n">BibTexParser</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">parser</span> <span class="o">=</span> <span class="n">BibTexParser</span><span class="p">(</span><span class="n">common_strings</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">parser</span><span class="o">.</span><span class="n">ignore_nonstandard_types</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">parser</span><span class="o">.</span><span class="n">homogenise_fields</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib_database</span> <span class="o">=</span> <span class="n">bibdeskparser</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">bibtex_str</span><span class="p">,</span> <span class="n">parser</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="code docutils literal notranslate"><span class="pre">common_strings</span></code> option needs to be set when the parser object is created and has no effect if changed afterwards.</p>
+</div>
+</div>
+</div>
+<div class="section" id="step-3-export">
+<h2>Step 3: Export<a class="headerlink" href="#step-3-export" title="Permalink to this headline">¶</a></h2>
+<p>Once you worked on your parsed database, you may want to export the result. This library provides some functions to help on that. However, you can write your own functions if you have specific requirements.</p>
+<div class="section" id="create-a-bibtex-file-or-string">
+<h3>Create a BibTeX file or string<a class="headerlink" href="#create-a-bibtex-file-or-string" title="Permalink to this headline">¶</a></h3>
+<p>The bibliographic data can be converted back into a string :</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bibtex_str</span> <span class="o">=</span> <span class="n">bibdeskparser</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">bib_database</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>or a BibTeX file like this:</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibtex_file</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">bibdeskparser</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">bib_database</span><span class="p">,</span> <span class="n">bibtex_file</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="call-the-writer">
+<h3>Call the writer<a class="headerlink" href="#call-the-writer" title="Permalink to this headline">¶</a></h3>
+<p>In the first section we prepared a BibTeX sample file, we can prepare the same file using pure python and the <code class="docutils literal notranslate"><span class="pre">BibTexWriter</span></code> class.</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bwriter</span> <span class="k">import</span> <span class="n">BibTexWriter</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bibdatabase</span> <span class="k">import</span> <span class="n">BibDatabase</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">db</span> <span class="o">=</span> <span class="n">BibDatabase</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">db</span><span class="o">.</span><span class="n">entries</span> <span class="o">=</span> <span class="p">[</span>
+<span class="gp">... </span>    <span class="p">{</span><span class="s1">&#39;journal&#39;</span><span class="p">:</span> <span class="s1">&#39;Nice Journal&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;comments&#39;</span><span class="p">:</span> <span class="s1">&#39;A comment&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;pages&#39;</span><span class="p">:</span> <span class="s1">&#39;12--23&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;month&#39;</span><span class="p">:</span> <span class="s1">&#39;jan&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;abstract&#39;</span><span class="p">:</span> <span class="s1">&#39;This is an abstract. This line should be long enough to test</span><span class="se">\n</span><span class="s1">multilines...&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="s1">&#39;An amazing title&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;year&#39;</span><span class="p">:</span> <span class="s1">&#39;2013&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;volume&#39;</span><span class="p">:</span> <span class="s1">&#39;12&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;ID&#39;</span><span class="p">:</span> <span class="s1">&#39;Cesar2013&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;author&#39;</span><span class="p">:</span> <span class="s1">&#39;Jean César&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;keyword&#39;</span><span class="p">:</span> <span class="s1">&#39;keyword1, keyword2&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;ENTRYTYPE&#39;</span><span class="p">:</span> <span class="s1">&#39;article&#39;</span><span class="p">}]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">writer</span> <span class="o">=</span> <span class="n">BibTexWriter</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibfile</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">bibfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">db</span><span class="p">))</span>
+<span class="go">317</span>
+</pre></div>
+</div>
+<p>This code generates the following file:</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibfile</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">bibfile</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<span class="go">@article{Cesar2013,</span>
+<span class="go"> abstract = {This is an abstract. This line should be long enough to test</span>
+<span class="go">multilines...},</span>
+<span class="go"> author = {Jean César},</span>
+<span class="go"> comments = {A comment},</span>
+<span class="go"> journal = {Nice Journal},</span>
+<span class="go"> keyword = {keyword1, keyword2},</span>
+<span class="go"> month = {jan},</span>
+<span class="go"> pages = {12--23},</span>
+<span class="go"> title = {An amazing title},</span>
+<span class="go"> volume = {12},</span>
+<span class="go"> year = {2013}</span>
+<span class="go">}</span>
+
+</pre></div>
+</div>
+<p>The writer also has several flags that can be enabled to customize the output file.
+For example we can use <code class="docutils literal notranslate"><span class="pre">indent</span></code> and <code class="docutils literal notranslate"><span class="pre">comma_first</span></code> to customize the previous entry, first the code:</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bwriter</span> <span class="k">import</span> <span class="n">BibTexWriter</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bibdatabase</span> <span class="k">import</span> <span class="n">BibDatabase</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">db</span> <span class="o">=</span> <span class="n">BibDatabase</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">db</span><span class="o">.</span><span class="n">entries</span> <span class="o">=</span> <span class="p">[</span>
+<span class="gp">... </span>    <span class="p">{</span><span class="s1">&#39;journal&#39;</span><span class="p">:</span> <span class="s1">&#39;Nice Journal&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;comments&#39;</span><span class="p">:</span> <span class="s1">&#39;A comment&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;pages&#39;</span><span class="p">:</span> <span class="s1">&#39;12--23&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;month&#39;</span><span class="p">:</span> <span class="s1">&#39;jan&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;abstract&#39;</span><span class="p">:</span> <span class="s1">&#39;This is an abstract. This line should be long enough to test</span><span class="se">\n</span><span class="s1">multilines...&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="s1">&#39;An amazing title&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;year&#39;</span><span class="p">:</span> <span class="s1">&#39;2013&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;volume&#39;</span><span class="p">:</span> <span class="s1">&#39;12&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;ID&#39;</span><span class="p">:</span> <span class="s1">&#39;Cesar2013&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;author&#39;</span><span class="p">:</span> <span class="s1">&#39;Jean César&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;keyword&#39;</span><span class="p">:</span> <span class="s1">&#39;keyword1, keyword2&#39;</span><span class="p">,</span>
+<span class="gp">... </span>     <span class="s1">&#39;ENTRYTYPE&#39;</span><span class="p">:</span> <span class="s1">&#39;article&#39;</span><span class="p">}]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">writer</span> <span class="o">=</span> <span class="n">BibTexWriter</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">writer</span><span class="o">.</span><span class="n">indent</span> <span class="o">=</span> <span class="s1">&#39;    &#39;</span>     <span class="c1"># indent entries with 4 spaces instead of one</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">writer</span><span class="o">.</span><span class="n">comma_first</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># place the comma at the beginning of the line</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibfile</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">bibfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">db</span><span class="p">))</span>
+<span class="go">357</span>
+</pre></div>
+</div>
+<p>This code results in the following, customized, file:</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibfile</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">bibfile</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<span class="go">@article{Cesar2013</span>
+<span class="go">    , abstract = {This is an abstract. This line should be long enough to test</span>
+<span class="go">multilines...}</span>
+<span class="go">    , author = {Jean César}</span>
+<span class="go">    , comments = {A comment}</span>
+<span class="go">    , journal = {Nice Journal}</span>
+<span class="go">    , keyword = {keyword1, keyword2}</span>
+<span class="go">    , month = {jan}</span>
+<span class="go">    , pages = {12--23}</span>
+<span class="go">    , title = {An amazing title}</span>
+<span class="go">    , volume = {12}</span>
+<span class="go">    , year = {2013}</span>
+<span class="go">}</span>
+
+</pre></div>
+</div>
+<p>Flags to the writer object can modify not only how an entry is printed but how several BibTeX entries are sorted and separated.
+See the <a class="reference internal" href="bibdeskparser.html#bibdeskparser-api"><span class="std std-ref">API</span></a> for the full list of flags.</p>
+</div>
+</div>
+<div class="section" id="step-4-add-salt-and-pepper">
+<h2>Step 4: Add salt and pepper<a class="headerlink" href="#step-4-add-salt-and-pepper" title="Permalink to this headline">¶</a></h2>
+<p>In this section, we discuss about some customizations and details.</p>
+<div class="section" id="customizations">
+<h3>Customizations<a class="headerlink" href="#customizations" title="Permalink to this headline">¶</a></h3>
+<p>By default, the parser does not alter the content of each field and keeps it as a simple string. There are many cases
+where this is not desired. For example, instead of a string with a multiple of authors, it could be parsed as a list.</p>
+<p>To modify field values during parsing, a callback function can be supplied to the parser which can be used to modify
+BibTeX entries. The library includes several functions which may be used. Alternatively, you can read them to create
+your own functions.</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">bibdeskparser</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bparser</span> <span class="k">import</span> <span class="n">BibTexParser</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.customization</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Let&#39;s define a function to customize our entries.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># It takes a record and return this record.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">customizations</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="sd">&quot;&quot;&quot;Use some functions delivered by the library</span>
+<span class="gp">...</span><span class="sd"></span>
+<span class="gp">... </span><span class="sd">    :param record: a record</span>
+<span class="gp">... </span><span class="sd">    :returns: -- customized record</span>
+<span class="gp">... </span><span class="sd">    &quot;&quot;&quot;</span>
+<span class="gp">... </span>    <span class="n">record</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">record</span> <span class="o">=</span> <span class="n">author</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">record</span> <span class="o">=</span> <span class="n">editor</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">record</span> <span class="o">=</span> <span class="n">journal</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">record</span> <span class="o">=</span> <span class="n">keyword</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">record</span> <span class="o">=</span> <span class="n">link</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">record</span> <span class="o">=</span> <span class="n">page_double_hyphen</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">record</span> <span class="o">=</span> <span class="n">doi</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">record</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibtex_file</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">BibTexParser</span><span class="p">()</span>
+<span class="gp">... </span>    <span class="n">parser</span><span class="o">.</span><span class="n">customization</span> <span class="o">=</span> <span class="n">customizations</span>
+<span class="gp">... </span>    <span class="n">bib_database</span> <span class="o">=</span> <span class="n">bibdeskparser</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">bibtex_file</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="n">parser</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">pprint</span><span class="p">(</span><span class="n">bib_database</span><span class="o">.</span><span class="n">entries</span><span class="p">)</span>
+<span class="go">[{&#39;ENTRYTYPE&#39;: &#39;article&#39;,</span>
+<span class="go">  &#39;ID&#39;: &#39;Cesar2013&#39;,</span>
+<span class="go">  &#39;abstract&#39;: &#39;This is an abstract. This line should be long enough to test\n&#39;</span>
+<span class="go">              &#39;multilines...&#39;,</span>
+<span class="go">  &#39;author&#39;: [&#39;César, Jean&#39;],</span>
+<span class="go">  &#39;comments&#39;: &#39;A comment&#39;,</span>
+<span class="go">  &#39;journal&#39;: {&#39;ID&#39;: &#39;NiceJournal&#39;, &#39;name&#39;: &#39;Nice Journal&#39;},</span>
+<span class="go">  &#39;keyword&#39;: [&#39;keyword1&#39;, &#39;keyword2&#39;],</span>
+<span class="go">  &#39;month&#39;: &#39;jan&#39;,</span>
+<span class="go">  &#39;pages&#39;: &#39;12--23&#39;,</span>
+<span class="go">  &#39;title&#39;: &#39;An amazing title&#39;,</span>
+<span class="go">  &#39;volume&#39;: &#39;12&#39;,</span>
+<span class="go">  &#39;year&#39;: &#39;2013&#39;}]</span>
+</pre></div>
+</div>
+<p>If you think that you have a customization which could be useful to others, please share with us!</p>
+</div>
+<div class="section" id="accents-and-weird-characters">
+<h3>Accents and weird characters<a class="headerlink" href="#accents-and-weird-characters" title="Permalink to this headline">¶</a></h3>
+<p>Your bibtex may contain accents and specific characters.
+They are sometimes coded like this <code class="docutils literal notranslate"><span class="pre">\'{e}</span></code> but this is not the correct way, <code class="docutils literal notranslate"><span class="pre">{\'e}</span></code> is preferred. Moreover, you may want to manipulate <code class="docutils literal notranslate"><span class="pre">é</span></code>. There is different situations:</p>
+<ul class="simple">
+<li><p>Case 1: you plan to use this library to work with latex and you assume that the original bibtex is clean. You have nothing to do.</p></li>
+<li><p>Case 2: you plan to use this library to work with latex but your bibtex is not really clean.</p></li>
+</ul>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bparser</span> <span class="k">import</span> <span class="n">BibTexParser</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.customization</span> <span class="k">import</span> <span class="n">homogenize_latex_encoding</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibtex_file</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">BibTexParser</span><span class="p">()</span>
+<span class="gp">... </span>    <span class="n">parser</span><span class="o">.</span><span class="n">customization</span> <span class="o">=</span> <span class="n">homogenize_latex_encoding</span>
+<span class="gp">... </span>    <span class="n">bib_database</span> <span class="o">=</span> <span class="n">bibdeskparser</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">bibtex_file</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="n">parser</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">pprint</span><span class="p">(</span><span class="n">bib_database</span><span class="o">.</span><span class="n">entries</span><span class="p">)</span>
+<span class="go">[{&#39;ENTRYTYPE&#39;: &#39;article&#39;,</span>
+<span class="go">  &#39;ID&#39;: &#39;Cesar2013&#39;,</span>
+<span class="go">  &#39;abstract&#39;: &#39;This is an abstract. This line should be long enough to test\n&#39;</span>
+<span class="go">              &#39;multilines...&#39;,</span>
+<span class="go">  &#39;author&#39;: &quot;Jean C{\\&#39;e}sar&quot;,</span>
+<span class="go">  &#39;comments&#39;: &#39;A comment&#39;,</span>
+<span class="go">  &#39;journal&#39;: &#39;Nice Journal&#39;,</span>
+<span class="go">  &#39;keyword&#39;: &#39;keyword1, keyword2&#39;,</span>
+<span class="go">  &#39;month&#39;: &#39;jan&#39;,</span>
+<span class="go">  &#39;pages&#39;: &#39;12--23&#39;,</span>
+<span class="go">  &#39;title&#39;: &#39;{A}n amazing title&#39;,</span>
+<span class="go">  &#39;volume&#39;: &#39;12&#39;,</span>
+<span class="go">  &#39;year&#39;: &#39;2013&#39;}]</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Case 3: you plan to use this library to work with something different and your bibtex is not really clean.
+Then, you probably want to use unicode.</p></li>
+</ul>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bparser</span> <span class="k">import</span> <span class="n">BibTexParser</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.customization</span> <span class="k">import</span> <span class="n">convert_to_unicode</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibtex_file</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">BibTexParser</span><span class="p">()</span>
+<span class="gp">... </span>    <span class="n">parser</span><span class="o">.</span><span class="n">customization</span> <span class="o">=</span> <span class="n">convert_to_unicode</span>
+<span class="gp">... </span>    <span class="n">bib_database</span> <span class="o">=</span> <span class="n">bibdeskparser</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">bibtex_file</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="n">parser</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">pprint</span><span class="p">(</span><span class="n">bib_database</span><span class="o">.</span><span class="n">entries</span><span class="p">)</span>
+<span class="go">[{&#39;ENTRYTYPE&#39;: &#39;article&#39;,</span>
+<span class="go">  &#39;ID&#39;: &#39;Cesar2013&#39;,</span>
+<span class="go">  &#39;abstract&#39;: &#39;This is an abstract. This line should be long enough to test\n&#39;</span>
+<span class="go">              &#39;multilines...&#39;,</span>
+<span class="go">  &#39;author&#39;: &#39;Jean César&#39;,</span>
+<span class="go">  &#39;comments&#39;: &#39;A comment&#39;,</span>
+<span class="go">  &#39;journal&#39;: &#39;Nice Journal&#39;,</span>
+<span class="go">  &#39;keyword&#39;: &#39;keyword1, keyword2&#39;,</span>
+<span class="go">  &#39;month&#39;: &#39;jan&#39;,</span>
+<span class="go">  &#39;pages&#39;: &#39;12--23&#39;,</span>
+<span class="go">  &#39;title&#39;: &#39;An amazing title&#39;,</span>
+<span class="go">  &#39;volume&#39;: &#39;12&#39;,</span>
+<span class="go">  &#39;year&#39;: &#39;2013&#39;}]</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you want to mix different customization functions, you can write your own function.</p>
+</div>
+</div>
+<div class="section" id="using-bibtex-strings">
+<h3>Using bibtex strings<a class="headerlink" href="#using-bibtex-strings" title="Permalink to this headline">¶</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>support for bibtex strings representation is still an experimental feature; the way strings are represented is likely to change in future releases.</p>
+</div>
+<p>Bibtex strings and string expressions are expanded by default into the value they represent.
+This behavior is controlled by the <code class="docutils literal notranslate"><span class="pre">interpolate_string</span></code> argument of the BibTexParser. It defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code> but can be set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, in which case bibtex strings and string expressions from input files are represented with the <code class="xref py py-class docutils literal notranslate"><span class="pre">bibdatabase.BibDataString</span></code> and <code class="xref py py-class docutils literal notranslate"><span class="pre">bibdatabase.BibDataStringExpression</span></code> from the <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdatabase</span></code> module. Both classes retain the intrinsic structure of the string or expression so that they can be written to a new file, the same way. Each instance provides a <code class="xref py py-func docutils literal notranslate"><span class="pre">get_value()</span></code> method to interpolate the string or expression and the module also provide an <code class="xref py py-func docutils literal notranslate"><span class="pre">bibdatabase.as_text()</span></code> helper to expand a string or an expression when needed.</p>
+<p>Using the code would yield the following output.</p>
+<div class="highlight-pycon3 notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bparser</span> <span class="k">import</span> <span class="n">BibTexParser</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bibdatabase</span> <span class="k">import</span> <span class="n">as_text</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bibtex</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;@STRING{ jean = &quot;Jean&quot;}</span>
+<span class="gp">...</span><span class="s2"></span>
+<span class="gp">... </span><span class="s2">@ARTICLE{Cesar2013,</span>
+<span class="gp">... </span><span class="s2">  author = jean # { César},</span>
+<span class="gp">... </span><span class="s2">  title = {An amazing title},</span>
+<span class="gp">... </span><span class="s2">  year = </span><span class="si">{2013}</span><span class="s2">,</span>
+<span class="gp">... </span><span class="s2">  month = jan,</span>
+<span class="gp">... </span><span class="s2">  volume = </span><span class="si">{12}</span><span class="s2">,</span>
+<span class="gp">... </span><span class="s2">  pages = {12--23},</span>
+<span class="gp">... </span><span class="s2">  journal = {Nice Journal},</span>
+<span class="gp">... </span><span class="s2">}</span>
+<span class="gp">... </span><span class="s2">&quot;&quot;&quot;</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bp</span> <span class="o">=</span> <span class="n">BibTexParser</span><span class="p">(</span><span class="n">interpolate_strings</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib_database</span> <span class="o">=</span> <span class="n">bp</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">bibtex</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pprint</span><span class="p">(</span><span class="n">bib_database</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="go">{&#39;ENTRYTYPE&#39;: &#39;article&#39;,</span>
+<span class="go"> &#39;ID&#39;: &#39;Cesar2013&#39;,</span>
+<span class="go"> &#39;author&#39;: BibDataStringExpression([BibDataString(&#39;jean&#39;), &#39; César&#39;]),</span>
+<span class="go"> &#39;journal&#39;: &#39;Nice Journal&#39;,</span>
+<span class="go"> &#39;month&#39;: BibDataStringExpression([BibDataString(&#39;jan&#39;)]),</span>
+<span class="go"> &#39;pages&#39;: &#39;12--23&#39;,</span>
+<span class="go"> &#39;title&#39;: &#39;An amazing title&#39;,</span>
+<span class="go"> &#39;volume&#39;: &#39;12&#39;,</span>
+<span class="go"> &#39;year&#39;: &#39;2013&#39;}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">as_text</span><span class="p">(</span><span class="n">bib_database</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;author&#39;</span><span class="p">])</span>
+<span class="go">&#39;Jean César&#39;</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="bibdeskparser.html" class="btn btn-neutral float-right" title="The bibdeskparser API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="install.html" class="btn btn-neutral float-left" title="How to install and test?" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Michael Goerz
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

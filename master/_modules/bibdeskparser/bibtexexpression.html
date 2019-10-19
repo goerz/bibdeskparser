@@ -1,0 +1,505 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>bibdeskparser.bibtexexpression &mdash; BibDeskParser 2.0.0-dev documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script type="text/javascript" src="../../_static/version-menu.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> BibDeskParser
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.0.0-dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">How to install and test?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bibdeskparser.html">The bibdeskparser API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../logging.html">How to report a bug?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bibtex_conv.html">Bibtex tips, conventions and unrelated projects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">BibDeskParser</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../bibdeskparser.html">bibdeskparser</a> &raquo;</li>
+        
+      <li>bibdeskparser.bibtexexpression</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for bibdeskparser.bibtexexpression</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pyparsing</span> <span class="k">as</span> <span class="nn">pp</span>
+
+<span class="kn">from</span> <span class="nn">.bibdatabase</span> <span class="k">import</span> <span class="n">BibDataStringExpression</span>
+
+
+<span class="c1"># General helpers</span>
+
+
+<span class="k">def</span> <span class="nf">_strip_after_new_lines</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Removes leading and trailing whitespaces in all but first line.&quot;&quot;&quot;</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">+</span> <span class="p">[</span><span class="n">l</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
+    <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="strip_after_new_lines"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bibtexexpression.strip_after_new_lines">[docs]</a><span class="k">def</span> <span class="nf">strip_after_new_lines</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Removes leading and trailing whitespaces in all but first line.</span>
+
+<span class="sd">    :param s: string or BibDataStringExpression</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">BibDataStringExpression</span><span class="p">):</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">apply_on_strings</span><span class="p">(</span><span class="n">_strip_after_new_lines</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_strip_after_new_lines</span><span class="p">(</span><span class="n">s</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="add_logger_parse_action"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bibtexexpression.add_logger_parse_action">[docs]</a><span class="k">def</span> <span class="nf">add_logger_parse_action</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">log_func</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Register a callback on expression parsing with the adequate message.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="n">log_func</span><span class="p">(</span><span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">resultsName</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
+
+    <span class="n">expr</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span><span class="n">action</span><span class="p">)</span></div>
+
+
+<span class="c1"># Parse action helpers</span>
+<span class="c1"># Helpers for returning values from the parsed tokens. Shaped as pyparsing&#39;s</span>
+<span class="c1"># parse actions. See pyparsing documentation for the arguments.</span>
+
+
+<span class="k">def</span> <span class="nf">first_token</span><span class="p">(</span><span class="n">string_</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+    <span class="c1"># TODO Handle this case correctly!</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">token</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">remove_trailing_newlines</span><span class="p">(</span><span class="n">string_</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">token</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">token</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">remove_braces</span><span class="p">(</span><span class="n">string_</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">token</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;{&#39;</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">token</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;}&#39;</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">token</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="field_to_pair"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bibtexexpression.field_to_pair">[docs]</a><span class="k">def</span> <span class="nf">field_to_pair</span><span class="p">(</span><span class="n">string_</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Looks for parsed element named &#39;Field&#39;.</span>
+
+<span class="sd">    :returns: (name, value).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Field&#39;</span><span class="p">)</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Value&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pp</span><span class="o">.</span><span class="n">ParseResults</span><span class="p">):</span>
+        <span class="c1"># For pyparsing &gt;= 2.3.1 (see #225 and API change note in pyparsing&#39;s</span>
+        <span class="c1"># Changelog).</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;FieldName&#39;</span><span class="p">),</span> <span class="n">strip_after_new_lines</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></div>
+
+
+<span class="c1"># Expressions helpers</span>
+
+
+<div class="viewcode-block" id="in_braces_or_pars"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bibtexexpression.in_braces_or_pars">[docs]</a><span class="k">def</span> <span class="nf">in_braces_or_pars</span><span class="p">(</span><span class="n">exp</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    exp -&gt; (exp)|{exp}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="s1">&#39;{&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">exp</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="s1">&#39;}&#39;</span><span class="p">))</span> <span class="o">|</span> <span class="p">(</span>
+        <span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="s1">&#39;(&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">exp</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="s1">&#39;)&#39;</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BibtexExpression"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bibtexexpression.BibtexExpression">[docs]</a><span class="k">class</span> <span class="nc">BibtexExpression</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gives access to pyparsing expressions.</span>
+
+<span class="sd">    Attributes are pyparsing expressions for the following elements:</span>
+
+<span class="sd">    * main_expression: the bibtex file</span>
+<span class="sd">    * string_def: a string definition</span>
+<span class="sd">    * preamble_decl: a preamble declaration</span>
+<span class="sd">    * explicit_comment: an explicit comment</span>
+<span class="sd">    * entry: an entry definition</span>
+<span class="sd">    * implicit_comment: an implicit comment</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ParseException</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">ParseException</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="c1"># Bibtex keywords</span>
+
+        <span class="n">string_def_start</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">CaselessKeyword</span><span class="p">(</span><span class="s2">&quot;@string&quot;</span><span class="p">)</span>
+        <span class="n">preamble_start</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">CaselessKeyword</span><span class="p">(</span><span class="s2">&quot;@preamble&quot;</span><span class="p">)</span>
+        <span class="n">comment_line_start</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">CaselessKeyword</span><span class="p">(</span><span class="s1">&#39;@comment&#39;</span><span class="p">)</span>
+
+        <span class="c1"># String names</span>
+        <span class="n">string_name</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">Word</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">alphanums</span> <span class="o">+</span> <span class="s1">&#39;_-:&#39;</span><span class="p">)(</span><span class="s1">&#39;StringName&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_string_name_parse_action</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">string_name</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_string_name_parse_action</span><span class="p">)</span>
+
+        <span class="c1"># Values inside bibtex fields</span>
+        <span class="c1"># Values can be integer or string expressions. The latter may use</span>
+        <span class="c1"># quoted or braced values.</span>
+
+        <span class="c1"># Integer values</span>
+        <span class="n">integer</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">Word</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">nums</span><span class="p">)(</span><span class="s1">&#39;Integer&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Braced values: braced values can contain nested (but balanced) braces</span>
+        <span class="n">braced_value_content</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">CharsNotIn</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">braced_value</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">Forward</span><span class="p">()</span>  <span class="c1"># Recursive definition for nested braces</span>
+        <span class="n">braced_value</span> <span class="o">&lt;&lt;=</span> <span class="n">pp</span><span class="o">.</span><span class="n">originalTextFor</span><span class="p">(</span>
+            <span class="s1">&#39;{&#39;</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">ZeroOrMore</span><span class="p">(</span><span class="n">braced_value</span> <span class="o">|</span> <span class="n">braced_value_content</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;}&#39;</span>
+        <span class="p">)(</span><span class="s1">&#39;BracedValue&#39;</span><span class="p">)</span>
+        <span class="n">braced_value</span><span class="o">.</span><span class="n">setParseAction</span><span class="p">(</span><span class="n">remove_braces</span><span class="p">)</span>
+        <span class="c1"># TODO add ignore for &quot;\}&quot; and &quot;\{&quot; ?</span>
+        <span class="c1"># TODO @ are not parsed by bibtex in braces</span>
+
+        <span class="c1"># Quoted values: may contain braced content with balanced braces</span>
+        <span class="n">brace_in_quoted</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">nestedExpr</span><span class="p">(</span><span class="s1">&#39;{&#39;</span><span class="p">,</span> <span class="s1">&#39;}&#39;</span><span class="p">,</span> <span class="n">ignoreExpr</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">text_in_quoted</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">CharsNotIn</span><span class="p">(</span><span class="s1">&#39;&quot;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="c1"># (quotes should be escaped by braces in quoted value)</span>
+        <span class="n">quoted_value</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">originalTextFor</span><span class="p">(</span>
+            <span class="s1">&#39;&quot;&#39;</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">ZeroOrMore</span><span class="p">(</span><span class="n">text_in_quoted</span> <span class="o">|</span> <span class="n">brace_in_quoted</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;&#39;</span>
+        <span class="p">)(</span><span class="s1">&#39;QuotedValue&#39;</span><span class="p">)</span>
+        <span class="n">quoted_value</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">removeQuotes</span><span class="p">)</span>
+
+        <span class="c1"># String expressions</span>
+        <span class="n">string_expr</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">delimitedList</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">quoted_value</span> <span class="o">|</span> <span class="n">braced_value</span> <span class="o">|</span> <span class="n">string_name</span><span class="p">),</span> <span class="n">delim</span><span class="o">=</span><span class="s1">&#39;#&#39;</span>
+        <span class="p">)(</span><span class="s1">&#39;StringExpression&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_string_expression_parse_action</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">string_expr</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_string_expr_parse_action</span><span class="p">)</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="n">integer</span> <span class="o">|</span> <span class="n">string_expr</span><span class="p">)(</span><span class="s1">&#39;Value&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Entries</span>
+
+        <span class="c1"># @EntryType { ...</span>
+        <span class="n">entry_type</span> <span class="o">=</span> <span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">Word</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">alphas</span><span class="p">))(</span><span class="s1">&#39;EntryType&#39;</span><span class="p">)</span>
+        <span class="n">entry_type</span><span class="o">.</span><span class="n">setParseAction</span><span class="p">(</span><span class="n">first_token</span><span class="p">)</span>
+
+        <span class="c1"># Entry key: any character up to a &#39;,&#39; without leading and trailing</span>
+        <span class="c1"># spaces. Also exclude spaces and prevent it from being empty.</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">SkipTo</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)(</span><span class="s1">&#39;Key&#39;</span><span class="p">)</span>  <span class="c1"># TODO Maybe also exclude @&#39;,\#}{~%</span>
+
+        <span class="k">def</span> <span class="nf">citekeyParseAction</span><span class="p">(</span><span class="n">string_</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Parse action for validating citekeys.</span>
+
+<span class="sd">            It ensures citekey is not empty and has no space.</span>
+
+<span class="sd">            :args: see pyparsing documentation.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">first_token</span><span class="p">(</span><span class="n">string_</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="bp">self</span><span class="o">.</span><span class="n">ParseException</span><span class="p">(</span>
+                    <span class="n">string_</span><span class="p">,</span>
+                    <span class="n">loc</span><span class="o">=</span><span class="n">location</span><span class="p">,</span>
+                    <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;Empty citekeys are not allowed.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">isspace</span><span class="p">():</span>
+                    <span class="k">raise</span> <span class="bp">self</span><span class="o">.</span><span class="n">ParseException</span><span class="p">(</span>
+                        <span class="n">string_</span><span class="p">,</span>
+                        <span class="n">loc</span><span class="o">=</span><span class="p">(</span><span class="n">location</span> <span class="o">+</span> <span class="n">i</span><span class="p">),</span>
+                        <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;Whitespace not allowed in citekeys.&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">return</span> <span class="n">key</span>
+
+        <span class="n">key</span><span class="o">.</span><span class="n">setParseAction</span><span class="p">(</span><span class="n">citekeyParseAction</span><span class="p">)</span>
+
+        <span class="c1"># Field name: word of letters, digits, dashes and underscores</span>
+        <span class="n">field_name</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">Word</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">alphanums</span> <span class="o">+</span> <span class="s1">&#39;_-().+&#39;</span><span class="p">)(</span><span class="s1">&#39;FieldName&#39;</span><span class="p">)</span>
+        <span class="n">field_name</span><span class="o">.</span><span class="n">setParseAction</span><span class="p">(</span><span class="n">first_token</span><span class="p">)</span>
+
+        <span class="c1"># Field: field_name = value</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">Group</span><span class="p">(</span><span class="n">field_name</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">value</span><span class="p">)(</span><span class="s1">&#39;Field&#39;</span><span class="p">)</span>
+        <span class="n">field</span><span class="o">.</span><span class="n">setParseAction</span><span class="p">(</span><span class="n">field_to_pair</span><span class="p">)</span>
+
+        <span class="c1"># List of fields: comma separeted fields</span>
+        <span class="n">field_list</span> <span class="o">=</span> <span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">delimitedList</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)))(</span>
+            <span class="s1">&#39;Fields&#39;</span>
+        <span class="p">)</span>
+        <span class="n">field_list</span><span class="o">.</span><span class="n">setParseAction</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Fields&#39;</span><span class="p">))}</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Entry: type, key, and fields</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entry</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">entry_type</span> <span class="o">+</span> <span class="n">in_braces_or_pars</span><span class="p">(</span><span class="n">key</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">field_list</span><span class="p">)</span>
+        <span class="p">)(</span><span class="s1">&#39;Entry&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Other stuff: comments, string definitions, and preamble declarations</span>
+
+        <span class="c1"># Explicit comments: @comment + everything up to next valid declaration</span>
+        <span class="c1"># starting on new line.</span>
+        <span class="n">not_an_implicit_comment</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pp</span><span class="o">.</span><span class="n">LineEnd</span><span class="p">()</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">Literal</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)</span>
+        <span class="p">)</span> <span class="o">|</span> <span class="n">pp</span><span class="o">.</span><span class="n">StringEnd</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">explicit_comment</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="n">comment_line_start</span><span class="p">)</span>
+            <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">originalTextFor</span><span class="p">(</span>
+                <span class="n">pp</span><span class="o">.</span><span class="n">SkipTo</span><span class="p">(</span><span class="n">not_an_implicit_comment</span><span class="p">),</span> <span class="n">asString</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+        <span class="p">)(</span><span class="s1">&#39;ExplicitComment&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">explicit_comment</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span><span class="n">remove_trailing_newlines</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">explicit_comment</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span><span class="n">remove_braces</span><span class="p">)</span>
+        <span class="c1"># Previous implementation included comment until next &#39;}&#39;.</span>
+        <span class="c1"># This is however not inline with bibtex behavior that is to only</span>
+        <span class="c1"># ignore until EOL. Brace stipping is arbitrary here but avoids</span>
+        <span class="c1"># duplication on bibtex write.</span>
+
+        <span class="c1"># Empty implicit_comments lead to infinite loop of zeroOrMore</span>
+        <span class="k">def</span> <span class="nf">mustNotBeEmpty</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="n">pp</span><span class="o">.</span><span class="n">ParseException</span><span class="p">(</span><span class="s2">&quot;Match must not be empty.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Implicit comments: not anything else</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">implicit_comment</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">originalTextFor</span><span class="p">(</span>
+            <span class="n">pp</span><span class="o">.</span><span class="n">SkipTo</span><span class="p">(</span><span class="n">not_an_implicit_comment</span><span class="p">)</span><span class="o">.</span><span class="n">setParseAction</span><span class="p">(</span><span class="n">mustNotBeEmpty</span><span class="p">),</span>
+            <span class="n">asString</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)(</span><span class="s1">&#39;ImplicitComment&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">implicit_comment</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span><span class="n">remove_trailing_newlines</span><span class="p">)</span>
+
+        <span class="c1"># String definition</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">string_def</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="n">string_def_start</span><span class="p">)</span>
+            <span class="o">+</span> <span class="n">in_braces_or_pars</span><span class="p">(</span>
+                <span class="n">string_name</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="n">string_expr</span><span class="p">(</span><span class="s1">&#39;StringValue&#39;</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)(</span><span class="s1">&#39;StringDefinition&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Preamble declaration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preamble_decl</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pp</span><span class="o">.</span><span class="n">Suppress</span><span class="p">(</span><span class="n">preamble_start</span><span class="p">)</span> <span class="o">+</span> <span class="n">in_braces_or_pars</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="p">)(</span><span class="s1">&#39;PreambleDeclaration&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Main bibtex expression</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_expression</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">ZeroOrMore</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">string_def</span>
+            <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">preamble_decl</span>
+            <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">explicit_comment</span>
+            <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">entry</span>
+            <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">implicit_comment</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="BibtexExpression.add_log_function"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bibtexexpression.BibtexExpression.add_log_function">[docs]</a>    <span class="k">def</span> <span class="nf">add_log_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_fun</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add notice to logger on entry, comment, preamble, string definitions.</span>
+
+<span class="sd">        :param log_fun: logger function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">entry</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">implicit_comment</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">explicit_comment</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">preamble_decl</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">string_def</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="n">add_logger_parse_action</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">log_fun</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BibtexExpression.set_string_name_parse_action"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bibtexexpression.BibtexExpression.set_string_name_parse_action">[docs]</a>    <span class="k">def</span> <span class="nf">set_string_name_parse_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fun</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the parseAction for string name expression.</span>
+
+<span class="sd">        .. Note::</span>
+
+<span class="sd">            For some reason pyparsing duplicates the string_name</span>
+<span class="sd">            expression so setting its parseAction a posteriori has no effect</span>
+<span class="sd">            in the context of a string expression. This is why this function</span>
+<span class="sd">            should be used instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_string_name_parse_action_fun</span> <span class="o">=</span> <span class="n">fun</span></div>
+
+    <span class="k">def</span> <span class="nf">_string_name_parse_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_string_name_parse_action_fun</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BibtexExpression.set_string_expression_parse_action"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bibtexexpression.BibtexExpression.set_string_expression_parse_action">[docs]</a>    <span class="k">def</span> <span class="nf">set_string_expression_parse_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fun</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the parseAction for string_expression expression.</span>
+
+<span class="sd">        .. Note::</span>
+
+<span class="sd">            See set_string_name_parse_action.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_string_expr_parse_action_fun</span> <span class="o">=</span> <span class="n">fun</span></div>
+
+    <span class="k">def</span> <span class="nf">_string_expr_parse_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_string_expr_parse_action_fun</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">parseFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_obj</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_expression</span><span class="o">.</span><span class="n">parseFile</span><span class="p">(</span><span class="n">file_obj</span><span class="p">,</span> <span class="n">parseAll</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Michael Goerz
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

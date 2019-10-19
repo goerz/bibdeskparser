@@ -1,0 +1,266 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Welcome to BibDeskParser’s documentation! &mdash; BibDeskParser 2.0.0-dev documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script type="text/javascript" src="_static/version-menu.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How to install and test?" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> BibDeskParser
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.0.0-dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">How to install and test?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bibdeskparser.html">The bibdeskparser API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">How to report a bug?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bibtex_conv.html">Bibtex tips, conventions and unrelated projects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">BibDeskParser</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#">Docs</a> &raquo;</li>
+        
+      <li>Welcome to BibDeskParser’s documentation!</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="welcome-to-bibdeskparser-s-documentation">
+<h1>Welcome to BibDeskParser’s documentation!<a class="headerlink" href="#welcome-to-bibdeskparser-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p><strong>Author</strong>: Michael Goerz</p>
+<p><strong>Devel</strong>: <a class="reference external" href="https://github.com/goerz/bibdeskparser">github.com project</a></p>
+<p><strong>Bugs</strong> <a class="reference external" href="https://github.com/goerz/bibdeskparser/issues">github.com</a></p>
+<p><strong>Generated</strong> Oct 29, 2019</p>
+<p><strong>License</strong> BSD</p>
+<p><strong>Version</strong> 2.0.0-dev</p>
+<p>BibDeskParser is a python library to parse bibtex files. The code relies on <a class="reference external" href="http://pyparsing.wikispaces.com/">pyparsing</a> and is tested with pytest.</p>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">How to install and test?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#how-to-install">How to install?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#step-0-vocabulary">Step 0: Vocabulary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#step-1-prepare-a-bibtex-file">Step 1: Prepare a BibTeX file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#step-2-parse-it">Step 2: Parse it!</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#step-3-export">Step 3: Export</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#step-4-add-salt-and-pepper">Step 4: Add salt and pepper</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bibdeskparser.html">The bibdeskparser API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bibdeskparser.html#module-bibdeskparser">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code> module — Parsing and writing BibTeX files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bibdeskparser.html#the-bibdeskparser-bibdatabase-module-the-bibliographic-database-object">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibdatabase</span></code> module — The bibliographic database object</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bibdeskparser.html#module-bibdeskparser.bparser">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bparser</span></code> module — Tune the default parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bibdeskparser.html#module-bibdeskparser.customization">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.customization</span></code> module — Functions to customize records</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bibdeskparser.html#the-bibdeskparser-bwriter-module-tune-the-default-writer">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bwriter</span></code> module — Tune the default writer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bibdeskparser.html#module-bibdeskparser.bibtexexpression">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibtexexpression</span></code> module — Parser’s core relying on pyparsing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">How to report a bug?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="logging.html#steps">Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html#logging-module-to-understand-failures">Logging module to understand failures</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bibtex_conv.html">Bibtex tips, conventions and unrelated projects</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bibtex_conv.html#format">Format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bibtex_conv.html#projects">Projects</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="other-projects">
+<h1>Other projects<a class="headerlink" href="#other-projects" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/sciunto-org/python-bibtexparser">https://github.com/sciunto-org/python-bibtexparser</a></p></li>
+<li><p><a class="reference external" href="http://pybtex.sourceforge.net/">http://pybtex.sourceforge.net/</a></p></li>
+<li><p><a class="reference external" href="http://pybliographer.org/">http://pybliographer.org/</a></p></li>
+<li><p><a class="reference external" href="https://github.com/matthew-brett/babybib">https://github.com/matthew-brett/babybib</a></p></li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="install.html" class="btn btn-neutral float-right" title="How to install and test?" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Michael Goerz
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

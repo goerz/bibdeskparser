@@ -1,0 +1,287 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>How to report a bug? &mdash; BibDeskParser 2.0.0-dev documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script type="text/javascript" src="_static/version-menu.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Bibtex tips, conventions and unrelated projects" href="bibtex_conv.html" />
+    <link rel="prev" title="The bibdeskparser API" href="bibdeskparser.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> BibDeskParser
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.0.0-dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">How to install and test?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bibdeskparser.html">The bibdeskparser API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How to report a bug?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#steps">Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#logging-module-to-understand-failures">Logging module to understand failures</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bibtex_conv.html">Bibtex tips, conventions and unrelated projects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BibDeskParser</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>How to report a bug?</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="how-to-report-a-bug">
+<h1>How to report a bug?<a class="headerlink" href="#how-to-report-a-bug" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="steps">
+<h2>Steps<a class="headerlink" href="#steps" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Make a minimal code, which reproduces the problem.</p></li>
+<li><p>Provide the code, the bibtex (if necessary), the output.</p></li>
+<li><p>For a parsing error, provide the expected output.</p></li>
+<li><p>For a crash, set the logger to the debug level (see below).</p></li>
+</ol>
+<p>If you want to provide a patch (that’s wonderful! thank you), please, take few minutes to write a unit test that fails without your contribution.</p>
+</div>
+<div class="section" id="logging-module-to-understand-failures">
+<h2>Logging module to understand failures<a class="headerlink" href="#logging-module-to-understand-failures" title="Permalink to this headline">¶</a></h2>
+<p>Syntax of bibtex files is simple but there are many possible variations. This library probably fails for some of them.</p>
+<p>Bibdeskparser includes a large quantity of debug messages which helps to understand why and where the parser fails.
+The example below can be used to print these messages in the console.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">logging.config</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dictConfig</span><span class="p">({</span>
+    <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s1">&#39;disable_existing_loggers&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+    <span class="s1">&#39;formatters&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;standard&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;format&#39;</span><span class="p">:</span> <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> [</span><span class="si">%(levelname)s</span><span class="s1">] </span><span class="si">%(name)s</span><span class="s1"> </span><span class="si">%(funcName)s</span><span class="s1">:</span><span class="si">%(lineno)d</span><span class="s1">: </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;default&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;level&#39;</span><span class="p">:</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;formatter&#39;</span><span class="p">:</span> <span class="s1">&#39;standard&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;class&#39;</span><span class="p">:</span><span class="s1">&#39;logging.StreamHandler&#39;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;loggers&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;formatter&#39;</span><span class="p">:</span> <span class="s1">&#39;standard&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="bp">True</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">})</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">bibtex</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;@ARTICLE{Cesar2013,</span>
+<span class="s2">      author = {Jean César},</span>
+<span class="s2">      title = {An amazing title},</span>
+<span class="s2">      year = {2013},</span>
+<span class="s2">      month = jan,</span>
+<span class="s2">      volume = {12},</span>
+<span class="s2">      pages = {12--23},</span>
+<span class="s2">      journal = {Nice Journal},</span>
+<span class="s2">      abstract = {This is an abstract. This line should be long enough to test</span>
+<span class="s2">             multilines...},</span>
+<span class="s2">      comments = {A comment},</span>
+<span class="s2">      keywords = {keyword1, keyword2},</span>
+<span class="s2">    }</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/tmp/bibtex.bib&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibfile</span><span class="p">:</span>
+        <span class="n">bibfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">bibtex</span><span class="p">)</span>
+
+    <span class="kn">from</span> <span class="nn">bibdeskparser.bparser</span> <span class="kn">import</span> <span class="n">BibTexParser</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/tmp/bibtex.bib&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibfile</span><span class="p">:</span>
+        <span class="n">bp</span> <span class="o">=</span> <span class="n">BibTexParser</span><span class="p">(</span><span class="n">bibfile</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">bp</span><span class="o">.</span><span class="n">get_entry_list</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>I recommend you to use this output if you would like to report a bug.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="bibtex_conv.html" class="btn btn-neutral float-right" title="Bibtex tips, conventions and unrelated projects" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="bibdeskparser.html" class="btn btn-neutral float-left" title="The bibdeskparser API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Michael Goerz
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

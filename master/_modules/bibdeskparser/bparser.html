@@ -1,0 +1,540 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>bibdeskparser.bparser &mdash; BibDeskParser 2.0.0-dev documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script type="text/javascript" src="../../_static/version-menu.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> BibDeskParser
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.0.0-dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">How to install and test?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bibdeskparser.html">The bibdeskparser API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../logging.html">How to report a bug?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bibtex_conv.html">Bibtex tips, conventions and unrelated projects</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">BibDeskParser</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../bibdeskparser.html">bibdeskparser</a> &raquo;</li>
+        
+      <li>bibdeskparser.bparser</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for bibdeskparser.bparser</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Original source: github.com/okfn/bibserver</span>
+<span class="c1"># Authors:</span>
+<span class="c1"># markmacgillivray</span>
+<span class="c1"># Etienne Posthumus (epoz)</span>
+<span class="c1"># Francois Boulogne &lt;fboulogne at april dot org&gt;</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">bibdeskparser.bibdatabase</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">BibDatabase</span><span class="p">,</span>
+    <span class="n">BibDataString</span><span class="p">,</span>
+    <span class="n">as_text</span><span class="p">,</span>
+    <span class="n">BibDataStringExpression</span><span class="p">,</span>
+    <span class="n">STANDARD_TYPES</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">bibdeskparser.bibtexexpression</span> <span class="k">import</span> <span class="n">BibtexExpression</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BibTexParser&#39;</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">BibTexParser</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="BibTexParser"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bparser.BibTexParser">[docs]</a><span class="k">class</span> <span class="nc">BibTexParser</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A parser for reading BibTeX bibliographic data files.</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        from bibdeskparser.bparser import BibTexParser</span>
+
+<span class="sd">        bibtex_str = ...</span>
+
+<span class="sd">        parser = BibTexParser()</span>
+<span class="sd">        parser.ignore_nonstandard_types = False</span>
+<span class="sd">        parser.homogenize_fields = False</span>
+<span class="sd">        parser.common_strings = False</span>
+<span class="sd">        bib_database = bibdeskparser.loads(bibtex_str, parser)</span>
+
+<span class="sd">    :param customization: function or None (default)</span>
+<span class="sd">        Customization to apply to parsed entries.</span>
+<span class="sd">    :param ignore_nonstandard_types: bool (default True)</span>
+<span class="sd">        If True ignores non-standard bibtex entry types.</span>
+<span class="sd">    :param homogenize_fields: bool (default False)</span>
+<span class="sd">        Common field name replacements (as set in alt_dict attribute).</span>
+<span class="sd">    :param interpolate_strings: bool (default True)</span>
+<span class="sd">        If True, replace bibtex string by their value, else uses</span>
+<span class="sd">        BibDataString objects.</span>
+<span class="sd">    :param common_strings: bool (default False)</span>
+<span class="sd">        Include common string definitions (e.g. month abbreviations) to</span>
+<span class="sd">        the bibtex file.</span>
+<span class="sd">    :param add_missing_from_crossref: bool (default False)</span>
+<span class="sd">        Resolve BibTeX references set in the crossref field for BibTeX entries</span>
+<span class="sd">        and add the fields from the referenced entry to the referencing entry.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        To catch the old API structure in which creating the parser would</span>
+<span class="sd">        immediately parse and return data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">BibTexParser</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># For backwards compatibility: if data is given, parse</span>
+            <span class="c1"># and return the `BibDatabase` object instead of the parser.</span>
+            <span class="k">return</span> <span class="n">parse</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">customization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">ignore_nonstandard_types</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">homogenize_fields</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">interpolate_strings</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">common_strings</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">add_missing_from_crossref</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a parser for rading BibTeX files</span>
+
+<span class="sd">        :return: parser</span>
+<span class="sd">        :rtype: `BibTexParser`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span> <span class="o">=</span> <span class="n">BibDatabase</span><span class="p">()</span>
+
+        <span class="c1">#: Load common strings such as months abbreviation</span>
+        <span class="c1">#: Default: `False`.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">common_strings</span> <span class="o">=</span> <span class="n">common_strings</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">common_strings</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span><span class="o">.</span><span class="n">load_common_strings</span><span class="p">()</span>
+
+        <span class="c1">#: Callback function to process BibTeX entries after parsing,</span>
+        <span class="c1">#: for example to create a list from a string with multiple values.</span>
+        <span class="c1">#: By default all BibTeX values are treated as simple strings.</span>
+        <span class="c1">#: Default: `None`.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">customization</span> <span class="o">=</span> <span class="n">customization</span>
+
+        <span class="c1">#: Ignore non-standard BibTeX types (`book`, `article`, etc).</span>
+        <span class="c1">#: Default: `True`.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_nonstandard_types</span> <span class="o">=</span> <span class="n">ignore_nonstandard_types</span>
+
+        <span class="c1">#: Sanitize BibTeX field names, for example change `url` to `link` etc.</span>
+        <span class="c1">#: Field names are always converted to lowercase names.</span>
+        <span class="c1">#: Default: `False`.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">homogenize_fields</span> <span class="o">=</span> <span class="n">homogenize_fields</span>
+
+        <span class="c1">#: Interpolate Bibtex Strings or keep the structure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interpolate_strings</span> <span class="o">=</span> <span class="n">interpolate_strings</span>
+
+        <span class="c1"># On some sample data files, the character encoding detection simply</span>
+        <span class="c1"># hangs We are going to default to utf8, and mandate it.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;utf8&#39;</span>
+
+        <span class="c1"># Add missing field from cross-ref</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_missing_from_crossref</span> <span class="o">=</span> <span class="n">add_missing_from_crossref</span>
+
+        <span class="c1"># pre-defined set of key changes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alt_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;keyw&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;keyword&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;keywords&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;keyword&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;authors&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;author&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;editors&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;editor&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;urls&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;url&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;link&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;url&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;links&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;url&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;subjects&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;subject&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;xref&#39;</span><span class="p">:</span> <span class="sa">u</span><span class="s1">&#39;crossref&#39;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Setup the parser expression</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_expressions</span><span class="p">()</span>
+
+<div class="viewcode-block" id="BibTexParser.parse"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bparser.BibTexParser.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bibtex_str</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse a BibTeX string into an object</span>
+
+<span class="sd">        :param bibtex_str: BibTeX string</span>
+<span class="sd">        :type: str or unicode</span>
+<span class="sd">        :param partial: If True, print errors only on parsing failures.</span>
+<span class="sd">            If False, an exception is raised.</span>
+<span class="sd">        :type: boolean</span>
+<span class="sd">        :return: bibliographic database</span>
+<span class="sd">        :rtype: BibDatabase</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bibtex_file_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bibtex_file_obj</span><span class="p">(</span><span class="n">bibtex_str</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">parseFile</span><span class="p">(</span><span class="n">bibtex_file_obj</span><span class="p">)</span>
+        <span class="k">except</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">ParseException</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Could not parse properly, starting at </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="o">.</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">partial</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">exc</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_missing_from_crossref</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span><span class="o">.</span><span class="n">add_missing_from_crossref</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span></div>
+
+<div class="viewcode-block" id="BibTexParser.parse_file"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bparser.BibTexParser.parse_file">[docs]</a>    <span class="k">def</span> <span class="nf">parse_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse a BibTeX file into an object</span>
+
+<span class="sd">        :param file: BibTeX file or file-like object</span>
+<span class="sd">        :type: file</span>
+<span class="sd">        :param partial: If True, print errors only on parsing failures.</span>
+<span class="sd">            If False, an exception is raised.</span>
+<span class="sd">        :type: boolean</span>
+<span class="sd">        :return: bibliographic database</span>
+<span class="sd">        :rtype: BibDatabase</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">partial</span><span class="o">=</span><span class="n">partial</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_init_expressions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Defines all parser expressions used internally.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span> <span class="o">=</span> <span class="n">BibtexExpression</span><span class="p">()</span>
+
+        <span class="c1"># Handle string as BibDataString object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">set_string_name_parse_action</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">BibDataString</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolate_strings</span><span class="p">:</span>
+            <span class="n">maybe_interpolate</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">expr</span><span class="p">:</span> <span class="n">as_text</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">maybe_interpolate</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">expr</span><span class="p">:</span> <span class="n">expr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">set_string_expression_parse_action</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">maybe_interpolate</span><span class="p">(</span>
+                <span class="n">BibDataStringExpression</span><span class="o">.</span><span class="n">expression_if_needed</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Add notice to logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">add_log_function</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">)</span>
+
+        <span class="c1"># Set actions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">entry</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_entry</span><span class="p">(</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;EntryType&#39;</span><span class="p">),</span> <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Key&#39;</span><span class="p">),</span> <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Fields&#39;</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">implicit_comment</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_comment</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">explicit_comment</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_comment</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">preamble_decl</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_preamble</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expr</span><span class="o">.</span><span class="n">string_def</span><span class="o">.</span><span class="n">addParseAction</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_string</span><span class="p">(</span>
+                <span class="n">t</span><span class="p">[</span><span class="s1">&#39;StringName&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">t</span><span class="p">[</span><span class="s1">&#39;StringValue&#39;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_bibtex_file_obj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bibtex_str</span><span class="p">):</span>
+        <span class="c1"># Some files have Byte-order marks inserted at the start</span>
+        <span class="n">byte</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\xef\xbb\xbf</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bibtex_str</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">byte</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">byte</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span> <span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">bibtex_str</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">byte</span><span class="p">:</span>
+                <span class="n">bibtex_str</span> <span class="o">=</span> <span class="n">bibtex_str</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">bibtex_str</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="n">byte</span><span class="p">:</span>
+                <span class="n">bibtex_str</span> <span class="o">=</span> <span class="n">bibtex_str</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+            <span class="n">bibtex_str</span> <span class="o">=</span> <span class="n">bibtex_str</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">encoding</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="n">bibtex_str</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_clean_val</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Clean instring before adding to dictionary</span>
+
+<span class="sd">        :param val: a value</span>
+<span class="sd">        :type val: string</span>
+<span class="sd">        :returns: string -- value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">val</span> <span class="ow">or</span> <span class="n">val</span> <span class="o">==</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">val</span>
+
+    <span class="k">def</span> <span class="nf">_clean_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Lowercase a key and return as unicode.</span>
+
+<span class="sd">        :param key: a key</span>
+<span class="sd">        :type key: string</span>
+<span class="sd">        :returns: (unicode) string -- value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">key</span>
+
+    <span class="k">def</span> <span class="nf">_clean_field_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Clean a bibtex field key and homogenize alternative forms.</span>
+
+<span class="sd">        :param key: a key</span>
+<span class="sd">        :type key: string</span>
+<span class="sd">        :returns: string -- value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">homogenize_fields</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alt_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alt_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">key</span>
+
+    <span class="k">def</span> <span class="nf">_add_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry_type</span><span class="p">,</span> <span class="n">entry_id</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds a parsed entry.</span>
+<span class="sd">        Includes checking type and fields, cleaning, applying customizations.</span>
+
+<span class="sd">        :param entry_type: the entry type</span>
+<span class="sd">        :type entry_type: string</span>
+<span class="sd">        :param entry_id: the entry bibid</span>
+<span class="sd">        :type entry_id: string</span>
+<span class="sd">        :param fields: the fields and values</span>
+<span class="sd">        :type fields: dictionary</span>
+<span class="sd">        :returns: string -- value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">entry_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_key</span><span class="p">(</span><span class="n">entry_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_nonstandard_types</span> <span class="ow">and</span> <span class="n">entry_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">STANDARD_TYPES</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s1">&#39;Entry type </span><span class="si">%s</span><span class="s1"> not standard. Not considered.&#39;</span><span class="p">,</span> <span class="n">entry_type</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="n">d</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_clean_field_key</span><span class="p">(</span><span class="n">key</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_val</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;ENTRYTYPE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry_type</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry_id</span>
+
+        <span class="n">crossref</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;crossref&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_missing_from_crossref</span> <span class="ow">and</span> <span class="n">crossref</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">d</span><span class="p">[</span><span class="s1">&#39;_crossref&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crossref</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">customization</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Apply customizations and return dict&#39;</span><span class="p">)</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">customization</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_comment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comment</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stores a comment in the list of comment.</span>
+
+<span class="sd">        :param comment: the parsed comment</span>
+<span class="sd">        :type comment: string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;Store comment in list of comments: &#39;</span> <span class="o">+</span> <span class="n">comment</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span><span class="o">.</span><span class="n">comments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string_key</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stores a new string in the string dictionary.</span>
+
+<span class="sd">        :param string_key: the string key</span>
+<span class="sd">        :type string_key: string</span>
+<span class="sd">        :param string: the string value</span>
+<span class="sd">        :type string: string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">string_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span><span class="o">.</span><span class="n">strings</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s1">&#39;Overwritting existing string for key: </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span> <span class="n">string_key</span>
+            <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;Store string: </span><span class="si">{}</span><span class="s1"> -&gt; </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">string_key</span><span class="p">,</span> <span class="n">string</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="n">string_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_val</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_preamble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">preamble</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stores a preamble.</span>
+
+<span class="sd">        :param preamble: the parsed preamble</span>
+<span class="sd">        :type preamble: string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Store preamble in list of preambles&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span><span class="o">.</span><span class="n">preambles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">preamble</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Michael Goerz
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

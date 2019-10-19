@@ -1,0 +1,47 @@
+.. _bibdeskparser_api:
+
+.. contents::
+
+The bibdeskparser API
+=====================
+
+The :mod:`bibdeskparser` module --- Parsing and writing BibTeX files
+--------------------------------------------------------------------
+
+.. automodule:: bibdeskparser
+    :members: load, loads, dumps, dump
+
+The :mod:`bibdeskparser.bibdatabase` module --- The bibliographic database object
+---------------------------------------------------------------------------------
+
+.. autoclass:: bibdeskparser.bibdatabase.BibDatabase
+    :members: entries, entries_dict, comments, strings, preambles
+
+The :mod:`bibdeskparser.bparser` module --- Tune the default parser
+-------------------------------------------------------------------
+
+.. automodule:: bibdeskparser.bparser
+    :members:
+
+The :mod:`bibdeskparser.customization` module --- Functions to customize records
+--------------------------------------------------------------------------------
+
+.. automodule:: bibdeskparser.customization
+    :members:
+
+Exception classes
+^^^^^^^^^^^^^^^^^
+.. autoclass:: bibdeskparser.customization.InvalidName
+
+The :mod:`bibdeskparser.bwriter` module --- Tune the default writer
+-------------------------------------------------------------------
+
+.. autoclass:: bibdeskparser.bwriter.BibTexWriter
+    :members:
+
+The :mod:`bibdeskparser.bibtexexpression` module --- Parser's core relying on pyparsing
+---------------------------------------------------------------------------------------
+
+.. automodule:: bibdeskparser.bibtexexpression
+    :members:
+
