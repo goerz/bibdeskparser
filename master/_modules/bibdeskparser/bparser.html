@@ -154,7 +154,12 @@
            <div itemprop="articleBody">
             
   <h1>Source code for bibdeskparser.bparser</h1><div class="highlight"><pre>
-<span></span><span class="c1"># Original source: github.com/okfn/bibserver</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module providing the BibTeX parser.</span>
+
+<span class="sd">You can instantiate new parsers to tune the defaults.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># Original source: github.com/okfn/bibserver</span>
 <span class="c1"># Authors:</span>
 <span class="c1"># markmacgillivray</span>
 <span class="c1"># Etienne Posthumus (epoz)</span>
@@ -298,10 +303,10 @@
         <span class="sd">&quot;&quot;&quot;Parse a BibTeX string into an object</span>
 
 <span class="sd">        :param bibtex_str: BibTeX string</span>
-<span class="sd">        :type: str or unicode</span>
+<span class="sd">        :type: str</span>
 <span class="sd">        :param partial: If True, print errors only on parsing failures.</span>
 <span class="sd">            If False, an exception is raised.</span>
-<span class="sd">        :type: boolean</span>
+<span class="sd">        :type: bool</span>
 <span class="sd">        :return: bibliographic database</span>
 <span class="sd">        :rtype: BibDatabase</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -322,10 +327,10 @@
         <span class="sd">&quot;&quot;&quot;Parse a BibTeX file into an object</span>
 
 <span class="sd">        :param file: BibTeX file or file-like object</span>
-<span class="sd">        :type: file</span>
+<span class="sd">        :type: typing.IO</span>
 <span class="sd">        :param partial: If True, print errors only on parsing failures.</span>
 <span class="sd">            If False, an exception is raised.</span>
-<span class="sd">        :type: boolean</span>
+<span class="sd">        :type: bool</span>
 <span class="sd">        :return: bibliographic database</span>
 <span class="sd">        :rtype: BibDatabase</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -400,11 +405,11 @@
         <span class="k">return</span> <span class="n">val</span>
 
     <span class="k">def</span> <span class="nf">_clean_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; Lowercase a key and return as unicode.</span>
+        <span class="sd">&quot;&quot;&quot; Lowercase a key and return as str.</span>
 
 <span class="sd">        :param key: a key</span>
-<span class="sd">        :type key: string</span>
-<span class="sd">        :returns: (unicode) string -- value</span>
+<span class="sd">        :type key: str</span>
+<span class="sd">        :returns: (str) string-value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -416,8 +421,8 @@
         <span class="sd">&quot;&quot;&quot; Clean a bibtex field key and homogenize alternative forms.</span>
 
 <span class="sd">        :param key: a key</span>
-<span class="sd">        :type key: string</span>
-<span class="sd">        :returns: string -- value</span>
+<span class="sd">        :type key: str</span>
+<span class="sd">        :returns: string-value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">homogenize_fields</span><span class="p">:</span>
@@ -430,12 +435,12 @@
 <span class="sd">        Includes checking type and fields, cleaning, applying customizations.</span>
 
 <span class="sd">        :param entry_type: the entry type</span>
-<span class="sd">        :type entry_type: string</span>
+<span class="sd">        :type entry_type: str</span>
 <span class="sd">        :param entry_id: the entry bibid</span>
-<span class="sd">        :type entry_id: string</span>
+<span class="sd">        :type entry_id: str</span>
 <span class="sd">        :param fields: the fields and values</span>
 <span class="sd">        :type fields: dictionary</span>
-<span class="sd">        :returns: string -- value</span>
+<span class="sd">        :returns: string-value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">entry_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_key</span><span class="p">(</span><span class="n">entry_type</span><span class="p">)</span>
@@ -464,7 +469,7 @@
 <span class="sd">        Stores a comment in the list of comment.</span>
 
 <span class="sd">        :param comment: the parsed comment</span>
-<span class="sd">        :type comment: string</span>
+<span class="sd">        :type comment: str</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
             <span class="s1">&#39;Store comment in list of comments: &#39;</span> <span class="o">+</span> <span class="n">comment</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
@@ -476,9 +481,9 @@
 <span class="sd">        Stores a new string in the string dictionary.</span>
 
 <span class="sd">        :param string_key: the string key</span>
-<span class="sd">        :type string_key: string</span>
+<span class="sd">        :type string_key: str</span>
 <span class="sd">        :param string: the string value</span>
-<span class="sd">        :type string: string</span>
+<span class="sd">        :type string: str</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">string_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span><span class="o">.</span><span class="n">strings</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
@@ -492,7 +497,7 @@
 <span class="sd">        Stores a preamble.</span>
 
 <span class="sd">        :param preamble: the parsed preamble</span>
-<span class="sd">        :type preamble: string</span>
+<span class="sd">        :type preamble: str</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Store preamble in list of preambles&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bib_database</span><span class="o">.</span><span class="n">preambles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">preamble</span><span class="p">)</span></div>

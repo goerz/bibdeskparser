@@ -154,7 +154,12 @@
            <div itemprop="articleBody">
             
   <h1>Source code for bibdeskparser.bwriter</h1><div class="highlight"><pre>
-<span></span><span class="c1"># Author: Francois Boulogne</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module providing the BibTeX writer.</span>
+
+<span class="sd">You can instantiate new writers to tune the defaults.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># Author: Francois Boulogne</span>
 <span class="c1"># License:</span>
 
 
@@ -190,7 +195,8 @@
 
 <div class="viewcode-block" id="BibTexWriter"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.bwriter.BibTexWriter">[docs]</a><span class="k">class</span> <span class="nc">BibTexWriter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Writer to convert a :class:`BibDatabase` object to a string or file formatted as a BibTeX file.</span>
+<span class="sd">    Writer to convert a :class:`~.BibDatabase` object to a string or file</span>
+<span class="sd">    formatted as a BibTeX file.</span>
 
 <span class="sd">    Example::</span>
 
@@ -240,7 +246,7 @@
 <span class="sd">        :param bib_database: bibliographic database to be converted to a BibTeX string</span>
 <span class="sd">        :type bib_database: BibDatabase</span>
 <span class="sd">        :return: BibTeX-formatted string</span>
-<span class="sd">        :rtype: str or unicode</span>
+<span class="sd">        :rtype: str</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">bibtex</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
         <span class="k">for</span> <span class="n">content</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">contents</span><span class="p">:</span>

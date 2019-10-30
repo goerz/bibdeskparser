@@ -89,15 +89,12 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">How to install and test?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">The bibdeskparser API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-bibdeskparser">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code> module — Parsing and writing BibTeX files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#the-bibdeskparser-bibdatabase-module-the-bibliographic-database-object">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibdatabase</span></code> module — The bibliographic database object</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-bibdeskparser.bparser">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bparser</span></code> module — Tune the default parser</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-bibdeskparser.customization">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.customization</span></code> module — Functions to customize records</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#exception-classes">Exception classes</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#the-bibdeskparser-bwriter-module-tune-the-default-writer">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bwriter</span></code> module — Tune the default writer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-bibdeskparser.bibtexexpression">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibtexexpression</span></code> module — Parser’s core relying on pyparsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-bibdeskparser">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code> module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-bibdeskparser.bibdatabase">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibdatabase</span></code> submodule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-bibdeskparser.bparser">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bparser</span></code> submodule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-bibdeskparser.customization">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.customization</span></code> submodule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-bibdeskparser.bwriter">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bwriter</span></code> submodule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-bibdeskparser.bibtexexpression">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibtexexpression</span></code> submodule</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="logging.html">How to report a bug?</a></li>
@@ -164,55 +161,35 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="contents topic" id="contents">
-<span id="bibdeskparser-api"></span><p class="topic-title first">Contents</p>
+  <div class="section" id="the-bibdeskparser-api">
+<span id="bibdeskparser-api"></span><h1>The bibdeskparser API<a class="headerlink" href="#the-bibdeskparser-api" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#the-bibdeskparser-api" id="id1">The bibdeskparser API</a></p>
-<ul>
-<li><p><a class="reference internal" href="#module-bibdeskparser" id="id2">The <a class="reference internal" href="#module-bibdeskparser" title="bibdeskparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a> module — Parsing and writing BibTeX files</a></p></li>
-<li><p><a class="reference internal" href="#the-bibdeskparser-bibdatabase-module-the-bibliographic-database-object" id="id3">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibdatabase</span></code> module — The bibliographic database object</a></p></li>
-<li><p><a class="reference internal" href="#module-bibdeskparser.bparser" id="id4">The <a class="reference internal" href="#module-bibdeskparser.bparser" title="bibdeskparser.bparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bparser</span></code></a> module — Tune the default parser</a></p></li>
-<li><p><a class="reference internal" href="#module-bibdeskparser.customization" id="id5">The <a class="reference internal" href="#module-bibdeskparser.customization" title="bibdeskparser.customization"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.customization</span></code></a> module — Functions to customize records</a></p>
-<ul>
-<li><p><a class="reference internal" href="#exception-classes" id="id6">Exception classes</a></p></li>
-</ul>
-</li>
-<li><p><a class="reference internal" href="#the-bibdeskparser-bwriter-module-tune-the-default-writer" id="id7">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bwriter</span></code> module — Tune the default writer</a></p></li>
-<li><p><a class="reference internal" href="#module-bibdeskparser.bibtexexpression" id="id8">The <a class="reference internal" href="#module-bibdeskparser.bibtexexpression" title="bibdeskparser.bibtexexpression"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibtexexpression</span></code></a> module — Parser’s core relying on pyparsing</a></p></li>
-</ul>
-</li>
+<li><p><a class="reference internal" href="#module-bibdeskparser" id="id1">The <a class="reference internal" href="#module-bibdeskparser" title="bibdeskparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a> module</a></p></li>
+<li><p><a class="reference internal" href="#module-bibdeskparser.bibdatabase" id="id2">The <a class="reference internal" href="#module-bibdeskparser.bibdatabase" title="bibdeskparser.bibdatabase"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibdatabase</span></code></a> submodule</a></p></li>
+<li><p><a class="reference internal" href="#module-bibdeskparser.bparser" id="id3">The <a class="reference internal" href="#module-bibdeskparser.bparser" title="bibdeskparser.bparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bparser</span></code></a> submodule</a></p></li>
+<li><p><a class="reference internal" href="#module-bibdeskparser.customization" id="id4">The <a class="reference internal" href="#module-bibdeskparser.customization" title="bibdeskparser.customization"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.customization</span></code></a> submodule</a></p></li>
+<li><p><a class="reference internal" href="#module-bibdeskparser.bwriter" id="id5">The <a class="reference internal" href="#module-bibdeskparser.bwriter" title="bibdeskparser.bwriter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bwriter</span></code></a> submodule</a></p></li>
+<li><p><a class="reference internal" href="#module-bibdeskparser.bibtexexpression" id="id6">The <a class="reference internal" href="#module-bibdeskparser.bibtexexpression" title="bibdeskparser.bibtexexpression"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibtexexpression</span></code></a> submodule</a></p></li>
 </ul>
 </div>
-<div class="section" id="the-bibdeskparser-api">
-<h1><a class="toc-backref" href="#id1">The bibdeskparser API</a><a class="headerlink" href="#the-bibdeskparser-api" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="module-bibdeskparser">
-<span id="the-bibdeskparser-module-parsing-and-writing-bibtex-files"></span><h2><a class="toc-backref" href="#id2">The <a class="reference internal" href="#module-bibdeskparser" title="bibdeskparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a> module — Parsing and writing BibTeX files</a><a class="headerlink" href="#module-bibdeskparser" title="Permalink to this headline">¶</a></h2>
-<p><a class="reference external" href="http://en.wikipedia.org/wiki/BibTeX">BibTeX</a> is a bibliographic data file format.</p>
-<p>The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibtexparser</span></code> module can parse BibTeX files and write them. The API is similar to the
-<a class="reference external" href="https://docs.python.org/3.7/library/json.html#module-json" title="(in Python v3.7)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">json</span></code></a> module. The parsed data is returned as a simple <code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code> object with the main attribute being
-<code class="xref py py-attr docutils literal notranslate"><span class="pre">entries</span></code> representing bibliographic sources such as books and journal articles.</p>
-<p>The following functions provide a quick and basic way to manipulate a BibTeX file.
-More advanced features are also available in this module.</p>
-<p>Parsing a file is as simple as:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">bibtexparser</span>
-<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibtex_file</span><span class="p">:</span>
-   <span class="n">bibtex_database</span> <span class="o">=</span> <span class="n">bibtexparser</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">bibtex_file</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>And writing:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">bibtexparser</span>
-<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibtex_file</span><span class="p">:</span>
-    <span class="n">bibtexparser</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">bibtex_database</span><span class="p">,</span> <span class="n">bibtex_file</span><span class="p">)</span>
-</pre></div>
-</div>
+<span id="the-bibdeskparser-module"></span><h2><a class="toc-backref" href="#id1">The <a class="reference internal" href="#module-bibdeskparser" title="bibdeskparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a> module</a><a class="headerlink" href="#module-bibdeskparser" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="#module-bibdeskparser" title="bibdeskparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a> module can parse BibTeX files and write them. The API
+is similar to the <a class="reference external" href="https://docs.python.org/3.7/library/json.html#module-json" title="(in Python v3.7)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">json</span></code></a> module. The parsed data is returned as a simple
+<a class="reference internal" href="#bibdeskparser.bibdatabase.BibDatabase" title="bibdeskparser.bibdatabase.BibDatabase"><code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code></a> object with the main attribute being
+<a class="reference internal" href="#bibdeskparser.bibdatabase.BibDatabase.entries" title="bibdeskparser.bibdatabase.BibDatabase.entries"><code class="xref py py-attr docutils literal notranslate"><span class="pre">entries</span></code></a> representing bibliographic sources such as books
+and journal articles.</p>
+<p>The following functions provide a quick and basic way to manipulate a BibTeX
+file.  More advanced features are also available in this module.</p>
 <dl class="function">
 <dt id="bibdeskparser.load">
 <code class="sig-prename descclassname">bibdeskparser.</code><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">bibtex_file</em>, <em class="sig-param">parser=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bibdeskparser.html#load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bibdeskparser.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load <code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code> object from a file</p>
+<dd><p>Load <a class="reference internal" href="#bibdeskparser.bibdatabase.BibDatabase" title="bibdeskparser.bibdatabase.BibDatabase"><code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code></a> object from a file</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>bibtex_file</strong> (<em>file</em>) – input file to be parsed</p></li>
+<li><p><strong>bibtex_file</strong> (<a class="reference external" href="https://docs.python.org/3.7/library/typing.html#typing.IO" title="(in Python v3.7)"><em>typing.IO</em></a>) – input file handle to be parsed</p></li>
 <li><p><strong>parser</strong> (<a class="reference internal" href="#bibdeskparser.bparser.BibTexParser" title="bibdeskparser.bparser.BibTexParser"><em>BibTexParser</em></a>) – custom parser to use (optional)</p></li>
 </ul>
 </dd>
@@ -223,22 +200,16 @@ More advanced features are also available in this module.</p>
 <dd class="field-odd"><p><a class="reference internal" href="#bibdeskparser.bibdatabase.BibDatabase" title="bibdeskparser.bibdatabase.BibDatabase">BibDatabase</a></p>
 </dd>
 </dl>
-<p>Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">bibtexparser</span>
-<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibtex_file</span><span class="p">:</span>
-   <span class="n">bibtex_database</span> <span class="o">=</span> <span class="n">bibtexparser</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">bibtex_file</span><span class="p">)</span>
-</pre></div>
-</div>
 </dd></dl>
 
 <dl class="function">
 <dt id="bibdeskparser.loads">
 <code class="sig-prename descclassname">bibdeskparser.</code><code class="sig-name descname">loads</code><span class="sig-paren">(</span><em class="sig-param">bibtex_str</em>, <em class="sig-param">parser=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bibdeskparser.html#loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bibdeskparser.loads" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load <code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code> object from a string</p>
+<dd><p>Load <a class="reference internal" href="#bibdeskparser.bibdatabase.BibDatabase" title="bibdeskparser.bibdatabase.BibDatabase"><code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code></a> object from a string</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>bibtex_str</strong> (<a class="reference external" href="https://docs.python.org/3.7/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em> or </em><em>unicode</em>) – input BibTeX string to be parsed</p></li>
+<li><p><strong>bibtex_str</strong> (<a class="reference external" href="https://docs.python.org/3.7/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – input BibTeX string to be parsed</p></li>
 <li><p><strong>parser</strong> (<a class="reference internal" href="#bibdeskparser.bparser.BibTexParser" title="bibdeskparser.bparser.BibTexParser"><em>BibTexParser</em></a>) – custom parser to use (optional)</p></li>
 </ul>
 </dd>
@@ -254,7 +225,7 @@ More advanced features are also available in this module.</p>
 <dl class="function">
 <dt id="bibdeskparser.dumps">
 <code class="sig-prename descclassname">bibdeskparser.</code><code class="sig-name descname">dumps</code><span class="sig-paren">(</span><em class="sig-param">bib_database</em>, <em class="sig-param">writer=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bibdeskparser.html#dumps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bibdeskparser.dumps" title="Permalink to this definition">¶</a></dt>
-<dd><p>Dump <code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code> object to a BibTeX string</p>
+<dd><p>Dump <a class="reference internal" href="#bibdeskparser.bibdatabase.BibDatabase" title="bibdeskparser.bibdatabase.BibDatabase"><code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code></a> object to a BibTeX string</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -266,7 +237,7 @@ More advanced features are also available in this module.</p>
 <dd class="field-even"><p>BibTeX string</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>unicode</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.7/library/stdtypes.html#str" title="(in Python v3.7)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -274,27 +245,22 @@ More advanced features are also available in this module.</p>
 <dl class="function">
 <dt id="bibdeskparser.dump">
 <code class="sig-prename descclassname">bibdeskparser.</code><code class="sig-name descname">dump</code><span class="sig-paren">(</span><em class="sig-param">bib_database</em>, <em class="sig-param">bibtex_file</em>, <em class="sig-param">writer=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bibdeskparser.html#dump"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bibdeskparser.dump" title="Permalink to this definition">¶</a></dt>
-<dd><p>Dump <code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code> object as a BibTeX text file</p>
+<dd><p>Dump <a class="reference internal" href="#bibdeskparser.bibdatabase.BibDatabase" title="bibdeskparser.bibdatabase.BibDatabase"><code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code></a> object as a BibTeX text file</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>bib_database</strong> (<a class="reference internal" href="#bibdeskparser.bibdatabase.BibDatabase" title="bibdeskparser.bibdatabase.BibDatabase"><em>BibDatabase</em></a>) – bibliographic database object</p></li>
-<li><p><strong>bibtex_file</strong> (<em>file</em>) – file to write to</p></li>
+<li><p><strong>bibtex_file</strong> (<a class="reference external" href="https://docs.python.org/3.7/library/typing.html#typing.IO" title="(in Python v3.7)"><em>typing.IO</em></a>) – file to write to</p></li>
 <li><p><strong>writer</strong> (<a class="reference internal" href="#bibdeskparser.bwriter.BibTexWriter" title="bibdeskparser.bwriter.BibTexWriter"><em>BibTexWriter</em></a>) – custom writer to use (optional) (not yet implemented)</p></li>
 </ul>
 </dd>
 </dl>
-<p>Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">bibtexparser</span>
-<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;bibtex.bib&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">bibtex_file</span><span class="p">:</span>
-    <span class="n">bibtexparser</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">bibtex_database</span><span class="p">,</span> <span class="n">bibtex_file</span><span class="p">)</span>
-</pre></div>
-</div>
 </dd></dl>
 
 </div>
-<div class="section" id="the-bibdeskparser-bibdatabase-module-the-bibliographic-database-object">
-<h2><a class="toc-backref" href="#id3">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibdatabase</span></code> module — The bibliographic database object</a><a class="headerlink" href="#the-bibdeskparser-bibdatabase-module-the-bibliographic-database-object" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-bibdeskparser.bibdatabase">
+<span id="the-bibdeskparser-bibdatabase-submodule"></span><h2><a class="toc-backref" href="#id2">The <a class="reference internal" href="#module-bibdeskparser.bibdatabase" title="bibdeskparser.bibdatabase"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibdatabase</span></code></a> submodule</a><a class="headerlink" href="#module-bibdeskparser.bibdatabase" title="Permalink to this headline">¶</a></h2>
+<p>Module providing the bibliographic database object.</p>
 <dl class="class">
 <dt id="bibdeskparser.bibdatabase.BibDatabase">
 <em class="property">class </em><code class="sig-prename descclassname">bibdeskparser.bibdatabase.</code><code class="sig-name descname">BibDatabase</code><a class="reference internal" href="_modules/bibdeskparser/bibdatabase.html#BibDatabase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bibdeskparser.bibdatabase.BibDatabase" title="Permalink to this definition">¶</a></dt>
@@ -340,7 +306,9 @@ The dict key is the BibTeX entry key</p>
 
 </div>
 <div class="section" id="module-bibdeskparser.bparser">
-<span id="the-bibdeskparser-bparser-module-tune-the-default-parser"></span><h2><a class="toc-backref" href="#id4">The <a class="reference internal" href="#module-bibdeskparser.bparser" title="bibdeskparser.bparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bparser</span></code></a> module — Tune the default parser</a><a class="headerlink" href="#module-bibdeskparser.bparser" title="Permalink to this headline">¶</a></h2>
+<span id="the-bibdeskparser-bparser-submodule"></span><h2><a class="toc-backref" href="#id3">The <a class="reference internal" href="#module-bibdeskparser.bparser" title="bibdeskparser.bparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bparser</span></code></a> submodule</a><a class="headerlink" href="#module-bibdeskparser.bparser" title="Permalink to this headline">¶</a></h2>
+<p>Module providing the BibTeX parser.</p>
+<p>You can instantiate new parsers to tune the defaults.</p>
 <dl class="class">
 <dt id="bibdeskparser.bparser.BibTexParser">
 <em class="property">class </em><code class="sig-prename descclassname">bibdeskparser.bparser.</code><code class="sig-name descname">BibTexParser</code><span class="sig-paren">(</span><em class="sig-param">data=None</em>, <em class="sig-param">customization=None</em>, <em class="sig-param">ignore_nonstandard_types=True</em>, <em class="sig-param">homogenize_fields=False</em>, <em class="sig-param">interpolate_strings=True</em>, <em class="sig-param">common_strings=False</em>, <em class="sig-param">add_missing_from_crossref=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bibdeskparser/bparser.html#BibTexParser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bibdeskparser.bparser.BibTexParser" title="Permalink to this definition">¶</a></dt>
@@ -428,10 +396,10 @@ If False, an exception is raised.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Type</dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.7/library/stdtypes.html#str" title="(in Python v3.7)">str</a> or unicode</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.7/library/stdtypes.html#str" title="(in Python v3.7)">str</a></p>
 </dd>
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>boolean</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.7/library/functions.html#bool" title="(in Python v3.7)">bool</a></p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>bibliographic database</p>
@@ -455,10 +423,10 @@ If False, an exception is raised.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Type</dt>
-<dd class="field-even"><p>file</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.7/library/typing.html#typing.IO" title="(in Python v3.7)">typing.IO</a></p>
 </dd>
 <dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>boolean</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.7/library/functions.html#bool" title="(in Python v3.7)">bool</a></p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>bibliographic database</p>
@@ -473,7 +441,7 @@ If False, an exception is raised.</p></li>
 
 </div>
 <div class="section" id="module-bibdeskparser.customization">
-<span id="the-bibdeskparser-customization-module-functions-to-customize-records"></span><h2><a class="toc-backref" href="#id5">The <a class="reference internal" href="#module-bibdeskparser.customization" title="bibdeskparser.customization"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.customization</span></code></a> module — Functions to customize records</a><a class="headerlink" href="#module-bibdeskparser.customization" title="Permalink to this headline">¶</a></h2>
+<span id="the-bibdeskparser-customization-submodule"></span><h2><a class="toc-backref" href="#id4">The <a class="reference internal" href="#module-bibdeskparser.customization" title="bibdeskparser.customization"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.customization</span></code></a> submodule</a><a class="headerlink" href="#module-bibdeskparser.customization" title="Permalink to this headline">¶</a></h2>
 <p>A set of functions useful for customizing bibtex fields.
 You can find inspiration from these functions to design yours.
 Each of them takes a record and return the modified record.</p>
@@ -484,15 +452,15 @@ Each of them takes a record and return the modified record.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> (<em>string</em>) – a string containing a single name</p></li>
-<li><p><strong>strict_mode</strong> (<em>Boolean</em>) – whether to use strict mode</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.7/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – a string containing a single name</p></li>
+<li><p><strong>strict_mode</strong> (<a class="reference external" href="https://docs.python.org/3.7/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – whether to use strict mode</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>dictionary of constituent parts</p>
 </dd>
 <dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#bibdeskparser.customization.InvalidName" title="bibdeskparser.customization.InvalidName"><strong>customization.InvalidName</strong></a> – If an invalid name is given and
+<dd class="field-odd"><p><a class="reference internal" href="#bibdeskparser.customization.InvalidName" title="bibdeskparser.customization.InvalidName"><strong>InvalidName</strong></a> – If an invalid name is given and
 <code class="docutils literal notranslate"><span class="pre">strict_mode</span> <span class="pre">=</span> <span class="pre">True</span></code>.</p>
 </dd>
 </dl>
@@ -511,7 +479,7 @@ list.  If the input has no non-whitespace characters, a blank dictionary is
 returned.</p>
 <p>It is capable of detecting some errors with the input name. If the
 <code class="docutils literal notranslate"><span class="pre">strict_mode</span></code> parameter is <code class="docutils literal notranslate"><span class="pre">True</span></code>, which is the default, this results in
-a <code class="xref py py-class docutils literal notranslate"><span class="pre">customization.InvalidName</span></code> exception being raised. If it is
+a <a class="reference internal" href="#bibdeskparser.customization.InvalidName" title="bibdeskparser.customization.InvalidName"><code class="xref py py-class docutils literal notranslate"><span class="pre">InvalidName</span></code></a> exception being raised. If it is
 <code class="docutils literal notranslate"><span class="pre">False</span></code>, the function continues, working around the error as best it can.
 The errors that can be detected are listed below along with the handling
 for non-strict mode:</p>
@@ -580,7 +548,7 @@ and a editor id (without coma or blank).</p>
 <dt id="bibdeskparser.customization.journal">
 <code class="sig-prename descclassname">bibdeskparser.customization.</code><code class="sig-name descname">journal</code><span class="sig-paren">(</span><em class="sig-param">record</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bibdeskparser/customization.html#journal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bibdeskparser.customization.journal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Turn the journal field into a dict composed of the original journal name
-and a journal id (without coma or blank).</p>
+and a journal id (without comma or blank).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>record</strong> (<a class="reference external" href="https://docs.python.org/3.7/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – the record.</p>
@@ -598,7 +566,7 @@ and a journal id (without coma or blank).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>record</strong> (<em>string</em><em>, </em><em>optional</em>) – the record.</p></li>
+<li><p><strong>record</strong> (<a class="reference external" href="https://docs.python.org/3.7/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – the record.</p></li>
 <li><p><strong>sep</strong> – pattern used for the splitting regexp.</p></li>
 </ul>
 </dd>
@@ -707,22 +675,22 @@ plaintext, stripped from braces and similar. See
 </dl>
 </dd></dl>
 
-<div class="section" id="exception-classes">
-<h3><a class="toc-backref" href="#id6">Exception classes</a><a class="headerlink" href="#exception-classes" title="Permalink to this headline">¶</a></h3>
 <dl class="class">
 <dt id="bibdeskparser.customization.InvalidName">
 <em class="property">class </em><code class="sig-prename descclassname">bibdeskparser.customization.</code><code class="sig-name descname">InvalidName</code><a class="reference internal" href="_modules/bibdeskparser/customization.html#InvalidName"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bibdeskparser.customization.InvalidName" title="Permalink to this definition">¶</a></dt>
-<dd><p>Exception raised by <code class="xref py py-func docutils literal notranslate"><span class="pre">customization.splitname()</span></code> when an invalid name is input.</p>
+<dd><p>Exception raised by <a class="reference internal" href="#bibdeskparser.customization.splitname" title="bibdeskparser.customization.splitname"><code class="xref py py-func docutils literal notranslate"><span class="pre">splitname()</span></code></a> when an invalid name is input.</p>
 </dd></dl>
 
 </div>
-</div>
-<div class="section" id="the-bibdeskparser-bwriter-module-tune-the-default-writer">
-<h2><a class="toc-backref" href="#id7">The <code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bwriter</span></code> module — Tune the default writer</a><a class="headerlink" href="#the-bibdeskparser-bwriter-module-tune-the-default-writer" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-bibdeskparser.bwriter">
+<span id="the-bibdeskparser-bwriter-submodule"></span><h2><a class="toc-backref" href="#id5">The <a class="reference internal" href="#module-bibdeskparser.bwriter" title="bibdeskparser.bwriter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bwriter</span></code></a> submodule</a><a class="headerlink" href="#module-bibdeskparser.bwriter" title="Permalink to this headline">¶</a></h2>
+<p>Module providing the BibTeX writer.</p>
+<p>You can instantiate new writers to tune the defaults.</p>
 <dl class="class">
 <dt id="bibdeskparser.bwriter.BibTexWriter">
 <em class="property">class </em><code class="sig-prename descclassname">bibdeskparser.bwriter.</code><code class="sig-name descname">BibTexWriter</code><span class="sig-paren">(</span><em class="sig-param">write_common_strings=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/bibdeskparser/bwriter.html#BibTexWriter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bibdeskparser.bwriter.BibTexWriter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Writer to convert a <code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code> object to a string or file formatted as a BibTeX file.</p>
+<dd><p>Writer to convert a <a class="reference internal" href="#bibdeskparser.bibdatabase.BibDatabase" title="bibdeskparser.bibdatabase.BibDatabase"><code class="xref py py-class docutils literal notranslate"><span class="pre">BibDatabase</span></code></a> object to a string or file
+formatted as a BibTeX file.</p>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">bibdeskparser</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">bibdeskparser.bwriter</span> <span class="k">import</span> <span class="n">BibTexWriter</span>
@@ -798,7 +766,7 @@ alphabetically at the end. Set to ‘[]’ for alphabetical order. Default: ‘[
 <dd class="field-even"><p>BibTeX-formatted string</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.7/library/stdtypes.html#str" title="(in Python v3.7)">str</a> or unicode</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.7/library/stdtypes.html#str" title="(in Python v3.7)">str</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -807,7 +775,8 @@ alphabetically at the end. Set to ‘[]’ for alphabetical order. Default: ‘[
 
 </div>
 <div class="section" id="module-bibdeskparser.bibtexexpression">
-<span id="the-bibdeskparser-bibtexexpression-module-parser-s-core-relying-on-pyparsing"></span><h2><a class="toc-backref" href="#id8">The <a class="reference internal" href="#module-bibdeskparser.bibtexexpression" title="bibdeskparser.bibtexexpression"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibtexexpression</span></code></a> module — Parser’s core relying on pyparsing</a><a class="headerlink" href="#module-bibdeskparser.bibtexexpression" title="Permalink to this headline">¶</a></h2>
+<span id="the-bibdeskparser-bibtexexpression-submodule"></span><h2><a class="toc-backref" href="#id6">The <a class="reference internal" href="#module-bibdeskparser.bibtexexpression" title="bibdeskparser.bibtexexpression"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser.bibtexexpression</span></code></a> submodule</a><a class="headerlink" href="#module-bibdeskparser.bibtexexpression" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">pyparsing</span></code> core for <a class="reference internal" href="#module-bibdeskparser.bparser" title="bibdeskparser.bparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bparser</span></code></a>.</p>
 <dl class="class">
 <dt id="bibdeskparser.bibtexexpression.BibtexExpression">
 <em class="property">class </em><code class="sig-prename descclassname">bibdeskparser.bibtexexpression.</code><code class="sig-name descname">BibtexExpression</code><a class="reference internal" href="_modules/bibdeskparser/bibtexexpression.html#BibtexExpression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#bibdeskparser.bibtexexpression.BibtexExpression" title="Permalink to this definition">¶</a></dt>

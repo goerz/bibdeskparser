@@ -153,43 +153,23 @@
             
   <h1>Source code for bibdeskparser</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">`BibTeX &lt;http://en.wikipedia.org/wiki/BibTeX&gt;`_ is a bibliographic data file format.</span>
+<span class="sd">The :mod:`bibdeskparser` module can parse BibTeX files and write them. The API</span>
+<span class="sd">is similar to the :mod:`json` module. The parsed data is returned as a simple</span>
+<span class="sd">:class:`~.BibDatabase` object with the main attribute being</span>
+<span class="sd">:attr:`~.BibDatabase.entries` representing bibliographic sources such as books</span>
+<span class="sd">and journal articles.</span>
 
-<span class="sd">The :mod:`bibtexparser` module can parse BibTeX files and write them. The API is similar to the</span>
-<span class="sd">:mod:`json` module. The parsed data is returned as a simple :class:`BibDatabase` object with the main attribute being</span>
-<span class="sd">:attr:`entries` representing bibliographic sources such as books and journal articles.</span>
-
-<span class="sd">The following functions provide a quick and basic way to manipulate a BibTeX file.</span>
-<span class="sd">More advanced features are also available in this module.</span>
-
-<span class="sd">Parsing a file is as simple as::</span>
-
-<span class="sd">    import bibtexparser</span>
-<span class="sd">    with open(&#39;bibtex.bib&#39;) as bibtex_file:</span>
-<span class="sd">       bibtex_database = bibtexparser.load(bibtex_file)</span>
-
-<span class="sd">And writing::</span>
-
-<span class="sd">    import bibtexparser</span>
-<span class="sd">    with open(&#39;bibtex.bib&#39;, &#39;w&#39;) as bibtex_file:</span>
-<span class="sd">        bibtexparser.dump(bibtex_database, bibtex_file)</span>
-
+<span class="sd">The following functions provide a quick and basic way to manipulate a BibTeX</span>
+<span class="sd">file.  More advanced features are also available in this module.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;loads&#39;</span><span class="p">,</span>
     <span class="s1">&#39;load&#39;</span><span class="p">,</span>
     <span class="s1">&#39;dumps&#39;</span><span class="p">,</span>
     <span class="s1">&#39;dump&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;bibdatabase&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;bparser&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;bwriter&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;bibtexexpression&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;latexenc&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;customization&#39;</span><span class="p">,</span>
 <span class="p">]</span>
-<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;2.0.0-dev&#39;</span>
 
-<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;2.0.0-dev&#39;</span>
 
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="p">(</span>
     <span class="n">bibdatabase</span><span class="p">,</span>
@@ -203,10 +183,10 @@
 
 <div class="viewcode-block" id="loads"><a class="viewcode-back" href="../bibdeskparser.html#bibdeskparser.loads">[docs]</a><span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">bibtex_str</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Load :class:`BibDatabase` object from a string</span>
+<span class="sd">    Load :class:`~.BibDatabase` object from a string</span>
 
 <span class="sd">    :param bibtex_str: input BibTeX string to be parsed</span>
-<span class="sd">    :type bibtex_str: str or unicode</span>
+<span class="sd">    :type bibtex_str: str</span>
 <span class="sd">    :param parser: custom parser to use (optional)</span>
 <span class="sd">    :type parser: BibTexParser</span>
 <span class="sd">    :returns: bibliographic database object</span>
@@ -219,21 +199,14 @@
 
 <div class="viewcode-block" id="load"><a class="viewcode-back" href="../bibdeskparser.html#bibdeskparser.load">[docs]</a><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">bibtex_file</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Load :class:`BibDatabase` object from a file</span>
+<span class="sd">    Load :class:`~.BibDatabase` object from a file</span>
 
-<span class="sd">    :param bibtex_file: input file to be parsed</span>
-<span class="sd">    :type bibtex_file: file</span>
+<span class="sd">    :param bibtex_file: input file handle to be parsed</span>
+<span class="sd">    :type bibtex_file: typing.IO</span>
 <span class="sd">    :param parser: custom parser to use (optional)</span>
 <span class="sd">    :type parser: BibTexParser</span>
 <span class="sd">    :returns: bibliographic database object</span>
 <span class="sd">    :rtype: BibDatabase</span>
-
-<span class="sd">    Example::</span>
-
-<span class="sd">        import bibtexparser</span>
-<span class="sd">        with open(&#39;bibtex.bib&#39;) as bibtex_file:</span>
-<span class="sd">           bibtex_database = bibtexparser.load(bibtex_file)</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">parser</span> <span class="o">=</span> <span class="n">bparser</span><span class="o">.</span><span class="n">BibTexParser</span><span class="p">()</span>
@@ -242,14 +215,14 @@
 
 <div class="viewcode-block" id="dumps"><a class="viewcode-back" href="../bibdeskparser.html#bibdeskparser.dumps">[docs]</a><span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">bib_database</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Dump :class:`BibDatabase` object to a BibTeX string</span>
+<span class="sd">    Dump :class:`~.BibDatabase` object to a BibTeX string</span>
 
 <span class="sd">    :param bib_database: bibliographic database object</span>
 <span class="sd">    :type bib_database: BibDatabase</span>
 <span class="sd">    :param writer: custom writer to use (optional) (not yet implemented)</span>
 <span class="sd">    :type writer: BibTexWriter</span>
 <span class="sd">    :returns: BibTeX string</span>
-<span class="sd">    :rtype: unicode</span>
+<span class="sd">    :rtype: str</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">writer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">writer</span> <span class="o">=</span> <span class="n">bwriter</span><span class="o">.</span><span class="n">BibTexWriter</span><span class="p">()</span>
@@ -258,29 +231,18 @@
 
 <div class="viewcode-block" id="dump"><a class="viewcode-back" href="../bibdeskparser.html#bibdeskparser.dump">[docs]</a><span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="n">bib_database</span><span class="p">,</span> <span class="n">bibtex_file</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Dump :class:`BibDatabase` object as a BibTeX text file</span>
+<span class="sd">    Dump :class:`~.BibDatabase` object as a BibTeX text file</span>
 
 <span class="sd">    :param bib_database: bibliographic database object</span>
 <span class="sd">    :type bib_database: BibDatabase</span>
 <span class="sd">    :param bibtex_file: file to write to</span>
-<span class="sd">    :type bibtex_file: file</span>
+<span class="sd">    :type bibtex_file: typing.IO</span>
 <span class="sd">    :param writer: custom writer to use (optional) (not yet implemented)</span>
 <span class="sd">    :type writer: BibTexWriter</span>
-
-<span class="sd">    Example::</span>
-
-<span class="sd">        import bibtexparser</span>
-<span class="sd">        with open(&#39;bibtex.bib&#39;, &#39;w&#39;) as bibtex_file:</span>
-<span class="sd">            bibtexparser.dump(bibtex_database, bibtex_file)</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">writer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">writer</span> <span class="o">=</span> <span class="n">bwriter</span><span class="o">.</span><span class="n">BibTexWriter</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
-        <span class="n">bibtex_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">bib_database</span><span class="p">))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># Encode to UTF-8</span>
-        <span class="n">bibtex_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">bib_database</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span></div>
+    <span class="n">bibtex_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">bib_database</span><span class="p">))</span></div>
 </pre></div>
 
            </div>

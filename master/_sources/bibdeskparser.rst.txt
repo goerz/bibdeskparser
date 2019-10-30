@@ -1,46 +1,51 @@
 .. _bibdeskparser_api:
 
-.. contents::
 
 The bibdeskparser API
 =====================
 
-The :mod:`bibdeskparser` module --- Parsing and writing BibTeX files
---------------------------------------------------------------------
+.. contents::
+   :local:
+
+
+The :mod:`bibdeskparser` module
+-------------------------------
 
 .. automodule:: bibdeskparser
     :members: load, loads, dumps, dump
 
-The :mod:`bibdeskparser.bibdatabase` module --- The bibliographic database object
----------------------------------------------------------------------------------
+The :mod:`bibdeskparser.bibdatabase` submodule
+----------------------------------------------
+
+.. automodule:: bibdeskparser.bibdatabase
 
 .. autoclass:: bibdeskparser.bibdatabase.BibDatabase
     :members: entries, entries_dict, comments, strings, preambles
 
-The :mod:`bibdeskparser.bparser` module --- Tune the default parser
--------------------------------------------------------------------
+The :mod:`bibdeskparser.bparser` submodule
+------------------------------------------
 
 .. automodule:: bibdeskparser.bparser
     :members:
 
-The :mod:`bibdeskparser.customization` module --- Functions to customize records
---------------------------------------------------------------------------------
+The :mod:`bibdeskparser.customization` submodule
+------------------------------------------------
 
 .. automodule:: bibdeskparser.customization
     :members:
 
-Exception classes
-^^^^^^^^^^^^^^^^^
 .. autoclass:: bibdeskparser.customization.InvalidName
 
-The :mod:`bibdeskparser.bwriter` module --- Tune the default writer
--------------------------------------------------------------------
+The :mod:`bibdeskparser.bwriter` submodule
+------------------------------------------
+
+.. automodule:: bibdeskparser.bwriter
 
 .. autoclass:: bibdeskparser.bwriter.BibTexWriter
     :members:
 
-The :mod:`bibdeskparser.bibtexexpression` module --- Parser's core relying on pyparsing
----------------------------------------------------------------------------------------
+The :mod:`bibdeskparser.bibtexexpression` submodule
+---------------------------------------------------
 
 .. automodule:: bibdeskparser.bibtexexpression
     :members:

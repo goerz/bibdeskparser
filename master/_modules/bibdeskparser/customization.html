@@ -191,7 +191,7 @@
 
 
 <div class="viewcode-block" id="InvalidName"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.InvalidName">[docs]</a><span class="k">class</span> <span class="nc">InvalidName</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Exception raised by :py:func:`customization.splitname` when an invalid name is input.</span>
+    <span class="sd">&quot;&quot;&quot;Exception raised by :func:`splitname` when an invalid name is input.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -202,10 +202,10 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Break a name into its constituent parts: First, von, Last, and Jr.</span>
 
-<span class="sd">    :param string name: a string containing a single name</span>
-<span class="sd">    :param Boolean strict_mode: whether to use strict mode</span>
+<span class="sd">    :param str name: a string containing a single name</span>
+<span class="sd">    :param bool strict_mode: whether to use strict mode</span>
 <span class="sd">    :returns: dictionary of constituent parts</span>
-<span class="sd">    :raises `customization.InvalidName`: If an invalid name is given and</span>
+<span class="sd">    :raises `InvalidName`: If an invalid name is given and</span>
 <span class="sd">                                         ``strict_mode = True``.</span>
 
 <span class="sd">    In BibTeX, a name can be represented in any of three forms:</span>
@@ -221,7 +221,7 @@
 
 <span class="sd">    It is capable of detecting some errors with the input name. If the</span>
 <span class="sd">    ``strict_mode`` parameter is ``True``, which is the default, this results in</span>
-<span class="sd">    a :class:`customization.InvalidName` exception being raised. If it is</span>
+<span class="sd">    a :class:`~.InvalidName` exception being raised. If it is</span>
 <span class="sd">    ``False``, the function continues, working around the error as best it can.</span>
 <span class="sd">    The errors that can be detected are listed below along with the handling</span>
 <span class="sd">    for non-strict mode:</span>
@@ -605,7 +605,7 @@
 <div class="viewcode-block" id="journal"><a class="viewcode-back" href="../../bibdeskparser.html#bibdeskparser.customization.journal">[docs]</a><span class="k">def</span> <span class="nf">journal</span><span class="p">(</span><span class="n">record</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Turn the journal field into a dict composed of the original journal name</span>
-<span class="sd">    and a journal id (without coma or blank).</span>
+<span class="sd">    and a journal id (without comma or blank).</span>
 
 <span class="sd">    :param record: the record.</span>
 <span class="sd">    :type record: dict</span>
@@ -633,7 +633,7 @@
 <span class="sd">    :param record: the record.</span>
 <span class="sd">    :type record: dict</span>
 <span class="sd">    :param sep: pattern used for the splitting regexp.</span>
-<span class="sd">    :type record: string, optional</span>
+<span class="sd">    :type record: str</span>
 <span class="sd">    :returns: dict -- the modified record.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
