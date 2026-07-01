@@ -1,0 +1,43 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+
+  run_tests:
+    name: ${{ matrix.title || matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - title: Codestyle and Tests
+            os: ubuntu-latest
+            codestyle: true
+            coverage: true
+          - os: windows-latest
+            coverage: true
+          - title: MacOS
+            os: macos-latest
+            coverage: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Check code style
+        if: matrix.codestyle == true
+        run: make black-check isort-check
+
+      - name: Run tests
+        run: make test
+
+      - name: Convert coverage data to xml
+        if: matrix.coverage == true
+        run: make coverage-xml
+
+      - uses: codecov/codecov-action@v4
+        if: matrix.coverage == true
+        with:
+          verbose: false
