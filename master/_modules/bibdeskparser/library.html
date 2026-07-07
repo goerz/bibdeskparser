@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.library &mdash; BibDeskParser 0.1.0 documentation</title>
+  <title>bibdeskparser.library &mdash; BibDeskParser 0.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.1.0
+    v0.2.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -63,13 +63,17 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../apidocs/bibdeskparser/bibdeskparser.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../authors.html">Credits</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
 </ul>
 
         </div>
@@ -129,106 +133,13 @@
            <div itemprop="articleBody">
              
   <h1>Source code for bibdeskparser.library</h1><div class="highlight"><pre>
-<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;The `Library` class: a full BibDesk `.bib` database.</span>
-
-<span class="sd">`Library` wraps a `bibtexparser.Library` (`library._library`, private)</span>
-<span class="sd">via *composition*, presenting BibDesk&#39;s view of a `.bib` database:</span>
-
-<span class="sd">- `Library` is itself a `dict`-like mapping of citation key to</span>
-<span class="sd">  {any}`bibdeskparser.entry.Entry` (a</span>
-<span class="sd">  {py:class}`collections.abc.MutableMapping`); see {any}`Library.entries`.</span>
-<span class="sd">- {any}`Library.timestamp`: the save time from the header comment,</span>
-<span class="sd">  updated by {any}`Library.save`.</span>
-<span class="sd">- {any}`Library.strings`: a read-write view of the `@string` macro</span>
-<span class="sd">  definitions, delegating to `library._library.strings_dict`.</span>
-<span class="sd">- {any}`Library.groups`: a read-write `dict`-like view of the `BibDesk</span>
-<span class="sd">  Static Groups`, mapping each group name to a tuple of citation keys.</span>
-<span class="sd">  Assigning a tuple of keys creates or replaces a group wholesale, and</span>
-<span class="sd">  `del` removes one; per-key membership changes go through</span>
-<span class="sd">  {any}`Library.add_to_group` / {any}`Library.remove_from_group`.</span>
-<span class="sd">  Since `Library` is the sole gateway for mutating group membership,</span>
-<span class="sd">  every mutation immediately refreshes the `groups` property of each</span>
-<span class="sd">  affected {any}`bibdeskparser.entry.Entry`.</span>
-<span class="sd">- {any}`Library.keywords`: a read-write `dict`-like view mapping each</span>
-<span class="sd">  keyword to the tuple of citation keys of the entries carrying it,</span>
-<span class="sd">  computed on demand from the entries&#39; stored `keywords` fields.</span>
-<span class="sd">  Those fields are not reachable through the entry `dict` interface,</span>
-<span class="sd">  so the view is always consistent with the entries; mutations</span>
-<span class="sd">  (assignment, `del`, {any}`Library.add_to_keyword`,</span>
-<span class="sd">  {any}`Library.remove_from_keyword`) edit the affected entries&#39;</span>
-<span class="sd">  stored fields.</span>
-<span class="sd">- {any}`Library.duplicate_keys`: citation keys that could not be</span>
-<span class="sd">  loaded because they duplicate an earlier entry (BibDesk itself</span>
-<span class="sd">  tolerates this, so `bibdeskparser` does too, read-only).</span>
-<span class="sd">- {any}`Library.save`: writes the library back to disk. Entries that</span>
-<span class="sd">  were not modified since load are re-rendered verbatim (byte-exact</span>
-<span class="sd">  round-trip); modified or newly added entries are written in</span>
-<span class="sd">  BibDesk&#39;s field order. The header timestamp is only bumped if</span>
-<span class="sd">  something actually changed. A validation pass rejects entries that</span>
-<span class="sd">  reference an undefined `@string` macro, and warns (without raising)</span>
-<span class="sd">  about linked files (see {any}`bibdeskparser.entry.Entry.files`) that</span>
-<span class="sd">  no longer exist on disk. {any}`StaleFileError` is raised if the</span>
-<span class="sd">  target file was modified on disk (e.g. resaved by BibDesk) since</span>
-<span class="sd">  this library was loaded, unless `force=True`.</span>
-<span class="sd">- {any}`Library.add_file`, {any}`Library.replace_file`,</span>
-<span class="sd">  {any}`Library.unlink_file`, {any}`Library.rename_file`: manage an</span>
-<span class="sd">  entry&#39;s linked files ({any}`bibdeskparser.entry.Entry.files`, itself</span>
-<span class="sd">  read-only). Linked files are stored relative to the library&#39;s</span>
-<span class="sd">  `.bib` file, which only the `Library` knows, so these are `Library`</span>
-<span class="sd">  operations.</span>
-<span class="sd">- {any}`Library.render`, {any}`Library.export`, {any}`Library.edit`,</span>
-<span class="sd">  {any}`Library.edit_strings`: render a bibliography, export to</span>
-<span class="sd">  bibtex text, or edit in `$EDITOR`, for one or more selected</span>
-<span class="sd">  citation keys at once.</span>
-
-<span class="sd">```python</span>
-<span class="sd">&gt;&gt;&gt; from bibdeskparser.entry import Entry</span>
-<span class="sd">&gt;&gt;&gt; from bibdeskparser.library import Library</span>
-<span class="sd">&gt;&gt;&gt; bib = Library()  # a fresh, empty, in-memory library</span>
-<span class="sd">&gt;&gt;&gt; bib.strings[&quot;jpb&quot;] = &quot;J. Phys. B&quot;</span>
-<span class="sd">&gt;&gt;&gt; bib.strings[&quot;jpb&quot;]</span>
-<span class="sd">&#39;J. Phys. B&#39;</span>
-<span class="sd">&gt;&gt;&gt; entry = Entry(&quot;article&quot;, &quot;Key2026&quot;, fields={&quot;title&quot;: &quot;A Title&quot;})</span>
-<span class="sd">&gt;&gt;&gt; bib[&quot;Key2026&quot;] = entry</span>
-<span class="sd">&gt;&gt;&gt; bib[&quot;Key2026&quot;] is entry</span>
-<span class="sd">True</span>
-<span class="sd">&gt;&gt;&gt; len(bib)</span>
-<span class="sd">1</span>
-
-<span class="sd">```</span>
-
-<span class="sd">Deleting a macro that is still referenced by an entry is rejected:</span>
-
-<span class="sd">```python</span>
-<span class="sd">&gt;&gt;&gt; import warnings</span>
-<span class="sd">&gt;&gt;&gt; with warnings.catch_warnings():</span>
-<span class="sd">...     warnings.simplefilter(&quot;ignore&quot;)</span>
-<span class="sd">...     entry[&quot;journal&quot;] = &quot;jpb&quot;  # a bare macro reference</span>
-<span class="sd">&gt;&gt;&gt; del bib.strings[&quot;jpb&quot;]</span>
-<span class="sd">Traceback (most recent call last):</span>
-<span class="sd">    ...</span>
-<span class="sd">ValueError: cannot delete macro &#39;jpb&#39;: in use by entries [&#39;Key2026&#39;]</span>
-
-<span class="sd">```</span>
-
-<span class="sd">Group membership is mutated through `Library` itself, which keeps</span>
-<span class="sd">`entry.groups` in sync immediately:</span>
-
-<span class="sd">```python</span>
-<span class="sd">&gt;&gt;&gt; bib.groups[&quot;My Papers&quot;] = ()  # create an empty group</span>
-<span class="sd">&gt;&gt;&gt; bib.add_to_group(&quot;My Papers&quot;, &quot;Key2026&quot;)</span>
-<span class="sd">&gt;&gt;&gt; bib[&quot;Key2026&quot;].groups</span>
-<span class="sd">(&#39;My Papers&#39;,)</span>
-<span class="sd">&gt;&gt;&gt; bib.groups</span>
-<span class="sd">{&#39;My Papers&#39;: (&#39;Key2026&#39;,)}</span>
-
-<span class="sd">```</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;The `Library` class and the `StaleFileError` it may raise.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">getpass</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">MutableMapping</span>
@@ -236,18 +147,22 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">bibtexparser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bibtexparser.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">DuplicateBlockKeyBlock</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">bibtexparser.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span> <span class="k">as</span> <span class="n">_RawEntry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">bibtexparser.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">DuplicateBlockKeyBlock</span><span class="p">,</span>
     <span class="n">ExplicitComment</span><span class="p">,</span>
     <span class="n">ImplicitComment</span><span class="p">,</span>
+    <span class="n">ParsingFailedBlock</span><span class="p">,</span>
     <span class="n">String</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">editing</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">editing</span><span class="p">,</span> <span class="n">specifiers</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.bdskfile</span><span class="w"> </span><span class="kn">import</span> <span class="n">BibDeskFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">active</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.entry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">_strip_enclosing</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exporting</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_entries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">is_groups_comment</span><span class="p">,</span>
     <span class="n">is_static_groups_comment</span><span class="p">,</span>
     <span class="n">parse_static_groups</span><span class="p">,</span>
     <span class="n">render_static_groups</span><span class="p">,</span>
@@ -256,6 +171,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.macros</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_valid_macro_name</span><span class="p">,</span> <span class="n">normalize_macro_name</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_stack</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.render</span><span class="w"> </span><span class="kn">import</span> <span class="n">render_entries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.search</span><span class="w"> </span><span class="kn">import</span> <span class="n">search_entries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.writer</span><span class="w"> </span><span class="kn">import</span> <span class="n">bibdesk_field_order</span><span class="p">,</span> <span class="n">render_library</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Library&quot;</span><span class="p">,</span> <span class="s2">&quot;StaleFileError&quot;</span><span class="p">]</span>
@@ -273,13 +189,13 @@
 <div class="viewcode-block" id="StaleFileError">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.StaleFileError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">StaleFileError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised by {any}`Library.save` when the target file is newer on</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised by {meth}`Library.save` when the target file is newer on</span>
 <span class="sd">    disk than this library.</span>
 
 <span class="sd">    This means the file was saved (by BibDesk, or by another process)</span>
 <span class="sd">    after this `Library` was loaded or last saved here, so overwriting</span>
 <span class="sd">    it now would silently discard those changes. Pass `force=True` to</span>
-<span class="sd">    {any}`Library.save` to overwrite anyway.</span>
+<span class="sd">    {meth}`Library.save` to overwrite anyway.</span>
 <span class="sd">    &quot;&quot;&quot;</span></div>
 
 
@@ -339,7 +255,7 @@
 <span class="sd">    Uses the Gecos &quot;full name&quot; field of the current user&#39;s password</span>
 <span class="sd">    database entry (stripping a trailing comma, as sometimes found in</span>
 <span class="sd">    macOS Gecos fields), falling back to the login name (see</span>
-<span class="sd">    {py:func}`getpass.getuser`) if `pwd` is unavailable or the Gecos</span>
+<span class="sd">    {func}`getpass.getuser`) if `pwd` is unavailable or the Gecos</span>
 <span class="sd">    field is empty.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">pwd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -462,11 +378,72 @@
     <span class="k">return</span> <span class="kc">None</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_groups_comment_block</span><span class="p">(</span><span class="n">block</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether `block` is any of BibDesk&#39;s group-storing `@comment`</span>
+<span class="sd">    blocks (static, smart, URL, or script groups).&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">ExplicitComment</span><span class="p">)</span> <span class="ow">and</span> <span class="n">is_groups_comment</span><span class="p">(</span>
+        <span class="n">block</span><span class="o">.</span><span class="n">comment</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_hoist_last_block_above_groups</span><span class="p">(</span><span class="n">raw_library</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Move the just-appended last block of `raw_library` up, directly</span>
+<span class="sd">    above the first BibDesk group `@comment` block (no-op if there is</span>
+<span class="sd">    none).</span>
+
+<span class="sd">    `bibtexparser.Library.add` always appends, but BibDesk&#39;s canonical</span>
+<span class="sd">    layout keeps the group `@comment` blocks at the very end of the</span>
+<span class="sd">    file, so a newly added entry (or a newly synthesized static-groups</span>
+<span class="sd">    block) must be placed above them. `raw_library.blocks` is the</span>
+<span class="sd">    library&#39;s actual block list, so it can be reordered in place;</span>
+<span class="sd">    reordering does not affect bibtexparser&#39;s by-key lookups.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">blocks</span> <span class="o">=</span> <span class="n">raw_library</span><span class="o">.</span><span class="n">blocks</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">_is_groups_comment_block</span><span class="p">(</span><span class="n">block</span><span class="p">):</span>
+            <span class="n">blocks</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">blocks</span><span class="o">.</span><span class="n">pop</span><span class="p">())</span>
+            <span class="k">return</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_place_string_block</span><span class="p">(</span><span class="n">raw_library</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Move the just-appended `@string` block of `raw_library` to its</span>
+<span class="sd">    canonical position.</span>
+
+<span class="sd">    BibDesk keeps all `@string` definitions in a single alphabetically</span>
+<span class="sd">    sorted run between the header and the first entry. The new block</span>
+<span class="sd">    goes at its sorted position within the existing `@string` blocks;</span>
+<span class="sd">    if there are none, it goes above the first entry (a failed block,</span>
+<span class="sd">    e.g. for a duplicate key, counts as an entry) or, failing that,</span>
+<span class="sd">    above the group `@comment` blocks. See</span>
+<span class="sd">    `_hoist_last_block_above_groups` for why in-place reordering of</span>
+<span class="sd">    `raw_library.blocks` is safe.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">blocks</span> <span class="o">=</span> <span class="n">raw_library</span><span class="o">.</span><span class="n">blocks</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">string_indices</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">String</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">string_indices</span><span class="p">:</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">string_indices</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># after the last `@string`</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">string_indices</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">blocks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">key</span><span class="p">:</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="k">break</span>
+        <span class="n">blocks</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">blocks</span><span class="o">.</span><span class="n">pop</span><span class="p">())</span>
+        <span class="k">return</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">block</span><span class="p">,</span> <span class="p">(</span><span class="n">_RawEntry</span><span class="p">,</span> <span class="n">ParsingFailedBlock</span><span class="p">)</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="n">_is_groups_comment_block</span><span class="p">(</span><span class="n">block</span><span class="p">):</span>
+            <span class="n">blocks</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">blocks</span><span class="o">.</span><span class="n">pop</span><span class="p">())</span>
+            <span class="k">return</span>
+
+
 <span class="c1"># -- views ------------------------------------------------------------- #</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_StringsView</span><span class="p">(</span><span class="n">MutableMapping</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read-write `dict`-like view of {any}`Library.strings`.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read-write `dict`-like view of {attr}`Library.strings`.</span>
 
 <span class="sd">    Backed by `library._library.strings_dict`. Reading strips the</span>
 <span class="sd">    enclosing `{...}`/`&quot;...&quot;` delimiters; writing re-adds them (after</span>
@@ -474,7 +451,7 @@
 <span class="sd">    macro name (validating it and lowercasing it, matching BibDesk&#39;s</span>
 <span class="sd">    case-insensitive macro table). Deleting a macro that is still</span>
 <span class="sd">    referenced (as a bare field value) by any entry raises</span>
-<span class="sd">    {any}`ValueError`.</span>
+<span class="sd">    {exc}`ValueError`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">):</span>
@@ -496,6 +473,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">new_string</span> <span class="o">=</span> <span class="n">String</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;{&quot;</span> <span class="o">+</span> <span class="n">value</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_owner</span><span class="o">.</span><span class="n">_library</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="n">new_string</span><span class="p">],</span> <span class="n">fail_on_duplicate_key</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">_place_string_block</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_owner</span><span class="o">.</span><span class="n">_library</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_owner</span><span class="o">.</span><span class="n">_modified</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">_check_duplicate_macro_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_strings_dict</span><span class="p">)</span>
 
@@ -532,17 +510,17 @@
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_GroupsView</span><span class="p">(</span><span class="n">MutableMapping</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read-write `dict`-like view of {any}`Library.groups`, mapping</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read-write `dict`-like view of {attr}`Library.groups`, mapping</span>
 <span class="sd">    each group name to the tuple of the group&#39;s citation keys.</span>
 
 <span class="sd">    A stateless facade: every operation forwards to the owning</span>
 <span class="sd">    `Library`, which holds the group data and immediately refreshes</span>
 <span class="sd">    the `groups` property of every affected</span>
-<span class="sd">    {any}`bibdeskparser.entry.Entry`. Values are always tuples, so a</span>
+<span class="sd">    {class}`Entry`. Values are always tuples, so a</span>
 <span class="sd">    group&#39;s membership cannot be mutated in place: whole groups are</span>
 <span class="sd">    created, replaced, or deleted through the mapping interface, and</span>
 <span class="sd">    per-key membership changes go through</span>
-<span class="sd">    {any}`Library.add_to_group` / {any}`Library.remove_from_group`.</span>
+<span class="sd">    {meth}`Library.add_to_group` / {meth}`Library.remove_from_group`.</span>
 <span class="sd">    The `MutableMapping` mixins (`pop`, `popitem`, `clear`, `update`,</span>
 <span class="sd">    `setdefault`) all funnel through `__setitem__`/`__delitem__`, so</span>
 <span class="sd">    they maintain the same invariants.</span>
@@ -580,15 +558,16 @@
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_KeywordsView</span><span class="p">(</span><span class="n">MutableMapping</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read-write `dict`-like view of {any}`Library.keywords`, mapping</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read-write `dict`-like view of {attr}`Library.keywords`, mapping</span>
 <span class="sd">    each keyword to the tuple of citation keys of the entries carrying</span>
 <span class="sd">    it.</span>
 
 <span class="sd">    A stateless facade: the mapping is computed on demand from the</span>
 <span class="sd">    entries&#39; stored `keywords` fields (keywords in first-seen entry</span>
 <span class="sd">    order), so it is always consistent with the entries -- the</span>
-<span class="sd">    `keywords` field is not reachable through the entry `dict`</span>
-<span class="sd">    interface, and every mutation forwards to the owning `Library`,</span>
+<span class="sd">    `keywords` field is readable but not writable through the entry</span>
+<span class="sd">    `dict` interface, and every mutation forwards to the owning</span>
+<span class="sd">    `Library`,</span>
 <span class="sd">    which edits the affected entries. A keyword exists only inside</span>
 <span class="sd">    entries&#39; `keywords` fields, so an *empty* keyword cannot be</span>
 <span class="sd">    represented: assigning `()` is equivalent to deleting the keyword.</span>
@@ -638,7 +617,7 @@
 <div class="viewcode-block" id="Library">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Library</span><span class="p">(</span><span class="n">MutableMapping</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A BibDesk `.bib` database.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A BibDesk `.bib` database.</span>
 
 <span class="sd">    ```python</span>
 <span class="sd">    Library(path=None, creator=None)</span>
@@ -647,23 +626,155 @@
 <span class="sd">    * `path`: path to a `.bib` file to load (UTF-8 text). If `None`</span>
 <span class="sd">      (default), a fresh, empty, in-memory library is created instead.</span>
 <span class="sd">    * `creator`: the name to use on the `Created for` line of a</span>
-<span class="sd">      synthesized header (see {any}`Library.save`). Only relevant for</span>
-<span class="sd">      a from-scratch library, or one loaded from a `.bib` file that</span>
-<span class="sd">      has no BibDesk header of its own; defaults to the OS account&#39;s</span>
-<span class="sd">      full name.</span>
+<span class="sd">      synthesized header (see {meth}`save`). Only relevant for a</span>
+<span class="sd">      from-scratch library, or one loaded from a `.bib` file that has</span>
+<span class="sd">      no BibDesk header of its own; defaults to the OS account&#39;s full</span>
+<span class="sd">      name.</span>
 
 <span class="sd">    Loading a file that contains duplicate citation keys (see</span>
-<span class="sd">    {any}`Library.duplicate_keys`) emits a `UserWarning`; BibDesk</span>
-<span class="sd">    itself tolerates such files (keeping only the first entry for each</span>
-<span class="sd">    key), so this is a read-only, informational condition rather than</span>
-<span class="sd">    an error.</span>
+<span class="sd">    {attr}`duplicate_keys`) emits a `UserWarning`; BibDesk itself</span>
+<span class="sd">    tolerates such files (keeping only the first entry for each key),</span>
+<span class="sd">    so this is a read-only, informational condition rather than an</span>
+<span class="sd">    error.</span>
 
-<span class="sd">    See the module docstring for a complete overview.</span>
+<span class="sd">    A `Library` presents BibDesk&#39;s view of a `.bib` database:</span>
+
+<span class="sd">    - `Library` is itself a `dict`-like mapping of citation key to</span>
+<span class="sd">      {class}`Entry`; see {attr}`entries`.</span>
+<span class="sd">    - {attr}`timestamp`: the save time from the header comment, updated</span>
+<span class="sd">      by {meth}`save`.</span>
+<span class="sd">    - {attr}`strings`: a read-write view of the `@string` macro</span>
+<span class="sd">      definitions.</span>
+<span class="sd">    - {attr}`groups`: a read-write `dict`-like view of the &quot;BibDesk</span>
+<span class="sd">      Static Groups&quot;, mapping each group name to a tuple of citation</span>
+<span class="sd">      keys. Assigning a tuple of keys creates or replaces a group</span>
+<span class="sd">      wholesale, and `del` removes one; per-key membership changes go</span>
+<span class="sd">      through {meth}`add_to_group` / {meth}`remove_from_group`. Every</span>
+<span class="sd">      mutation immediately refreshes the {attr}`Entry.groups` property of</span>
+<span class="sd">      each affected entry.</span>
+<span class="sd">    - {attr}`keywords`: a read-write `dict`-like view mapping each</span>
+<span class="sd">      keyword to the tuple of citation keys of the entries carrying it,</span>
+<span class="sd">      computed on demand from the entries&#39; stored `keywords` fields.</span>
+<span class="sd">      Those fields are readable but not writable through the entry</span>
+<span class="sd">      `dict` interface, so the view is always consistent with the</span>
+<span class="sd">      entries; mutations (assignment, `del`, {meth}`add_to_keyword`,</span>
+<span class="sd">      {meth}`remove_from_keyword`) edit the affected entries&#39; stored</span>
+<span class="sd">      fields.</span>
+<span class="sd">    - {attr}`duplicate_keys`: citation keys that could not be loaded</span>
+<span class="sd">      because they duplicate an earlier entry (read-only).</span>
+<span class="sd">    - {meth}`save`: writes the library back to disk. Entries that were</span>
+<span class="sd">      not modified since load are re-rendered verbatim (byte-exact</span>
+<span class="sd">      round-trip); modified or newly added entries are written in</span>
+<span class="sd">      BibDesk&#39;s field order. The header timestamp is only bumped if</span>
+<span class="sd">      something actually changed. A validation pass rejects entries</span>
+<span class="sd">      that reference an undefined `@string` macro, and warns (without</span>
+<span class="sd">      raising) about linked files (see {attr}`Entry.files`) that no</span>
+<span class="sd">      longer exist on disk. {exc}`StaleFileError` is raised if the</span>
+<span class="sd">      target file was modified on disk (e.g. resaved by BibDesk) since</span>
+<span class="sd">      this library was loaded, unless `force=True`.</span>
+<span class="sd">    - {meth}`add_file`, {meth}`replace_file`, {meth}`unlink_file`,</span>
+<span class="sd">      {meth}`rename_file`: manage an entry&#39;s linked files</span>
+<span class="sd">      ({attr}`Entry.files`, itself read-only). Linked files are stored</span>
+<span class="sd">      relative to the library&#39;s `.bib` file, which only the `Library`</span>
+<span class="sd">      knows, so these are `Library` operations.</span>
+<span class="sd">    - {meth}`add_url`, {meth}`replace_url`, {meth}`remove_url`: manage an</span>
+<span class="sd">      entry&#39;s linked URLs ({attr}`Entry.urls`, itself a read-only tuple).</span>
+<span class="sd">      These delegate to the corresponding {class}`Entry` methods (URLs</span>
+<span class="sd">      are self-contained, so unlike linked files they need no path</span>
+<span class="sd">      resolution).</span>
+<span class="sd">    - {meth}`render`, {meth}`export`, {meth}`edit`, {meth}`edit_strings`:</span>
+<span class="sd">      render a bibliography, export to bibtex text, or edit in</span>
+<span class="sd">      `$EDITOR`, for one or more selected citation keys at once.</span>
+
+<span class="sd">    The process-global configuration (see the</span>
+<span class="sd">    [configuration](configuration) reference page) is exposed as the</span>
+<span class="sd">    `Library.config` class attribute -- equally readable from any</span>
+<span class="sd">    instance, as `bib.config`. Its attributes can be assigned for an</span>
+<span class="sd">    in-process override (which never writes back to the configuration</span>
+<span class="sd">    file); the most important ones are:</span>
+
+<span class="sd">    - `Library.config.verify_types` (default `True`): whether an</span>
+<span class="sd">      unrecognized {attr}`Entry.entry_type` is rejected with a</span>
+<span class="sd">      `ValueError`.</span>
+<span class="sd">    - `Library.config.verify_fields` (default `True`): whether</span>
+<span class="sd">      assigning a field inappropriate for an entry&#39;s type emits a</span>
+<span class="sd">      `UserWarning`.</span>
+<span class="sd">    - `Library.config.config_file` (default `None`): an explicit</span>
+<span class="sd">      `bibdeskparser.toml` path that takes precedence over the</span>
+<span class="sd">      directory-based search.</span>
+<span class="sd">    - `Library.config.auto_key.format_spec` (default `None`): the</span>
+<span class="sd">      auto-key format for {meth}`rekey`/{meth}`eval_format_spec` -- a</span>
+<span class="sd">      single format string in BibDesk&#39;s</span>
+<span class="sd">      [format-specifier language](format-specifiers), or a per-type</span>
+<span class="sd">      `dict` mapping entry-type names (with `&quot;&quot;` as the fallback) to</span>
+<span class="sd">      format strings. Assigning a spec validates every format string</span>
+<span class="sd">      in it.</span>
+
+<span class="sd">    Constructing a `Library` (re)discovers a `bibdeskparser.toml`</span>
+<span class="sd">    (`config.config_file`, then the `.bib` file&#39;s own directory -- the</span>
+<span class="sd">    current working directory for a from-scratch library -- then the</span>
+<span class="sd">    XDG location, first found wins) and applies it, replacing any</span>
+<span class="sd">    in-process overrides. With no config file present, the defaults</span>
+<span class="sd">    above apply.</span>
+
+<span class="sd">    ```python</span>
+<span class="sd">    &gt;&gt;&gt; from bibdeskparser import Entry, Library</span>
+<span class="sd">    &gt;&gt;&gt; bib = Library()  # a fresh, empty, in-memory library</span>
+<span class="sd">    &gt;&gt;&gt; bib.strings[&quot;jpb&quot;] = &quot;J. Phys. B&quot;</span>
+<span class="sd">    &gt;&gt;&gt; bib.strings[&quot;jpb&quot;]</span>
+<span class="sd">    &#39;J. Phys. B&#39;</span>
+<span class="sd">    &gt;&gt;&gt; entry = Entry(&quot;article&quot;, &quot;Key2026&quot;, fields={&quot;title&quot;: &quot;A Title&quot;})</span>
+<span class="sd">    &gt;&gt;&gt; bib[&quot;Key2026&quot;] = entry</span>
+<span class="sd">    &gt;&gt;&gt; bib[&quot;Key2026&quot;] is entry</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; len(bib)</span>
+<span class="sd">    1</span>
+
+<span class="sd">    ```</span>
+
+<span class="sd">    Deleting a macro that is still referenced by an entry is rejected:</span>
+
+<span class="sd">    ```python</span>
+<span class="sd">    &gt;&gt;&gt; import warnings</span>
+<span class="sd">    &gt;&gt;&gt; with warnings.catch_warnings():</span>
+<span class="sd">    ...     warnings.simplefilter(&quot;ignore&quot;)</span>
+<span class="sd">    ...     entry[&quot;journal&quot;] = &quot;jpb&quot;  # a bare macro reference</span>
+<span class="sd">    &gt;&gt;&gt; del bib.strings[&quot;jpb&quot;]</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">        ...</span>
+<span class="sd">    ValueError: cannot delete macro &#39;jpb&#39;: in use by entries [&#39;Key2026&#39;]</span>
+
+<span class="sd">    ```</span>
+
+<span class="sd">    Group membership is mutated through `Library` itself, which keeps</span>
+<span class="sd">    {attr}`Entry.groups` in sync immediately:</span>
+
+<span class="sd">    ```python</span>
+<span class="sd">    &gt;&gt;&gt; bib.groups[&quot;My Papers&quot;] = ()  # create an empty group</span>
+<span class="sd">    &gt;&gt;&gt; bib.add_to_group(&quot;My Papers&quot;, &quot;Key2026&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; bib[&quot;Key2026&quot;].groups</span>
+<span class="sd">    (&#39;My Papers&#39;,)</span>
+<span class="sd">    &gt;&gt;&gt; bib.groups</span>
+<span class="sd">    {&#39;My Papers&#39;: (&#39;Key2026&#39;,)}</span>
+
+<span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="n">active</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The process-global configuration (documented in the class</span>
+<span class="sd">    docstring above): the single `bibdeskparser.config.active` object,</span>
+<span class="sd">    which `load()`/`reset()` mutate in place.&quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">creator</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="o">=</span> <span class="n">path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_creator</span> <span class="o">=</span> <span class="n">creator</span>
+
+        <span class="c1"># (Re)discover and apply the configuration for this library&#39;s</span>
+        <span class="c1"># directory (the `.bib` file&#39;s folder, or the cwd for a</span>
+        <span class="c1"># from-scratch library): config.config_file, then that</span>
+        <span class="c1"># directory, then the XDG location; first found wins.</span>
+        <span class="n">bib_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span> <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">active</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">bib_dir</span><span class="o">=</span><span class="n">bib_dir</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">text</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
@@ -719,11 +830,8 @@
             <span class="p">)</span>
         <span class="n">_check_unparseable_blocks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="o">.</span><span class="n">failed_blocks</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Library.__repr__">
-<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.__repr__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Library(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="si">!r}</span><span class="s2">)&quot;</span></div>
-
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Library(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="si">!r}</span><span class="s2">)&quot;</span>
 
     <span class="c1"># -- path ------------------------------------------------------------ #</span>
 
@@ -744,7 +852,7 @@
 <span class="sd">        `datetime.datetime`, read-only).</span>
 
 <span class="sd">        `None` for a from-scratch library that has not been saved yet.</span>
-<span class="sd">        Updated by {any}`save` whenever the library was actually</span>
+<span class="sd">        Updated by {meth}`save` whenever the library was actually</span>
 <span class="sd">        modified.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp</span>
@@ -763,7 +871,7 @@
 <span class="sd">        ...` defines the same macro as `strings[&quot;pra&quot;] = ...`.</span>
 <span class="sd">        Deleting a name that is still referenced by any entry&#39;s field</span>
 <span class="sd">        raises `ValueError` instead of leaving a dangling reference;</span>
-<span class="sd">        use {any}`rename_string` to rename a macro everywhere it is</span>
+<span class="sd">        use {meth}`rename_string` to rename a macro everywhere it is</span>
 <span class="sd">        used in one step.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strings_view</span>
@@ -789,10 +897,10 @@
 <span class="sd">        Updates the `@string` definition itself, and every entry field</span>
 <span class="sd">        that bare-references `old_name` (case-insensitively) is</span>
 <span class="sd">        rewritten to reference `new_name` instead (marking that entry</span>
-<span class="sd">        {any}`bibdeskparser.entry.Entry.dirty`).</span>
+<span class="sd">        as modified).</span>
 
-<span class="sd">        Raises {any}`KeyError` if `old_name` is not a defined macro,</span>
-<span class="sd">        and {any}`ValueError` if `new_name` is not a valid macro name</span>
+<span class="sd">        Raises {exc}`KeyError` if `old_name` is not a defined macro,</span>
+<span class="sd">        and {exc}`ValueError` if `new_name` is not a valid macro name</span>
 <span class="sd">        or already names a different macro.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">strings_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="o">.</span><span class="n">strings_dict</span>
@@ -829,8 +937,8 @@
 <span class="sd">        `library.groups[name] = (key, ...)` creates or replaces a</span>
 <span class="sd">        group (an empty tuple creates an empty group), and</span>
 <span class="sd">        `del library.groups[name]` deletes one -- while per-key</span>
-<span class="sd">        membership changes go through {any}`add_to_group` /</span>
-<span class="sd">        {any}`remove_from_group`. Values are always tuples: a group&#39;s</span>
+<span class="sd">        membership changes go through {meth}`add_to_group` /</span>
+<span class="sd">        {meth}`remove_from_group`. Values are always tuples: a group&#39;s</span>
 <span class="sd">        membership cannot be mutated in place, only replaced or edited</span>
 <span class="sd">        through those methods.</span>
 
@@ -841,10 +949,15 @@
 <span class="sd">        whose entries are absent (stale groups data) are preserved.</span>
 
 <span class="sd">        Every mutation immediately refreshes the `groups` property of</span>
-<span class="sd">        each affected {any}`bibdeskparser.entry.Entry`, so the two</span>
+<span class="sd">        each affected {class}`Entry`, so the two</span>
 <span class="sd">        views are always consistent. Deleting an entry from the</span>
-<span class="sd">        library (or renaming one via {any}`rekey`) likewise updates</span>
+<span class="sd">        library (or renaming one via {meth}`rekey`) likewise updates</span>
 <span class="sd">        the group data, so groups never accumulate dangling keys.</span>
+
+<span class="sd">        BibDesk&#39;s *smart* groups (saved searches) are not included:</span>
+<span class="sd">        they are queries, not lists of citation keys, and are</span>
+<span class="sd">        preserved in the file verbatim without being interpreted</span>
+<span class="sd">        (as are BibDesk&#39;s URL and script groups).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_groups_view</span>
 
@@ -965,18 +1078,16 @@
 <span class="sd">        tuple of citation keys of the entries carrying it.</span>
 
 <span class="sd">        The mapping is always consistent with the entries&#39; stored</span>
-<span class="sd">        `keywords` fields (which are not reachable through the entry</span>
-<span class="sd">        `dict` interface; see</span>
-<span class="sd">        {any}`bibdeskparser.entry.Entry.keywords`).</span>
+<span class="sd">        `keywords` fields (which are readable but not writable through</span>
+<span class="sd">        the entry `dict` interface; see {attr}`Entry.keywords`).</span>
 
 <span class="sd">        Assigning `library.keywords[keyword] = (key, ...)` makes</span>
 <span class="sd">        exactly those entries carry `keyword`; `del</span>
 <span class="sd">        library.keywords[keyword]` removes it from every entry.</span>
-<span class="sd">        Per-key changes go through {any}`add_to_keyword` /</span>
-<span class="sd">        {any}`remove_from_keyword`. All of these edit the affected</span>
+<span class="sd">        Per-key changes go through {meth}`add_to_keyword` /</span>
+<span class="sd">        {meth}`remove_from_keyword`. All of these edit the affected</span>
 <span class="sd">        entries&#39; stored `keywords` field, bumping their</span>
-<span class="sd">        `date-modified` and marking them</span>
-<span class="sd">        {any}`bibdeskparser.entry.Entry.dirty` (unlike group</span>
+<span class="sd">        `date-modified` and marking them modified (unlike group</span>
 <span class="sd">        mutations, which only affect the groups `@comment` block).</span>
 
 <span class="sd">        A keyword exists only as part of some entry&#39;s `keywords`</span>
@@ -1012,8 +1123,7 @@
 <span class="sd">        `keys`.</span>
 
 <span class="sd">        Edits each affected entry&#39;s stored `keywords` field (bumping</span>
-<span class="sd">        its `date-modified` and marking it</span>
-<span class="sd">        {any}`bibdeskparser.entry.Entry.dirty`); entries already</span>
+<span class="sd">        its `date-modified` and marking it modified); entries already</span>
 <span class="sd">        carrying `keyword` are silently skipped. A keyword that no</span>
 <span class="sd">        entry carried before is thereby created -- keywords exist only</span>
 <span class="sd">        inside entries, so there is no separate creation step (unlike</span>
@@ -1036,7 +1146,7 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove `keyword` from the entries with the given citation</span>
 <span class="sd">        `keys`.</span>
 
-<span class="sd">        The mirror image of {any}`add_to_keyword`: entries not</span>
+<span class="sd">        The mirror image of {meth}`add_to_keyword`: entries not</span>
 <span class="sd">        carrying `keyword` are silently skipped, and `KeyError` is</span>
 <span class="sd">        raised (before any entry is modified) if any key is not in</span>
 <span class="sd">        this library.</span>
@@ -1112,17 +1222,12 @@
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">entries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;All entries in the library, as a `list` of</span>
-<span class="sd">        {any}`bibdeskparser.entry.Entry`.&quot;&quot;&quot;</span>
+<span class="sd">        {class}`Entry`.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 
-<div class="viewcode-block" id="Library.__getitem__">
-<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.__getitem__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
-
-<div class="viewcode-block" id="Library.__setitem__">
-<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.__setitem__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">entry</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">Entry</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;value must be an Entry, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -1153,6 +1258,7 @@
                 <span class="n">old</span><span class="o">.</span><span class="n">_groups</span> <span class="o">=</span> <span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="n">entry</span><span class="o">.</span><span class="n">_entry</span><span class="p">],</span> <span class="n">fail_on_duplicate_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">_hoist_last_block_above_groups</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="p">)</span>
             <span class="c1"># Sets date-added (only if not already set) and marks the</span>
             <span class="c1"># entry dirty, matching BibDesk&#39;s &quot;adding sets date-added&quot;</span>
             <span class="c1"># behavior.</span>
@@ -1161,11 +1267,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_groups_of_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_modified</span> <span class="o">=</span> <span class="kc">True</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_modified</span> <span class="o">=</span> <span class="kc">True</span>
 
-
-<div class="viewcode-block" id="Library.__delitem__">
-<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.__delitem__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span>
@@ -1178,26 +1281,51 @@
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">keys</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_group_data</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_set_group</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">key</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_modified</span> <span class="o">=</span> <span class="kc">True</span></div>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">_modified</span> <span class="o">=</span> <span class="kc">True</span>
 
 <div class="viewcode-block" id="Library.rekey">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rekey">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">rekey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_key</span><span class="p">,</span> <span class="n">new_key</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename the entry at `old_key` to `new_key`.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rekey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_key</span><span class="p">,</span> <span class="n">new_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename the entry at `old_key`; returns the new key.</span>
 
 <span class="sd">        `Entry.key` is read-only, so this is the only way to rename</span>
 <span class="sd">        an entry that is already in the library. The entry&#39;s</span>
 <span class="sd">        static-group memberships follow the rename: `new_key` replaces</span>
 <span class="sd">        `old_key` in place (keeping its position) in every group that</span>
-<span class="sd">        contained it. Raises `KeyError` if `old_key` is not present,</span>
-<span class="sd">        or `ValueError` if `new_key` is already used by a different</span>
-<span class="sd">        entry.</span>
+<span class="sd">        contained it.</span>
+
+<span class="sd">        With `new_key` omitted (or `None`), a key is **generated** from</span>
+<span class="sd">        an auto-key format in BibDesk&#39;s</span>
+<span class="sd">        [format-specifier language](format-specifiers): the</span>
+<span class="sd">        `format_spec` argument if given, or else the configured</span>
+<span class="sd">        `config.auto_key.format_spec` (from the `[auto_key]` table of</span>
+<span class="sd">        `bibdeskparser.toml`; see the</span>
+<span class="sd">        [configuration](configuration)). `format_spec` is either a</span>
+<span class="sd">        single format string or a per-type `dict` mapping entry-type</span>
+<span class="sd">        names (with `&quot;&quot;` as the fallback) to format strings; the entry&#39;s</span>
+<span class="sd">        own type selects the format. A key that already matches the</span>
+<span class="sd">        format is kept as is, so regenerating is idempotent; a</span>
+<span class="sd">        `%u`/`%U`/`%n` specifier in the format resolves collisions</span>
+<span class="sd">        with the other entries in the library.</span>
+
+<span class="sd">        Raises `KeyError` if `old_key` is not present, and</span>
+<span class="sd">        `ValueError` if `new_key` is already used by a different</span>
+<span class="sd">        entry, if both `new_key` and `format_spec` are given, if no</span>
+<span class="sd">        auto-key format is available for the entry&#39;s type or the entry</span>
+<span class="sd">        lacks a field the format requires, or if the generated key</span>
+<span class="sd">        would equal the entry&#39;s own `crossref` value.</span>
+
+<span class="sd">        To preview the key a format would generate, without renaming</span>
+<span class="sd">        anything, use {meth}`eval_format_spec`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">old_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">old_key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_key</span><span class="p">(</span><span class="n">old_key</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">format_spec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;give either new_key or format_spec, not both&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_key</span> <span class="o">==</span> <span class="n">old_key</span><span class="p">:</span>
-            <span class="k">return</span>
+            <span class="k">return</span> <span class="n">new_key</span>
         <span class="k">if</span> <span class="n">new_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;key </span><span class="si">{</span><span class="n">new_key</span><span class="si">!r}</span><span class="s2"> is already used by another entry in &quot;</span>
@@ -1213,20 +1341,245 @@
                     <span class="n">new_key</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">old_key</span> <span class="k">else</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span>
                 <span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_modified</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="bp">self</span><span class="p">[</span><span class="n">new_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_key</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="p">[</span><span class="n">new_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">old_key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_key</span></div>
 
 
-<div class="viewcode-block" id="Library.__iter__">
-<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.__iter__">[docs]</a>
+<div class="viewcode-block" id="Library.eval_format_spec">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.eval_format_spec">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eval_format_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate a format specification for the entry at `key`;</span>
+<span class="sd">        returns the resulting citation key or file name without</span>
+<span class="sd">        renaming or moving anything.</span>
+
+<span class="sd">        `format_spec` is a format in BibDesk&#39;s</span>
+<span class="sd">        [format-specifier language](format-specifiers), or a per-type</span>
+<span class="sd">        `dict` mapping entry-type names (with `&quot;&quot;` as the fallback) to</span>
+<span class="sd">        format strings; the entry&#39;s own type selects the format.</span>
+
+<span class="sd">        Without `filename` (i.e. `filename=None`), the format is</span>
+<span class="sd">        evaluated as a **citation key**: exactly the key that</span>
+<span class="sd">        {meth}`rekey` without a `new_key` would generate. A</span>
+<span class="sd">        `format_spec` of `None` falls back to the configured</span>
+<span class="sd">        `config.auto_key.format_spec` (from the `[auto_key]` table of</span>
+<span class="sd">        `bibdeskparser.toml`; see the [configuration](configuration)).</span>
+
+<span class="sd">        With any `filename` (including the empty string `&quot;&quot;`), the</span>
+<span class="sd">        format is evaluated as a **file name**, in the</span>
+<span class="sd">        [file-name dialect](specifiers-files): `format_spec` falls</span>
+<span class="sd">        back to `config.auto_file.format_spec` (the `[auto_file]`</span>
+<span class="sd">        table). `filename` only supplies the original-name specifiers</span>
+<span class="sd">        `%l`/`%L`/`%e`/`%E` (e.g. its extension); it need not exist or</span>
+<span class="sd">        be one of the entry&#39;s attachments, and `&quot;&quot;` is fine when the</span>
+<span class="sd">        format uses none of those specifiers. If `filename` *is* an</span>
+<span class="sd">        attachment&#39;s current library-relative path (as listed by</span>
+<span class="sd">        {attr}`Entry.files`) and already matches the format, it</span>
+<span class="sd">        evaluates to itself (the same idempotency as the key context),</span>
+<span class="sd">        so the attachments that do not follow a given format are</span>
+<span class="sd">        exactly those where the result differs from the current path.</span>
+
+<span class="sd">        Raises `KeyError` if `key` is not present, and `ValueError`</span>
+<span class="sd">        if no format is available for the entry&#39;s type, if the entry</span>
+<span class="sd">        lacks a field the format requires, or (in the key context) if</span>
+<span class="sd">        the resulting key would equal the entry&#39;s own `crossref` value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_key</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">)</span>
+        <span class="n">entry</span><span class="p">,</span> <span class="n">fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_file_format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">)</span>
+        <span class="c1"># Evaluate in the same location-relative frame that filing uses:</span>
+        <span class="c1"># `filename` is library-relative, but the format renders a name</span>
+        <span class="c1"># relative to `auto_file.location`, and the result is stored</span>
+        <span class="c1"># library-relative again (see `_generate_filename`). A library</span>
+        <span class="c1"># with no path yet cannot resolve a location (and cannot be</span>
+        <span class="c1"># filed at all), so it falls back to a plain, location-less</span>
+        <span class="c1"># render (equivalent to `location=&quot;.&quot;`).</span>
+        <span class="n">base_dir</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span>
+        <span class="n">loc_dir</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">base_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">loc_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auto_file_location_dir</span><span class="p">(</span><span class="n">active</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">location</span><span class="p">)</span>
+        <span class="n">current_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">render_filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="k">if</span> <span class="n">loc_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">filename</span><span class="p">:</span>
+            <span class="n">abs_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">base_dir</span> <span class="o">/</span> <span class="n">filename</span><span class="p">)</span>
+            <span class="n">render_filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">abs_name</span><span class="p">)</span>
+            <span class="n">rel</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">abs_name</span><span class="p">,</span> <span class="n">loc_dir</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">rel</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">pardir</span><span class="p">):</span>
+                <span class="n">current_name</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">rel</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">current_name</span> <span class="o">=</span> <span class="n">filename</span> <span class="ow">or</span> <span class="kc">None</span>
+        <span class="n">new_name</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">render_format</span><span class="p">(</span>
+            <span class="n">fmt</span><span class="p">,</span>
+            <span class="n">entry</span><span class="p">,</span>
+            <span class="n">strings</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strings</span><span class="p">),</span>
+            <span class="n">initials</span><span class="o">=</span><span class="n">active</span><span class="o">.</span><span class="n">initials</span><span class="p">,</span>
+            <span class="n">lowercase</span><span class="o">=</span><span class="n">active</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">lowercase</span><span class="p">,</span>
+            <span class="n">clean</span><span class="o">=</span><span class="n">active</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">clean</span><span class="p">,</span>
+            <span class="n">current_key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+            <span class="n">document_name</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+            <span class="n">filename</span><span class="o">=</span><span class="n">render_filename</span><span class="p">,</span>
+            <span class="n">current_name</span><span class="o">=</span><span class="n">current_name</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">loc_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">new_name</span>
+        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">loc_dir</span> <span class="o">/</span> <span class="n">new_name</span><span class="p">,</span> <span class="n">base_dir</span><span class="p">))</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_format_spec</span><span class="p">(</span><span class="n">format_spec</span><span class="p">,</span> <span class="n">entry_type</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;key&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve `format_spec` (or, if it is `None`, the configured</span>
+<span class="sd">        `config.auto_key.format_spec` / `config.auto_file.format_spec`,</span>
+<span class="sd">        depending on `context`) to a single format string for an entry</span>
+<span class="sd">        of `entry_type`, picking the per-type entry (or the `&quot;&quot;`</span>
+<span class="sd">        fallback) from a `dict` spec.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">context</span> <span class="o">==</span> <span class="s2">&quot;file&quot;</span><span class="p">:</span>
+            <span class="n">what</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">table</span> <span class="o">=</span> <span class="s2">&quot;file name&quot;</span><span class="p">,</span> <span class="s2">&quot;auto-file&quot;</span><span class="p">,</span> <span class="s2">&quot;[auto_file]&quot;</span>
+            <span class="n">configured</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">format_spec</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">what</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">table</span> <span class="o">=</span> <span class="s2">&quot;citation key&quot;</span><span class="p">,</span> <span class="s2">&quot;auto-key&quot;</span><span class="p">,</span> <span class="s2">&quot;[auto_key]&quot;</span>
+            <span class="n">configured</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">auto_key</span><span class="o">.</span><span class="n">format_spec</span>
+        <span class="k">if</span> <span class="n">format_spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">format_spec</span> <span class="o">=</span> <span class="n">configured</span>
+        <span class="k">if</span> <span class="n">format_spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cannot generate a </span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">: no </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2"> format is &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;configured (set &#39;format_spec&#39; in the </span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2"> table &quot;</span>
+                <span class="s2">&quot;of bibdeskparser.toml, or pass a format explicitly)&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">format_spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">format_spec</span>
+        <span class="k">if</span> <span class="n">entry_type</span> <span class="ow">in</span> <span class="n">format_spec</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">format_spec</span><span class="p">[</span><span class="n">entry_type</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">&quot;&quot;</span> <span class="ow">in</span> <span class="n">format_spec</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">format_spec</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;cannot generate a </span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">: the </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2"> format_spec &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;has no entry for type </span><span class="si">{</span><span class="n">entry_type</span><span class="si">!r}</span><span class="s2"> and no &#39;&#39; fallback&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a citation key for the entry at `key`, from</span>
+<span class="sd">        `format_spec` or (if that is `None`) the configured</span>
+<span class="sd">        `config.auto_key.format_spec`; backs {meth}`rekey` and</span>
+<span class="sd">        {meth}`eval_format_spec`.&quot;&quot;&quot;</span>
+        <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">format_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_format_spec</span><span class="p">(</span>
+            <span class="n">format_spec</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">entry_type</span>
+        <span class="p">)</span>
+        <span class="n">fmt</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">compile_format</span><span class="p">(</span><span class="n">format_string</span><span class="p">)</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">missing_required_fields</span><span class="p">(</span><span class="n">fmt</span><span class="p">,</span> <span class="n">entry</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cannot generate a citation key for </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">: the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;format </span><span class="si">{</span><span class="n">format_string</span><span class="si">!r}</span><span class="s2"> requires the missing &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;field(s) </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="n">new_key</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">render_format</span><span class="p">(</span>
+            <span class="n">fmt</span><span class="p">,</span>
+            <span class="n">entry</span><span class="p">,</span>
+            <span class="n">strings</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strings</span><span class="p">),</span>
+            <span class="n">initials</span><span class="o">=</span><span class="n">active</span><span class="o">.</span><span class="n">initials</span><span class="p">,</span>
+            <span class="n">lowercase</span><span class="o">=</span><span class="n">active</span><span class="o">.</span><span class="n">auto_key</span><span class="o">.</span><span class="n">lowercase</span><span class="p">,</span>
+            <span class="n">clean</span><span class="o">=</span><span class="n">active</span><span class="o">.</span><span class="n">auto_key</span><span class="o">.</span><span class="n">clean</span><span class="p">,</span>
+            <span class="n">current_key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+            <span class="n">is_free</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">k</span> <span class="o">==</span> <span class="n">key</span> <span class="ow">or</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">,</span>
+            <span class="n">document_name</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="c1"># a key must never equal the entry&#39;s own crossref parent</span>
+        <span class="c1"># (BibDesk skips generation for such entries)</span>
+        <span class="k">if</span> <span class="n">new_key</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;crossref&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;the generated key </span><span class="si">{</span><span class="n">new_key</span><span class="si">!r}</span><span class="s2"> for </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> would &quot;</span>
+                <span class="s2">&quot;equal the entry&#39;s own crossref&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_key</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compile_file_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve and compile a file-name `format_spec` (or, if it is</span>
+<span class="sd">        `None`, the configured `config.auto_file.format_spec`) for entry</span>
+<span class="sd">        `key`, checking that the entry has every field the format</span>
+<span class="sd">        requires. Returns the `(entry, fmt)` pair; backs</span>
+<span class="sd">        {meth}`_generate_filename` and {meth}`eval_format_spec`.&quot;&quot;&quot;</span>
+        <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">format_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_format_spec</span><span class="p">(</span>
+            <span class="n">format_spec</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">entry_type</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;file&quot;</span>
+        <span class="p">)</span>
+        <span class="n">fmt</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">compile_format</span><span class="p">(</span><span class="n">format_string</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;file&quot;</span><span class="p">)</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">missing_required_fields</span><span class="p">(</span><span class="n">fmt</span><span class="p">,</span> <span class="n">entry</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cannot generate a file name for </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">: the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;format </span><span class="si">{</span><span class="n">format_string</span><span class="si">!r}</span><span class="s2"> requires the missing &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;field(s) </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">entry</span><span class="p">,</span> <span class="n">fmt</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_auto_file_location_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve an auto-file `location` (relative to the library</span>
+<span class="sd">        directory, or absolute) to an absolute, resolved `Path`.&quot;&quot;&quot;</span>
+        <span class="n">loc_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">location</span><span class="p">)))</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">loc_dir</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">():</span>
+            <span class="n">loc_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span> <span class="o">/</span> <span class="n">loc_dir</span>
+        <span class="k">return</span> <span class="n">loc_dir</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">old_path</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">,</span> <span class="n">location</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the auto-file target for entry `key`&#39;s attachment</span>
+<span class="sd">        at `old_path` (an absolute, resolved `Path`), from</span>
+<span class="sd">        `format_spec` or (if that is `None`) the configured</span>
+<span class="sd">        `config.auto_file.format_spec`, under the directory `location`</span>
+<span class="sd">        (relative to the library directory, or absolute). Returns the</span>
+<span class="sd">        absolute target `Path`; backs the auto-file modes of</span>
+<span class="sd">        {meth}`rename_file` and {meth}`add_file`.&quot;&quot;&quot;</span>
+        <span class="n">base_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">location</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;cannot generate a file name: auto_file_location must &quot;</span>
+                <span class="s2">&quot;not be empty&quot;</span>
+            <span class="p">)</span>
+        <span class="n">loc_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auto_file_location_dir</span><span class="p">(</span><span class="n">location</span><span class="p">)</span>
+        <span class="n">entry</span><span class="p">,</span> <span class="n">fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_file_format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># feeds the idempotency check: a file already under</span>
+            <span class="c1"># `location` with a name matching the format keeps it</span>
+            <span class="n">current_name</span> <span class="o">=</span> <span class="n">old_path</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">loc_dir</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">current_name</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">is_free</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+            <span class="c1"># a candidate is taken iff another file exists there (the</span>
+            <span class="c1"># file being filed may itself sit at the target already)</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">loc_dir</span> <span class="o">/</span> <span class="n">name</span>
+            <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">old_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">samefile</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">old_path</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="n">new_name</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">render_format</span><span class="p">(</span>
+            <span class="n">fmt</span><span class="p">,</span>
+            <span class="n">entry</span><span class="p">,</span>
+            <span class="n">strings</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strings</span><span class="p">),</span>
+            <span class="n">initials</span><span class="o">=</span><span class="n">active</span><span class="o">.</span><span class="n">initials</span><span class="p">,</span>
+            <span class="n">lowercase</span><span class="o">=</span><span class="n">active</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">lowercase</span><span class="p">,</span>
+            <span class="n">clean</span><span class="o">=</span><span class="n">active</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">clean</span><span class="p">,</span>
+            <span class="n">current_key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+            <span class="n">is_free</span><span class="o">=</span><span class="n">is_free</span><span class="p">,</span>
+            <span class="n">document_name</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+            <span class="n">filename</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">old_path</span><span class="p">),</span>
+            <span class="n">current_name</span><span class="o">=</span><span class="n">current_name</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">loc_dir</span> <span class="o">/</span> <span class="n">new_name</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
 
-
-<div class="viewcode-block" id="Library.__len__">
-<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.__len__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span></div>
-
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
 
     <span class="c1"># -- file attachments -------------------------------------------- #</span>
 
@@ -1247,7 +1600,7 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve `filename` (a new file to be attached) to an</span>
 <span class="sd">        absolute path, interpreting a relative path against both the</span>
 <span class="sd">        library directory and the current working directory (see</span>
-<span class="sd">        {any}`add_file` for the exact rules).&quot;&quot;&quot;</span>
+<span class="sd">        {meth}`add_file` for the exact rules).&quot;&quot;&quot;</span>
         <span class="n">base_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span>
         <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">():</span>
@@ -1342,10 +1695,18 @@
 
 <div class="viewcode-block" id="Library.add_file">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_file">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">check_that_file_exists</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">,</span>
+        <span class="n">filename</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">check_that_file_exists</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">format_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">auto_file_location</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach the file `filename` to entry `key`, appending a</span>
-<span class="sd">        `bdsk-file-N` field (see</span>
-<span class="sd">        {any}`bibdeskparser.entry.Entry.files`).</span>
+<span class="sd">        `bdsk-file-N` field (see {attr}`Entry.files`); returns the</span>
+<span class="sd">        stored library-relative path.</span>
 
 <span class="sd">        * `key`: citation key of the entry (raises `KeyError` if not</span>
 <span class="sd">          in the library).</span>
@@ -1360,6 +1721,26 @@
 <span class="sd">          interpreted relative to the library directory, as a</span>
 <span class="sd">          path-only attachment without a macOS bookmark (useful,</span>
 <span class="sd">          e.g., for a file that only exists on another machine).</span>
+<span class="sd">          Incompatible with auto-filing (`ValueError`), which must</span>
+<span class="sd">          move the file.</span>
+<span class="sd">        * `format_spec`, `auto_file_location`: control **auto-filing**</span>
+<span class="sd">          (see below); they default to the `[auto_file]` configuration</span>
+<span class="sd">          (`config.auto_file.format_spec` /</span>
+<span class="sd">          `config.auto_file.location`; see the</span>
+<span class="sd">          [configuration](configuration)).</span>
+
+<span class="sd">        When auto-filing is in effect, the file is not attached under</span>
+<span class="sd">        its original name: it is *moved* into the `auto_file_location`</span>
+<span class="sd">        directory (relative to the library&#39;s `.bib` directory, or</span>
+<span class="sd">        absolute) and renamed according to `format_spec`, a file-name</span>
+<span class="sd">        format in BibDesk&#39;s</span>
+<span class="sd">        [format-specifier language](format-specifiers). Auto-filing</span>
+<span class="sd">        is in effect if `auto_file_location` is given non-empty, if</span>
+<span class="sd">        `format_spec` is given, or if the configuration sets</span>
+<span class="sd">        `file_automatically = true` in its `[auto_file]` table; pass</span>
+<span class="sd">        `auto_file_location=&quot;&quot;` to force a plain attach regardless of</span>
+<span class="sd">        the configuration. The move itself (and the update of every</span>
+<span class="sd">        entry linking the file) is exactly {meth}`rename_file`.</span>
 
 <span class="sd">        The stored path is always relative to the library directory.</span>
 <span class="sd">        For a file that exists, a macOS bookmark is generated</span>
@@ -1369,15 +1750,39 @@
 <span class="sd">        attached by path only, with a `UserWarning`.</span>
 
 <span class="sd">        Raises `ValueError` if the file is already attached to the</span>
-<span class="sd">        entry, or if this library has no file path yet (a</span>
-<span class="sd">        from-scratch library must be saved first, so that relative</span>
-<span class="sd">        paths are well-defined).</span>
+<span class="sd">        entry, if auto-filing cannot generate a name (no format</span>
+<span class="sd">        configured, or a required field is missing), or if this</span>
+<span class="sd">        library has no file path yet (a from-scratch library must be</span>
+<span class="sd">        saved first, so that relative paths are well-defined).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="n">base_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">auto_file_location</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">format_spec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">active</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">file_automatically</span><span class="p">:</span>
+                <span class="n">auto_file_location</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">location</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">auto_file_location</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">auto_file</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">auto_file_location</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">auto_file</span> <span class="ow">and</span> <span class="n">format_spec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;format_spec has no effect when auto-filing is &quot;</span>
+                <span class="s2">&quot;disabled (auto_file_location=&#39;&#39;)&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">auto_file</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">check_that_file_exists</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;cannot auto-file with check_that_file_exists=False: &quot;</span>
+                <span class="s2">&quot;moving a file requires it to exist&quot;</span>
+            <span class="p">)</span>
         <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_file_arg</span><span class="p">(</span>
             <span class="n">filename</span><span class="p">,</span> <span class="n">must_exist</span><span class="o">=</span><span class="n">check_that_file_exists</span>
         <span class="p">)</span>
+        <span class="n">new_path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">auto_file</span><span class="p">:</span>
+            <span class="c1"># generate (and thereby validate) the target *before*</span>
+            <span class="c1"># attaching, so a failure leaves the entry unchanged</span>
+            <span class="n">new_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_filename</span><span class="p">(</span>
+                <span class="n">key</span><span class="p">,</span> <span class="n">path</span><span class="o">.</span><span class="n">resolve</span><span class="p">(),</span> <span class="n">format_spec</span><span class="p">,</span> <span class="n">auto_file_location</span>
+            <span class="p">)</span>
         <span class="n">bdsk_file</span> <span class="o">=</span> <span class="n">BibDeskFile</span><span class="p">(</span>
             <span class="n">path</span><span class="p">,</span> <span class="n">relative_to</span><span class="o">=</span><span class="n">base_dir</span><span class="p">,</span> <span class="n">must_exist</span><span class="o">=</span><span class="n">check_that_file_exists</span>
         <span class="p">)</span>
@@ -1387,7 +1792,12 @@
                 <span class="sa">f</span><span class="s2">&quot;entry </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
         <span class="c1"># pylint: disable=protected-access</span>
-        <span class="n">entry</span><span class="o">.</span><span class="n">_set_files</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">_file_objects</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">bdsk_file</span><span class="p">])</span></div>
+        <span class="n">entry</span><span class="o">.</span><span class="n">_set_files</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">_file_objects</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">bdsk_file</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">new_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rename_file</span><span class="p">(</span>
+                <span class="n">key</span><span class="p">,</span> <span class="n">bdsk_file</span><span class="o">.</span><span class="n">relative_path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">fspath</span><span class="p">(</span><span class="n">new_path</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">bdsk_file</span><span class="o">.</span><span class="n">relative_path</span></div>
 
 
 <div class="viewcode-block" id="Library.replace_file">
@@ -1403,7 +1813,7 @@
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace entry `key`&#39;s attached file `old_filename` with</span>
 <span class="sd">        `new_filename`, keeping its position in</span>
-<span class="sd">        {any}`bibdeskparser.entry.Entry.files`.</span>
+<span class="sd">        {attr}`Entry.files`.</span>
 
 <span class="sd">        * `key`: citation key of the entry (raises `KeyError` if not</span>
 <span class="sd">          in the library).</span>
@@ -1413,7 +1823,7 @@
 <span class="sd">          CWD-relative interpretation (`ValueError` if that is</span>
 <span class="sd">          ambiguous).</span>
 <span class="sd">        * `new_filename`: the file to attach in its place, resolved</span>
-<span class="sd">          exactly like the `filename` argument of {any}`add_file`</span>
+<span class="sd">          exactly like the `filename` argument of {meth}`add_file`</span>
 <span class="sd">          (raises `ValueError` if it is already attached to the</span>
 <span class="sd">          entry).</span>
 <span class="sd">        * `remove` (mandatory keyword argument): whether to also</span>
@@ -1422,11 +1832,11 @@
 <span class="sd">          else permanently. The old file is *not* deleted (a</span>
 <span class="sd">          `UserWarning` instead) if it is still linked from any</span>
 <span class="sd">          entry; a file already absent from disk is silently ignored.</span>
-<span class="sd">        * `check_that_file_exists`: as in {any}`add_file`, for</span>
+<span class="sd">        * `check_that_file_exists`: as in {meth}`add_file`, for</span>
 <span class="sd">          `new_filename`.</span>
 
 <span class="sd">        Raises `ValueError` if this library has no file path yet</span>
-<span class="sd">        (see {any}`add_file`).</span>
+<span class="sd">        (see {meth}`add_file`).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="n">base_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span>
@@ -1459,18 +1869,18 @@
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.unlink_file">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">unlink_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">remove</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the file `filename` from entry `key`&#39;s attachments</span>
-<span class="sd">        ({any}`bibdeskparser.entry.Entry.files`).</span>
+<span class="sd">        ({attr}`Entry.files`).</span>
 
 <span class="sd">        * `key`: citation key of the entry (raises `KeyError` if not</span>
 <span class="sd">          in the library).</span>
 <span class="sd">        * `filename`: the attachment to unlink, matched like the</span>
-<span class="sd">          `old_filename` argument of {any}`replace_file`.</span>
+<span class="sd">          `old_filename` argument of {meth}`replace_file`.</span>
 <span class="sd">        * `remove` (mandatory keyword argument): whether to also</span>
 <span class="sd">          delete the file from the filesystem, with the exact</span>
-<span class="sd">          semantics of {any}`replace_file`&#39;s `remove`.</span>
+<span class="sd">          semantics of {meth}`replace_file`&#39;s `remove`.</span>
 
 <span class="sd">        Raises `ValueError` if this library has no file path yet</span>
-<span class="sd">        (see {any}`add_file`).</span>
+<span class="sd">        (see {meth}`add_file`).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="n">rel_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_match_attachment</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
@@ -1484,28 +1894,59 @@
 
 <div class="viewcode-block" id="Library.rename_file">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">rename_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">old_filename</span><span class="p">,</span> <span class="n">new_filename</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rename_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">,</span>
+        <span class="n">old_filename</span><span class="p">,</span>
+        <span class="n">new_filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">format_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">auto_file_location</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename (or move) entry `key`&#39;s attached file</span>
-<span class="sd">        `old_filename` to `new_filename` on the filesystem, updating</span>
-<span class="sd">        *every* entry that links the file (each with a fresh macOS</span>
-<span class="sd">        bookmark, where available).</span>
+<span class="sd">        `old_filename` on the filesystem, updating *every* entry that</span>
+<span class="sd">        links the file (each with a fresh macOS bookmark, where</span>
+<span class="sd">        available); returns the new library-relative path.</span>
 
 <span class="sd">        * `key`: citation key of an entry linking the file (raises</span>
 <span class="sd">          `KeyError` if not in the library). Other entries linking</span>
 <span class="sd">          the same file are updated as well, so their</span>
-<span class="sd">          {any}`bibdeskparser.entry.Entry.files` never go stale.</span>
+<span class="sd">          {attr}`Entry.files` never go stale.</span>
 <span class="sd">        * `old_filename`: the attachment to rename, matched like the</span>
-<span class="sd">          `old_filename` argument of {any}`replace_file`; the file</span>
+<span class="sd">          `old_filename` argument of {meth}`replace_file`; the file</span>
 <span class="sd">          must exist on disk (else `FileNotFoundError`).</span>
 <span class="sd">        * `new_filename`: the new name. A bare filename (no directory</span>
 <span class="sd">          component) renames the file within its current directory;</span>
 <span class="sd">          a relative path with a directory component is interpreted</span>
 <span class="sd">          relative to the library&#39;s `.bib` directory; an absolute</span>
 <span class="sd">          path is used as-is. Raises `FileExistsError` if the target</span>
-<span class="sd">          already exists.</span>
+<span class="sd">          already exists. Missing directories in the target path are</span>
+<span class="sd">          created.</span>
 
-<span class="sd">        Raises `ValueError` if this library has no file path yet</span>
-<span class="sd">        (see {any}`add_file`).</span>
+<span class="sd">        With `new_filename` omitted (or `None`), the target is</span>
+<span class="sd">        **generated**: the file is moved into the</span>
+<span class="sd">        `auto_file_location` directory (relative to the library&#39;s</span>
+<span class="sd">        `.bib` directory, or absolute) and renamed according to</span>
+<span class="sd">        `format_spec`, a file-name format in BibDesk&#39;s</span>
+<span class="sd">        [format-specifier language](format-specifiers) (a single</span>
+<span class="sd">        format string, or a per-type `dict` like in {meth}`rekey`).</span>
+<span class="sd">        Both default to the `[auto_file]` configuration</span>
+<span class="sd">        (`config.auto_file.format_spec` / `config.auto_file.location`;</span>
+<span class="sd">        see the [configuration](configuration)). A file whose name</span>
+<span class="sd">        already matches the format is left in place, so re-filing is</span>
+<span class="sd">        idempotent; the format&#39;s required `%u`/`%U`/`%n` specifier</span>
+<span class="sd">        resolves collisions with existing files at the target</span>
+<span class="sd">        location. To preview the generated path without moving</span>
+<span class="sd">        anything, use {meth}`eval_format_spec` with a `filename`.</span>
+
+<span class="sd">        Renaming a file to itself (`new_filename` naming the same</span>
+<span class="sd">        file, or a generated name that already matches) is a no-op.</span>
+
+<span class="sd">        Raises `ValueError` if `new_filename` is given together with</span>
+<span class="sd">        `format_spec` or `auto_file_location`, if no auto-file format</span>
+<span class="sd">        is available for the entry&#39;s type, if the entry lacks a field</span>
+<span class="sd">        the format requires, or if this library has no file path yet</span>
+<span class="sd">        (see {meth}`add_file`).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="n">base_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span>
@@ -1513,15 +1954,33 @@
         <span class="n">old_path</span> <span class="o">=</span> <span class="p">(</span><span class="n">base_dir</span> <span class="o">/</span> <span class="n">old_rel</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">old_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No such file: </span><span class="si">{</span><span class="n">old_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">new_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">new_filename</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_path</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">new_path</span><span class="o">.</span><span class="n">parent</span> <span class="o">==</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">):</span>
-                <span class="n">new_path</span> <span class="o">=</span> <span class="n">old_path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">new_path</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">new_path</span> <span class="o">=</span> <span class="n">base_dir</span> <span class="o">/</span> <span class="n">new_path</span>
+        <span class="k">if</span> <span class="n">new_filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">auto_file_location</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">auto_file_location</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">location</span>
+            <span class="n">new_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_filename</span><span class="p">(</span>
+                <span class="n">key</span><span class="p">,</span> <span class="n">old_path</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">,</span> <span class="n">auto_file_location</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">format_spec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">auto_file_location</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;give either new_filename or format_spec/&quot;</span>
+                    <span class="s2">&quot;auto_file_location, not both&quot;</span>
+                <span class="p">)</span>
+            <span class="n">new_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">new_filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">new_path</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">new_path</span><span class="o">.</span><span class="n">parent</span> <span class="o">==</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">):</span>
+                    <span class="n">new_path</span> <span class="o">=</span> <span class="n">old_path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">new_path</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_path</span> <span class="o">=</span> <span class="n">base_dir</span> <span class="o">/</span> <span class="n">new_path</span>
         <span class="k">if</span> <span class="n">new_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">samefile</span><span class="p">(</span><span class="n">new_path</span><span class="p">,</span> <span class="n">old_path</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">old_rel</span>  <span class="c1"># no-op: already the same file</span>
             <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File already exists: </span><span class="si">{</span><span class="n">new_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">old_path</span><span class="p">,</span> <span class="n">new_path</span><span class="p">)</span>
+        <span class="n">new_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># `shutil.move` (unlike `os.rename`) also works across</span>
+        <span class="c1"># filesystems, e.g. for an absolute auto-file location on</span>
+        <span class="c1"># another volume</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">fspath</span><span class="p">(</span><span class="n">old_path</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">fspath</span><span class="p">(</span><span class="n">new_path</span><span class="p">))</span>
         <span class="n">new_file</span> <span class="o">=</span> <span class="n">BibDeskFile</span><span class="p">(</span><span class="n">new_path</span><span class="p">,</span> <span class="n">relative_to</span><span class="o">=</span><span class="n">base_dir</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="c1"># pylint: disable=protected-access</span>
@@ -1533,13 +1992,71 @@
                     <span class="n">files</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_file</span>
                     <span class="n">changed</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">if</span> <span class="n">changed</span><span class="p">:</span>
-                <span class="n">other</span><span class="o">.</span><span class="n">_set_files</span><span class="p">(</span><span class="n">files</span><span class="p">)</span></div>
+                <span class="n">other</span><span class="o">.</span><span class="n">_set_files</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_file</span><span class="o">.</span><span class="n">relative_path</span></div>
+
+
+    <span class="c1"># -- urls -------------------------------------------------------- #</span>
+
+<div class="viewcode-block" id="Library.add_url">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_url">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach `url` to entry `key`, appending a `bdsk-url-N` field</span>
+<span class="sd">        (see {attr}`Entry.urls`).</span>
+
+<span class="sd">        * `key`: citation key of the entry (raises `KeyError` if not in</span>
+<span class="sd">          the library).</span>
+<span class="sd">        * `url`: the URL to attach; must include both a scheme and a</span>
+<span class="sd">          host (e.g. `https://example.com/paper.pdf`), or `ValueError`</span>
+<span class="sd">          is raised. Raises `ValueError` if `url` is already linked</span>
+<span class="sd">          from the entry.</span>
+
+<span class="sd">        Unlike file attachments, URLs are self-contained (there is no</span>
+<span class="sd">        path resolution and no on-disk file to remove), so this simply</span>
+<span class="sd">        delegates to {meth}`Entry.add_url`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">add_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Library.replace_url">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.replace_url">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">replace_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">old_url</span><span class="p">,</span> <span class="n">new_url</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace entry `key`&#39;s linked `old_url` with `new_url`,</span>
+<span class="sd">        keeping its position in {attr}`Entry.urls`.</span>
+
+<span class="sd">        * `key`: citation key of the entry (raises `KeyError` if not in</span>
+<span class="sd">          the library).</span>
+<span class="sd">        * `old_url`: the linked URL to replace (raises `ValueError` if</span>
+<span class="sd">          it is not linked from the entry).</span>
+<span class="sd">        * `new_url`: the URL to link in its place (raises `ValueError`</span>
+<span class="sd">          if it is not a valid URL, or is already linked from the</span>
+<span class="sd">          entry).</span>
+
+<span class="sd">        Delegates to {meth}`Entry.replace_url`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">replace_url</span><span class="p">(</span><span class="n">old_url</span><span class="p">,</span> <span class="n">new_url</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Library.remove_url">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.remove_url">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove `url` from entry `key`&#39;s linked URLs (see</span>
+<span class="sd">        {attr}`Entry.urls`).</span>
+
+<span class="sd">        * `key`: citation key of the entry (raises `KeyError` if not in</span>
+<span class="sd">          the library).</span>
+<span class="sd">        * `url`: the linked URL to remove (raises `ValueError` if it is</span>
+<span class="sd">          not linked from the entry).</span>
+
+<span class="sd">        Delegates to {meth}`Entry.remove_url`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">remove_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span></div>
 
 
     <span class="c1"># -- saving ------------------------------------------------------ #</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_validate_for_save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Raise/warn as documented by {any}`save`.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Raise/warn as documented by {meth}`save`.&quot;&quot;&quot;</span>
         <span class="n">undefined</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="n">strings_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="o">.</span><span class="n">strings_dict</span>
         <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -1574,32 +2091,32 @@
 
 <span class="sd">        * `path`: destination `.bib` file. Defaults to the path this</span>
 <span class="sd">          library was loaded from (or last saved to); raises</span>
-<span class="sd">          {any}`ValueError` if there is none (a from-scratch library</span>
+<span class="sd">          {exc}`ValueError` if there is none (a from-scratch library</span>
 <span class="sd">          that has never been given a path).</span>
-<span class="sd">        * `force`: bypass the {any}`StaleFileError` check (see below).</span>
+<span class="sd">        * `force`: bypass the {exc}`StaleFileError` check (see below).</span>
 
 <span class="sd">        If the library was not modified since it was loaded (no entry</span>
-<span class="sd">        is {any}`bibdeskparser.entry.Entry.dirty`, {any}`groups` was</span>
-<span class="sd">        not mutated, and no entries/strings were added or removed),</span>
+<span class="sd">        was modified, {attr}`groups` was not mutated, and no</span>
+<span class="sd">        entries/strings were added or removed),</span>
 <span class="sd">        the file is written byte-identical to how it was parsed (or,</span>
 <span class="sd">        for a from-scratch library, is simply rendered), and the</span>
 <span class="sd">        header timestamp is *not* touched. Otherwise: the header</span>
 <span class="sd">        timestamp is updated (synthesizing a header if the library did</span>
 <span class="sd">        not already have one), the static-groups `@comment` block is</span>
-<span class="sd">        re-rendered from the current {any}`groups` (synthesizing the</span>
+<span class="sd">        re-rendered from the current {attr}`groups` (synthesizing the</span>
 <span class="sd">        block if the library did not have one but now has groups),</span>
 <span class="sd">        dirty/new entries have their fields reordered into BibDesk&#39;s</span>
-<span class="sd">        canonical order, and {any}`timestamp` is updated.</span>
+<span class="sd">        canonical order, and {attr}`timestamp` is updated.</span>
 
-<span class="sd">        Before writing, raises {any}`ValueError` if any entry</span>
+<span class="sd">        Before writing, raises {exc}`ValueError` if any entry</span>
 <span class="sd">        references an undefined `@string` macro, and warns (without</span>
 <span class="sd">        raising) about any linked file</span>
-<span class="sd">        ({any}`bibdeskparser.entry.Entry.files`) that does not exist</span>
+<span class="sd">        ({attr}`Entry.files`) that does not exist</span>
 <span class="sd">        relative to `path`&#39;s directory (such files may legitimately</span>
 <span class="sd">        live only on another machine).</span>
 
-<span class="sd">        Raises {any}`StaleFileError` if `path` already exists and its</span>
-<span class="sd">        header timestamp is strictly newer than {any}`timestamp`</span>
+<span class="sd">        Raises {exc}`StaleFileError` if `path` already exists and its</span>
+<span class="sd">        header timestamp is strictly newer than {attr}`timestamp`</span>
 <span class="sd">        (i.e., it was saved -- by BibDesk or otherwise -- after this</span>
 <span class="sd">        library was loaded or last saved), unless `force=True`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1629,7 +2146,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_for_save</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 
         <span class="n">pristine</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modified</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span>
-            <span class="n">entry</span><span class="o">.</span><span class="n">dirty</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="n">entry</span><span class="o">.</span><span class="n">_dirty</span>  <span class="c1"># pylint: disable=protected-access</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">pristine</span><span class="p">:</span>
@@ -1665,15 +2183,16 @@
                 <span class="n">render_static_groups</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_group_data</span><span class="p">)</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="n">groups_block</span><span class="p">],</span> <span class="n">fail_on_duplicate_key</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="c1"># BibDesk writes the static-groups block as the first of</span>
+            <span class="c1"># its group `@comment` blocks (before smart/URL/script</span>
+            <span class="c1"># groups).</span>
+            <span class="n">_hoist_last_block_above_groups</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_groups_block</span> <span class="o">=</span> <span class="n">groups_block</span>
 
         <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">dirty</span><span class="p">:</span>
-                <span class="n">entry</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">bibdesk_field_order</span><span class="p">(</span>  <span class="c1"># pylint: disable=protected-access</span>
-                        <span class="n">entry</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span>  <span class="c1"># pylint: disable=protected-access</span>
-                    <span class="p">)</span>
-                <span class="p">)</span>
+            <span class="c1"># pylint: disable=protected-access</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">_dirty</span><span class="p">:</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span> <span class="o">=</span> <span class="n">bibdesk_field_order</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_timestamp</span> <span class="o">=</span> <span class="n">now</span>
         <span class="n">path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">render_library</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
@@ -1690,7 +2209,85 @@
             <span class="n">entry</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># pylint: disable=protected-access</span></div>
 
 
-    <span class="c1"># -- render/export/edit ----------------------------------------------#</span>
+    <span class="c1"># -- search/render/export/edit ---------------------------------------#</span>
+
+<div class="viewcode-block" id="Library.search">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.search">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;words&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a list of the entries matching `query`, best match</span>
+<span class="sd">        first.</span>
+
+<span class="sd">        ```python</span>
+<span class="sd">        results = library.search(query, fields=None, match=&quot;words&quot;)</span>
+<span class="sd">        ```</span>
+
+<span class="sd">        For every searched field, the query is matched against the</span>
+<span class="sd">        stored value (bare `@string` macro names like `pra` intact),</span>
+<span class="sd">        the decoded Unicode value, and -- for a bare `@string` macro</span>
+<span class="sd">        reference -- the macro&#39;s expansion. Thus, an entry with</span>
+<span class="sd">        `journal = pra` is found both by searching for `&quot;pra&quot;` and for</span>
+<span class="sd">        `&quot;Phys. Rev. A&quot;`. A query containing TeX markup is decoded</span>
+<span class="sd">        before matching, so searching for `Schr{\&quot;o}dinger` finds</span>
+<span class="sd">        `Schrödinger`.</span>
+
+<span class="sd">        By default, the citation key and all fields of each entry are</span>
+<span class="sd">        searched; `fields` (an iterable of field names, or a single</span>
+<span class="sd">        name) restricts the search, with the pseudo-field name `&quot;key&quot;`</span>
+<span class="sd">        selecting the citation key. Fields an entry does not have are</span>
+<span class="sd">        skipped.</span>
+
+<span class="sd">        `match` sets the match strictness. The first four levels form</span>
+<span class="sd">        a ladder -- each level matches everything the previous one</span>
+<span class="sd">        does, plus more -- and are all case-insensitive:</span>
+
+<span class="sd">        * `&quot;exact&quot;`: the query occurs verbatim (up to case) as a</span>
+<span class="sd">          substring of a raw or decoded value.</span>
+<span class="sd">        * `&quot;folded&quot;`: additionally ignores accents, including their</span>
+<span class="sd">          transliterations: `&quot;Schrodinger&quot;` and `&quot;Schroedinger&quot;` both</span>
+<span class="sd">          find `&quot;Schrödinger&quot;`.</span>
+<span class="sd">        * `&quot;words&quot;` (the default): additionally matches when most of</span>
+<span class="sd">          the query&#39;s words occur in a value, in any order (e.g. a</span>
+<span class="sd">          title search from a partially remembered phrase).</span>
+<span class="sd">        * `&quot;fuzzy&quot;`: additionally tolerates small typos in individual words.</span>
+<span class="sd">           Two words count as a fuzzy match when they agree on about 80% of</span>
+<span class="sd">           their letters, and at least 70% of the query&#39;s words must match.</span>
+<span class="sd">        * `&quot;regex&quot;`: the query is a regular expression, tried against</span>
+<span class="sd">          the raw and decoded values, with standard {mod}`re`</span>
+<span class="sd">          semantics (case-sensitive unless the pattern says `(?i)`).</span>
+<span class="sd">          An invalid pattern raises {exc}`ValueError`.</span>
+
+<span class="sd">        Any other `match` value raises {exc}`ValueError`. Entries</span>
+<span class="sd">        matching at a stricter ladder level rank above looser matches;</span>
+<span class="sd">        ties keep the library&#39;s entry order.</span>
+
+<span class="sd">        ```python</span>
+<span class="sd">        &gt;&gt;&gt; from bibdeskparser import Entry, Library</span>
+<span class="sd">        &gt;&gt;&gt; bib = Library()</span>
+<span class="sd">        &gt;&gt;&gt; bib[&quot;Schroedinger1926&quot;] = Entry(</span>
+<span class="sd">        ...     &quot;article&quot;,</span>
+<span class="sd">        ...     &quot;Schroedinger1926&quot;,</span>
+<span class="sd">        ...     fields={</span>
+<span class="sd">        ...         &quot;author&quot;: &quot;Schrödinger, Erwin&quot;,</span>
+<span class="sd">        ...         &quot;title&quot;: &quot;Quantisierung als Eigenwertproblem&quot;,</span>
+<span class="sd">        ...     },</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; [e.key for e in bib.search(&quot;Schrodinger&quot;)]</span>
+<span class="sd">        [&#39;Schroedinger1926&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; [e.key for e in bib.search(&quot;Schroedinger&quot;, fields=[&quot;author&quot;])]</span>
+<span class="sd">        [&#39;Schroedinger1926&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; [e.key for e in bib.search(&quot;eigenwertproblem quantisierung&quot;)]</span>
+<span class="sd">        [&#39;Schroedinger1926&#39;]</span>
+
+<span class="sd">        ```</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">search_entries</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
+            <span class="n">query</span><span class="p">,</span>
+            <span class="n">strings</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strings</span><span class="p">),</span>
+            <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">,</span>
+            <span class="n">match</span><span class="o">=</span><span class="n">match</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
 
 <div class="viewcode-block" id="Library.render">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.render">[docs]</a>
@@ -1745,6 +2342,15 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit the entries with the given citation `keys` (at least</span>
 <span class="sd">        one required) together, in `editor` (or `$EDITOR`), merging</span>
 <span class="sd">        changes back into them (and into `.strings`) in place.</span>
+
+<span class="sd">        `editor` may be a shell command string (e.g. `&quot;code</span>
+<span class="sd">        --wait&quot;`), or a callable taking the temporary file&#39;s</span>
+<span class="sd">        {class}`pathlib.Path` as its only argument and overwriting</span>
+<span class="sd">        that file in place, like a text editor would -- for</span>
+<span class="sd">        non-interactive use (scripts, tests). With a callable</span>
+<span class="sd">        `editor`, a validation failure raises {exc}`ValueError`</span>
+<span class="sd">        (listing the problems, and leaving the library unchanged)</span>
+<span class="sd">        instead of interactively prompting to reopen the editor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">editing</span><span class="o">.</span><span class="n">edit_entries</span><span class="p">(</span>
             <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span>
@@ -1759,6 +2365,14 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">edit_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">editor</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit `.strings` in `editor` (or `$EDITOR`), merging changes</span>
 <span class="sd">        back in place.</span>
+
+<span class="sd">        `editor` may be a shell command string or a callable, as in</span>
+<span class="sd">        {meth}`edit`. With a callable `editor`, a validation failure</span>
+<span class="sd">        raises {exc}`ValueError` instead of interactively prompting;</span>
+<span class="sd">        note that deleting a macro that is still referenced by an</span>
+<span class="sd">        entry is only detected while merging, so other changes from</span>
+<span class="sd">        the same edit may already have been applied to `.strings`</span>
+<span class="sd">        when the exception is raised.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">editing</span><span class="o">.</span><span class="n">edit_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">editor</span><span class="o">=</span><span class="n">editor</span><span class="p">)</span></div>
 </div>
@@ -1773,7 +2387,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 07, 2026.
+      <span class="lastupdated">Last updated on Jul 13, 2026.
       </span></p>
   </div>
 

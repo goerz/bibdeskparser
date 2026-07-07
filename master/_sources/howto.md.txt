@@ -6,6 +6,13 @@ basics of `bibdeskparser` (see the [introduction](readme)); for background on
 
 ## How to manage file attachments
 
+```{tip}
+Rather than naming and placing every attachment by hand, you can have
+`bibdeskparser` *auto-file* them -- moving each file into a configured
+location and renaming it by a file-name format (BibDesk's AutoFile
+feature). See [How to auto-file attachments](howto-auto-file) below.
+```
+
 Linked files are stored with paths relative to the library's `.bib`
 file, so attaching, replacing, unlinking, and renaming them are
 `Library` operations ({py:attr}`~bibdeskparser.entry.Entry.files`
@@ -36,8 +43,8 @@ both places is rejected as ambiguous; pass an absolute path instead):
 >>> bib.save(libdir / "library.bib")
 >>> with warnings.catch_warnings():
 ...     warnings.simplefilter("ignore")  # no macOS bookmark support here
-...     bib.add_file("Smith2020", libdir / "Smith2020.pdf")
-...     bib.add_file("Smith2020", "notes.pdf")  # library-relative
+...     _ = bib.add_file("Smith2020", libdir / "Smith2020.pdf")
+...     _ = bib.add_file("Smith2020", "notes.pdf")  # library-relative
 >>> bib["Smith2020"].files
 ['Smith2020.pdf', 'notes.pdf']
 
@@ -54,12 +61,15 @@ on its next save, once the file appears.
 
 {py:meth}`~bibdeskparser.library.Library.rename_file` renames (or,
 given a path with a directory component, moves) the file on disk and
-updates *every* entry that links it, each with a fresh bookmark:
+updates *every* entry that links it, each with a fresh bookmark; it
+returns the new stored path (relative to the library directory), as
+does `add_file`:
 
 ```python
 >>> with warnings.catch_warnings():
 ...     warnings.simplefilter("ignore")  # no macOS bookmark support here
 ...     bib.rename_file("Smith2020", "notes.pdf", "Smith2020-notes.pdf")
+'Smith2020-notes.pdf'
 >>> bib["Smith2020"].files
 ['Smith2020.pdf', 'Smith2020-notes.pdf']
 >>> (libdir / "Smith2020-notes.pdf").exists()
@@ -86,6 +96,83 @@ True
 
 ```
 
+(howto-auto-file)=
+
+## How to auto-file attachments
+
+Instead of naming every attachment by hand, let `bibdeskparser`
+*auto-file* them (BibDesk's AutoFile feature): move each file into a
+configured location and rename it according to a
+[file-name format](specifiers-files). Configure it once in the
+[`[auto_file]` table](config-auto-file) of `bibdeskparser.toml`:
+
+```toml
+[auto_file]
+format_spec = "%f{Cite Key}%u0%e"  # <citation key><the file's extension>
+location = "."                     # directory, relative to the .bib file
+```
+
+(equivalently, for the current process only,
+`Library.config.auto_file.format_spec = "%f{Cite Key}%u0%e"`).
+
+With that in place,
+{py:meth}`~bibdeskparser.library.Library.rename_file` *without* a new
+filename files an existing attachment, and
+{py:meth}`~bibdeskparser.library.Library.eval_format_spec` with a
+`filename` previews the generated path without moving anything:
+
+```python
+>>> tmpdir = tempfile.TemporaryDirectory()
+>>> libdir = Path(tmpdir.name)
+>>> _ = (libdir / "1512.02079v2.pdf").write_bytes(b"%PDF-1.4 fake")
+>>> bib = Library()
+>>> bib["Smith2020"] = Entry(
+...     "article", "Smith2020", fields={"title": "A Title"}
+... )
+>>> bib.save(libdir / "library.bib")
+>>> bib.config.auto_file.format_spec = "%f{Cite Key}%u0%e"
+>>> with warnings.catch_warnings():
+...     warnings.simplefilter("ignore")  # no macOS bookmark support here
+...     rel = bib.add_file("Smith2020", libdir / "1512.02079v2.pdf")
+>>> rel  # attached under its original name
+'1512.02079v2.pdf'
+>>> bib.eval_format_spec("Smith2020", filename=rel)  # preview only
+'Smith2020.pdf'
+>>> with warnings.catch_warnings():
+...     warnings.simplefilter("ignore")  # no macOS bookmark support here
+...     bib.rename_file("Smith2020", rel)  # move and rename the file
+'Smith2020.pdf'
+>>> bib["Smith2020"].files
+['Smith2020.pdf']
+
+```
+
+Re-running `rename_file` on an already-filed attachment is a no-op (a
+name that matches the format is kept), so auto-filing can safely be
+applied across a whole library.
+
+By default, `add_file` attaches a file under its original name, as
+above; filing is a separate, on-demand step. Setting
+`file_automatically = true` in `[auto_file]` makes `add_file`
+auto-file every new attachment immediately. Per call, an explicit
+`auto_file_location` (or `format_spec`) also enables auto-filing --
+here into a subdirectory next to the `.bib` file:
+
+```python
+>>> _ = (libdir / "notes.pdf").write_bytes(b"%PDF-1.4 fake notes")
+>>> with warnings.catch_warnings():
+...     warnings.simplefilter("ignore")  # no macOS bookmark support here
+...     bib.add_file("Smith2020", "notes.pdf", auto_file_location="Papers")
+'Papers/Smith2020.pdf'
+>>> bib.config.auto_file.format_spec = None  # restore the default
+>>> bib.save()
+>>> tmpdir.cleanup()
+
+```
+
+(Conversely, `auto_file_location=""` forces a plain attach even with
+`file_automatically = true`.)
+
 ## How to define or rename a `@string` macro (journal abbreviation)
 
 Define a macro through {py:attr}`~bibdeskparser.library.Library.strings`,
@@ -98,9 +185,7 @@ everywhere it is used with
 >>> entry = Entry("article", "Smith2020", fields={"title": "A Title"})
 >>> bib["Smith2020"] = entry
 >>> bib.strings["prl"] = "Phys. Rev. Lett."
->>> with warnings.catch_warnings():
-...     warnings.simplefilter("ignore")  # bare str ambiguous with a macro
-...     entry["journal"] = "prl"
+>>> entry["journal"] = "prl"  # macro-shaped str, stored as a bare reference
 >>> entry["journal"]
 'prl'
 >>> bib.rename_string("prl", "prl2")  # updates every referencing entry
@@ -193,13 +278,125 @@ Unlike groups, keywords live inside each entry (as its stored
 `keywords` field), so there is no separate creation step:
 `add_to_keyword` creates a keyword the moment the first entry carries
 it, and a keyword with no entries simply does not exist (assigning
-`()` is equivalent to deleting it). The `keywords` field itself is
-deliberately *not* available through the entry's `dict` interface
-(`entry["keywords"]` raises `KeyError`); routing all keyword edits
-through the `Library` is what keeps `bib.keywords` and every entry's
-`.keywords` consistent at all times. Since these edits change the
-entry's stored fields, they also bump its `date-modified` and mark it
-{py:attr}`~bibdeskparser.entry.Entry.dirty`.
+`()` is equivalent to deleting it). The `keywords` field is readable
+through the entry's `dict` interface (`entry["keywords"]` returns the
+comma-joined string), but deliberately *not* writable that way
+(`entry["keywords"] = ...` raises `KeyError`); routing all keyword
+edits through the `Library` is what keeps `bib.keywords` and every
+entry's `.keywords` consistent at all times. Since these edits change
+the entry's stored fields, they also bump its `date-modified` and mark
+it as modified since it was loaded.
+
+## How to search a library
+
+{py:meth}`~bibdeskparser.library.Library.search` returns the entries
+matching a query, best match first:
+
+```python
+>>> bib = Library()
+>>> bib.strings["adp"] = "Ann. Phys."
+>>> bib["Schroedinger1926"] = Entry(
+...     "article",
+...     "Schroedinger1926",
+...     fields={
+...         "author": "Schrödinger, Erwin",
+...         "title": "Quantisierung als Eigenwertproblem",
+...         "journal": "adp",
+...         "year": "1926",
+...     },
+... )
+>>> bib["Einstein1905"] = Entry(
+...     "article",
+...     "Einstein1905",
+...     fields={
+...         "author": "Einstein, Albert",
+...         "title": "Zur Elektrodynamik bewegter Körper",
+...         "journal": "adp",
+...         "year": "1905",
+...     },
+... )
+>>> [e.key for e in bib.search("quantisierung eigenwertproblem")]
+['Schroedinger1926']
+
+```
+
+Accented text is found by its accented, accent-stripped, and
+transliterated spellings alike:
+
+```python
+>>> for query in ("Schrödinger", "Schrodinger", "Schroedinger"):
+...     print([e.key for e in bib.search(query, fields=["author"])])
+['Schroedinger1926']
+['Schroedinger1926']
+['Schroedinger1926']
+
+```
+
+A bare `@string` macro reference is found both by the macro's name and
+by its expansion (and `fields` limits the search, with the pseudo-field
+`"key"` selecting the citation key):
+
+```python
+>>> [e.key for e in bib.search("adp", fields=["journal"], match="exact")]
+['Schroedinger1926', 'Einstein1905']
+>>> [e.key for e in bib.search("Ann. Phys.", match="exact")]
+['Schroedinger1926', 'Einstein1905']
+>>> [e.key for e in bib.search("einstein", fields=["key"])]
+['Einstein1905']
+
+```
+
+The `match` argument sets the match strictness, from `"exact"`
+(verbatim substring, up to case) through `"folded"` (accent-insensitive)
+and `"words"` (the default: most of the query's words occur, in any
+order) to `"fuzzy"` (tolerates small typos); `match="regex"` instead
+treats the query as a regular expression:
+
+```python
+>>> bib.search("Schrodinger", match="exact")
+[]
+>>> [e.key for e in bib.search("Schrodinger", match="folded")]
+['Schroedinger1926']
+>>> [e.key for e in bib.search("Eigenwertproblm", match="fuzzy")]
+['Schroedinger1926']
+>>> [e.key for e in bib.search(r"^Zur ", fields=["title"], match="regex")]
+['Einstein1905']
+
+```
+
+At the `"fuzzy"` level, two words match when they agree on about 80% of
+their letters. In practice this forgives a single typo per word -- one
+wrong, missing, or extra letter, or one adjacent swap -- and along the
+way bridges US/UK spellings and the plain-ASCII spelling of a
+transliterated name. Because the threshold is a *fraction* of the word,
+shorter words tolerate less: a four-letter word can lose or gain a
+letter but not swap one for another, and a three-letter word is
+essentially exact-only. A second typo survives only in longer words.
+
+| Query word | Entry word | Matches? | Note |
+| --- | --- | --- | --- |
+| `quantom` | `quantum` | yes | one wrong letter |
+| `hamltonian` | `hamiltonian` | yes | one missing letter |
+| `controll` | `control` | yes | one extra letter |
+| `theroy` | `theory` | yes | adjacent swap |
+| `optimisation` | `optimization` | yes | US/UK spelling |
+| `schrodinger` | `schroedinger` | yes | ASCII vs. transliteration |
+| `gate` | `gates` | yes | short word, missing letter |
+| `gate` | `rate` | no | short word, wrong letter |
+| `cat` | `hat` | no | three-letter word |
+
+A complementary guard rejects word pairs whose lengths differ by more
+than two characters, and the `"words"`/`"fuzzy"` levels additionally
+require at least 70% of the query's words to match, so a two-word query
+tolerates one unmatched word but a three-word query still needs two of
+its three.
+
+On the command line, the `search` subcommand prints the matching keys
+one per line, which composes with the other subcommands:
+
+```console
+$ bibdeskparser render library.bib $(bibdeskparser search library.bib "Schroedinger")
+```
 
 ## How to find and resolve duplicate citation keys
 
@@ -217,6 +414,67 @@ directly in the `.bib` file, then reload:
 ('GoerzJOSS2025',)
 
 ```
+
+(howto-auto-keys)=
+
+## How to automatically generate citation keys
+
+Configure an auto-key format (in BibDesk's
+[format-specifier language](format-specifiers)) in your
+`bibdeskparser.toml`, then call
+{py:meth}`~bibdeskparser.library.Library.rekey` with just the old
+key:
+
+```toml
+[auto_key]
+format_spec = "%a1%c{journal}0%Y%u0"
+```
+
+This particular format is a recommended scheme for a journal article:
+first author's last name, the journal's initials, the full year, and
+(only if needed) a disambiguating letter — e.g. `GoerzPRA2014`. For a
+library that mixes entry types, give `format_spec` a
+[per-type table](config-auto-key-per-type) instead (naming `booktitle`
+for conference papers, `series` for books, and so on). The `[initials]`
+table of the configuration handles venues whose initials should not be
+the plain acronym (see [Venue initials](specifiers-initials)).
+
+```python
+>>> bib.rekey("GoerzPRA2014")               # doctest: +SKIP
+'GoerzPRA2014'
+```
+
+The `format_spec` argument overrides the configured format ad hoc; keys
+that already match the format are kept unchanged, so regenerating is
+idempotent and safe to run over a whole library:
+
+```python
+>>> bib.rekey("GoerzPRA2014", format_spec="%a1%c{journal}0%Y%u0")
+'GoerzPRA2014'
+>>> for key in list(bib):
+...     _ = bib.rekey(key, format_spec="%a1:%Y%u0")
+>>> bib.rekey("Goerz:2014", format_spec="%a1%c{journal}0%Y%u0")
+'GoerzNJP2014'
+
+```
+
+{py:meth}`~bibdeskparser.library.Library.eval_format_spec` evaluates
+a format for an entry and returns the resulting key *without renaming
+anything*. Since a key that already matches the format evaluates to
+itself, this finds all citation keys that do not follow a given
+format:
+
+```python
+>>> fmt = "%a1:%Y%u0"
+>>> [key for key in bib if bib.eval_format_spec(key, fmt) != key]
+['GoerzNJP2014']
+
+```
+
+On the command line, the same is available as `bibdeskparser rekey
+BIBFILE OLD_KEY` (see the {ref}`CLI reference <cli-rekey>`), which
+prints the generated key, and as the read-only `bibdeskparser
+eval_format_spec BIBFILE KEY [FORMAT]`.
 
 ## How to edit an entry in your text editor
 
@@ -271,6 +529,96 @@ J. Doe. \textit{Another Title}. J. Test (2021).
 2. J. Doe. *Another Title*. J. Test (2021).
 
 ```
+
+(howto-ai)=
+
+## How to give an AI coding agent access to your library
+
+`bibdeskparser` ships no dedicated AI integration, because it does not
+need one: the {ref}`command-line tool <cli>` *is* the integration
+surface.
+Any agent that can run shell commands, such as
+[Claude Code](https://claude.com/claude-code), can inspect and edit
+your BibDesk library by calling `bibdeskparser`. Each invocation is a
+one-shot process that loads the `.bib` file, does its work, and exits,
+so there is no server to run and nothing to keep alive.
+
+**1. Put the tool on `PATH`.** Install the package into an environment
+the agent can reach (see [Installation](readme)); the simplest way is
+`uv tool install bibdeskparser`. Verify that `bibdeskparser` runs from
+a plain shell:
+
+```console
+$ bibdeskparser --version
+```
+
+**2. Point it at your library.** Set `default_bib_file` in a
+`bibdeskparser.toml` (see [Configuration](configuration)) so commands
+need no path argument:
+
+```toml
+default_bib_file = "/Users/you/Documents/references.bib"
+```
+
+Otherwise the agent must pass the `.bib` path as the first argument to
+every command.
+
+**3. Tell the agent the tool exists.** In an environment file the agent
+reads at startup (for Claude Code, a `CLAUDE.md`), describe the tool and
+point it at the built-in help. The agent discovers the full command set
+itself from `--help`; you only need a few lines:
+
+```markdown
+## Bibliography
+
+My BibDesk reference database is managed with the `bibdeskparser` CLI
+(`default_bib_file` is configured, so commands need no path argument).
+Run `bibdeskparser --help` for the command list and
+`bibdeskparser COMMAND --help` for a command's arguments. Use `--json`
+on read-only commands (`show`, `search`, `keys`, ...) for reliable
+parsing. To find entries, prefer `bibdeskparser search`. For free-form
+edits, pipe modified `export` output back through `edit --stdin`.
+```
+
+**4. Reduce permission prompts (optional).** Agents that gate shell
+access can be told to allow the tool without prompting. In Claude Code,
+add `bibdeskparser` to the allowlist (`Bash(bibdeskparser:*)` in
+`.claude/settings.json`).
+
+A few properties make the CLI safe to hand to an agent:
+
+- **Machine-readable output.** Every read-only command accepts `--json`,
+  so the agent parses structured data instead of scraping text.
+- **Concurrent-edit safety.** Mutating commands save in place and refuse
+  to overwrite a `.bib` file that changed on disk since it was read
+  (whether by BibDesk, by you, or by another agent), failing with a
+  {exc}`~bibdeskparser.StaleFileError` and exit code 1 rather than
+  clobbering the newer version. Nothing coordinates *between* agents up
+  front, but no write silently loses another's changes.
+- **Nothing blocks.** Every command is usable non-interactively.
+  `edit` and `edit_strings` open `$EDITOR` only when run from a
+  terminal; an agent passes `--stdin` instead and pipes in the edited
+  text (see below). Invoked without a terminal and without
+  `--stdin`/`--editor`, they fail fast with a usage error rather than
+  hanging on `$EDITOR`.
+
+For edits beyond the dedicated mutating commands (changing a title,
+fixing an author list, adding an arbitrary field), the agent round-trips
+an entry through `export` and `edit --stdin`: `export` prints exactly
+the text that `edit` would show in an editor, so transforming that text
+and piping it back applies the change, and piping it back unchanged is
+a no-op.
+
+```console
+$ bibdeskparser export Preskill2018 \
+    | sed 's/NISQ era/noisy intermediate-scale quantum era/' \
+    | bibdeskparser edit Preskill2018 --stdin
+```
+
+The `@string` macro definitions round-trip the same way, from
+`strings --bib` into `edit_strings --stdin`. Invalid edited text (an
+unparseable block, a reference to an undefined macro) exits with code 1
+and the list of problems on stderr, leaving the `.bib` file untouched.
 
 ## How to export a minimal BibTeX file for LaTeX
 

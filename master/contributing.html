@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contributing &mdash; BibDeskParser 0.1.0 documentation</title>
+  <title>Contributing &mdash; BibDeskParser 0.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -26,7 +26,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Credits" href="authors.html" />
-    <link rel="prev" title="bibdeskparser" href="apidocs/bibdeskparser/bibdeskparser.html" /> 
+    <link rel="prev" title="Package API" href="apidocs/bibdeskparser/bibdeskparser.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.1.0
+    v0.2.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -66,7 +66,11 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul class="current">
@@ -79,11 +83,12 @@
 <li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#code-style">Code Style</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#changelog">Changelog</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#versioning">Versioning</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
-<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 
         </div>
@@ -202,6 +207,7 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
 <section id="commit-messages">
 <h2>Commit Messages<a class="headerlink" href="#commit-messages" title="Link to this heading"></a></h2>
 <p>Write a short imperative subject line (50 chars or less) that completes the sentence “If applied, this commit will …”, followed by a blank line and an optional body wrapped at 72 characters. Reference issues as e.g. <code class="docutils literal notranslate"><span class="pre">#1</span></code>, and close them with a <code class="docutils literal notranslate"><span class="pre">Closes</span> <span class="pre">#1</span></code> line (see <a class="reference external" href="https://help.github.com/articles/closing-issues-using-keywords/">closing issues using keywords</a>).</p>
+<p>Use markdown syntax (GitHub Flavored Markdown) in the commit message. In particular, use inline code (backticks) for any snippet of text that refers to code.</p>
 </section>
 <section id="testing">
 <h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
@@ -226,7 +232,7 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
 <p>The documentation is generated with <a class="reference external" href="https://www.sphinx-doc.org/">Sphinx</a> and written in <a class="reference external" href="https://myst-parser.readthedocs.io/">MyST Markdown</a>. Docstrings are also MyST Markdown and are rendered on the auto-generated API page by <a class="reference external" href="https://sphinx-autodoc2.readthedocs.io/">autodoc2</a>; math may be written in LaTeX syntax using <code class="docutils literal notranslate"><span class="pre">$…$</span></code>. Structure content along the four <a class="reference external" href="https://diataxis.fr">Diátaxis</a> categories: a <strong>Tutorial</strong> (a linear, learning-oriented walkthrough for a newcomer), <strong>How-to guides</strong> (short, task-oriented recipes that assume basic familiarity), <strong>Explanation</strong> (background/conceptual material — why the BibDesk <code class="docutils literal notranslate"><span class="pre">.bib</span></code> format works the way it does, and how <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> handles each feature), and <strong>Reference</strong> (the auto-generated API page). Don’t mix categories within one page (e.g. don’t bury conceptual background inside a how-to recipe).</p>
-<p>Every public name (one not starting with <code class="docutils literal notranslate"><span class="pre">_</span></code>) in a module must be listed in either <code class="docutils literal notranslate"><span class="pre">__all__</span></code> or <code class="docutils literal notranslate"><span class="pre">__private__</span></code>; <code class="docutils literal notranslate"><span class="pre">autodoc2</span></code> only renders <code class="docutils literal notranslate"><span class="pre">__all__</span></code> members. Keep the public API surface minimal: expose only what a <em>user</em> of the library needs (currently just <code class="docutils literal notranslate"><span class="pre">Library</span></code>, <code class="docutils literal notranslate"><span class="pre">Entry</span></code>, <code class="docutils literal notranslate"><span class="pre">Value</span></code>, and <code class="docutils literal notranslate"><span class="pre">StaleFileError</span></code>, all re-exported from the top-level <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> package). In particular:</p>
+<p>Every public name (one not starting with <code class="docutils literal notranslate"><span class="pre">_</span></code>) in a module must be listed in either <code class="docutils literal notranslate"><span class="pre">__all__</span></code> or <code class="docutils literal notranslate"><span class="pre">__private__</span></code>; <code class="docutils literal notranslate"><span class="pre">autodoc2</span></code> only renders <code class="docutils literal notranslate"><span class="pre">__all__</span></code> members. Keep the public API surface minimal: expose only what a <em>user</em> of the library needs (currently just <code class="docutils literal notranslate"><span class="pre">Library</span></code>, <code class="docutils literal notranslate"><span class="pre">Entry</span></code>, <code class="docutils literal notranslate"><span class="pre">ValueString</span></code>, <code class="docutils literal notranslate"><span class="pre">MacroString</span></code>, and <code class="docutils literal notranslate"><span class="pre">StaleFileError</span></code>, all re-exported from the top-level <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> package). In particular:</p>
 <ul class="simple">
 <li><p>Don’t add a standalone public function for something already reachable as an <code class="docutils literal notranslate"><span class="pre">Entry</span></code>/<code class="docutils literal notranslate"><span class="pre">Library</span></code> method (e.g. the citation-rendering, export, and <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>-editing logic lives in private free functions in <code class="docutils literal notranslate"><span class="pre">render.py</span></code>/<code class="docutils literal notranslate"><span class="pre">exporting.py</span></code>/<code class="docutils literal notranslate"><span class="pre">editing.py</span></code>, used only internally by the corresponding methods).</p></li>
 <li><p>Don’t make a validation/normalization helper public just because it’s used internally (e.g. <code class="docutils literal notranslate"><span class="pre">is_valid_macro_name</span></code>/<code class="docutils literal notranslate"><span class="pre">normalize_macro_name</span></code> in <code class="docutils literal notranslate"><span class="pre">macros.py</span></code> stay private, since <code class="docutils literal notranslate"><span class="pre">Entry</span></code>/<code class="docutils literal notranslate"><span class="pre">Library</span></code> already apply them automatically and surface a clear <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> on invalid input).</p></li>
@@ -238,6 +244,24 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">make docs</span>
 </pre></div>
 </div>
+</section>
+<section id="changelog">
+<h2>Changelog<a class="headerlink" href="#changelog" title="Link to this heading"></a></h2>
+<p>User-facing changes are tracked in <a class="reference external" href="https://github.com/goerz/bibdeskparser/blob/master/CHANGELOG.md"><code class="docutils literal notranslate"><span class="pre">CHANGELOG.md</span></code></a>, which follows the <a class="reference external" href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a> format. Whenever you make a user-facing change — in a pull request or a direct commit, add a bullet under the <code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">[Unreleased]</span></code> heading at the top of the file, with an inline category prefix (<code class="docutils literal notranslate"><span class="pre">Added:</span></code>, <code class="docutils literal notranslate"><span class="pre">Changed:</span></code>, <code class="docutils literal notranslate"><span class="pre">Deprecated:</span></code>, <code class="docutils literal notranslate"><span class="pre">Removed:</span></code>, <code class="docutils literal notranslate"><span class="pre">Fixed:</span></code>, or <code class="docutils literal notranslate"><span class="pre">Security:</span></code>):</p>
+<div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span><span class="gu">## [Unreleased]</span>
+
+<span class="k">*</span><span class="w"> </span>Added: <span class="sb">`Entry.foo`</span> method for frobnicating entries [[#12]]
+<span class="k">*</span><span class="w"> </span>Fixed: crash when parsing an empty <span class="sb">`@string`</span> macro [[#15], [#16]]
+</pre></div>
+</div>
+<p>Link the relevant issue and pull request with a reference-style label <code class="docutils literal notranslate"><span class="pre">[[#N]]</span></code> (listing the issue before the pull request that closes it). You only need to write the <code class="docutils literal notranslate"><span class="pre">[[#N]]</span></code> marker in the bullet; run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">changelog</span></code> to fill in the matching link definition at the bottom of the file (it queries the GitHub API to record whether <code class="docutils literal notranslate"><span class="pre">#N</span></code> is an issue or a pull request, so it needs network access). Skip changelog entries for changes that are not user-facing: CI, dependency bumps, formatting, typo fixes, and internal-only refactoring (a leading underscore, e.g. <code class="docutils literal notranslate"><span class="pre">_helper</span></code>, marks a name as internal).</p>
+<p>Validate the file with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">make check-changelog   # verify every reference has a link definition (no network)</span>
+<span class="go">make changelog         # additionally add any missing [#N] link definitions</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">check-changelog</span></code> runs as part of <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">lint</span></code> and in CI. It is purely textual and makes no network calls; it does not verify that the links actually resolve or that the issue-vs-pull-request category is correct, so double-check those manually.</p>
+<p>You never edit the release headings or version links by hand: <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">release</span></code> transforms the changelog automatically. For the release commit it renames <code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">[Unreleased]</span></code> to <code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">[vX.Y.Z]</span> <span class="pre">-</span> <span class="pre">YYYY-MM-DD</span></code> and updates the version links at the bottom (pointing <code class="docutils literal notranslate"><span class="pre">[Unreleased]</span></code> at <code class="docutils literal notranslate"><span class="pre">…/compare/vX.Y.Z..HEAD</span></code> and adding <code class="docutils literal notranslate"><span class="pre">[vX.Y.Z]:</span> <span class="pre">…/releases/tag/vX.Y.Z</span></code>), opening the file in your editor first so you can review and refine the release notes. The tagged release commit therefore contains no <code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">[Unreleased]</span></code> section; a fresh empty one is added back in the immediately following <code class="docutils literal notranslate"><span class="pre">+dev</span></code> version-bump commit that opens the next development cycle. The signed git tag and the GitHub release for the version reuse that section’s notes verbatim, so the release notes never have to be retyped.</p>
 </section>
 <section id="versioning">
 <h2>Versioning<a class="headerlink" href="#versioning" title="Link to this heading"></a></h2>
@@ -255,7 +279,7 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="apidocs/bibdeskparser/bibdeskparser.html" class="btn btn-neutral float-left" title="bibdeskparser" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apidocs/bibdeskparser/bibdeskparser.html" class="btn btn-neutral float-left" title="Package API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="authors.html" class="btn btn-neutral float-right" title="Credits" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
@@ -263,7 +287,7 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 07, 2026.
+      <span class="lastupdated">Last updated on Jul 13, 2026.
       </span></p>
   </div>
 

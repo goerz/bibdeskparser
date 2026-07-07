@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How-to Guides &mdash; BibDeskParser 0.1.0 documentation</title>
+  <title>How-to Guides &mdash; BibDeskParser 0.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.1.0
+    v0.2.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -60,12 +60,16 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">How-to Guides</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-manage-file-attachments">How to manage file attachments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-auto-file-attachments">How to auto-file attachments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-define-or-rename-a-string-macro-journal-abbreviation">How to define or rename a <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro (journal abbreviation)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-organize-entries-into-groups">How to organize entries into groups</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-tag-entries-with-keywords">How to tag entries with keywords</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-search-a-library">How to search a library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-find-and-resolve-duplicate-citation-keys">How to find and resolve duplicate citation keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-automatically-generate-citation-keys">How to automatically generate citation keys</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-edit-an-entry-in-your-text-editor">How to edit an entry in your text editor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-render-a-bibliography-in-a-specific-citation-format">How to render a bibliography in a specific citation format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-give-an-ai-coding-agent-access-to-your-library">How to give an AI coding agent access to your library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-export-a-minimal-bibtex-file-for-latex">How to export a minimal BibTeX file for LaTeX</a></li>
 </ul>
 </li>
@@ -76,13 +80,17 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
-<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 
         </div>
@@ -148,6 +156,13 @@ basics of <code class="docutils literal notranslate"><span class="pre">bibdeskpa
 <em>why</em> things work this way, see <a class="reference internal" href="bibdesk_format.html"><span class="doc std std-doc">BibDesk’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code> Format</span></a>.</p>
 <section id="how-to-manage-file-attachments">
 <h2>How to manage file attachments<a class="headerlink" href="#how-to-manage-file-attachments" title="Link to this heading"></a></h2>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Rather than naming and placing every attachment by hand, you can have
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> <em>auto-file</em> them – moving each file into a configured
+location and renaming it by a file-name format (BibDesk’s AutoFile
+feature). See <a class="reference internal" href="#howto-auto-file"><span class="std std-ref">How to auto-file attachments</span></a> below.</p>
+</div>
 <p>Linked files are stored with paths relative to the library’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code>
 file, so attaching, replacing, unlinking, and renaming them are
 <code class="docutils literal notranslate"><span class="pre">Library</span></code> operations (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.files" title="bibdeskparser.entry.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">files</span></code></a>
@@ -175,8 +190,8 @@ both places is rejected as ambiguous; pass an absolute path instead):</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">libdir</span> <span class="o">/</span> <span class="s2">&quot;library.bib&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
 <span class="gp">... </span>    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># no macOS bookmark support here</span>
-<span class="gp">... </span>    <span class="n">bib</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="n">libdir</span> <span class="o">/</span> <span class="s2">&quot;Smith2020.pdf&quot;</span><span class="p">)</span>
-<span class="gp">... </span>    <span class="n">bib</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="s2">&quot;notes.pdf&quot;</span><span class="p">)</span>  <span class="c1"># library-relative</span>
+<span class="gp">... </span>    <span class="n">_</span> <span class="o">=</span> <span class="n">bib</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="n">libdir</span> <span class="o">/</span> <span class="s2">&quot;Smith2020.pdf&quot;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">_</span> <span class="o">=</span> <span class="n">bib</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="s2">&quot;notes.pdf&quot;</span><span class="p">)</span>  <span class="c1"># library-relative</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">files</span>
 <span class="go">[&#39;Smith2020.pdf&#39;, &#39;notes.pdf&#39;]</span>
 
@@ -192,10 +207,13 @@ relative to the library directory, and BibDesk fills in the bookmark
 on its next save, once the file appears.</p>
 <p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.library.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a> renames (or,
 given a path with a directory component, moves) the file on disk and
-updates <em>every</em> entry that links it, each with a fresh bookmark:</p>
+updates <em>every</em> entry that links it, each with a fresh bookmark; it
+returns the new stored path (relative to the library directory), as
+does <code class="docutils literal notranslate"><span class="pre">add_file</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
 <span class="gp">... </span>    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># no macOS bookmark support here</span>
 <span class="gp">... </span>    <span class="n">bib</span><span class="o">.</span><span class="n">rename_file</span><span class="p">(</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="s2">&quot;notes.pdf&quot;</span><span class="p">,</span> <span class="s2">&quot;Smith2020-notes.pdf&quot;</span><span class="p">)</span>
+<span class="go">&#39;Smith2020-notes.pdf&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">files</span>
 <span class="go">[&#39;Smith2020.pdf&#39;, &#39;Smith2020-notes.pdf&#39;]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">libdir</span> <span class="o">/</span> <span class="s2">&quot;Smith2020-notes.pdf&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
@@ -221,6 +239,73 @@ never deleted while another entry still links it:</p>
 </pre></div>
 </div>
 </section>
+<section id="how-to-auto-file-attachments">
+<span id="howto-auto-file"></span><h2>How to auto-file attachments<a class="headerlink" href="#how-to-auto-file-attachments" title="Link to this heading"></a></h2>
+<p>Instead of naming every attachment by hand, let <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code>
+<em>auto-file</em> them (BibDesk’s AutoFile feature): move each file into a
+configured location and rename it according to a
+<a class="reference internal" href="specifiers.html#specifiers-files"><span class="std std-ref">file-name format</span></a>. Configure it once in the
+<a class="reference internal" href="config.html#config-auto-file"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> table</span></a> of <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code>:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[auto_file]</span>
+<span class="n">format_spec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;%f{Cite Key}%u0%e&quot;</span><span class="w">  </span><span class="c1"># &lt;citation key&gt;&lt;the file&#39;s extension&gt;</span>
+<span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.&quot;</span><span class="w">                     </span><span class="c1"># directory, relative to the .bib file</span>
+</pre></div>
+</div>
+<p>(equivalently, for the current process only,
+<code class="docutils literal notranslate"><span class="pre">Library.config.auto_file.format_spec</span> <span class="pre">=</span> <span class="pre">&quot;%f{Cite</span> <span class="pre">Key}%u0%e&quot;</span></code>).</p>
+<p>With that in place,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.library.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a> <em>without</em> a new
+filename files an existing attachment, and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.eval_format_spec" title="bibdeskparser.library.Library.eval_format_spec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">eval_format_spec()</span></code></a> with a
+<code class="docutils literal notranslate"><span class="pre">filename</span></code> previews the generated path without moving anything:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">libdir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tmpdir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_</span> <span class="o">=</span> <span class="p">(</span><span class="n">libdir</span> <span class="o">/</span> <span class="s2">&quot;1512.02079v2.pdf&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write_bytes</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;%PDF-1.4 fake&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;A Title&quot;</span><span class="p">}</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">libdir</span> <span class="o">/</span> <span class="s2">&quot;library.bib&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">format_spec</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">{Cite Key}</span><span class="si">%u</span><span class="s2">0</span><span class="si">%e</span><span class="s2">&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># no macOS bookmark support here</span>
+<span class="gp">... </span>    <span class="n">rel</span> <span class="o">=</span> <span class="n">bib</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="n">libdir</span> <span class="o">/</span> <span class="s2">&quot;1512.02079v2.pdf&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rel</span>  <span class="c1"># attached under its original name</span>
+<span class="go">&#39;1512.02079v2.pdf&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">rel</span><span class="p">)</span>  <span class="c1"># preview only</span>
+<span class="go">&#39;Smith2020.pdf&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># no macOS bookmark support here</span>
+<span class="gp">... </span>    <span class="n">bib</span><span class="o">.</span><span class="n">rename_file</span><span class="p">(</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="n">rel</span><span class="p">)</span>  <span class="c1"># move and rename the file</span>
+<span class="go">&#39;Smith2020.pdf&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">files</span>
+<span class="go">[&#39;Smith2020.pdf&#39;]</span>
+
+</pre></div>
+</div>
+<p>Re-running <code class="docutils literal notranslate"><span class="pre">rename_file</span></code> on an already-filed attachment is a no-op (a
+name that matches the format is kept), so auto-filing can safely be
+applied across a whole library.</p>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">add_file</span></code> attaches a file under its original name, as
+above; filing is a separate, on-demand step. Setting
+<code class="docutils literal notranslate"><span class="pre">file_automatically</span> <span class="pre">=</span> <span class="pre">true</span></code> in <code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> makes <code class="docutils literal notranslate"><span class="pre">add_file</span></code>
+auto-file every new attachment immediately. Per call, an explicit
+<code class="docutils literal notranslate"><span class="pre">auto_file_location</span></code> (or <code class="docutils literal notranslate"><span class="pre">format_spec</span></code>) also enables auto-filing –
+here into a subdirectory next to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">_</span> <span class="o">=</span> <span class="p">(</span><span class="n">libdir</span> <span class="o">/</span> <span class="s2">&quot;notes.pdf&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write_bytes</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;%PDF-1.4 fake notes&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># no macOS bookmark support here</span>
+<span class="gp">... </span>    <span class="n">bib</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="s2">&quot;notes.pdf&quot;</span><span class="p">,</span> <span class="n">auto_file_location</span><span class="o">=</span><span class="s2">&quot;Papers&quot;</span><span class="p">)</span>
+<span class="go">&#39;Papers/Smith2020.pdf&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_file</span><span class="o">.</span><span class="n">format_spec</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># restore the default</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tmpdir</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+
+</pre></div>
+</div>
+<p>(Conversely, <code class="docutils literal notranslate"><span class="pre">auto_file_location=&quot;&quot;</span></code> forces a plain attach even with
+<code class="docutils literal notranslate"><span class="pre">file_automatically</span> <span class="pre">=</span> <span class="pre">true</span></code>.)</p>
+</section>
 <section id="how-to-define-or-rename-a-string-macro-journal-abbreviation">
 <h2>How to define or rename a <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro (journal abbreviation)<a class="headerlink" href="#how-to-define-or-rename-a-string-macro-journal-abbreviation" title="Link to this heading"></a></h2>
 <p>Define a macro through <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.strings" title="bibdeskparser.library.Library.strings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strings</span></code></a>,
@@ -231,9 +316,7 @@ everywhere it is used with
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;A Title&quot;</span><span class="p">})</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">&quot;prl&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Phys. Rev. Lett.&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-<span class="gp">... </span>    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># bare str ambiguous with a macro</span>
-<span class="gp">... </span>    <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;prl&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;prl&quot;</span>  <span class="c1"># macro-shaped str, stored as a bare reference</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
 <span class="go">&#39;prl&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">rename_string</span><span class="p">(</span><span class="s2">&quot;prl&quot;</span><span class="p">,</span> <span class="s2">&quot;prl2&quot;</span><span class="p">)</span>  <span class="c1"># updates every referencing entry</span>
@@ -321,13 +404,158 @@ the read-only per-entry tuple:</p>
 <code class="docutils literal notranslate"><span class="pre">keywords</span></code> field), so there is no separate creation step:
 <code class="docutils literal notranslate"><span class="pre">add_to_keyword</span></code> creates a keyword the moment the first entry carries
 it, and a keyword with no entries simply does not exist (assigning
-<code class="docutils literal notranslate"><span class="pre">()</span></code> is equivalent to deleting it). The <code class="docutils literal notranslate"><span class="pre">keywords</span></code> field itself is
-deliberately <em>not</em> available through the entry’s <code class="docutils literal notranslate"><span class="pre">dict</span></code> interface
-(<code class="docutils literal notranslate"><span class="pre">entry[&quot;keywords&quot;]</span></code> raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>); routing all keyword edits
-through the <code class="docutils literal notranslate"><span class="pre">Library</span></code> is what keeps <code class="docutils literal notranslate"><span class="pre">bib.keywords</span></code> and every entry’s
-<code class="docutils literal notranslate"><span class="pre">.keywords</span></code> consistent at all times. Since these edits change the
-entry’s stored fields, they also bump its <code class="docutils literal notranslate"><span class="pre">date-modified</span></code> and mark it
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.dirty" title="bibdeskparser.entry.Entry.dirty"><code class="xref py py-attr docutils literal notranslate"><span class="pre">dirty</span></code></a>.</p>
+<code class="docutils literal notranslate"><span class="pre">()</span></code> is equivalent to deleting it). The <code class="docutils literal notranslate"><span class="pre">keywords</span></code> field is readable
+through the entry’s <code class="docutils literal notranslate"><span class="pre">dict</span></code> interface (<code class="docutils literal notranslate"><span class="pre">entry[&quot;keywords&quot;]</span></code> returns the
+comma-joined string), but deliberately <em>not</em> writable that way
+(<code class="docutils literal notranslate"><span class="pre">entry[&quot;keywords&quot;]</span> <span class="pre">=</span> <span class="pre">...</span></code> raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>); routing all keyword
+edits through the <code class="docutils literal notranslate"><span class="pre">Library</span></code> is what keeps <code class="docutils literal notranslate"><span class="pre">bib.keywords</span></code> and every
+entry’s <code class="docutils literal notranslate"><span class="pre">.keywords</span></code> consistent at all times. Since these edits change
+the entry’s stored fields, they also bump its <code class="docutils literal notranslate"><span class="pre">date-modified</span></code> and mark
+it as modified since it was loaded.</p>
+</section>
+<section id="how-to-search-a-library">
+<h2>How to search a library<a class="headerlink" href="#how-to-search-a-library" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.search" title="bibdeskparser.library.Library.search"><code class="xref py py-meth docutils literal notranslate"><span class="pre">search()</span></code></a> returns the entries
+matching a query, best match first:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">&quot;adp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Ann. Phys.&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Schroedinger1926&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;Schroedinger1926&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">fields</span><span class="o">=</span><span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Schrödinger, Erwin&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Quantisierung als Eigenwertproblem&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;adp&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;1926&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Einstein1905&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;Einstein1905&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">fields</span><span class="o">=</span><span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Einstein, Albert&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Zur Elektrodynamik bewegter Körper&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;adp&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;1905&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;quantisierung eigenwertproblem&quot;</span><span class="p">)]</span>
+<span class="go">[&#39;Schroedinger1926&#39;]</span>
+
+</pre></div>
+</div>
+<p>Accented text is found by its accented, accent-stripped, and
+transliterated spellings alike:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;Schrödinger&quot;</span><span class="p">,</span> <span class="s2">&quot;Schrodinger&quot;</span><span class="p">,</span> <span class="s2">&quot;Schroedinger&quot;</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">([</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;author&quot;</span><span class="p">])])</span>
+<span class="go">[&#39;Schroedinger1926&#39;]</span>
+<span class="go">[&#39;Schroedinger1926&#39;]</span>
+<span class="go">[&#39;Schroedinger1926&#39;]</span>
+
+</pre></div>
+</div>
+<p>A bare <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference is found both by the macro’s name and
+by its expansion (and <code class="docutils literal notranslate"><span class="pre">fields</span></code> limits the search, with the pseudo-field
+<code class="docutils literal notranslate"><span class="pre">&quot;key&quot;</span></code> selecting the citation key):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;adp&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">],</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;exact&quot;</span><span class="p">)]</span>
+<span class="go">[&#39;Schroedinger1926&#39;, &#39;Einstein1905&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Ann. Phys.&quot;</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;exact&quot;</span><span class="p">)]</span>
+<span class="go">[&#39;Schroedinger1926&#39;, &#39;Einstein1905&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;einstein&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;key&quot;</span><span class="p">])]</span>
+<span class="go">[&#39;Einstein1905&#39;]</span>
+
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">match</span></code> argument sets the match strictness, from <code class="docutils literal notranslate"><span class="pre">&quot;exact&quot;</span></code>
+(verbatim substring, up to case) through <code class="docutils literal notranslate"><span class="pre">&quot;folded&quot;</span></code> (accent-insensitive)
+and <code class="docutils literal notranslate"><span class="pre">&quot;words&quot;</span></code> (the default: most of the query’s words occur, in any
+order) to <code class="docutils literal notranslate"><span class="pre">&quot;fuzzy&quot;</span></code> (tolerates small typos); <code class="docutils literal notranslate"><span class="pre">match=&quot;regex&quot;</span></code> instead
+treats the query as a regular expression:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Schrodinger&quot;</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;exact&quot;</span><span class="p">)</span>
+<span class="go">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Schrodinger&quot;</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;folded&quot;</span><span class="p">)]</span>
+<span class="go">[&#39;Schroedinger1926&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Eigenwertproblm&quot;</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;fuzzy&quot;</span><span class="p">)]</span>
+<span class="go">[&#39;Schroedinger1926&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^Zur &quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;regex&quot;</span><span class="p">)]</span>
+<span class="go">[&#39;Einstein1905&#39;]</span>
+
+</pre></div>
+</div>
+<p>At the <code class="docutils literal notranslate"><span class="pre">&quot;fuzzy&quot;</span></code> level, two words match when they agree on about 80% of
+their letters. In practice this forgives a single typo per word – one
+wrong, missing, or extra letter, or one adjacent swap – and along the
+way bridges US/UK spellings and the plain-ASCII spelling of a
+transliterated name. Because the threshold is a <em>fraction</em> of the word,
+shorter words tolerate less: a four-letter word can lose or gain a
+letter but not swap one for another, and a three-letter word is
+essentially exact-only. A second typo survives only in longer words.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Query word</p></th>
+<th class="head"><p>Entry word</p></th>
+<th class="head"><p>Matches?</p></th>
+<th class="head"><p>Note</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">quantom</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">quantum</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>one wrong letter</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hamltonian</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hamiltonian</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>one missing letter</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">controll</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">control</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>one extra letter</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">theroy</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">theory</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>adjacent swap</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">optimisation</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">optimization</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>US/UK spelling</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">schrodinger</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">schroedinger</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>ASCII vs. transliteration</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gate</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gates</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>short word, missing letter</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gate</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rate</span></code></p></td>
+<td><p>no</p></td>
+<td><p>short word, wrong letter</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cat</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hat</span></code></p></td>
+<td><p>no</p></td>
+<td><p>three-letter word</p></td>
+</tr>
+</tbody>
+</table>
+<p>A complementary guard rejects word pairs whose lengths differ by more
+than two characters, and the <code class="docutils literal notranslate"><span class="pre">&quot;words&quot;</span></code>/<code class="docutils literal notranslate"><span class="pre">&quot;fuzzy&quot;</span></code> levels additionally
+require at least 70% of the query’s words to match, so a two-word query
+tolerates one unmatched word but a three-word query still needs two of
+its three.</p>
+<p>On the command line, the <code class="docutils literal notranslate"><span class="pre">search</span></code> subcommand prints the matching keys
+one per line, which composes with the other subcommands:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>render<span class="w"> </span>library.bib<span class="w"> </span><span class="k">$(</span>bibdeskparser<span class="w"> </span>search<span class="w"> </span>library.bib<span class="w"> </span><span class="s2">&quot;Schroedinger&quot;</span><span class="k">)</span>
+</pre></div>
+</div>
 </section>
 <section id="how-to-find-and-resolve-duplicate-citation-keys">
 <h2>How to find and resolve duplicate citation keys<a class="headerlink" href="#how-to-find-and-resolve-duplicate-citation-keys" title="Link to this heading"></a></h2>
@@ -344,6 +572,55 @@ directly in the <code class="docutils literal notranslate"><span class="pre">.bi
 
 </pre></div>
 </div>
+</section>
+<section id="how-to-automatically-generate-citation-keys">
+<span id="howto-auto-keys"></span><h2>How to automatically generate citation keys<a class="headerlink" href="#how-to-automatically-generate-citation-keys" title="Link to this heading"></a></h2>
+<p>Configure an auto-key format (in BibDesk’s
+<a class="reference internal" href="specifiers.html#format-specifiers"><span class="std std-ref">format-specifier language</span></a>) in your
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code>, then call
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rekey" title="bibdeskparser.library.Library.rekey"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rekey()</span></code></a> with just the old
+key:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[auto_key]</span>
+<span class="n">format_spec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;%a1%c{journal}0%Y%u0&quot;</span>
+</pre></div>
+</div>
+<p>This particular format is a recommended scheme for a journal article:
+first author’s last name, the journal’s initials, the full year, and
+(only if needed) a disambiguating letter — e.g. <code class="docutils literal notranslate"><span class="pre">GoerzPRA2014</span></code>. For a
+library that mixes entry types, give <code class="docutils literal notranslate"><span class="pre">format_spec</span></code> a
+<a class="reference internal" href="config.html#config-auto-key-per-type"><span class="std std-ref">per-type table</span></a> instead (naming <code class="docutils literal notranslate"><span class="pre">booktitle</span></code>
+for conference papers, <code class="docutils literal notranslate"><span class="pre">series</span></code> for books, and so on). The <code class="docutils literal notranslate"><span class="pre">[initials]</span></code>
+table of the configuration handles venues whose initials should not be
+the plain acronym (see <a class="reference internal" href="specifiers.html#specifiers-initials"><span class="std std-ref">Venue initials</span></a>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">)</span>
+<span class="go">&#39;GoerzPRA2014&#39;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">format_spec</span></code> argument overrides the configured format ad hoc; keys
+that already match the format are kept unchanged, so regenerating is
+idempotent and safe to run over a whole library:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">)</span>
+<span class="go">&#39;GoerzPRA2014&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">bib</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">_</span> <span class="o">=</span> <span class="n">bib</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1:%Y</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="s2">&quot;Goerz:2014&quot;</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">)</span>
+<span class="go">&#39;GoerzNJP2014&#39;</span>
+
+</pre></div>
+</div>
+<p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.eval_format_spec" title="bibdeskparser.library.Library.eval_format_spec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">eval_format_spec()</span></code></a> evaluates
+a format for an entry and returns the resulting key <em>without renaming
+anything</em>. Since a key that already matches the format evaluates to
+itself, this finds all citation keys that do not follow a given
+format:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fmt</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1:%Y</span><span class="si">%u</span><span class="s2">0&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">bib</span> <span class="k">if</span> <span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span> <span class="o">!=</span> <span class="n">key</span><span class="p">]</span>
+<span class="go">[&#39;GoerzNJP2014&#39;]</span>
+
+</pre></div>
+</div>
+<p>On the command line, the same is available as <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span> <span class="pre">rekey</span> <span class="pre">BIBFILE</span> <span class="pre">OLD_KEY</span></code> (see the <a class="reference internal" href="cli.html#cli-rekey"><span class="std std-ref">CLI reference</span></a>), which
+prints the generated key, and as the read-only <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span> <span class="pre">eval_format_spec</span> <span class="pre">BIBFILE</span> <span class="pre">KEY</span> <span class="pre">[FORMAT]</span></code>.</p>
 </section>
 <section id="how-to-edit-an-entry-in-your-text-editor">
 <h2>How to edit an entry in your text editor<a class="headerlink" href="#how-to-edit-an-entry-in-your-text-editor" title="Link to this heading"></a></h2>
@@ -397,6 +674,83 @@ or <code class="docutils literal notranslate"><span class="pre">&quot;itemized</
 </pre></div>
 </div>
 </section>
+<section id="how-to-give-an-ai-coding-agent-access-to-your-library">
+<span id="howto-ai"></span><h2>How to give an AI coding agent access to your library<a class="headerlink" href="#how-to-give-an-ai-coding-agent-access-to-your-library" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> ships no dedicated AI integration, because it does not
+need one: the <a class="reference internal" href="cli.html#cli"><span class="std std-ref">command-line tool</span></a> <em>is</em> the integration
+surface.
+Any agent that can run shell commands, such as
+<a class="reference external" href="https://claude.com/claude-code">Claude Code</a>, can inspect and edit
+your BibDesk library by calling <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code>. Each invocation is a
+one-shot process that loads the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file, does its work, and exits,
+so there is no server to run and nothing to keep alive.</p>
+<p><strong>1. Put the tool on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</strong> Install the package into an environment
+the agent can reach (see <a class="reference internal" href="readme.html"><span class="doc std std-doc">Installation</span></a>); the simplest way is
+<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">tool</span> <span class="pre">install</span> <span class="pre">bibdeskparser</span></code>. Verify that <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> runs from
+a plain shell:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>--version
+</pre></div>
+</div>
+<p><strong>2. Point it at your library.</strong> Set <code class="docutils literal notranslate"><span class="pre">default_bib_file</span></code> in a
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> (see <a class="reference internal" href="config.html#configuration"><span class="std std-ref">Configuration</span></a>) so commands
+need no path argument:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="n">default_bib_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/Users/you/Documents/references.bib&quot;</span>
+</pre></div>
+</div>
+<p>Otherwise the agent must pass the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> path as the first argument to
+every command.</p>
+<p><strong>3. Tell the agent the tool exists.</strong> In an environment file the agent
+reads at startup (for Claude Code, a <code class="docutils literal notranslate"><span class="pre">CLAUDE.md</span></code>), describe the tool and
+point it at the built-in help. The agent discovers the full command set
+itself from <code class="docutils literal notranslate"><span class="pre">--help</span></code>; you only need a few lines:</p>
+<div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span><span class="gu">## Bibliography</span>
+
+My BibDesk reference database is managed with the <span class="sb">`bibdeskparser`</span> CLI
+(<span class="sb">`default_bib_file`</span> is configured, so commands need no path argument).
+Run <span class="sb">`bibdeskparser --help`</span> for the command list and
+<span class="sb">`bibdeskparser COMMAND --help`</span> for a command&#39;s arguments. Use <span class="sb">`--json`</span>
+on read-only commands (<span class="sb">`show`</span>, <span class="sb">`search`</span>, <span class="sb">`keys`</span>, ...) for reliable
+parsing. To find entries, prefer <span class="sb">`bibdeskparser search`</span>. For free-form
+edits, pipe modified <span class="sb">`export`</span> output back through <span class="sb">`edit --stdin`</span>.
+</pre></div>
+</div>
+<p><strong>4. Reduce permission prompts (optional).</strong> Agents that gate shell
+access can be told to allow the tool without prompting. In Claude Code,
+add <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> to the allowlist (<code class="docutils literal notranslate"><span class="pre">Bash(bibdeskparser:*)</span></code> in
+<code class="docutils literal notranslate"><span class="pre">.claude/settings.json</span></code>).</p>
+<p>A few properties make the CLI safe to hand to an agent:</p>
+<ul class="simple">
+<li><p><strong>Machine-readable output.</strong> Every read-only command accepts <code class="docutils literal notranslate"><span class="pre">--json</span></code>,
+so the agent parses structured data instead of scraping text.</p></li>
+<li><p><strong>Concurrent-edit safety.</strong> Mutating commands save in place and refuse
+to overwrite a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file that changed on disk since it was read
+(whether by BibDesk, by you, or by another agent), failing with a
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.StaleFileError" title="bibdeskparser.StaleFileError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">StaleFileError</span></code></a> and exit code 1 rather than
+clobbering the newer version. Nothing coordinates <em>between</em> agents up
+front, but no write silently loses another’s changes.</p></li>
+<li><p><strong>Nothing blocks.</strong> Every command is usable non-interactively.
+<code class="docutils literal notranslate"><span class="pre">edit</span></code> and <code class="docutils literal notranslate"><span class="pre">edit_strings</span></code> open <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code> only when run from a
+terminal; an agent passes <code class="docutils literal notranslate"><span class="pre">--stdin</span></code> instead and pipes in the edited
+text (see below). Invoked without a terminal and without
+<code class="docutils literal notranslate"><span class="pre">--stdin</span></code>/<code class="docutils literal notranslate"><span class="pre">--editor</span></code>, they fail fast with a usage error rather than
+hanging on <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>.</p></li>
+</ul>
+<p>For edits beyond the dedicated mutating commands (changing a title,
+fixing an author list, adding an arbitrary field), the agent round-trips
+an entry through <code class="docutils literal notranslate"><span class="pre">export</span></code> and <code class="docutils literal notranslate"><span class="pre">edit</span> <span class="pre">--stdin</span></code>: <code class="docutils literal notranslate"><span class="pre">export</span></code> prints exactly
+the text that <code class="docutils literal notranslate"><span class="pre">edit</span></code> would show in an editor, so transforming that text
+and piping it back applies the change, and piping it back unchanged is
+a no-op.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>Preskill2018<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/NISQ era/noisy intermediate-scale quantum era/&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>edit<span class="w"> </span>Preskill2018<span class="w"> </span>--stdin
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro definitions round-trip the same way, from
+<code class="docutils literal notranslate"><span class="pre">strings</span> <span class="pre">--bib</span></code> into <code class="docutils literal notranslate"><span class="pre">edit_strings</span> <span class="pre">--stdin</span></code>. Invalid edited text (an
+unparseable block, a reference to an undefined macro) exits with code 1
+and the list of problems on stderr, leaving the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file untouched.</p>
+</section>
 <section id="how-to-export-a-minimal-bibtex-file-for-latex">
 <h2>How to export a minimal BibTeX file for LaTeX<a class="headerlink" href="#how-to-export-a-minimal-bibtex-file-for-latex" title="Link to this heading"></a></h2>
 <p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.library.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a> writes selected
@@ -444,7 +798,7 @@ file:</p>
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 07, 2026.
+      <span class="lastupdated">Last updated on Jul 13, 2026.
       </span></p>
   </div>
 

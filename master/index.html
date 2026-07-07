@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to BibDeskParser’s documentation! &mdash; BibDeskParser 0.1.0 documentation</title>
+  <title>Welcome to BibDeskParser’s documentation! &mdash; BibDeskParser 0.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -38,7 +38,7 @@
   </a>
 
   <div class="version">
-    v0.1.0
+    v0.2.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -65,13 +65,17 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
-<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
 </ul>
 
         </div>
@@ -133,7 +137,7 @@
   <section class="tex2jax_ignore mathjax_ignore" id="welcome-to-bibdeskparser-s-documentation">
 <h1>Welcome to BibDeskParser’s documentation!<a class="headerlink" href="#welcome-to-bibdeskparser-s-documentation" title="Link to this heading"></a></h1>
 <p><a class="reference external" href="https://github.com/goerz/bibdeskparser"><img alt="Source code on Github" src="https://img.shields.io/badge/goerz-bibdeskparser-blue.svg?logo=github" /></a>
-<a class="reference external" href="https://pypi.python.org/pypi/bibdeskparser"><img alt="PyPI" src="https://img.shields.io/pypi/v/bibdeskparser.svg" /></a>
+<a class="reference external" href="https://pypi.python.org/pypi/bibdeskparser"><img alt="PyPI" src="https://img.shields.io/pypi/v/bibdeskparser" /></a>
 <a class="reference external" href="https://opensource.org/licenses/MIT"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-green.svg" /></a></p>
 <p>BibDeskParser is a Python library for working with <a class="reference external" href="https://bibdesk.sourceforge.io">BibDesk</a> (<code class="docutils literal notranslate"><span class="pre">.bib</span></code>) database files.</p>
 <div class="toctree-wrapper compound">
@@ -150,12 +154,16 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="howto.html">How-to Guides</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-manage-file-attachments">How to manage file attachments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-auto-file-attachments">How to auto-file attachments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-define-or-rename-a-string-macro-journal-abbreviation">How to define or rename a <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro (journal abbreviation)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-organize-entries-into-groups">How to organize entries into groups</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-tag-entries-with-keywords">How to tag entries with keywords</a></li>
+<li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-search-a-library">How to search a library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-find-and-resolve-duplicate-citation-keys">How to find and resolve duplicate citation keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-automatically-generate-citation-keys">How to automatically generate citation keys</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-edit-an-entry-in-your-text-editor">How to edit an entry in your text editor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-render-a-bibliography-in-a-specific-citation-format">How to render a bibliography in a specific citation format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-give-an-ai-coding-agent-access-to-your-library">How to give an AI coding agent access to your library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-export-a-minimal-bibtex-file-for-latex">How to export a minimal BibTeX file for LaTeX</a></li>
 </ul>
 </li>
@@ -171,6 +179,7 @@
 <li class="toctree-l2"><a class="reference internal" href="bibdesk_format.html#linked-urls-bdsk-url-n-fields">Linked URLs (<code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code> fields)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bibdesk_format.html#string-macros-and-journal-abbreviations"><code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macros and journal abbreviations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bibdesk_format.html#bibdesk-static-groups">BibDesk Static Groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bibdesk_format.html#bibdesk-smart-groups">BibDesk Smart Groups</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bibdesk_format.html#keywords">Keywords</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bibdesk_format.html#unicode-and-tex-escaped-characters">Unicode and TeX-escaped characters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bibdesk_format.html#duplicate-citation-keys">Duplicate citation keys</a></li>
@@ -182,7 +191,70 @@
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a><ul>
+<li class="toctree-l1"><a class="reference internal" href="bib_entry_types.html">Bib Entry Types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#article">article</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#book">book</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#booklet">booklet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#commented">commented</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#conference">conference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#electronic">electronic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#glossdef">glossdef</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#inbook">inbook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#incollection">incollection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#inproceedings">inproceedings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#jurthesis">jurthesis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#manual">manual</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#mastersthesis">mastersthesis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#misc">misc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#periodical">periodical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#phdthesis">phdthesis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#proceedings">proceedings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#techreport">techreport</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#unpublished">unpublished</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#url">url</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#webpage">webpage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#fields-common-to-all-entry-types">Fields common to all entry types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bib_entry_types.html#field-glossary">Field glossary</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="config.html#where-the-file-is-found">Where the file is found</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#the-verify-types-and-verify-fields-flags">The <code class="docutils literal notranslate"><span class="pre">verify_types</span></code> and <code class="docutils literal notranslate"><span class="pre">verify_fields</span></code> flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#the-default-bib-file-option">The <code class="docutils literal notranslate"><span class="pre">default_bib_file</span></code> option</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#the-auto-key-table-autogenerated-citation-keys">The <code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> table: autogenerated citation keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#the-auto-file-table-autogenerated-attachment-file-names">The <code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> table: autogenerated attachment file names</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#the-initials-table-acronym-exceptions">The <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> table: acronym exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#custom-and-extended-entry-types">Custom and extended entry types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#custom-fields">Custom fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#a-complete-example">A complete example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="specifiers.html">Format Specifiers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="specifiers.html#specifiers">Specifiers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="specifiers.html#venue-initials-c-and-the-initials-mapping">Venue initials: <code class="docutils literal notranslate"><span class="pre">%c</span></code> and the <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="specifiers.html#unique-specifiers">Unique specifiers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="specifiers.html#sanitization">Sanitization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="specifiers.html#file-name-formats">File-name formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="specifiers.html#differences-from-bibdesk">Differences from BibDesk</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#json-output">JSON output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#errors-and-exit-codes">Errors and exit codes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#inspecting">Inspecting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#rendering-and-exporting">Rendering and exporting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#entries">Entries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#id1">Groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#id2">Keywords</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#strings-macros">Strings (macros)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#files">Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#urls">URLs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#free-form-editing">Free-form editing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#package-contents">Package Contents</a></li>
 </ul>
 </li>
@@ -200,6 +272,7 @@
 <li class="toctree-l2"><a class="reference internal" href="contributing.html#testing">Testing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="contributing.html#code-style">Code Style</a></li>
 <li class="toctree-l2"><a class="reference internal" href="contributing.html#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#changelog">Changelog</a></li>
 <li class="toctree-l2"><a class="reference internal" href="contributing.html#versioning">Versioning</a></li>
 </ul>
 </li>
@@ -208,8 +281,9 @@
 <li class="toctree-l2"><a class="reference internal" href="authors.html#contributors">Contributors</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="history.html">History</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-0-2026-07-07">v0.1.0 (2026-07-07)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#v0-2-0-2026-07-13">v0.2.0 - 2026-07-13</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#v0-1-0-2026-07-07">v0.1.0 - 2026-07-07</a></li>
 </ul>
 </li>
 </ul>
@@ -234,7 +308,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 07, 2026.
+      <span class="lastupdated">Last updated on Jul 13, 2026.
       </span></p>
   </div>
 

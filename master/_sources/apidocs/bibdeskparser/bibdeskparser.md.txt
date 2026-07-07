@@ -1,12 +1,13 @@
-# {py:mod}`bibdeskparser`
+# Package API
+
+{py:mod}`bibdeskparser` – Parser for [BibDesk](https://bibdesk.sourceforge.io) `.bib` files.
 
 ```{py:module} bibdeskparser
 ```
 
-```{autodoc2-docstring} bibdeskparser
-:parser: myst
-:allowtitles:
-```
+This package builds on [bibtexparser](
+https://bibtexparser.readthedocs.io/en/main/) to read and write BibTeX
+databases as maintained by the BibDesk application.
 
 ## Package Contents
 
@@ -26,8 +27,13 @@
     :parser: myst
     :summary:
     ```
-* - {py:obj}`Value <bibdeskparser.entry.Value>`
-  - ```{autodoc2-docstring} bibdeskparser.entry.Value
+* - {py:obj}`ValueString <bibdeskparser.macros.ValueString>`
+  - ```{autodoc2-docstring} bibdeskparser.macros.ValueString
+    :parser: myst
+    :summary:
+    ```
+* - {py:obj}`MacroString <bibdeskparser.macros.MacroString>`
+  - ```{autodoc2-docstring} bibdeskparser.macros.MacroString
     :parser: myst
     :summary:
     ```
@@ -44,15 +50,12 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 :parser: myst
 ```
 
-```{rubric} Initialization
-```
+````{py:attribute} config
+:canonical: bibdeskparser.library.Library.config
 
-```{autodoc2-docstring} bibdeskparser.library.Library.__init__
+```{autodoc2-docstring} bibdeskparser.library.Library.config
 :parser: myst
 ```
-
-````{py:method} __repr__()
-:canonical: bibdeskparser.library.Library.__repr__
 
 ````
 
@@ -164,34 +167,7 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} __getitem__(key)
-:canonical: bibdeskparser.library.Library.__getitem__
-
-```{autodoc2-docstring} bibdeskparser.library.Library.__getitem__
-:parser: myst
-```
-
-````
-
-````{py:method} __setitem__(key, entry)
-:canonical: bibdeskparser.library.Library.__setitem__
-
-```{autodoc2-docstring} bibdeskparser.library.Library.__setitem__
-:parser: myst
-```
-
-````
-
-````{py:method} __delitem__(key)
-:canonical: bibdeskparser.library.Library.__delitem__
-
-```{autodoc2-docstring} bibdeskparser.library.Library.__delitem__
-:parser: myst
-```
-
-````
-
-````{py:method} rekey(old_key, new_key)
+````{py:method} rekey(old_key, new_key=None, *, format_spec=None)
 :canonical: bibdeskparser.library.Library.rekey
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.rekey
@@ -200,25 +176,16 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} __iter__()
-:canonical: bibdeskparser.library.Library.__iter__
+````{py:method} eval_format_spec(key, format_spec=None, *, filename=None)
+:canonical: bibdeskparser.library.Library.eval_format_spec
 
-```{autodoc2-docstring} bibdeskparser.library.Library.__iter__
+```{autodoc2-docstring} bibdeskparser.library.Library.eval_format_spec
 :parser: myst
 ```
 
 ````
 
-````{py:method} __len__()
-:canonical: bibdeskparser.library.Library.__len__
-
-```{autodoc2-docstring} bibdeskparser.library.Library.__len__
-:parser: myst
-```
-
-````
-
-````{py:method} add_file(key, filename, *, check_that_file_exists=True)
+````{py:method} add_file(key, filename, *, check_that_file_exists=True, format_spec=None, auto_file_location=None)
 :canonical: bibdeskparser.library.Library.add_file
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.add_file
@@ -245,10 +212,37 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} rename_file(key, old_filename, new_filename)
+````{py:method} rename_file(key, old_filename, new_filename=None, *, format_spec=None, auto_file_location=None)
 :canonical: bibdeskparser.library.Library.rename_file
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.rename_file
+:parser: myst
+```
+
+````
+
+````{py:method} add_url(key, url)
+:canonical: bibdeskparser.library.Library.add_url
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add_url
+:parser: myst
+```
+
+````
+
+````{py:method} replace_url(key, old_url, new_url)
+:canonical: bibdeskparser.library.Library.replace_url
+
+```{autodoc2-docstring} bibdeskparser.library.Library.replace_url
+:parser: myst
+```
+
+````
+
+````{py:method} remove_url(key, url)
+:canonical: bibdeskparser.library.Library.remove_url
+
+```{autodoc2-docstring} bibdeskparser.library.Library.remove_url
 :parser: myst
 ```
 
@@ -258,6 +252,15 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 :canonical: bibdeskparser.library.Library.save
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.save
+:parser: myst
+```
+
+````
+
+````{py:method} search(query, *, fields=None, match='words')
+:canonical: bibdeskparser.library.Library.search
+
+```{autodoc2-docstring} bibdeskparser.library.Library.search
 :parser: myst
 ```
 
@@ -310,58 +313,6 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 :parser: myst
 ```
 
-```{rubric} Initialization
-```
-
-```{autodoc2-docstring} bibdeskparser.entry.Entry.__init__
-:parser: myst
-```
-
-````{py:method} __getitem__(key)
-:canonical: bibdeskparser.entry.Entry.__getitem__
-
-```{autodoc2-docstring} bibdeskparser.entry.Entry.__getitem__
-:parser: myst
-```
-
-````
-
-````{py:method} __setitem__(key, value)
-:canonical: bibdeskparser.entry.Entry.__setitem__
-
-```{autodoc2-docstring} bibdeskparser.entry.Entry.__setitem__
-:parser: myst
-```
-
-````
-
-````{py:method} __delitem__(key)
-:canonical: bibdeskparser.entry.Entry.__delitem__
-
-```{autodoc2-docstring} bibdeskparser.entry.Entry.__delitem__
-:parser: myst
-```
-
-````
-
-````{py:method} __iter__()
-:canonical: bibdeskparser.entry.Entry.__iter__
-
-```{autodoc2-docstring} bibdeskparser.entry.Entry.__iter__
-:parser: myst
-```
-
-````
-
-````{py:method} __len__()
-:canonical: bibdeskparser.entry.Entry.__len__
-
-```{autodoc2-docstring} bibdeskparser.entry.Entry.__len__
-:parser: myst
-```
-
-````
-
 ````{py:property} date_added
 :canonical: bibdeskparser.entry.Entry.date_added
 
@@ -375,15 +326,6 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 :canonical: bibdeskparser.entry.Entry.date_modified
 
 ```{autodoc2-docstring} bibdeskparser.entry.Entry.date_modified
-:parser: myst
-```
-
-````
-
-````{py:property} dirty
-:canonical: bibdeskparser.entry.Entry.dirty
-
-```{autodoc2-docstring} bibdeskparser.entry.Entry.dirty
 :parser: myst
 ```
 
@@ -443,6 +385,33 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
+````{py:method} add_url(url)
+:canonical: bibdeskparser.entry.Entry.add_url
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.add_url
+:parser: myst
+```
+
+````
+
+````{py:method} replace_url(old_url, new_url)
+:canonical: bibdeskparser.entry.Entry.replace_url
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.replace_url
+:parser: myst
+```
+
+````
+
+````{py:method} remove_url(url)
+:canonical: bibdeskparser.entry.Entry.remove_url
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.remove_url
+:parser: myst
+```
+
+````
+
 ````{py:property} author
 :canonical: bibdeskparser.entry.Entry.author
 
@@ -461,11 +430,6 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} __repr__()
-:canonical: bibdeskparser.entry.Entry.__repr__
-
-````
-
 ````{py:method} copy()
 :canonical: bibdeskparser.entry.Entry.copy
 
@@ -477,34 +441,27 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 `````
 
-`````{py:class} Value()
-:canonical: bibdeskparser.entry.Value
+````{py:class} ValueString()
+:canonical: bibdeskparser.macros.ValueString
 
 Bases: {py:obj}`str`
 
-```{autodoc2-docstring} bibdeskparser.entry.Value
-:parser: myst
-```
-
-```{rubric} Initialization
-```
-
-```{autodoc2-docstring} bibdeskparser.entry.Value.__init__
-:parser: myst
-```
-
-````{py:attribute} __slots__
-:canonical: bibdeskparser.entry.Value.__slots__
-:value: >
-   ()
-
-```{autodoc2-docstring} bibdeskparser.entry.Value.__slots__
+```{autodoc2-docstring} bibdeskparser.macros.ValueString
 :parser: myst
 ```
 
 ````
 
-`````
+````{py:class} MacroString()
+:canonical: bibdeskparser.macros.MacroString
+
+Bases: {py:obj}`str`
+
+```{autodoc2-docstring} bibdeskparser.macros.MacroString
+:parser: myst
+```
+
+````
 
 ````{py:exception} StaleFileError()
 :canonical: bibdeskparser.library.StaleFileError
@@ -512,13 +469,6 @@ Bases: {py:obj}`str`
 Bases: {py:obj}`RuntimeError`
 
 ```{autodoc2-docstring} bibdeskparser.library.StaleFileError
-:parser: myst
-```
-
-```{rubric} Initialization
-```
-
-```{autodoc2-docstring} bibdeskparser.library.StaleFileError.__init__
 :parser: myst
 ```
 
