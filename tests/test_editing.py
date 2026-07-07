@@ -460,7 +460,9 @@ def test_edit_file_change_without_library_path_abandons(tmp_path, monkeypatch):
     (tmp_path / "b.pdf").write_bytes(b"%PDF-1.4 fake")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # possibly no macOS bookmark
-        entry._set_files([BibDeskFile(tmp_path / "b.pdf")])
+        entry._set_files(
+            [BibDeskFile(tmp_path / "b.pdf", relative_to=tmp_path)]
+        )
     files_before = entry.files
     editor = _script_editor(
         tmp_path,
