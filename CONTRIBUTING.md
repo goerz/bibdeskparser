@@ -125,6 +125,33 @@ Build the docs locally with:
 make docs
 ~~~
 
+
+Changelog
+---------
+
+User-facing changes are tracked in [`CHANGELOG.md`](https://github.com/goerz/bibdeskparser/blob/master/CHANGELOG.md), which follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format. Whenever you make a user-facing change — in a pull request or a direct commit, add a bullet under the `## [Unreleased]` heading at the top of the file, with an inline category prefix (`Added:`, `Changed:`, `Deprecated:`, `Removed:`, `Fixed:`, or `Security:`):
+
+~~~ markdown
+## [Unreleased]
+
+* Added: `Entry.foo` method for frobnicating entries [[#12]]
+* Fixed: crash when parsing an empty `@string` macro [[#15], [#16]]
+~~~
+
+Link the relevant issue and pull request with a reference-style label `[[#N]]` (listing the issue before the pull request that closes it). You only need to write the `[[#N]]` marker in the bullet; run `make changelog` to fill in the matching link definition at the bottom of the file (it queries the GitHub API to record whether `#N` is an issue or a pull request, so it needs network access). Skip changelog entries for changes that are not user-facing: CI, dependency bumps, formatting, typo fixes, and internal-only refactoring (a leading underscore, e.g. `_helper`, marks a name as internal).
+
+Validate the file with:
+
+~~~ console
+make check-changelog   # verify every reference has a link definition (no network)
+make changelog         # additionally add any missing [#N] link definitions
+~~~
+
+`make check-changelog` runs as part of `make lint` and in CI. It is purely textual and makes no network calls; it does not verify that the links actually resolve or that the issue-vs-pull-request category is correct, so double-check those manually.
+
+You never edit the release headings or version links by hand: `make release` transforms the changelog automatically. For the release commit it renames `## [Unreleased]` to `## [vX.Y.Z] - YYYY-MM-DD` and updates the version links at the bottom (pointing `[Unreleased]` at `…/compare/vX.Y.Z..HEAD` and adding `[vX.Y.Z]: …/releases/tag/vX.Y.Z`), opening the file in your editor first so you can review and refine the release notes. The tagged release commit therefore contains no `## [Unreleased]` section; a fresh empty one is added back in the immediately following `+dev` version-bump commit that opens the next development cycle. The signed git tag and the GitHub release for the version reuse that section's notes verbatim, so the release notes never have to be retyped.
+
+
 Versioning
 ----------
 

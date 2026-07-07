@@ -45,7 +45,7 @@ apidocs/bibdeskparser/*
 
 contributing
 authors
-history
+changelog
 ```
 
 ## Indices

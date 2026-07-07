@@ -37,7 +37,7 @@ jobs:
 
       - name: Check code style
         if: matrix.codestyle == true
-        run: make black-check isort-check
+        run: make black-check isort-check check-changelog
 
       - name: Run tests
         run: make test

@@ -10,11 +10,15 @@ The environment is managed by `uv`; the `Makefile` wraps common tasks (`make hel
 
 - `make test` — run the suite (pytest via `uv run`, includes doctests in modules, `*.rst`, and `*.md`; stops at first failure)
 - `make test-lowest` — run against the lowest supported Python (3.10) and dependencies
-- `make lint` — `black-check`, `isort-check`, `flake8`, `pylint`
+- `make lint` — `black-check`, `isort-check`, `flake8`, `pylint`, `check-changelog`
 - `make black` / `make isort` — auto-format
+- `make check-changelog` — validate `CHANGELOG.md` links (textual, no network; also in CI)
+- `make changelog` — validate and fill in missing `[#N]` link targets (uses the GitHub API)
 - `make docs` — build Sphinx HTML docs
 
 Run a single test with `uv run pytest tests/test_bibdeskparser.py::test_name`.
+
+Keep `CHANGELOG.md` up to date with every user-facing change — see the "Changelog" section of @CONTRIBUTING.md for the conventions. Breaking changes must include user instructions on how to adapt to the change as part of the changelog.
 
 ## Conventions
 
