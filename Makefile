@@ -46,6 +46,9 @@ help:  ## show this help
 develop:  ## create or sync the development environment
 	uv sync $(PYTHON_ARG) --resolution $(RESOLUTION) --all-groups
 
+repl:  ## start an IPython REPL in the development environment
+	$(UV) --with ipython ipython
+
 test:  ## run the test suite
 	$(UV) pytest -vvv --doctest-modules --doctest-glob="*.rst" --doctest-glob="*.md" --cov=bibdeskparser --durations=10 -x -s src tests docs README.md CONTRIBUTING.md
 

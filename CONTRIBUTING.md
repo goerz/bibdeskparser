@@ -1,253 +1,141 @@
 Contributing
 ============
 
+Contributions are welcome and greatly appreciated! Every little bit helps, and credit is always given.
 
-Contributions are welcome, and they are greatly appreciated! Every little bit helps, and credit will always be given.
+Everyone interacting in the BibDeskParser code base, issue tracker, and communication channels is expected to follow the [PyPA Code of Conduct](https://www.pypa.io/en/latest/code-of-conduct/).
 
-Code of Conduct
----------------
+Report Bugs and Submit Feedback
+-------------------------------
 
-Everyone interacting in the BibDeskParser project's code base, issue tracker, and any communication channels is expected to follow the [PyPA Code of Conduct](https://www.pypa.io/en/latest/code-of-conduct/).
+Report bugs and request features at <https://github.com/goerz/bibdeskparser/issues>.
 
-Report Bugs
------------
-
-Report bugs at <https://github.com/goerz/bibdeskparser/issues>.
-
-If you are reporting a bug, please include:
+When reporting a bug, please include:
 
 -   Your operating system name and version.
--   Any details about your local setup that might be helpful in troubleshooting.
--   Detailed steps to reproduce the bug, ideally a minimal but complete script or notebook.
--   All error messages in full, as plain text. If the output is long, attach it as a file.
+-   Any details about your local setup relevant to troubleshooting.
+-   Detailed steps to reproduce the bug, ideally a minimal but complete script.
+-   All error messages in full, as plain text (attach long output as a file).
 
-Submit Feedback
----------------
+When proposing a feature, explain how it would work and keep the scope as narrow as possible. Remember that this is a volunteer-driven project.
 
-The best way to send feedback is to file an issue at <https://github.com/goerz/bibdeskparser/issues>.
+Development Setup
+-----------------
 
-If you are proposing a feature:
+The project uses [uv](https://docs.astral.sh/uv/) to manage the development environment and [`make`](https://www.gnu.org/software/make/) as a task runner. Install both; uv downloads and manages the required Python interpreters for you.
 
--   Explain in detail how it would work.
--   Keep the scope as narrow as possible, to make it easier to implement.
--   Remember that this is a volunteer-driven project, and that contributions are welcome :)
+Clone the repository and run:
+
+~~~ console
+make help     # list available targets
+make develop  # create the virtual environment with all dev dependencies
+~~~
+
+`make develop` sets up a virtual environment with all development dependencies and an editable install of the package. `uv run` (used by every `make` target) syncs the environment automatically, so you rarely need to call `make develop` directly.
+
+To set a debugger breakpoint, use Python's built-in `breakpoint()`. The development environment includes [ipdb](https://github.com/gotcha/ipdb); activate it by setting the environment variable:
+
+~~~ console
+export PYTHONBREAKPOINT=ipdb.set_trace
+~~~
 
 Pull Request Guidelines
 -----------------------
 
-Before you submit a pull request, check that it meets these guidelines:
+Before submitting a pull request:
 
-1.  The pull request should include tests.
-2.  If the pull request adds functionality, the docs should be updated.
-3.  Check <https://github.com/goerz/bibdeskparser/actions> and make sure that the tests pass for all supported Python versions.
+1.  Add tests for any new functionality.
+2.  Update the documentation for any changed behavior.
+3.  Check <https://github.com/goerz/bibdeskparser/actions> and make sure the tests pass for all supported Python versions.
 
-Get Started!
-------------
-
-Ready to contribute? Follow [Aaron Meurer's Git Workflow Notes](https://www.asmeurer.com/git-workflow/) (with `goerz/bibdeskparser` instead of `sympy/sympy`)
-
-In short,
-
-1.  Clone the repository from `git@github.com:goerz/bibdeskparser.git`
-2.  Fork the repo on GitHub to your personal account.
-3.  Add your fork as a remote.
-4.  Pull in the latest changes from the master branch.
-5.  Create a topic branch.
-6.  Make your changes and commit them (testing locally).
-7.  Push changes to the topic branch on *your* remote.
-8.  Make a pull request against the base master branch through the Github website of your fork.
-
-The project uses [uv](https://docs.astral.sh/uv/) to manage the development environment and [`make`](https://www.gnu.org/software/make/) as a task runner for testing, linting, and generating the documentation. See Development Prerequisites for details.
-
-In your checked-out clone, run
-
-~~~ console
-make help
-~~~
-
-to see the available make targets. To set up the development environment, run
-
-~~~ console
-make develop
-~~~
-
-which uses uv to create a virtual environment with all development dependencies and an editable install of the package.
-
-Development Prerequisites
--------------------------
-
-Contributing to the package's development requires that you have [uv](https://docs.astral.sh/uv/) and [`make`](https://www.gnu.org/software/make/) installed. uv automatically downloads and manages the required Python interpreters, so you do not need to install them yourself. By default the development environment uses Python 3.12; you can select a different version with e.g. `make PYTHON=3.13 test`.
+Follow [Aaron Meurer's Git Workflow Notes](https://www.asmeurer.com/git-workflow/): fork the repo, add your fork as a remote, create a topic branch, commit your changes, push to your fork, and open a pull request against the `master` branch.
 
 Branching Model
 ---------------
 
-For developers with direct access to the repository, BibDeskParser uses a simple branching model where all developments happens directly on the `master` branch. Releases are tags on `master`. All commits on `master` *should* pass all tests and be well-documented. This is so that `git bisect` can be effective. For any non-trivial issue, it is recommended to create a topic branch, instead of working on `master`. There are no restrictions on commits on topic branches, they do not need to contain complete documentation, pass any tests, or even be able to run.
-
-To create a topic-branch named to address issue #1:
+Development happens directly on the `master` branch, and releases are tags on `master`. Every commit on `master` *should* pass all tests and be well-documented, so that `git bisect` stays effective. For any non-trivial change, work on a topic branch instead; topic-branch commits have no such restrictions.
 
 ~~~ shell
-git branch 1-title-of-issue
-git checkout 1-title-of-issue
+git checkout -b 1-title-of-issue   # branch named after issue #1
+git push -u origin 1-title-of-issue # push to trigger CI
 ~~~
 
-You can then make commits, and push them to Github to trigger Continuous Integration testing:
+Commit early and often, and feel free to rewrite history on topic branches by force-pushing (`git commit --amend`, `git rebase -i`, `--fixup`/`--autosquash`). Clean up the commit history before merging. If a topic branch is long-lived, periodically rebase it on `master` rather than merging `master` into it. Coordinate with collaborators before rewriting shared history.
 
-~~~ shell
-git push -u origin 1-title-of-issue
-~~~
-
-Commit early and often! You are welcome to rewrite history on topic branches by force-pushing. Before submitting a pull request or merging into `master`, clean up the commit history of the topic branch.
-
--   Avoid having a series of meaningless granular commits like "start bugfix", "continue development", "add more work on bugfix", "fix typos", and so forth. Instead, use `git commit --amend` to add to your previous commit. This is the ideal way to "commit early and often". You do not have to wait until a commit is "perfect"; it is a good idea to make hourly/daily "snapshots" of work in progress. Amending a commit also allows you to change the commit message of your last commit.
--   You can combine multiple existing commits by "squashing" them. For example, use `git rebase -i HEAD~4` to combined the previous four commits into one. See the ["Rewriting History" section of Pro Git book](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History) for details (if you feel this is too far outside of your git comfort zone, just skip it).
--   You can use the `--fixup` flag for `git commit` to add to a previous commit. Fixup commits must be squashed (`git rebase --autosquash`) before merging.
--   If you work on a topic branch for a long time, and there is significant work on `master` in the meantime, periodically rebase your topic branch on the current master (`git rebase master`). Avoid merging `master` into your topic branch. See [Merging vs. Rebasing](https://www.atlassian.com/git/tutorials/merging-vs-rebasing).
-
-If you are collaborating with others on a topic branch, coordinate with them before rewriting history. 
-
-When you are done with a topic branch (the issue has been fixed), finish up by merging the topic branch back into `master`:
+Merge a finished topic branch back with an explicit merge commit, then delete it:
 
 ~~~ shell
 git checkout master
 git merge --no-ff 1-title-of-issue
-~~~
-
-The `--no-ff` option is critical, so that an explicit merge commit is created (especially if you rebased). Summarize the changes of the branch relative to `master` in the commit message.
-
-Then, you can push master and delete the topic branch both locally and on Github:
-
-~~~ shell
 git push origin master
 git push --delete origin 1-title-of-issue
 git branch -D 1-title-of-issue
 ~~~
 
-Commit Message Guidelines
--------------------------
+Commit Messages
+---------------
 
-Write commit messages according to this template:
-
-~~~ none
-Short (50 chars or less) summary ("subject line")
-
-More detailed explanatory text. Wrap it to 72 characters. The blank
-line separating the summary from the body is critical (unless you omit
-the body entirely).
-
-Write your subject line in the imperative: "Fix bug" and not "Fixed
-bug" or "Fixes bug." This convention matches up with commit messages
-generated by commands like git merge and git revert. A properly formed
-git commit subject line should always be able to complete the sentence
-"If applied, this commit will <your subject line here>".
-
-Further paragraphs come after blank lines.
-
-- Bullet points are okay, too.
-- Typically a hyphen or asterisk is used for the bullet, followed by a
-  single space. Use a hanging indent.
-
-You should reference any issue that is being addressed in the commit, as
-e.g. "#1" for issue #1. If the commit closes an issue, state this on the
-last line of the message (see below). This will automatically close the
-issue on Github as soon as the commit is pushed there.
-
-Closes #1
-~~~
-
-See [Closing issues using keywords](https://help.github.com/articles/closing-issues-using-keywords/) for details on references to issues that Github will understand.
+Write a short imperative subject line (50 chars or less) that completes the sentence "If applied, this commit will …", followed by a blank line and an optional body wrapped at 72 characters. Reference issues as e.g. `#1`, and close them with a `Closes #1` line (see [closing issues using keywords](https://help.github.com/articles/closing-issues-using-keywords/)).
 
 Testing
 -------
 
-BibDeskParser includes a full test-suite using [pytest](https://docs.pytest.org/en/latest/). We strive for a [test coverage](https://codecov.io/gh/goerz/bibdeskparser) above 90%.
-
-From a checkout of the `bibdeskparser` repository you can run
+BibDeskParser uses [pytest](https://docs.pytest.org/en/latest/); we aim for [test coverage](https://codecov.io/gh/goerz/bibdeskparser) above 90%.
 
 ~~~ console
-make test
+make test          # run the full suite
+make test-lowest   # run against the lowest supported Python and dependencies
 ~~~
 
-to run the entire test suite. By default the tests run on Python 3.12; use e.g. `make PYTHON=3.13 test` to run them on a different interpreter, or `make test-lowest` to test against the lowest supported Python and dependency versions.
+`make test` runs on the highest installed Python compatible with the project (currently 3.14); override with e.g. `make PYTHON=3.11 test`. Supported versions are Python 3.10 through 3.14.
 
-The tests are organized in the `tests` subfolder. It includes python scripts whose name start with `test_`, which contain functions whose names also start with `test_`. Any such functions in any such files are picked up by [pytest](https://docs.pytest.org/en/latest/) for testing. In addition, [doctests](https://docs.python.org/3.7/library/doctest.html) from any docstring or any documentation file (`*.rst`) are picked up (by the [pytest doctest plugin](https://docs.pytest.org/en/latest/doctest.html)).
-
+Tests live in the `tests` subfolder, in `test_*.py` files with `test_*` functions. In addition, [doctests](https://docs.python.org/3/library/doctest.html) are collected from every docstring and from documentation files (`*.rst` and `*.md`, including `README.md`). Write doctests inside fenced ` ```python ` blocks.
 
 Code Style
 ----------
 
-All code must be compatible with [PEP 8](https://www.python.org/dev/peps/pep-0008/). The line length limit is 79 characters, although exceptions are permissible if this improves readability significantly.
+All code must comply with [PEP 8](https://www.python.org/dev/peps/pep-0008/) and the [Black code style](https://github.com/psf/black), with a line length of 79. Imports are sorted with [isort](https://pycqa.github.io/isort/) per the `pyproject.toml` configuration.
 
-Beyond PEP 8, this project adopts the [Black code style](https://github.com/ambv/black/#the-black-code-style). You can run `make black-check` to check adherence to the code style, and `make black` to apply it.
+~~~ console
+make black        # apply Black formatting (make black-check to only check)
+make isort        # sort imports (make isort-check to only check)
+make lint         # run black-check, isort-check, flake8, and pylint
+~~~
 
-Imports within python modules must be sorted according to the [isort](https://github.com/timothycrosley/isort#readme) configuration in `pyproject.toml`. The command `make isort-check` checks whether all imports are sorted correctly, and `make isort` modifies all Python modules in-place with the proper sorting.
+Style is enforced by the test suite and by [pre-commit](https://pre-commit.com) git hooks; install them with `make pre-commit`. The [flake8](https://flake8.pycqa.org) and [pylint](https://pylint.pycqa.org) checks (`make flake8`, `make pylint`) are guidelines only and do not require a perfect score.
 
-The code style is enforced as part of the test suite, as well as through git pre-commit hooks that prevent committing code not does not meet the requirements. These hooks are managed through the [pre-commit framework](https://pre-commit.com); install them with `make pre-commit`.
-You may use `make flake8` and `make pylint` for additional checks on the code with [flake8](http://flake8.pycqa.org) and [pylint](http://pylint.pycqa.org), but there is no strict requirement for a perfect score with either one of these linters. They only serve as a guideline for code that might be improved.
+Documentation
+-------------
 
+The documentation is generated with [Sphinx](https://www.sphinx-doc.org/) and written in [MyST Markdown](https://myst-parser.readthedocs.io/). Docstrings are also MyST Markdown and are rendered on the auto-generated API page by [autodoc2](https://sphinx-autodoc2.readthedocs.io/); math may be written in LaTeX syntax using `$…$`. Structure content along the four [Diátaxis](https://diataxis.fr) categories: a **Tutorial** (a linear, learning-oriented walkthrough for a newcomer), **How-to guides** (short, task-oriented recipes that assume basic familiarity), **Explanation** (background/conceptual material — why the BibDesk `.bib` format works the way it does, and how `bibdeskparser` handles each feature), and **Reference** (the auto-generated API page). Don't mix categories within one page (e.g. don't bury conceptual background inside a how-to recipe).
 
+Every public name (one not starting with `_`) in a module must be listed in either `__all__` or `__private__`; `autodoc2` only renders `__all__` members. Keep the public API surface minimal: expose only what a *user* of the library needs (currently just `Library`, `Entry`, `Value`, and `StaleFileError`, all re-exported from the top-level `bibdeskparser` package). In particular:
 
-Write Documentation
--------------------
+- Don't add a standalone public function for something already reachable as an `Entry`/`Library` method (e.g. the citation-rendering, export, and `$EDITOR`-editing logic lives in private free functions in `render.py`/`exporting.py`/`editing.py`, used only internally by the corresponding methods).
+- Don't make a validation/normalization helper public just because it's used internally (e.g. `is_valid_macro_name`/`normalize_macro_name` in `macros.py` stay private, since `Entry`/`Library` already apply them automatically and surface a clear `ValueError` on invalid input).
+- Don't make a supporting data type or helper class public just because a public property's value is derived from it, if the property already presents that data in a simpler public form (e.g. `library.py`'s `GroupInfo` namedtuple and `bdskfile.py`'s `BibDeskFile` class stay private -- `Library.groups`/`Entry.files` are the public surface, and document the derived data/behavior directly in their own docstrings rather than relying on a separately-documented type).
 
-BibDeskParser could always use more documentation, whether as part of the official docs, in docstrings, or even on the web in blog posts, articles, and such.
+The bar for a new public symbol is a concrete task a user cannot otherwise accomplish, not "this might be handy."
 
-The package documentation is generated with [Sphinx](http://www.sphinx-doc.org/en/master/), the documentation (and docstrings) are formatted using the [Restructured Text markup language](http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html) (file extension `rst`). See also the [Matplotlib Sphinx cheat sheet](https://matplotlib.org/sampledoc/cheatsheet.html) for some helpful tips.
+All submodules are excluded from documentation generation (`autodoc2_skip_module_regexes` in `docs/sources/conf.py`), so every public symbol — regardless of which module it's actually defined in — is documented exactly once, on the single top-level `bibdeskparser` API page; `autodoc2_hidden_objects` additionally hides single-underscore members of otherwise-public classes (e.g. `Entry._touch`). When adding a new public symbol, re-export it from `src/bibdeskparser/__init__.py`'s `__all__` — don't rely on its own module page, since none exists.
 
-The Documentation should be structured in [four distinct categories](https://documentation.divio.com):
-
-* Tutorials (learning-oriented)
-* How-to Guides (problem-oriented)
-* Reference Guides / API (information-oriented)
-* Explanations (understanding-oriented)
-
-For the API documentation, each function or class must have a [docstring](https://www.python.org/dev/peps/pep-0257/); this docstring must be written in the ["Google Style" format](http://www.sphinx-doc.org/en/master/usage/extensions/example_google.html#example-google) (as implemented by Sphinx' [napoleon extension](http://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html)). Docstrings and any other part of the documentation can include [mathematical formulas in LaTeX syntax](http://www.sphinx-doc.org/en/1.6/ext/math.html) (using [mathjax](http://www.sphinx-doc.org/en/master/usage/extensions/math.html#module-sphinx.ext.mathjax)).
-
-For module variables and class attributes, use a docstring "inline" immediately after the definition. However, for instance attributes, it is preferable to include an "Attributes:" section in the class docstring (instead of using "attribute docstrings" in `__init__`). While attribute docstrings have the benefit that it is less likely for there to be a mismatch between the documentation and the implementation, they also have some significant drawbacks, for example: They do not show up in `help(<class>)` or `<class>?` in IPython, they tend to make `__init__` much harder to read, and they don't work for classes defined via [attrs](http://www.attrs.org).
-
-The `__init__` method should never have a docstring; it's arguments are described in the class docstring instead.
-
-At any point, from a checkout of the `bibdeskparser` repository, you may run
+Build the docs locally with:
 
 ~~~ console
 make docs
 ~~~
 
-to generate the documentation locally.
-
-
-
 Versioning
 ----------
 
-Releases should follow [Semantic Versioning](https://semver.org), and version numbers published to [PyPI](http://pypi.org) must be compatible with PEP 440.
+Releases follow [Semantic Versioning](https://semver.org) (`major.minor.patch`) and version numbers must be compatible with [PEP 440](https://peps.python.org/pep-0440/). Pre-releases use suffixes such as `-dev1` or `-rc1`; documentation-only fixes may use a `.postN` release.
 
-In short, versions number follow the pattern `major.minor.patch`, e.g. `0.1.0` for the first release, and `1.0.0` for the first *stable* release. If necessary, pre-release versions might be published as e.g:
+Between releases, `__version__` on `master` carries a `+dev` local-version suffix (or a `-dev` pre-release suffix for the next planned release); the `+dev` suffix must never appear in a PyPI release. The current version is available as `bibdeskparser.__version__`.
 
-~~~ none
-1.0.0-dev1  # developer's preview 1 for release 1.0.0
-1.0.0-rc1   # release candidate 1 for 1.0.0
-~~~
+Make a release with:
 
-Errors in the release metadata or documentation only may be fixed in a post-release, e.g.:
-
-~~~ none
-1.0.0.post1  # first post-release after 1.0.0
-~~~
-
-Post-releases should be used sparingly, but they are acceptable even though they are not supported by the [Semantic Versioning](https://semver.org) specification.
-
-The current version is available through the `__version__` attribute of the `bibdeskparser` package
-
-Between releases, `__version__` on the master branch should either be the version number of the last release, with "+dev" appended (as a ["local version identifier"](https://www.python.org/dev/peps/pep-0440/#local-version-identifiers)), or the version number of the next planned release, with "-dev" appended (["pre-release identifier"](https://www.python.org/dev/peps/pep-0440/#pre-releases) with extra dash). The version string "1.0.0-dev1+dev" is a valid value after the "1.0.0-dev1" pre-release. The "+dev" suffix must never be included in a release to [PyPI](http://pypi.org).
-
-Note that [twine](https://twine.readthedocs.io/en/latest/) applies [normalization](https://legacy.python.org/dev/peps/pep-0440/#id29) to the above recommended forms to make them strictly compatible with PEP 440, before uploading to [PyPI](http://pypi.org). Users installing the package through [pip](https://pip.readthedocs.io/en/stable/) may use the original version specification as well as the normalized one (or any other variation that normalizes to the same result).
-
-When making a release via
-
-~~~ shell
+~~~ console
 make release
 ~~~
 
-the above versioning conventions will be taken into account automatically.
-
-Releases must be tagged in git, using the version string prefixed by "v", e.g. `v1.0.0-dev1` and `v1.0.0`. This makes them available at <https://github.com/goerz/bibdeskparser/releases>.
+This applies the versioning conventions automatically. Releases are tagged in git with a `v` prefix (e.g. `v1.0.0`), making them available at <https://github.com/goerz/bibdeskparser/releases>.

@@ -11,4 +11,5 @@ import bibdeskparser
 
 @pytest.fixture(autouse=True)
 def set_doctest_env(doctest_namespace):
-    doctest_namespace['bibdeskparser'] = bibdeskparser
+    """Inject the package itself into the doctest namespace."""
+    doctest_namespace["bibdeskparser"] = bibdeskparser

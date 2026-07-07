@@ -12,14 +12,28 @@
 
 ```{toctree}
 :maxdepth: 2
-:caption: Getting Started
+:caption: Overview
 
 Installation & Usage <readme>
 ```
 
 ```{toctree}
 :maxdepth: 2
-:caption: API Reference
+:caption: How-to Guides
+
+howto
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Explanation
+
+BibDesk's .bib Format <bibdesk_format>
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Reference
 :glob:
 
 apidocs/bibdeskparser/*

@@ -23,7 +23,10 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-dependencies = []
+dependencies = ["bibtexparser==2.0.0b9"]
+
+[project.optional-dependencies]
+macos = ["pyobjc-framework-Cocoa; sys_platform == 'darwin'"]
 
 [project.urls]
 Homepage = "https://github.com/goerz/bibdeskparser"
@@ -37,6 +40,7 @@ dev = [
     "coverage>=7",
     "coveralls>=3",
     "ipdb>=0.13",
+    "ipython>=8",
 ]
 docs = [
     "sphinx>=7",
@@ -65,12 +69,11 @@ release = [
 
 [tool.black]
 line-length = 79
-skip-string-normalization = true
 
 [tool.isort]
 known_first_party = ["bibdeskparser"]
 force_single_line = false
-lines_after_imports = 2
+lines_after_imports = -1
 line_length = 79
 use_parentheses = true
 multi_line_output = 3
@@ -90,7 +93,8 @@ extend-ignore = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+# tests/Refs contains test data and standalone helper scripts, not tests
+addopts = "-ra --ignore=tests/Refs"
 
 [tool.coverage.run]
 relative_files = true
