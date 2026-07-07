@@ -129,7 +129,29 @@ def _run_editor(editor, path):
     propagates to the caller unchanged.
     """
     command = editor or os.environ.get("EDITOR") or "vi"
-    subprocess.run(shlex.split(command) + [str(path)], check=True)
+    if os.name == "nt":
+        # shlex.split is POSIX-only: it treats backslashes as escape
+        # characters and mangles Windows paths. Use posix=False and strip
+        # the surrounding quotes that non-POSIX mode preserves. posix=False
+        # rejects a quote mid-token (a valid way to quote just a space in a
+        # Windows path), so fall back to treating the whole command as a
+        # single program path in that case.
+        try:
+            tokens = shlex.split(command, posix=False)
+        except ValueError:
+            tokens = [command]
+        args = []
+        for token in tokens:
+            if (
+                len(token) >= 2
+                and token[0] == token[-1]
+                and token[0] in ('"', "'")
+            ):
+                token = token[1:-1]
+            args.append(token)
+    else:
+        args = shlex.split(command)
+    subprocess.run(args + [str(path)], check=True)
 
 
 def _prompt_reopen_or_abandon(problems):

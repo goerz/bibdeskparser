@@ -96,6 +96,23 @@ def test_constructor_validation(tmp_path):
     assert bdsk_file.bookmark == b"\x00\x01"
 
 
+@pytest.mark.skipif(
+    sys.platform != "win32",
+    reason="cross-drive paths only exist on Windows",
+)
+def test_constructor_cross_drive(tmp_path):
+    """A file on a different drive than the .bib file is rejected.
+
+    Such an attachment has no relative path, which BibDesk cannot
+    represent, so the constructor raises rather than silently storing
+    an absolute path.
+    """
+    other_drive = "Z:" if tmp_path.drive.upper() != "Z:" else "Y:"
+    cross = Path(f"{other_drive}\\Papers\\file.pdf")
+    with pytest.raises(ValueError, match="different drive"):
+        BibDeskFile(cross, bookmark=b"\x00", relative_to=tmp_path)
+
+
 def test_alias_data_roundtrip():
     """A legacy `aliasData` plist round-trips through the encoder."""
     alias = bytes(range(64))
