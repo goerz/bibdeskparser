@@ -145,13 +145,12 @@ class BibDeskFile:
                         UserWarning,
                         stacklevel=2,
                     )
-        try:
-            rel = os.path.relpath(abs_path, base)
-        except ValueError:
-            # Windows raises ValueError when path and base are on
-            # different drives; fall back to the absolute path.
-            rel = str(abs_path)
-        self._relative_path = rel.replace(os.sep, "/")
+        if abs_path.drive.lower() != base.drive.lower():
+            raise ValueError(
+                f"Cannot attach {abs_path}: it is on a different drive "
+                f"than {base} and so has no relative path"
+            )
+        self._relative_path = Path(os.path.relpath(abs_path, base)).as_posix()
         self._bookmark = bookmark
         self._alias_data = alias_data
 

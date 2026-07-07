@@ -5,6 +5,7 @@ interpreter as the test suite) is used throughout, so no real
 interactive program is ever launched and the tests can never hang.
 """
 
+import os
 import subprocess
 import sys
 import warnings
@@ -14,7 +15,7 @@ import pytest
 from bibtexparser import model
 
 from bibdeskparser.bdskfile import BibDeskFile
-from bibdeskparser.editing import edit_entries, edit_strings
+from bibdeskparser.editing import _run_editor, edit_entries, edit_strings
 from bibdeskparser.entry import Entry
 from bibdeskparser.library import Library
 
@@ -366,6 +367,28 @@ def test_editor_resolution_defaults_to_vi(monkeypatch):
     edit_entries([entry])
     command = mock_run.call_args[0][0]
     assert command[0] == "vi"
+
+
+def test_run_editor_windows_quoted_path(monkeypatch):
+    """On Windows, a quoted editor path is unwrapped before running."""
+    monkeypatch.setattr(os, "name", "nt")
+    mock_run = Mock()
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    _run_editor(r'"C:\Program Files\Editor\ed.exe"', "file.bib")
+    args = mock_run.call_args[0][0]
+    assert args == [r"C:\Program Files\Editor\ed.exe", "file.bib"]
+
+
+def test_run_editor_windows_midtoken_quote_fallback(monkeypatch):
+    """A mid-token quote (which `shlex` rejects in non-POSIX mode) falls
+    back to treating the whole command as a single program path."""
+    monkeypatch.setattr(os, "name", "nt")
+    mock_run = Mock()
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    command = r'C:\Program" "Files\Editor\ed.exe'
+    _run_editor(command, "file.bib")
+    args = mock_run.call_args[0][0]
+    assert args == [command, "file.bib"]
 
 
 # -- edit_entries: file attachments ------------------------------------ #
