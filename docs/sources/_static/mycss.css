@@ -37,3 +37,11 @@ span.eqno {
     display: inline-block;
     visibility: visible;
 }
+
+/* version text under the project title in the sidebar */
+
+.wy-side-nav-search div.version {
+    color: hsla(0, 0%, 100%, 0.3);
+    margin-top: -0.4045em;
+    margin-bottom: 0.809em;
+}
