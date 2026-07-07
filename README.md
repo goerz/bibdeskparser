@@ -3,8 +3,8 @@
 [![Source code on Github](https://img.shields.io/badge/goerz-bibdeskparser-blue.svg?logo=github)][Github]
 [![PyPI](https://img.shields.io/pypi/v/bibdeskparser.svg)](https://pypi.python.org/pypi/bibdeskparser)
 [![Documentation](https://img.shields.io/badge/docs-gh--pages-blue.svg)][docs]
-[![Docs](https://github.com/goerz/bibdeskparser/workflows/Docs/badge.svg?branch=master)](https://github.com/goerz/bibdeskparser/actions?query=workflow%3ADocs)
-[![Tests](https://github.com/goerz/bibdeskparser/workflows/Tests/badge.svg?branch=master)](https://github.com/goerz/bibdeskparser/actions?query=workflow%3ATests)
+[![Docs](https://github.com/goerz/bibdeskparser/actions/workflows/docs.yml/badge.svg?branch=master)](https://github.com/goerz/bibdeskparser/actions/workflows/docs.yml)
+[![Tests](https://github.com/goerz/bibdeskparser/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/goerz/bibdeskparser/actions/workflows/test.yml)
 [![Coverage](https://codecov.io/gh/goerz/bibdeskparser/branch/master/graph/badge.svg)](https://codecov.io/gh/goerz/bibdeskparser)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 

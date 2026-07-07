@@ -103,7 +103,6 @@ jobs:
         id: get_previous_commit
         run: |
           git log --format=%B -n 1 | tee .git/_github_actions_commit_msg
-          echo "log=$(cat .git/_github_actions_commit_msg)" >> $GITHUB_OUTPUT
           echo "lastline=$(cat .git/_github_actions_commit_msg | grep -v '^$' | tail -n1)" >> $GITHUB_OUTPUT
           echo "author=$(git log --format=%an -n 1)" >> $GITHUB_OUTPUT
 
