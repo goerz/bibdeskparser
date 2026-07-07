@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8.3.1
 
       - name: Generate HTML Documentation
         run: make docs
@@ -40,7 +40,7 @@ jobs:
         run: uvx --from zip-files zip-folder --debug --auto-root --outfile "bibdeskparser-docs-${{ steps.get_version.outputs.version }}.zip" docs/_build/html
 
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         name: Upload documentation artifacts
         with:
           name: bibdeskparser-docs
@@ -61,7 +61,7 @@ jobs:
     steps:
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8.3.1
 
       - name: Get branch name
         shell: bash
@@ -70,13 +70,13 @@ jobs:
           echo "BRANCH_NAME=$(echo ${GITHUB_REF##*/} | tr / -)" >> $GITHUB_ENV
           cat $GITHUB_ENV
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         name: Check out gh-pages branch (full history)
         with:
           ref: gh-pages
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         name: Download bibdeskparser-docs artifact
         with:
           name: bibdeskparser-docs
