@@ -2,7 +2,7 @@
 
 ```{only} html
 [![Source code on Github](https://img.shields.io/badge/goerz-bibdeskparser-blue.svg?logo=github)](https://github.com/goerz/bibdeskparser)
-[![PyPI](https://img.shields.io/pypi/v/bibdeskparser.svg)](https://pypi.python.org/pypi/bibdeskparser)
+[![PyPI](https://img.shields.io/pypi/v/bibdeskparser)](https://pypi.python.org/pypi/bibdeskparser)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 ```
 
