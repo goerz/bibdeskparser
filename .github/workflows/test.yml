@@ -19,13 +19,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - title: Codestyle and Tests
+          - title: Linux (Codestyle and Tests)
             os: ubuntu-latest
             codestyle: true
             coverage: true
-          - os: windows-latest
+          - title: Windows (Tests)
+            os: windows-latest
             coverage: true
-          - title: MacOS
+          - title: MacOS (Tests)
             os: macos-latest
             coverage: true
     steps:
@@ -48,4 +49,6 @@ jobs:
       - uses: codecov/codecov-action@v4
         if: matrix.coverage == true
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: goerz/bibdeskparser
           verbose: false
