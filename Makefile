@@ -4,6 +4,7 @@
 
 .PHONY: help develop test test-lowest coverage coverage-xml docs \
         black black-check isort isort-check flake8 pylint lint pre-commit \
+        check-changelog changelog \
         dist dist-check test-upload upload release \
         upgrade clean distclean
 
@@ -84,7 +85,13 @@ flake8:  ## check style with flake8
 pylint:  ## check the code with pylint
 	$(UV) pylint src
 
-lint: black-check isort-check flake8 pylint  ## run all linters
+lint: black-check isort-check flake8 pylint check-changelog  ## run all linters
+
+check-changelog:  ## validate the reference links in CHANGELOG.md (no network)
+	python scripts/check_changelog.py
+
+changelog:  ## validate CHANGELOG.md and add any missing issue/PR link targets
+	python scripts/check_changelog.py --fix
 
 pre-commit:  ## install the pre-commit git hooks
 	$(UV) pre-commit install
