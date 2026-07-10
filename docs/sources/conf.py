@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import os
+import sys
 from pathlib import Path
 
 import git
@@ -9,6 +10,9 @@ import bibdeskparser
 
 DOCS_SOURCES = Path(__file__).parent
 ROOT = DOCS_SOURCES / ".." / ".."  # project root
+
+# So autodoc2_render_plugin below can import apidoc_renderer.py.
+sys.path.insert(0, str(DOCS_SOURCES))
 
 
 # -- General configuration -----------------------------------------------------
@@ -21,8 +25,11 @@ nitpick_ignore = [
     # Resolved via intersphinx to the Python stdlib docs; ignored here
     # so the build doesn't hard-fail when that inventory can't be
     # fetched (e.g. no network access).
-    ("any", "ValueError"),
-    ("any", "KeyError"),
+    ("py:exc", "ValueError"),
+    ("py:exc", "KeyError"),
+    ("py:exc", "TypeError"),
+    ("py:exc", "FileNotFoundError"),
+    ("py:exc", "FileExistsError"),
     ("py:obj", "collections.abc.MutableMapping"),
 ]
 suppress_warnings = [
@@ -97,7 +104,7 @@ autodoc2_packages = [
         "auto_mode": True,
     }
 ]
-autodoc2_render_plugin = "myst"
+autodoc2_render_plugin = "apidoc_renderer.Renderer"
 # Don't generate autodoc2's own (reStructuredText) index page; the package's
 # top-level page is pulled into the toctree in index.md directly.
 autodoc2_index_template = None
@@ -111,7 +118,18 @@ autodoc2_skip_module_regexes = [r"bibdeskparser\.[a-z_]+$"]
 # Don't show single-underscore-prefixed members of an otherwise-public
 # class (e.g. `Entry._touch`) -- those are internal implementation
 # details, not part of the public API, even though the class itself is.
-autodoc2_hidden_objects = ["inherited", "private"]
+# Dunder methods (`__repr__`, `__getitem__`, `__slots__`, etc.) are
+# hidden too: none of them carry their own docstring in this codebase
+# (construction/usage is documented on the class itself), so listing
+# them individually would only add empty, uninformative entries.
+autodoc2_hidden_objects = ["inherited", "private", "dunder"]
+# Keep `__init__` a hidden dunder like any other (see above) instead of
+# merging its docstring into the class under an "Initialization"
+# rubric: no class in this codebase documents `__init__` separately
+# from the class docstring, so that rubric would only ever show
+# `object.__init__`'s generic fallback text. The constructor signature
+# still appears in the class header either way.
+autodoc2_class_docstring = "both"
 # Parse docstrings as MyST markdown (the same format as the rest of the docs).
 autodoc2_docstring_parser_regexes = [(r".*", "myst")]
 

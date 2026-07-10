@@ -5,7 +5,7 @@ from pathlib import Path
 import bibtexparser
 import pytest
 
-from bibdeskparser.entry import Entry, Value
+from bibdeskparser.entry import Entry, ValueString
 from bibdeskparser.middleware import parse_stack
 from bibdeskparser.render import (
     _bold,
@@ -311,7 +311,7 @@ def test_render_article_no_bdsk_url_uses_doi_journal_link(refs, fmt):
     title itself is unlinked (articles never fall back to the DOI for
     the title link), but the DOI still links the journal segment."""
     entry = refs["GoerzA2023"]
-    assert entry.urls == []
+    assert entry.urls == ()
     rendered = render_entry(entry, format=fmt)
     assert "Robust Optimized Pulse Schemes" in rendered
     assert "https://doi.org/10.3390/atoms11020036" in rendered
@@ -341,7 +341,7 @@ def test_render_phdthesis(refs, fmt):
     """A `phdthesis` with no `type` override: default "Ph.D. thesis"
     label, no title link (no URL, no DOI)."""
     entry = refs["GoerzPhd2015"]
-    assert entry.urls == []
+    assert entry.urls == ()
     assert entry.get("doi") is None
     rendered = render_entry(entry, format=fmt)
     assert "M. Goerz" in rendered
@@ -355,7 +355,7 @@ def test_render_inproceedings(refs, fmt):
     """An `inproceedings` entry: booktitle italicized, DOI links the
     title (no `bdsk-url-N` field present)."""
     entry = refs["GoerzSPIEO2021"]
-    assert entry.urls == []
+    assert entry.urls == ()
     rendered = render_entry(entry, format=fmt)
     assert "Goerz" in rendered
     assert "Kasevich" in rendered
@@ -482,7 +482,7 @@ def test_format_eprint_with_primaryclass():
         "k",
         eprint="1234.5678",
         archiveprefix="arXiv",
-        primaryclass=Value("quant-ph"),
+        primaryclass=ValueString("quant-ph"),
     )
     assert _format_eprint(entry, "markdown") == (
         "[arXiv:1234.5678 [quant-ph]]" "(https://arxiv.org/abs/1234.5678)"

@@ -3,10 +3,10 @@ r"""Bibtexparser middlewares replicating BibDesk's read/write conversion.
 BibDesk normalizes `.bib` data when reading and writing: on *read*, TeX
 accents in field and `@string` values are decoded to Unicode
 (`detexify`), and `bdsk-file-N` field values are base64-encoded binary
-plists (see {any}`bibdeskparser.bdskfile.BibDeskFile`). On *write*,
+plists (see {class}`bibdeskparser.bdskfile.BibDeskFile`). On *write*,
 Unicode is re-encoded as TeX (`texify`). The `BibDesk Static Groups`
 `@comment` is not handled here: its body stays a plain string, which
-{any}`bibdeskparser.library.Library` decodes and re-encodes itself
+{class}`bibdeskparser.library.Library` decodes and re-encodes itself
 (see `bibdeskparser.groups`).
 
 This module packages those conversions as `bibtexparser` "block
@@ -91,7 +91,7 @@ class TeXifyMiddleware(BlockMiddleware):
     `Gr{\"u}n`), and to the value of every `@string` definition. Field
     keys for which `skip_texify` is `True` (URL and `bdsk-file` fields)
     are left untouched, as are non-string values (such as
-    {any}`bibdeskparser.bdskfile.BibDeskFile` objects).
+    {class}`bibdeskparser.bdskfile.BibDeskFile` objects).
 
     This replicates the `-stringByTeXifyingString:` normalization that
     BibDesk applies to every field value on write. It is typically used
@@ -126,9 +126,9 @@ class BibDeskFileMiddleware(BlockMiddleware):
 
     Replaces the string value of every field whose (lowercased) key
     starts with `bdsk-file-` with the decoded
-    {any}`bibdeskparser.bdskfile.BibDeskFile` object. The writer
+    {class}`bibdeskparser.bdskfile.BibDeskFile` object. The writer
     serializes such objects back via
-    {any}`bibdeskparser.bdskfile.BibDeskFile.to_field_value`, which is
+    {meth}`bibdeskparser.bdskfile.BibDeskFile.to_field_value`, which is
     byte-exact for unmodified attachments.
 
     * `allow_inplace_modification`: if `True` (default), transform the

@@ -48,7 +48,7 @@ def test_successful_field_edit(tmp_path):
     )
     edit_entries([entry], editor=editor)
     assert entry["title"] == "New Title"
-    assert entry.dirty is True
+    assert entry._dirty is True
 
 
 def test_field_deletion(tmp_path):
@@ -91,7 +91,7 @@ def test_files_urls_roundtrip(tmp_path):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # possibly no macOS bookmark
         entry._set_files([BibDeskFile("tests/Refs/GoerzA2023.pdf")])
-    entry.urls = ["http://example.org/old"]
+    entry.add_url("http://example.org/old")
     editor = _script_editor(
         tmp_path,
         "editor_files_urls.py",
@@ -108,7 +108,7 @@ def test_files_urls_roundtrip(tmp_path):
     )
     edit_entries([entry], editor=editor)
     assert entry.files == ["tests/Refs/GoerzQ2022.pdf"]
-    assert entry.urls == ["http://example.org/new"]
+    assert entry.urls == ("http://example.org/new",)
 
 
 # -- edit_entries: keywords -------------------------------------------- #
@@ -168,7 +168,7 @@ def test_keywords_reformatting_is_noop(tmp_path):
         ],
     )
     entry = Entry._wrap(model_entry)
-    assert entry.dirty is False
+    assert entry._dirty is False
     editor = _script_editor(
         tmp_path,
         "editor_reformat_keywords.py",
@@ -200,7 +200,7 @@ def test_one_word_keyword_is_not_flagged_as_macro(tmp_path):
         edit_entries([entry], library=bib, editor=editor)
     assert entry.keywords == ("beta",)
     assert bib.keywords == {"beta": ("Key2026",)}
-    assert entry.dirty is True  # the keyword genuinely changed
+    assert entry._dirty is True  # the keyword genuinely changed
 
 
 # -- edit_entries: validation failure handling ------------------------ #
@@ -286,9 +286,7 @@ def test_edit_entries_macro_rename_detection(tmp_path):
     bib = Library()
     bib.strings["jpb"] = "J. Phys. B"
     entry = Entry("article", "Key2026", fields={"title": "T"})
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        entry["journal"] = "jpb"  # bare macro reference
+    entry["journal"] = "jpb"  # bare macro reference
     bib["Key2026"] = entry
 
     editor = _script_editor(

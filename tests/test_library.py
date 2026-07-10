@@ -124,10 +124,10 @@ def test_timestamp_after_load(bib):
     assert bib.timestamp == datetime.datetime(
         2026,
         7,
-        4,
-        13,
-        45,
-        42,
+        9,
+        7,
+        22,
+        48,
         tzinfo=datetime.timezone(datetime.timedelta(hours=-4)),
     )
 
@@ -262,12 +262,12 @@ def test_rename_string_updates_usages(bib):
     """Renaming a macro updates its `@string` and every entry using
     it, marking those entries dirty."""
     entry = bib["GoerzJPB2011"]
-    assert entry.dirty is False
+    assert entry._dirty is False
     bib.rename_string("jpb", "jphysb")
     assert bib.strings["jphysb"] == "J. Phys. B"
     assert "jpb" not in bib.strings
     assert entry["journal"] == "jphysb"
-    assert entry.dirty is True
+    assert entry._dirty is True
 
 
 def test_rename_string_unknown_raises(bib):
@@ -598,28 +598,28 @@ def test_keywords_computed_from_entries(bib):
     )
 
 
-def test_keywords_field_hidden_from_dict_interface(bib):
-    """The `keywords` field is not reachable through the entry `dict`
-    interface (which is what makes `.keywords` always consistent)."""
+def test_keywords_field_readable_not_writable_via_dict(bib):
+    """The `keywords` field is readable through the entry `dict`
+    interface, but not writable (which is what keeps `.keywords`
+    always consistent)."""
     entry = bib["GoerzJPB2011"]
-    with pytest.raises(KeyError):
-        entry["keywords"]  # pylint: disable=pointless-statement
+    assert isinstance(entry["keywords"], str)
+    assert "keywords" in entry
     with pytest.raises(KeyError):
         entry["keywords"] = "some, keywords"
-    assert "keywords" not in entry
 
 
 def test_add_to_keyword_updates_immediately(bib):
     """`add_to_keyword` edits the entries' stored field; the change is
     visible in `entry.keywords` and `library.keywords` right away."""
     entry = bib["GoerzNJP2014"]
-    assert entry.dirty is False
+    assert entry._dirty is False
     assert bib.add_to_keyword("new topic", "GoerzNJP2014", "GoerzQ2022") is (
         None
     )
     assert bib.keywords["new topic"] == ("GoerzNJP2014", "GoerzQ2022")
     assert entry.keywords == ("new topic",)
-    assert entry.dirty is True  # keyword edits touch the entry ...
+    assert entry._dirty is True  # keyword edits touch the entry ...
 
 
 def test_group_mutation_does_not_dirty_entries(bib):
@@ -628,7 +628,7 @@ def test_group_mutation_does_not_dirty_entries(bib):
     entry = bib["GoerzDiploma2010"]
     bib.add_to_group("My Papers", "GoerzDiploma2010")
     assert entry.groups == ("My Papers",)
-    assert entry.dirty is False
+    assert entry._dirty is False
 
 
 def test_add_to_keyword_existing_is_noop(bib):
@@ -637,7 +637,7 @@ def test_add_to_keyword_existing_is_noop(bib):
     before = entry.keywords
     bib.add_to_keyword("quantum computing", "GoerzJPB2011")
     assert entry.keywords == before
-    assert entry.dirty is False
+    assert entry._dirty is False
 
 
 def test_add_to_keyword_unknown_key_raises(bib):
@@ -715,7 +715,7 @@ def test_keywords_view_setitem_validates_before_mutating(bib):
     with pytest.raises(KeyError):
         bib.keywords["optimal control"] = ("GoerzJPB2011", "NoSuchKey2099")
     assert bib.keywords["optimal control"] == ("GoerzDiploma2010",)
-    assert bib["GoerzJPB2011"].dirty is False
+    assert bib["GoerzJPB2011"]._dirty is False
 
 
 def test_keywords_view_delitem_unknown_raises(bib):
@@ -756,7 +756,7 @@ def test_bare_keywords_value_is_not_a_macro_reference(tmp_path):
     assert bib["K1"].keywords == ("alpha",)
     bib.rename_string("alpha", "beta")  # does not rewrite the keyword
     assert bib["K1"].keywords == ("alpha",)
-    assert bib["K1"].dirty is False
+    assert bib["K1"]._dirty is False
     del bib.strings["beta"]  # not blocked by the matching keyword
     assert len(bib.strings) == 0
     # The bare keyword does not raise as an undefined macro:
@@ -997,8 +997,9 @@ def test_from_scratch_roundtrip(tmp_path):
 
 def test_undefined_macro_raises_on_save(tmp_path, bib):
     """Saving with an entry referencing an undefined macro raises."""
-    with pytest.warns(UserWarning):
-        bib["GoerzJPB2011"]["journal"] = "totallyundefinedmacro"
+    # A plain macro-shaped value is stored as a bare macro reference
+    # silently (wrap in MacroString/ValueString to be explicit).
+    bib["GoerzJPB2011"]["journal"] = "totallyundefinedmacro"
 
     with pytest.raises(ValueError, match="totallyundefinedmacro"):
         bib.save(tmp_path / "x.bib")
@@ -1080,11 +1081,11 @@ def test_add_file_library_relative(tmp_path):
     not in the CWD) is attached, stored relative to the library."""
     bib = _file_bib(tmp_path, files=())
     (tmp_path / "a.pdf").write_bytes(b"%PDF-1.4 fake")
-    assert bib["K1"].dirty is False
+    assert bib["K1"]._dirty is False
     with _quiet_bookmarks():
         bib.add_file("K1", "a.pdf")
     assert bib["K1"].files == ["a.pdf"]
-    assert bib["K1"].dirty is True
+    assert bib["K1"]._dirty is True
 
 
 def test_add_file_cwd_relative(tmp_path, monkeypatch):
@@ -1270,6 +1271,62 @@ def test_replace_file_duplicate_raises(tmp_path):
         bib.replace_file("K1", "a.pdf", "b.pdf", remove=False)
 
 
+# -- url attachments: add/replace/remove -----------------------------------#
+
+
+def test_library_add_url(tmp_path):
+    """`Library.add_url` delegates to `Entry.add_url`."""
+    bib = _file_bib(tmp_path)
+    bib.add_url("K1", "http://example.org/a")
+    bib.add_url("K1", "https://example.org/b")
+    assert bib["K1"].urls == (
+        "http://example.org/a",
+        "https://example.org/b",
+    )
+
+
+def test_library_add_url_unknown_key_raises(tmp_path):
+    """An unknown citation key raises `KeyError`."""
+    bib = _file_bib(tmp_path)
+    with pytest.raises(KeyError):
+        bib.add_url("NoSuchKey", "http://example.org/a")
+
+
+def test_library_add_url_invalid_and_duplicate_raise(tmp_path):
+    """`add_url` raises `ValueError` for an invalid URL or a
+    duplicate."""
+    bib = _file_bib(tmp_path)
+    with pytest.raises(ValueError):
+        bib.add_url("K1", "not a url")
+    bib.add_url("K1", "http://example.org/a")
+    with pytest.raises(ValueError, match="already linked"):
+        bib.add_url("K1", "http://example.org/a")
+
+
+def test_library_replace_url(tmp_path):
+    """`Library.replace_url` swaps a URL in place; a missing old URL or
+    invalid new URL raises `ValueError`."""
+    bib = _file_bib(tmp_path)
+    bib.add_url("K1", "http://example.org/a")
+    bib.replace_url("K1", "http://example.org/a", "http://example.org/c")
+    assert bib["K1"].urls == ("http://example.org/c",)
+    with pytest.raises(ValueError, match="not linked"):
+        bib.replace_url("K1", "http://example.org/x", "http://example.org/y")
+    with pytest.raises(ValueError):
+        bib.replace_url("K1", "http://example.org/c", "not a url")
+
+
+def test_library_remove_url(tmp_path):
+    """`Library.remove_url` removes a linked URL; a missing one raises
+    `ValueError`."""
+    bib = _file_bib(tmp_path)
+    bib.add_url("K1", "http://example.org/a")
+    bib.remove_url("K1", "http://example.org/a")
+    assert bib["K1"].urls == ()
+    with pytest.raises(ValueError, match="not linked"):
+        bib.remove_url("K1", "http://example.org/a")
+
+
 def test_rename_file_bare_name(tmp_path):
     """A bare new filename renames the file within its current
     directory (on disk and in `.files`)."""
@@ -1288,13 +1345,13 @@ def test_rename_file_updates_all_entries(tmp_path):
     with _quiet_bookmarks():
         bib.add_file("K2", "shared.pdf")
     bib.save()
-    assert bib["K2"].dirty is False
+    assert bib["K2"]._dirty is False
     with _quiet_bookmarks():
         bib.rename_file("K1", "shared.pdf", "renamed.pdf")
     assert bib["K1"].files == ["renamed.pdf"]
     assert bib["K2"].files == ["renamed.pdf"]
-    assert bib["K1"].dirty is True
-    assert bib["K2"].dirty is True
+    assert bib["K1"]._dirty is True
+    assert bib["K2"]._dirty is True
 
 
 def test_rename_file_into_subdirectory(tmp_path):

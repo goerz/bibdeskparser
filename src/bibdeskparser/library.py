@@ -1,98 +1,4 @@
-r"""The `Library` class: a full BibDesk `.bib` database.
-
-`Library` wraps a `bibtexparser.Library` (`library._library`, private)
-via *composition*, presenting BibDesk's view of a `.bib` database:
-
-- `Library` is itself a `dict`-like mapping of citation key to
-  {any}`bibdeskparser.entry.Entry` (a
-  {py:class}`collections.abc.MutableMapping`); see {any}`Library.entries`.
-- {any}`Library.timestamp`: the save time from the header comment,
-  updated by {any}`Library.save`.
-- {any}`Library.strings`: a read-write view of the `@string` macro
-  definitions, delegating to `library._library.strings_dict`.
-- {any}`Library.groups`: a read-write `dict`-like view of the `BibDesk
-  Static Groups`, mapping each group name to a tuple of citation keys.
-  Assigning a tuple of keys creates or replaces a group wholesale, and
-  `del` removes one; per-key membership changes go through
-  {any}`Library.add_to_group` / {any}`Library.remove_from_group`.
-  Since `Library` is the sole gateway for mutating group membership,
-  every mutation immediately refreshes the `groups` property of each
-  affected {any}`bibdeskparser.entry.Entry`.
-- {any}`Library.keywords`: a read-write `dict`-like view mapping each
-  keyword to the tuple of citation keys of the entries carrying it,
-  computed on demand from the entries' stored `keywords` fields.
-  Those fields are not reachable through the entry `dict` interface,
-  so the view is always consistent with the entries; mutations
-  (assignment, `del`, {any}`Library.add_to_keyword`,
-  {any}`Library.remove_from_keyword`) edit the affected entries'
-  stored fields.
-- {any}`Library.duplicate_keys`: citation keys that could not be
-  loaded because they duplicate an earlier entry (BibDesk itself
-  tolerates this, so `bibdeskparser` does too, read-only).
-- {any}`Library.save`: writes the library back to disk. Entries that
-  were not modified since load are re-rendered verbatim (byte-exact
-  round-trip); modified or newly added entries are written in
-  BibDesk's field order. The header timestamp is only bumped if
-  something actually changed. A validation pass rejects entries that
-  reference an undefined `@string` macro, and warns (without raising)
-  about linked files (see {any}`bibdeskparser.entry.Entry.files`) that
-  no longer exist on disk. {any}`StaleFileError` is raised if the
-  target file was modified on disk (e.g. resaved by BibDesk) since
-  this library was loaded, unless `force=True`.
-- {any}`Library.add_file`, {any}`Library.replace_file`,
-  {any}`Library.unlink_file`, {any}`Library.rename_file`: manage an
-  entry's linked files ({any}`bibdeskparser.entry.Entry.files`, itself
-  read-only). Linked files are stored relative to the library's
-  `.bib` file, which only the `Library` knows, so these are `Library`
-  operations.
-- {any}`Library.render`, {any}`Library.export`, {any}`Library.edit`,
-  {any}`Library.edit_strings`: render a bibliography, export to
-  bibtex text, or edit in `$EDITOR`, for one or more selected
-  citation keys at once.
-
-```python
->>> from bibdeskparser.entry import Entry
->>> from bibdeskparser.library import Library
->>> bib = Library()  # a fresh, empty, in-memory library
->>> bib.strings["jpb"] = "J. Phys. B"
->>> bib.strings["jpb"]
-'J. Phys. B'
->>> entry = Entry("article", "Key2026", fields={"title": "A Title"})
->>> bib["Key2026"] = entry
->>> bib["Key2026"] is entry
-True
->>> len(bib)
-1
-
-```
-
-Deleting a macro that is still referenced by an entry is rejected:
-
-```python
->>> import warnings
->>> with warnings.catch_warnings():
-...     warnings.simplefilter("ignore")
-...     entry["journal"] = "jpb"  # a bare macro reference
->>> del bib.strings["jpb"]
-Traceback (most recent call last):
-    ...
-ValueError: cannot delete macro 'jpb': in use by entries ['Key2026']
-
-```
-
-Group membership is mutated through `Library` itself, which keeps
-`entry.groups` in sync immediately:
-
-```python
->>> bib.groups["My Papers"] = ()  # create an empty group
->>> bib.add_to_group("My Papers", "Key2026")
->>> bib["Key2026"].groups
-('My Papers',)
->>> bib.groups
-{'My Papers': ('Key2026',)}
-
-```
-"""
+"""The `Library` class and the `StaleFileError` it may raise."""
 
 import datetime
 import getpass
@@ -100,6 +6,7 @@ import logging
 import os
 import sys
 import warnings
+from abc import ABCMeta
 from collections.abc import MutableMapping
 from contextlib import contextmanager
 from pathlib import Path
@@ -112,7 +19,7 @@ from bibtexparser.model import (
     String,
 )
 
-from . import editing
+from . import config, editing
 from .bdskfile import BibDeskFile
 from .entry import Entry, _strip_enclosing
 from .exporting import export_entries
@@ -140,13 +47,13 @@ except ImportError:  # pragma: no cover - non-POSIX platforms
 
 
 class StaleFileError(RuntimeError):
-    """Raised by {any}`Library.save` when the target file is newer on
+    """Raised by {meth}`Library.save` when the target file is newer on
     disk than this library.
 
     This means the file was saved (by BibDesk, or by another process)
     after this `Library` was loaded or last saved here, so overwriting
     it now would silently discard those changes. Pass `force=True` to
-    {any}`Library.save` to overwrite anyway.
+    {meth}`Library.save` to overwrite anyway.
     """
 
 
@@ -205,7 +112,7 @@ def _default_creator():
     Uses the Gecos "full name" field of the current user's password
     database entry (stripping a trailing comma, as sometimes found in
     macOS Gecos fields), falling back to the login name (see
-    {py:func}`getpass.getuser`) if `pwd` is unavailable or the Gecos
+    {func}`getpass.getuser`) if `pwd` is unavailable or the Gecos
     field is empty.
     """
     if pwd is not None:
@@ -332,7 +239,7 @@ def _find_groups_block(raw_library):
 
 
 class _StringsView(MutableMapping):
-    """Read-write `dict`-like view of {any}`Library.strings`.
+    """Read-write `dict`-like view of {attr}`Library.strings`.
 
     Backed by `library._library.strings_dict`. Reading strips the
     enclosing `{...}`/`"..."` delimiters; writing re-adds them (after
@@ -340,7 +247,7 @@ class _StringsView(MutableMapping):
     macro name (validating it and lowercasing it, matching BibDesk's
     case-insensitive macro table). Deleting a macro that is still
     referenced (as a bare field value) by any entry raises
-    {any}`ValueError`.
+    {exc}`ValueError`.
     """
 
     def __init__(self, owner):
@@ -398,17 +305,17 @@ class _StringsView(MutableMapping):
 
 
 class _GroupsView(MutableMapping):
-    """Read-write `dict`-like view of {any}`Library.groups`, mapping
+    """Read-write `dict`-like view of {attr}`Library.groups`, mapping
     each group name to the tuple of the group's citation keys.
 
     A stateless facade: every operation forwards to the owning
     `Library`, which holds the group data and immediately refreshes
     the `groups` property of every affected
-    {any}`bibdeskparser.entry.Entry`. Values are always tuples, so a
+    {class}`Entry`. Values are always tuples, so a
     group's membership cannot be mutated in place: whole groups are
     created, replaced, or deleted through the mapping interface, and
     per-key membership changes go through
-    {any}`Library.add_to_group` / {any}`Library.remove_from_group`.
+    {meth}`Library.add_to_group` / {meth}`Library.remove_from_group`.
     The `MutableMapping` mixins (`pop`, `popitem`, `clear`, `update`,
     `setdefault`) all funnel through `__setitem__`/`__delitem__`, so
     they maintain the same invariants.
@@ -446,15 +353,16 @@ class _GroupsView(MutableMapping):
 
 
 class _KeywordsView(MutableMapping):
-    """Read-write `dict`-like view of {any}`Library.keywords`, mapping
+    """Read-write `dict`-like view of {attr}`Library.keywords`, mapping
     each keyword to the tuple of citation keys of the entries carrying
     it.
 
     A stateless facade: the mapping is computed on demand from the
     entries' stored `keywords` fields (keywords in first-seen entry
     order), so it is always consistent with the entries -- the
-    `keywords` field is not reachable through the entry `dict`
-    interface, and every mutation forwards to the owning `Library`,
+    `keywords` field is readable but not writable through the entry
+    `dict` interface, and every mutation forwards to the owning
+    `Library`,
     which edits the affected entries. A keyword exists only inside
     entries' `keywords` fields, so an *empty* keyword cannot be
     represented: assigning `()` is equivalent to deleting the keyword.
@@ -501,8 +409,49 @@ class _KeywordsView(MutableMapping):
 # -- Library ------------------------------------------------------------ #
 
 
-class Library(MutableMapping):
-    """A BibDesk `.bib` database.
+class _LibraryMeta(ABCMeta):
+    """Metaclass exposing the configuration flags as `Library` class
+    attributes.
+
+    `Library.verify_types`, `Library.verify_fields`, and
+    `Library.config_file` read and write the process-global
+    configuration in `bibdeskparser.config` (see the
+    [configuration](configuration)). They live on the metaclass so that
+    plain class-attribute access -- `Library.verify_types` and
+    `Library.verify_types = False` -- routes through it.
+    """
+
+    # pylint: disable=missing-function-docstring
+    # (each property just forwards to `bibdeskparser.config`; the
+    # class docstring above already documents all three)
+
+    @property
+    def verify_types(cls):
+        return config.get_verify_types()
+
+    @verify_types.setter
+    def verify_types(cls, value):
+        config.set_verify_types(bool(value))
+
+    @property
+    def verify_fields(cls):
+        return config.get_verify_fields()
+
+    @verify_fields.setter
+    def verify_fields(cls, value):
+        config.set_verify_fields(bool(value))
+
+    @property
+    def config_file(cls):
+        return config.get_config_file()
+
+    @config_file.setter
+    def config_file(cls, value):
+        config.set_config_file(value)
+
+
+class Library(MutableMapping, metaclass=_LibraryMeta):
+    r"""A BibDesk `.bib` database.
 
     ```python
     Library(path=None, creator=None)
@@ -511,23 +460,137 @@ class Library(MutableMapping):
     * `path`: path to a `.bib` file to load (UTF-8 text). If `None`
       (default), a fresh, empty, in-memory library is created instead.
     * `creator`: the name to use on the `Created for` line of a
-      synthesized header (see {any}`Library.save`). Only relevant for
-      a from-scratch library, or one loaded from a `.bib` file that
-      has no BibDesk header of its own; defaults to the OS account's
-      full name.
+      synthesized header (see {meth}`save`). Only relevant for a
+      from-scratch library, or one loaded from a `.bib` file that has
+      no BibDesk header of its own; defaults to the OS account's full
+      name.
 
     Loading a file that contains duplicate citation keys (see
-    {any}`Library.duplicate_keys`) emits a `UserWarning`; BibDesk
-    itself tolerates such files (keeping only the first entry for each
-    key), so this is a read-only, informational condition rather than
-    an error.
+    {attr}`duplicate_keys`) emits a `UserWarning`; BibDesk itself
+    tolerates such files (keeping only the first entry for each key),
+    so this is a read-only, informational condition rather than an
+    error.
 
-    See the module docstring for a complete overview.
+    A `Library` presents BibDesk's view of a `.bib` database:
+
+    - `Library` is itself a `dict`-like mapping of citation key to
+      {class}`Entry`; see {attr}`entries`.
+    - {attr}`timestamp`: the save time from the header comment, updated
+      by {meth}`save`.
+    - {attr}`strings`: a read-write view of the `@string` macro
+      definitions.
+    - {attr}`groups`: a read-write `dict`-like view of the "BibDesk
+      Static Groups", mapping each group name to a tuple of citation
+      keys. Assigning a tuple of keys creates or replaces a group
+      wholesale, and `del` removes one; per-key membership changes go
+      through {meth}`add_to_group` / {meth}`remove_from_group`. Every
+      mutation immediately refreshes the {attr}`Entry.groups` property of
+      each affected entry.
+    - {attr}`keywords`: a read-write `dict`-like view mapping each
+      keyword to the tuple of citation keys of the entries carrying it,
+      computed on demand from the entries' stored `keywords` fields.
+      Those fields are readable but not writable through the entry
+      `dict` interface, so the view is always consistent with the
+      entries; mutations (assignment, `del`, {meth}`add_to_keyword`,
+      {meth}`remove_from_keyword`) edit the affected entries' stored
+      fields.
+    - {attr}`duplicate_keys`: citation keys that could not be loaded
+      because they duplicate an earlier entry (read-only).
+    - {meth}`save`: writes the library back to disk. Entries that were
+      not modified since load are re-rendered verbatim (byte-exact
+      round-trip); modified or newly added entries are written in
+      BibDesk's field order. The header timestamp is only bumped if
+      something actually changed. A validation pass rejects entries
+      that reference an undefined `@string` macro, and warns (without
+      raising) about linked files (see {attr}`Entry.files`) that no
+      longer exist on disk. {exc}`StaleFileError` is raised if the
+      target file was modified on disk (e.g. resaved by BibDesk) since
+      this library was loaded, unless `force=True`.
+    - {meth}`add_file`, {meth}`replace_file`, {meth}`unlink_file`,
+      {meth}`rename_file`: manage an entry's linked files
+      ({attr}`Entry.files`, itself read-only). Linked files are stored
+      relative to the library's `.bib` file, which only the `Library`
+      knows, so these are `Library` operations.
+    - {meth}`add_url`, {meth}`replace_url`, {meth}`remove_url`: manage an
+      entry's linked URLs ({attr}`Entry.urls`, itself a read-only tuple).
+      These delegate to the corresponding {class}`Entry` methods (URLs
+      are self-contained, so unlike linked files they need no path
+      resolution).
+    - {meth}`render`, {meth}`export`, {meth}`edit`, {meth}`edit_strings`:
+      render a bibliography, export to bibtex text, or edit in
+      `$EDITOR`, for one or more selected citation keys at once.
+
+    Three class attributes reflect the configuration (see the
+    [configuration](configuration) reference page):
+
+    - `Library.verify_types` (default `True`): whether an unrecognized
+      {attr}`Entry.entry_type` is rejected with a `ValueError`.
+    - `Library.verify_fields` (default `True`): whether assigning a
+      field inappropriate for an entry's type emits a `UserWarning`.
+    - `Library.config_file` (default `None`): an explicit
+      `bibdeskparser.toml` path that takes precedence over the
+      directory-based search.
+
+    Constructing a `Library` (re)discovers a `bibdeskparser.toml`
+    (`config_file`, then the `.bib` file's own directory -- the current
+    working directory for a from-scratch library -- then the XDG
+    location, first found wins) and applies it. The configuration is
+    process-global; with no config file present, the defaults above
+    give exactly the behavior of previous versions.
+
+    ```python
+    >>> from bibdeskparser import Entry, Library
+    >>> bib = Library()  # a fresh, empty, in-memory library
+    >>> bib.strings["jpb"] = "J. Phys. B"
+    >>> bib.strings["jpb"]
+    'J. Phys. B'
+    >>> entry = Entry("article", "Key2026", fields={"title": "A Title"})
+    >>> bib["Key2026"] = entry
+    >>> bib["Key2026"] is entry
+    True
+    >>> len(bib)
+    1
+
+    ```
+
+    Deleting a macro that is still referenced by an entry is rejected:
+
+    ```python
+    >>> import warnings
+    >>> with warnings.catch_warnings():
+    ...     warnings.simplefilter("ignore")
+    ...     entry["journal"] = "jpb"  # a bare macro reference
+    >>> del bib.strings["jpb"]
+    Traceback (most recent call last):
+        ...
+    ValueError: cannot delete macro 'jpb': in use by entries ['Key2026']
+
+    ```
+
+    Group membership is mutated through `Library` itself, which keeps
+    {attr}`Entry.groups` in sync immediately:
+
+    ```python
+    >>> bib.groups["My Papers"] = ()  # create an empty group
+    >>> bib.add_to_group("My Papers", "Key2026")
+    >>> bib["Key2026"].groups
+    ('My Papers',)
+    >>> bib.groups
+    {'My Papers': ('Key2026',)}
+
+    ```
     """
 
     def __init__(self, path=None, creator=None):
         self._path = path
         self._creator = creator
+
+        # (Re)discover and apply the configuration for this library's
+        # directory (the `.bib` file's folder, or the cwd for a
+        # from-scratch library): Library.config_file, then that
+        # directory, then the XDG location; first found wins.
+        bib_dir = Path(path).resolve().parent if path is not None else None
+        config.load(bib_dir=bib_dir, config_file=type(self).config_file)
 
         if path is not None:
             text = Path(path).read_text(encoding="utf-8")
@@ -605,7 +668,7 @@ class Library(MutableMapping):
         `datetime.datetime`, read-only).
 
         `None` for a from-scratch library that has not been saved yet.
-        Updated by {any}`save` whenever the library was actually
+        Updated by {meth}`save` whenever the library was actually
         modified.
         """
         return self._timestamp
@@ -624,7 +687,7 @@ class Library(MutableMapping):
         ...` defines the same macro as `strings["pra"] = ...`.
         Deleting a name that is still referenced by any entry's field
         raises `ValueError` instead of leaving a dangling reference;
-        use {any}`rename_string` to rename a macro everywhere it is
+        use {meth}`rename_string` to rename a macro everywhere it is
         used in one step.
         """
         return self._strings_view
@@ -648,10 +711,10 @@ class Library(MutableMapping):
         Updates the `@string` definition itself, and every entry field
         that bare-references `old_name` (case-insensitively) is
         rewritten to reference `new_name` instead (marking that entry
-        {any}`bibdeskparser.entry.Entry.dirty`).
+        as modified).
 
-        Raises {any}`KeyError` if `old_name` is not a defined macro,
-        and {any}`ValueError` if `new_name` is not a valid macro name
+        Raises {exc}`KeyError` if `old_name` is not a defined macro,
+        and {exc}`ValueError` if `new_name` is not a valid macro name
         or already names a different macro.
         """
         strings_dict = self._library.strings_dict
@@ -687,8 +750,8 @@ class Library(MutableMapping):
         `library.groups[name] = (key, ...)` creates or replaces a
         group (an empty tuple creates an empty group), and
         `del library.groups[name]` deletes one -- while per-key
-        membership changes go through {any}`add_to_group` /
-        {any}`remove_from_group`. Values are always tuples: a group's
+        membership changes go through {meth}`add_to_group` /
+        {meth}`remove_from_group`. Values are always tuples: a group's
         membership cannot be mutated in place, only replaced or edited
         through those methods.
 
@@ -699,9 +762,9 @@ class Library(MutableMapping):
         whose entries are absent (stale groups data) are preserved.
 
         Every mutation immediately refreshes the `groups` property of
-        each affected {any}`bibdeskparser.entry.Entry`, so the two
+        each affected {class}`Entry`, so the two
         views are always consistent. Deleting an entry from the
-        library (or renaming one via {any}`rekey`) likewise updates
+        library (or renaming one via {meth}`rekey`) likewise updates
         the group data, so groups never accumulate dangling keys.
         """
         return self._groups_view
@@ -817,18 +880,16 @@ class Library(MutableMapping):
         tuple of citation keys of the entries carrying it.
 
         The mapping is always consistent with the entries' stored
-        `keywords` fields (which are not reachable through the entry
-        `dict` interface; see
-        {any}`bibdeskparser.entry.Entry.keywords`).
+        `keywords` fields (which are readable but not writable through
+        the entry `dict` interface; see {attr}`Entry.keywords`).
 
         Assigning `library.keywords[keyword] = (key, ...)` makes
         exactly those entries carry `keyword`; `del
         library.keywords[keyword]` removes it from every entry.
-        Per-key changes go through {any}`add_to_keyword` /
-        {any}`remove_from_keyword`. All of these edit the affected
+        Per-key changes go through {meth}`add_to_keyword` /
+        {meth}`remove_from_keyword`. All of these edit the affected
         entries' stored `keywords` field, bumping their
-        `date-modified` and marking them
-        {any}`bibdeskparser.entry.Entry.dirty` (unlike group
+        `date-modified` and marking them modified (unlike group
         mutations, which only affect the groups `@comment` block).
 
         A keyword exists only as part of some entry's `keywords`
@@ -862,8 +923,7 @@ class Library(MutableMapping):
         `keys`.
 
         Edits each affected entry's stored `keywords` field (bumping
-        its `date-modified` and marking it
-        {any}`bibdeskparser.entry.Entry.dirty`); entries already
+        its `date-modified` and marking it modified); entries already
         carrying `keyword` are silently skipped. A keyword that no
         entry carried before is thereby created -- keywords exist only
         inside entries, so there is no separate creation step (unlike
@@ -883,7 +943,7 @@ class Library(MutableMapping):
         """Remove `keyword` from the entries with the given citation
         `keys`.
 
-        The mirror image of {any}`add_to_keyword`: entries not
+        The mirror image of {meth}`add_to_keyword`: entries not
         carrying `keyword` are silently skipped, and `KeyError` is
         raised (before any entry is modified) if any key is not in
         this library.
@@ -958,7 +1018,7 @@ class Library(MutableMapping):
     @property
     def entries(self):
         """All entries in the library, as a `list` of
-        {any}`bibdeskparser.entry.Entry`."""
+        {class}`Entry`."""
         return list(self._entries.values())
 
     def __getitem__(self, key):
@@ -1075,7 +1135,7 @@ class Library(MutableMapping):
         """Resolve `filename` (a new file to be attached) to an
         absolute path, interpreting a relative path against both the
         library directory and the current working directory (see
-        {any}`add_file` for the exact rules)."""
+        {meth}`add_file` for the exact rules)."""
         base_dir = self._files_base_dir()
         path = Path(filename)
         if path.is_absolute():
@@ -1171,7 +1231,7 @@ class Library(MutableMapping):
     def add_file(self, key, filename, *, check_that_file_exists=True):
         """Attach the file `filename` to entry `key`, appending a
         `bdsk-file-N` field (see
-        {any}`bibdeskparser.entry.Entry.files`).
+        {attr}`Entry.files`).
 
         * `key`: citation key of the entry (raises `KeyError` if not
           in the library).
@@ -1226,7 +1286,7 @@ class Library(MutableMapping):
     ):
         """Replace entry `key`'s attached file `old_filename` with
         `new_filename`, keeping its position in
-        {any}`bibdeskparser.entry.Entry.files`.
+        {attr}`Entry.files`.
 
         * `key`: citation key of the entry (raises `KeyError` if not
           in the library).
@@ -1236,7 +1296,7 @@ class Library(MutableMapping):
           CWD-relative interpretation (`ValueError` if that is
           ambiguous).
         * `new_filename`: the file to attach in its place, resolved
-          exactly like the `filename` argument of {any}`add_file`
+          exactly like the `filename` argument of {meth}`add_file`
           (raises `ValueError` if it is already attached to the
           entry).
         * `remove` (mandatory keyword argument): whether to also
@@ -1245,11 +1305,11 @@ class Library(MutableMapping):
           else permanently. The old file is *not* deleted (a
           `UserWarning` instead) if it is still linked from any
           entry; a file already absent from disk is silently ignored.
-        * `check_that_file_exists`: as in {any}`add_file`, for
+        * `check_that_file_exists`: as in {meth}`add_file`, for
           `new_filename`.
 
         Raises `ValueError` if this library has no file path yet
-        (see {any}`add_file`).
+        (see {meth}`add_file`).
         """
         entry = self._entries[key]
         base_dir = self._files_base_dir()
@@ -1279,18 +1339,18 @@ class Library(MutableMapping):
 
     def unlink_file(self, key, filename, *, remove):
         """Remove the file `filename` from entry `key`'s attachments
-        ({any}`bibdeskparser.entry.Entry.files`).
+        ({attr}`Entry.files`).
 
         * `key`: citation key of the entry (raises `KeyError` if not
           in the library).
         * `filename`: the attachment to unlink, matched like the
-          `old_filename` argument of {any}`replace_file`.
+          `old_filename` argument of {meth}`replace_file`.
         * `remove` (mandatory keyword argument): whether to also
           delete the file from the filesystem, with the exact
-          semantics of {any}`replace_file`'s `remove`.
+          semantics of {meth}`replace_file`'s `remove`.
 
         Raises `ValueError` if this library has no file path yet
-        (see {any}`add_file`).
+        (see {meth}`add_file`).
         """
         entry = self._entries[key]
         rel_path = self._match_attachment(entry, filename)
@@ -1310,9 +1370,9 @@ class Library(MutableMapping):
         * `key`: citation key of an entry linking the file (raises
           `KeyError` if not in the library). Other entries linking
           the same file are updated as well, so their
-          {any}`bibdeskparser.entry.Entry.files` never go stale.
+          {attr}`Entry.files` never go stale.
         * `old_filename`: the attachment to rename, matched like the
-          `old_filename` argument of {any}`replace_file`; the file
+          `old_filename` argument of {meth}`replace_file`; the file
           must exist on disk (else `FileNotFoundError`).
         * `new_filename`: the new name. A bare filename (no directory
           component) renames the file within its current directory;
@@ -1322,7 +1382,7 @@ class Library(MutableMapping):
           already exists.
 
         Raises `ValueError` if this library has no file path yet
-        (see {any}`add_file`).
+        (see {meth}`add_file`).
         """
         entry = self._entries[key]
         base_dir = self._files_base_dir()
@@ -1352,10 +1412,58 @@ class Library(MutableMapping):
             if changed:
                 other._set_files(files)
 
+    # -- urls -------------------------------------------------------- #
+
+    def add_url(self, key, url):
+        """Attach `url` to entry `key`, appending a `bdsk-url-N` field
+        (see {attr}`Entry.urls`).
+
+        * `key`: citation key of the entry (raises `KeyError` if not in
+          the library).
+        * `url`: the URL to attach; must include both a scheme and a
+          host (e.g. `https://example.com/paper.pdf`), or `ValueError`
+          is raised. Raises `ValueError` if `url` is already linked
+          from the entry.
+
+        Unlike file attachments, URLs are self-contained (there is no
+        path resolution and no on-disk file to remove), so this simply
+        delegates to {meth}`Entry.add_url`.
+        """
+        self._entries[key].add_url(url)
+
+    def replace_url(self, key, old_url, new_url):
+        """Replace entry `key`'s linked `old_url` with `new_url`,
+        keeping its position in {attr}`Entry.urls`.
+
+        * `key`: citation key of the entry (raises `KeyError` if not in
+          the library).
+        * `old_url`: the linked URL to replace (raises `ValueError` if
+          it is not linked from the entry).
+        * `new_url`: the URL to link in its place (raises `ValueError`
+          if it is not a valid URL, or is already linked from the
+          entry).
+
+        Delegates to {meth}`Entry.replace_url`.
+        """
+        self._entries[key].replace_url(old_url, new_url)
+
+    def remove_url(self, key, url):
+        """Remove `url` from entry `key`'s linked URLs (see
+        {attr}`Entry.urls`).
+
+        * `key`: citation key of the entry (raises `KeyError` if not in
+          the library).
+        * `url`: the linked URL to remove (raises `ValueError` if it is
+          not linked from the entry).
+
+        Delegates to {meth}`Entry.remove_url`.
+        """
+        self._entries[key].remove_url(url)
+
     # -- saving ------------------------------------------------------ #
 
     def _validate_for_save(self, path):
-        """Raise/warn as documented by {any}`save`."""
+        """Raise/warn as documented by {meth}`save`."""
         undefined = set()
         strings_dict = self._library.strings_dict
         for entry in self._entries.values():
@@ -1388,32 +1496,32 @@ class Library(MutableMapping):
 
         * `path`: destination `.bib` file. Defaults to the path this
           library was loaded from (or last saved to); raises
-          {any}`ValueError` if there is none (a from-scratch library
+          {exc}`ValueError` if there is none (a from-scratch library
           that has never been given a path).
-        * `force`: bypass the {any}`StaleFileError` check (see below).
+        * `force`: bypass the {exc}`StaleFileError` check (see below).
 
         If the library was not modified since it was loaded (no entry
-        is {any}`bibdeskparser.entry.Entry.dirty`, {any}`groups` was
-        not mutated, and no entries/strings were added or removed),
+        was modified, {attr}`groups` was not mutated, and no
+        entries/strings were added or removed),
         the file is written byte-identical to how it was parsed (or,
         for a from-scratch library, is simply rendered), and the
         header timestamp is *not* touched. Otherwise: the header
         timestamp is updated (synthesizing a header if the library did
         not already have one), the static-groups `@comment` block is
-        re-rendered from the current {any}`groups` (synthesizing the
+        re-rendered from the current {attr}`groups` (synthesizing the
         block if the library did not have one but now has groups),
         dirty/new entries have their fields reordered into BibDesk's
-        canonical order, and {any}`timestamp` is updated.
+        canonical order, and {attr}`timestamp` is updated.
 
-        Before writing, raises {any}`ValueError` if any entry
+        Before writing, raises {exc}`ValueError` if any entry
         references an undefined `@string` macro, and warns (without
         raising) about any linked file
-        ({any}`bibdeskparser.entry.Entry.files`) that does not exist
+        ({attr}`Entry.files`) that does not exist
         relative to `path`'s directory (such files may legitimately
         live only on another machine).
 
-        Raises {any}`StaleFileError` if `path` already exists and its
-        header timestamp is strictly newer than {any}`timestamp`
+        Raises {exc}`StaleFileError` if `path` already exists and its
+        header timestamp is strictly newer than {attr}`timestamp`
         (i.e., it was saved -- by BibDesk or otherwise -- after this
         library was loaded or last saved), unless `force=True`.
         """
@@ -1443,7 +1551,8 @@ class Library(MutableMapping):
         self._validate_for_save(path)
 
         pristine = not self._modified and not any(
-            entry.dirty for entry in self._entries.values()
+            entry._dirty  # pylint: disable=protected-access
+            for entry in self._entries.values()
         )
 
         if pristine:
@@ -1482,12 +1591,9 @@ class Library(MutableMapping):
             self._groups_block = groups_block
 
         for entry in self._entries.values():
-            if entry.dirty:
-                entry._entry.fields = (
-                    bibdesk_field_order(  # pylint: disable=protected-access
-                        entry._entry.fields  # pylint: disable=protected-access
-                    )
-                )
+            # pylint: disable=protected-access
+            if entry._dirty:
+                entry._entry.fields = bibdesk_field_order(entry._entry.fields)
 
         self._timestamp = now
         path.write_text(render_library(self._library), encoding="utf-8")

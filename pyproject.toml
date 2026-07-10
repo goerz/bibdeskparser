@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "bibdeskparser"
-version = "0.1.0+dev"
+version = "0.2.0-dev"
 description = "Parser for Bibdesk database files"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -23,7 +23,10 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-dependencies = ["bibtexparser==2.0.0b9"]
+dependencies = [
+    "bibtexparser==2.0.0b9",
+    "tomli>=1.1.0; python_version < '3.11'",
+]
 
 [project.optional-dependencies]
 macos = ["pyobjc-framework-Cocoa; sys_platform == 'darwin'"]

@@ -1,6 +1,7 @@
 """Tests for `bibdeskparser.entry`."""
 
 import datetime
+import warnings
 from pathlib import Path
 
 import bibtexparser
@@ -9,7 +10,7 @@ from bibtexparser import model
 
 import bibdeskparser.entry as entry_module
 from bibdeskparser.bdskfile import BibDeskFile
-from bibdeskparser.entry import Entry, Value
+from bibdeskparser.entry import Entry, MacroString, ValueString
 from bibdeskparser.middleware import parse_stack
 
 REFS_BIB = Path(__file__).parent / "Refs" / "refs.bib"
@@ -107,7 +108,7 @@ def test_bdsk_fields_excluded_from_dict_interface():
         del entry["bdsk-url-1"]
 
 
-# -- brace stripping / Value / macro warnings ------------------------------- #
+# -- brace stripping / ValueString / MacroString / macro warnings ----------- #
 
 
 def test_get_strips_braces():
@@ -119,18 +120,74 @@ def test_get_strips_braces():
     assert entry._entry.fields_dict["title"].value == "{Some Title}"
 
 
-def test_value_forces_braces_even_for_macro_name():
-    """`Value("prl")` is stored braced even though "prl" is a valid
-    macro name; plain `"prl"` is stored bare and warns."""
+def test_value_string_forces_braces_even_for_macro_name():
+    """`ValueString("prl")` is stored braced even though "prl" is a
+    valid macro name; plain `"prl"` is stored bare (no warning)."""
     entry = Entry("article", "K")
-    entry["journal"] = Value("prl")
+    entry["journal"] = ValueString("prl")
     assert entry["journal"] == "prl"
     assert entry._entry.fields_dict["journal"].value == "{prl}"
 
-    with pytest.warns(UserWarning, match="macro reference"):
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         entry["journal"] = "prl"
     assert entry["journal"] == "prl"
     assert entry._entry.fields_dict["journal"].value == "prl"
+
+
+def test_macro_string_forces_bare_reference_without_warning():
+    """`MacroString("prl")` is stored bare (a `@string` reference) and
+    does not warn."""
+    entry = Entry("article", "K")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        entry["journal"] = MacroString("prl")
+    assert entry["journal"] == "prl"
+    assert entry._entry.fields_dict["journal"].value == "prl"
+
+
+def test_macro_string_validates_name():
+    """`MacroString` with an invalid macro name raises `ValueError`."""
+    entry = Entry("article", "K")
+    with pytest.raises(ValueError):
+        entry["journal"] = MacroString("not a macro")
+
+
+def test_decode_return_types():
+    """The `dict` interface returns `ValueString` for a literal/braced
+    value and `MacroString` for a bare `@string` macro reference."""
+    entry = _pristine_entry(
+        extra_fields=[
+            model.Field(key="title", value="{Some Title}"),
+            model.Field(key="journal", value="prl"),
+        ]
+    )
+    title = entry["title"]
+    journal = entry["journal"]
+    assert isinstance(title, ValueString)
+    assert not isinstance(title, MacroString)
+    assert isinstance(journal, MacroString)
+    # both compare/behave as plain str
+    assert title == "Some Title"
+    assert journal == "prl"
+
+
+def test_value_string_and_macro_string_export_raw():
+    """`ValueString` yields a braced `{prl}` and `MacroString` a bare
+    `prl` in the raw export format."""
+    from bibdeskparser import Library
+
+    bib = Library()
+    entry = Entry("article", "Key2024")
+    entry["journal"] = ValueString("prl")
+    bib["Key2024"] = entry
+    assert bib.export("Key2024", format="raw") == (
+        "@article{Key2024,\n\tjournal = {prl}\n}\n"
+    )
+    entry["journal"] = MacroString("prl")
+    assert bib.export("Key2024", format="raw") == (
+        "@article{Key2024,\n\tjournal = prl\n}\n"
+    )
 
 
 def test_texify_roundtrip():
@@ -164,7 +221,7 @@ def test_fresh_entry_dates_and_dirty(monkeypatch):
     assert entry.date_added == fixed
     assert entry.date_modified == fixed
     assert entry.date_added.tzinfo is not None
-    assert entry.dirty is True
+    assert entry._dirty is True
 
 
 def test_date_modified_advances_on_mutation(monkeypatch):
@@ -202,9 +259,9 @@ def test_wrap_is_pristine_then_becomes_dirty():
     entry = _pristine_entry(
         extra_fields=[model.Field(key="title", value="{T}")]
     )
-    assert entry.dirty is False
+    assert entry._dirty is False
     entry["title"] = "New Title"
-    assert entry.dirty is True
+    assert entry._dirty is True
 
 
 def test_missing_date_fields_give_none():
@@ -222,11 +279,11 @@ def test_missing_date_fields_give_none():
 def test_entry_type_setter_touches_dirty():
     """Setting `entry_type` delegates and marks the entry dirty."""
     entry = _pristine_entry()
-    assert entry.dirty is False
+    assert entry._dirty is False
     entry.entry_type = "book"
     assert entry.entry_type == "book"
     assert entry._entry.entry_type == "book"
-    assert entry.dirty is True
+    assert entry._dirty is True
 
 
 def test_key_is_read_only():
@@ -236,6 +293,36 @@ def test_key_is_read_only():
     with pytest.raises(AttributeError):
         entry.key = "NewKey"
     assert entry.key == "K"
+
+
+def test_entry_type_normalized_and_validated():
+    """A valid entry type is lowercased on construction and via the
+    setter; an unknown type raises `ValueError`; a non-str type raises
+    `TypeError`."""
+    entry = Entry("Article", "K")
+    assert entry.entry_type == "article"
+    entry.entry_type = "BOOK"
+    assert entry.entry_type == "book"
+    with pytest.raises(ValueError, match="invalid entry type"):
+        Entry("bogus", "K")
+    with pytest.raises(ValueError, match="invalid entry type"):
+        entry.entry_type = "bogus"
+    with pytest.raises(TypeError):
+        Entry(123, "K")
+
+
+def test_entry_type_alias_kept_verbatim():
+    """An accepted classic alias like `phdthesis` is kept verbatim
+    (lowercased), not rewritten to its biblatex canonical type."""
+    entry = Entry("PhdThesis", "K")
+    assert entry.entry_type == "phdthesis"
+
+
+def test_wrap_does_not_validate_entry_type():
+    """Loading (wrapping) an entry with an odd type does not raise."""
+    model_entry = model.Entry(entry_type="weirdtype", key="K", fields=[])
+    entry = Entry._wrap(model_entry)
+    assert entry.entry_type == "weirdtype"
 
 
 # -- groups ----------------------------------------------------------------- #
@@ -259,24 +346,24 @@ def test_groups_snapshot():
 # -- keywords ----------------------------------------------------------------#
 
 
-def test_keywords_excluded_from_dict_interface():
-    """The `keywords` field cannot be read, set, or deleted through
-    the dict interface, and iteration/`len` skip it."""
+def test_keywords_readable_but_not_writable_via_dict():
+    """The `keywords` field is readable through the dict interface (and
+    appears in iteration/`len`), but cannot be set or deleted."""
     entry = _pristine_entry(
         extra_fields=[
             model.Field(key="title", value="{T}"),
             model.Field(key="keywords", value="{a, b}"),
         ]
     )
-    with pytest.raises(KeyError, match="keywords"):
-        entry["keywords"]  # pylint: disable=pointless-statement
+    assert entry["keywords"] == "a, b"
+    assert isinstance(entry["keywords"], ValueString)
+    assert set(entry.keys()) == {"title", "keywords"}
+    assert len(entry) == 2
+    assert "keywords" in entry
     with pytest.raises(KeyError, match="keywords"):
         entry["keywords"] = "x"
     with pytest.raises(KeyError, match="keywords"):
         del entry["keywords"]
-    assert set(entry.keys()) == {"title"}
-    assert len(entry) == 1
-    assert "keywords" not in entry
 
 
 def test_constructor_rejects_keywords_field():
@@ -315,12 +402,12 @@ def test_set_keywords_roundtrip():
     """The private `_set_keywords` stores the TeX-encoded field,
     removes the field when set to `()`, and marks the entry dirty."""
     entry = _pristine_entry()
-    assert entry.dirty is False
+    assert entry._dirty is False
     entry._set_keywords(("quantum computing", "Schrödinger"))
     assert entry.keywords == ("quantum computing", "Schrödinger")
     raw = entry._entry.fields_dict["keywords"].value
     assert raw == r"{quantum computing, Schr{\"o}dinger}"
-    assert entry.dirty is True
+    assert entry._dirty is True
 
     entry._set_keywords(())
     assert entry.keywords == ()
@@ -332,7 +419,7 @@ def test_set_keywords_empty_to_empty_is_noop():
     the entry."""
     entry = _pristine_entry()
     entry._set_keywords(())
-    assert entry.dirty is False
+    assert entry._dirty is False
 
 
 def test_copy_keeps_keywords():
@@ -384,7 +471,7 @@ def test_files_read_only(tmp_path):
     with pytest.raises(AttributeError):
         entry.files = ["a.pdf", "b.pdf"]
     assert entry.files == ["a.pdf"]
-    assert entry.dirty is False
+    assert entry._dirty is False
 
 
 def test_set_files_renumbers_and_touches(tmp_path):
@@ -402,32 +489,94 @@ def test_set_files_renumbers_and_touches(tmp_path):
             model.Field(key="bdsk-file-2", value=file_b),
         ]
     )
-    assert entry.dirty is False
+    assert entry._dirty is False
     entry._set_files([file_b])
     assert entry.files == ["b.pdf"]
     assert entry._entry.fields_dict["bdsk-file-1"].value is file_b
     assert "bdsk-file-2" not in entry._entry.fields_dict
-    assert entry.dirty is True
+    assert entry._dirty is True
 
 
 # -- urls ------------------------------------------------------------------- #
 
 
-def test_urls_getter_setter_roundtrip():
-    """`.urls` round-trips a list of URLs in order."""
-    entry = Entry("article", "K")
-    entry.urls = ["http://example.org/a", "https://example.org/b"]
-    assert entry.urls == ["http://example.org/a", "https://example.org/b"]
-    assert entry.dirty is True
+def test_urls_is_read_only_tuple():
+    """`.urls` is a read-only tuple: the setter is gone."""
+    entry = _pristine_entry()
+    assert entry.urls == ()
+    assert isinstance(entry.urls, tuple)
+    with pytest.raises(AttributeError):
+        entry.urls = ["http://example.org/a"]
 
 
-def test_urls_setter_rejects_invalid_url():
-    """An invalid URL raises `ValueError` and does not modify the
-    entry."""
-    entry = Entry("article", "K")
+def test_add_url_appends_in_order():
+    """`add_url` appends URLs to `.urls` in order and marks the entry
+    dirty."""
+    entry = _pristine_entry()
+    entry.add_url("http://example.org/a")
+    entry.add_url("https://example.org/b")
+    assert entry.urls == (
+        "http://example.org/a",
+        "https://example.org/b",
+    )
+    assert entry._dirty is True
+
+
+def test_add_url_rejects_invalid_url():
+    """`add_url` raises `ValueError` for a URL without scheme+host and
+    does not modify the entry."""
+    entry = _pristine_entry()
     with pytest.raises(ValueError):
-        entry.urls = ["not a url"]
-    assert entry.urls == []
+        entry.add_url("not a url")
+    assert entry.urls == ()
+    assert entry._dirty is False
+
+
+def test_add_url_rejects_duplicate():
+    """`add_url` raises `ValueError` if the URL is already linked."""
+    entry = _pristine_entry()
+    entry.add_url("http://example.org/a")
+    with pytest.raises(ValueError, match="already linked"):
+        entry.add_url("http://example.org/a")
+
+
+def test_replace_url_keeps_position():
+    """`replace_url` swaps a URL in place, keeping its position."""
+    entry = _pristine_entry()
+    entry.add_url("http://example.org/a")
+    entry.add_url("http://example.org/b")
+    entry.replace_url("http://example.org/a", "http://example.org/c")
+    assert entry.urls == (
+        "http://example.org/c",
+        "http://example.org/b",
+    )
+
+
+def test_replace_url_missing_raises():
+    """`replace_url` raises `ValueError` if the old URL is not linked."""
+    entry = _pristine_entry()
+    with pytest.raises(ValueError, match="not linked"):
+        entry.replace_url("http://example.org/a", "http://example.org/b")
+
+
+def test_replace_url_rejects_invalid_new_url():
+    """`replace_url` raises `ValueError` for an invalid new URL."""
+    entry = _pristine_entry()
+    entry.add_url("http://example.org/a")
+    with pytest.raises(ValueError):
+        entry.replace_url("http://example.org/a", "not a url")
+
+
+def test_remove_url():
+    """`remove_url` removes a linked URL; removing a missing one
+    raises `ValueError`."""
+    entry = _pristine_entry()
+    entry.add_url("http://example.org/a")
+    entry.add_url("http://example.org/b")
+    entry.remove_url("http://example.org/a")
+    assert entry.urls == ("http://example.org/b",)
+    with pytest.raises(ValueError, match="not linked"):
+        entry.remove_url("http://example.org/a")
 
 
 # -- author / editor -------------------------------------------------------- #
@@ -444,6 +593,44 @@ def test_author_and_editor():
     assert entry.editor == []
 
 
+def test_author_editor_validation():
+    """A well-formed `author`/`editor` value is accepted; an
+    unparseable one raises `ValueError`."""
+    entry = Entry("article", "K")
+    entry["author"] = "Goerz, Michael H and Calarco, Tommaso"
+    assert entry["author"] == "Goerz, Michael H and Calarco, Tommaso"
+    with pytest.raises(ValueError, match="not parseable as names"):
+        entry["author"] = "Goerz, Michael, and,"
+    with pytest.raises(ValueError, match="not parseable as names"):
+        entry["editor"] = "Goerz, Michael, and,"
+
+
+# -- inappropriate-field warning -------------------------------------------- #
+
+
+def test_inappropriate_field_warns():
+    """Assigning a field that is not appropriate for the entry type
+    emits a `UserWarning` -- both a bogus field name and a real field
+    that belongs to a different type (e.g. `publisher` on an
+    `@article`)."""
+    entry = Entry("article", "K")
+    with pytest.warns(UserWarning, match="not appropriate for entry type"):
+        entry["notafield"] = "some literal value"
+    with pytest.warns(UserWarning, match="not appropriate for entry type"):
+        entry["publisher"] = "Some Publisher"
+
+
+def test_appropriate_field_does_not_warn():
+    """Assigning a field appropriate for the entry type (e.g.
+    `journal`/`title` on an `@article`) does not warn."""
+    entry = Entry("article", "K")
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        entry["title"] = "Some Title"
+        entry["journal"] = ValueString("Some Journal")
+    assert caught == []
+
+
 # -- copy ------------------------------------------------------------------- #
 
 
@@ -452,7 +639,7 @@ def test_copy_is_independent():
     entry = Entry("article", "K")
     entry["title"] = "Original"
     copy = entry.copy()
-    assert copy.dirty is False
+    assert copy._dirty is False
     assert copy.groups == ()
     assert copy["title"] == "Original"
 
@@ -495,9 +682,9 @@ def test_real_entry_files(jpb_entry):
 
 def test_real_entry_urls(jpb_entry):
     """`.urls` gives the one attached URL."""
-    assert jpb_entry.urls == [
-        "http://stacks.iop.org/0953-4075/44/i=15/a=154011"
-    ]
+    assert jpb_entry.urls == (
+        "http://stacks.iop.org/0953-4075/44/i=15/a=154011",
+    )
 
 
 def test_real_entry_author(jpb_entry):
@@ -507,4 +694,4 @@ def test_real_entry_author(jpb_entry):
 
 def test_real_entry_not_dirty_before_mutation(jpb_entry):
     """A freshly loaded (wrapped) entry is not dirty."""
-    assert jpb_entry.dirty is False
+    assert jpb_entry._dirty is False

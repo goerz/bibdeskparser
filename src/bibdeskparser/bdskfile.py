@@ -52,7 +52,7 @@ class BibDeskFile:
       relative to the current working directory); defaults to the
       current working directory.
     * `must_exist`: whether to require `path` to point to an existing
-      file (raising {py:class}`FileNotFoundError` otherwise). With
+      file (raising {exc}`FileNotFoundError` otherwise). With
       `must_exist=False`, a nonexistent `path` yields a path-only
       attachment, without a bookmark and without any warning.
 
@@ -60,10 +60,10 @@ class BibDeskFile:
     `None` and the file exists, a bookmark is created automatically on
     macOS (requires `pyobjc-framework-Cocoa`). Where a bookmark cannot
     be created, the instance falls back to a path-only attachment with
-    a {py:class}`UserWarning` (BibDesk will generate a bookmark on its
+    a {exc}`UserWarning` (BibDesk will generate a bookmark on its
     next save).
 
-    Use {py:meth}`from_field_value` and {py:meth}`to_field_value` to
+    Use {meth}`from_field_value` and {meth}`to_field_value` to
     convert from and to the string value of a `bdsk-file-N` field:
 
     ```python
@@ -244,20 +244,20 @@ def bookmark_for_path(path: str) -> bytes:
     includingResourceValuesForKeys:nil relativeToURL:nil error:NULL]`
     via pyobjc, replicating exactly the Cocoa API BibDesk uses
     (`BDSKBookmarkLinkedFile.initWithURL:delegate:`). The resulting
-    bytes go into {py:attr}`BibDeskFile.bookmark`. The file must exist
+    bytes go into {attr}`BibDeskFile.bookmark`. The file must exist
     on disk.
 
     Requires macOS and `pyobjc-framework-Cocoa` (install
     `bibdeskparser[macos]`). For cross-platform code, use
-    {py:class}`BibDeskFile` directly; it falls back to a path-only
+    {class}`BibDeskFile` directly; it falls back to a path-only
     entry where bookmarks are unavailable (BibDesk auto-creates the
     bookmark on its next save).
 
     Raises:
 
-    * {py:class}`NotImplementedError`: on platforms other than macOS.
-    * {py:class}`ImportError`: if pyobjc is not installed.
-    * {py:class}`OSError`: if Cocoa fails to create the bookmark
+    * {exc}`NotImplementedError`: on platforms other than macOS.
+    * {exc}`ImportError`: if pyobjc is not installed.
+    * {exc}`OSError`: if Cocoa fails to create the bookmark
       (e.g., because the file does not exist).
     """
     if sys.platform != "darwin":

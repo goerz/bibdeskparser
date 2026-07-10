@@ -12,7 +12,7 @@ parsed block re-serializes byte-for-byte.
 This module holds only pure (de)serialization functions. The decoded
 form is a plain `dict` mapping each group name to a `tuple` of citation
 keys, in file order; all group *state* (and every mutation of it) lives
-in {any}`bibdeskparser.library.Library`.
+in {class}`bibdeskparser.library.Library`.
 """
 
 import plistlib

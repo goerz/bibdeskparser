@@ -98,9 +98,7 @@ everywhere it is used with
 >>> entry = Entry("article", "Smith2020", fields={"title": "A Title"})
 >>> bib["Smith2020"] = entry
 >>> bib.strings["prl"] = "Phys. Rev. Lett."
->>> with warnings.catch_warnings():
-...     warnings.simplefilter("ignore")  # bare str ambiguous with a macro
-...     entry["journal"] = "prl"
+>>> entry["journal"] = "prl"  # macro-shaped str, stored as a bare reference
 >>> entry["journal"]
 'prl'
 >>> bib.rename_string("prl", "prl2")  # updates every referencing entry
@@ -193,13 +191,14 @@ Unlike groups, keywords live inside each entry (as its stored
 `keywords` field), so there is no separate creation step:
 `add_to_keyword` creates a keyword the moment the first entry carries
 it, and a keyword with no entries simply does not exist (assigning
-`()` is equivalent to deleting it). The `keywords` field itself is
-deliberately *not* available through the entry's `dict` interface
-(`entry["keywords"]` raises `KeyError`); routing all keyword edits
-through the `Library` is what keeps `bib.keywords` and every entry's
-`.keywords` consistent at all times. Since these edits change the
-entry's stored fields, they also bump its `date-modified` and mark it
-{py:attr}`~bibdeskparser.entry.Entry.dirty`.
+`()` is equivalent to deleting it). The `keywords` field is readable
+through the entry's `dict` interface (`entry["keywords"]` returns the
+comma-joined string), but deliberately *not* writable that way
+(`entry["keywords"] = ...` raises `KeyError`); routing all keyword
+edits through the `Library` is what keeps `bib.keywords` and every
+entry's `.keywords` consistent at all times. Since these edits change
+the entry's stored fields, they also bump its `date-modified` and mark
+it as modified since it was loaded.
 
 ## How to find and resolve duplicate citation keys
 

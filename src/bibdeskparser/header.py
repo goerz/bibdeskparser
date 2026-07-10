@@ -77,7 +77,7 @@ def parse_header(comment_text):
 
     Returns a tuple `(creator, timestamp)` with the creator name (str)
     and the last-save time (a timezone-aware
-    {any}`datetime.datetime`), extracted from the
+    {class}`datetime.datetime`), extracted from the
     `%% Created for NAME at YYYY-MM-DD HH:MM:SS ±ZZZZ` line of
     `comment_text` (the body of the comment block at the top of the
     `.bib` file). Returns `(None, None)` if no such line is found,
@@ -120,11 +120,11 @@ def update_header(comment_text, timestamp):
     Returns a copy of `comment_text` in which only the
     `YYYY-MM-DD HH:MM:SS ±ZZZZ` substring of the `Created for` line is
     replaced with `timestamp` (a timezone-aware
-    {any}`datetime.datetime`). Everything else, including trailing
+    {class}`datetime.datetime`). Everything else, including trailing
     spaces, is preserved byte-for-byte, mirroring how BibDesk updates
     the date in place on every save.
 
-    Raises {any}`ValueError` if `comment_text` contains no
+    Raises {exc}`ValueError` if `comment_text` contains no
     `Created for` line (see `parse_header`).
     """
     match = _CREATED_RE.search(comment_text)
@@ -155,7 +155,7 @@ def make_header(creator, timestamp):
 
     * `creator`: the name to put on the `Created for` line.
     * `timestamp`: the save time, as a timezone-aware
-      {any}`datetime.datetime`.
+      {class}`datetime.datetime`.
 
     ```python
     >>> import datetime
@@ -194,7 +194,7 @@ def peek_timestamp(path):
 
     Reads only the first 20 lines of the file at `path` (without
     parsing it as BibTeX) and returns the timezone-aware
-    {any}`datetime.datetime` from the header's `Created for` line, or
+    {class}`datetime.datetime` from the header's `Created for` line, or
     `None` if the file has no BibDesk header. This is intended for
     detecting whether a file changed on disk (e.g., was re-saved by
     BibDesk) since it was read.

@@ -1,53 +1,5 @@
-r"""The `Entry` class: a single BibDesk `.bib` record.
-
-`Entry` wraps a `bibtexparser.model.Entry` (`entry._entry`, private) via
-*composition*, presenting BibDesk's view of a bibliography record:
-
-- A case-insensitive `dict`-like interface (`Entry` is a
-  {py:class}`collections.abc.MutableMapping`) over "normal" fields, i.e.
-  every field except `date-added`, `date-modified`, `keywords`, and any
-  field whose key starts with `bdsk-` (case-insensitively). Values are
-  Unicode strings without their enclosing `{...}`/`"..."` delimiters,
-  matching what BibDesk's UI editor displays; a bare value that is a
-  valid BibDesk macro name is returned in its normalized (lowercase)
-  form instead, since it is a reference to a `@string` macro rather
-  than literal text.
-- {any}`Entry.date_added` / {any}`Entry.date_modified`: read-only
-  `datetime.datetime` views of the BibDesk-managed `date-added` /
-  `date-modified` fields (not accessible through the `dict` interface).
-- {any}`Entry.keywords`: a read-only tuple view of the `keywords`
-  field (also not accessible through the `dict` interface). Keywords
-  are edited through the owning {any}`bibdeskparser.library.Library`
-  (`add_to_keyword`, `remove_from_keyword`, or the
-  `Library.keywords` mapping), which is what keeps that mapping and
-  the entries consistent at all times. The `keywords` field is always
-  literal text: unlike other fields, a bare stored value that looks
-  like a macro name is never treated as a `@string` reference.
-- {any}`Entry.groups`: a read-only tuple of the names of the BibDesk
-  static groups the entry belongs to, maintained by the owning
-  {any}`bibdeskparser.library.Library` (group data lives in the
-  library, not in the entry).
-- {any}`Entry.files` / {any}`Entry.urls`: structured views of the
-  `bdsk-file-N` / `bdsk-url-N` fields (also not accessible through the
-  `dict` interface). `files` is read-only: the stored paths are
-  relative to the library's `.bib` file, which the entry itself does
-  not know, so attachments are modified through the owning
-  {any}`bibdeskparser.library.Library` (`add_file`, `replace_file`,
-  `unlink_file`, `rename_file`) instead.
-- {any}`Entry.author` / {any}`Entry.editor`: read-only structured views
-  of the `author`/`editor` fields.
-
-Every mutation (`__setitem__`, `__delitem__`, the `urls` setter, and
-the `entry_type` setter) updates `date-modified` and marks the entry
-{any}`Entry.dirty` (BibDesk itself does this for ordinary fields and
-the entry type, but not for `bdsk-*` changes; `bibdeskparser` stamps
-those too, since the entry's stored fields do change). `key` (see
-{any}`Entry.key`) is the one exception: it is read-only.
-
-Field values are TeX-encoded on write and decoded back to Unicode on
-read, except for URL-like fields, which are stored/returned verbatim,
-matching how BibDesk itself treats them -- so a field set through
-`Entry` and one loaded from a `.bib` file behave identically.
+"""The `Entry` class and its supporting `ValueString`/`MacroString`
+field-value types.
 """
 
 import datetime
@@ -59,11 +11,12 @@ from collections.abc import MutableMapping
 from bibtexparser import model
 
 from .bdskfile import BibDeskFile
+from .entrytypes import field_is_appropriate, normalize_entry_type
 from .macros import is_valid_macro_name, normalize_macro_name
 from .names import structured_names
 from .texmap import detexify, skip_texify, texify
 
-__all__ = ["Entry", "Value"]
+__all__ = ["Entry", "ValueString", "MacroString"]
 
 # All members whose name does not start with an underscore must be listed
 # either in __all__ or in __private__
@@ -82,16 +35,13 @@ _BDSK_URL_RE = re.compile(r"bdsk-url-(\d+)$", re.IGNORECASE)
 def _is_normal_key(key):
     """Whether `key` belongs to the `Entry` `dict` interface.
 
-    `False` for `date-added`, `date-modified`, `keywords`, and any
-    `bdsk-` prefixed key (case-insensitively); `True` for everything
-    else.
+    `False` for `date-added`, `date-modified`, and any `bdsk-` prefixed
+    key (case-insensitively); `True` for everything else, including
+    `keywords` (which is readable through the `dict` interface, but not
+    writable -- see `_check_writable`).
     """
     lkey = key.lower()
-    return (
-        lkey not in _DATE_KEYS
-        and lkey != "keywords"
-        and not lkey.startswith("bdsk-")
-    )
+    return lkey not in _DATE_KEYS and not lkey.startswith("bdsk-")
 
 
 def _split_keywords(raw):
@@ -118,32 +68,33 @@ def _parse_date(value):
     return datetime.datetime.strptime(_strip_enclosing(value), _DATE_FORMAT)
 
 
-class Value(str):
+class ValueString(str):
     r"""Force a field value to be stored as a braced BibTeX string.
 
     ```python
-    Value(value)
+    ValueString(value)
     ```
 
     A plain `str` value assigned via `entry[field] = value` is stored
     bare (no enclosing `{...}`) when it happens to be a valid,
     normalized BibDesk macro name, since such a value is ambiguous
     with a reference to a `@string` macro of that name. Wrap the
-    value in `Value` to force it to be treated as literal text
-    instead, even though it would otherwise pass as a macro name:
+    value in `ValueString` to force it to be treated as literal text
+    instead, even though it would otherwise pass as a macro name.
 
-    Both forms return the same value through the `dict` interface --
-    the difference is only in how the value is *stored* (as a literal
+    `ValueString` is the mirror image of {class}`MacroString`, which
+    forces the opposite (bare `@string` macro reference) storage. Both
+    return the same value through the `dict` interface -- the
+    difference is only in how the value is *stored* (as a literal
     braced string vs. a bare macro reference), visible in the `"raw"`
-    export format (see {any}`Library.export`):
+    export format (see {meth}`Library.export`):
 
     ```python
-    >>> import warnings
     >>> from bibdeskparser import Library
-    >>> from bibdeskparser.entry import Entry, Value
+    >>> from bibdeskparser.entry import Entry, ValueString
     >>> bib = Library()
     >>> entry = Entry("article", "Key2024")
-    >>> entry["journal"] = Value("prl")  # forced literal text
+    >>> entry["journal"] = ValueString("prl")  # forced literal text
     >>> entry["journal"]
     'prl'
     >>> bib["Key2024"] = entry
@@ -151,9 +102,7 @@ class Value(str):
     ...     "@article{Key2024,\n\tjournal = {prl}\n}\n"
     ... )
     True
-    >>> with warnings.catch_warnings():
-    ...     warnings.simplefilter("ignore")
-    ...     entry["journal"] = "prl"  # bare str: treated as a macro ref
+    >>> entry["journal"] = "prl"  # bare str: treated as a macro ref
     >>> entry["journal"]
     'prl'
     >>> bib.export("Key2024", format="raw") == (
@@ -167,34 +116,128 @@ class Value(str):
     __slots__ = ()
 
 
+class MacroString(str):
+    r"""Force a field value to be stored as a bare `@string` macro
+    reference.
+
+    ```python
+    MacroString(value)
+    ```
+
+    A plain `str` value assigned via `entry[field] = value` is already
+    stored as a bare macro reference whenever it looks like a valid
+    macro name (e.g. `entry["journal"] = "prl"` stores `journal = prl`).
+    Wrapping the value in `MacroString` makes that intent explicit and
+    forces bare-macro storage even in code that cannot rely on the
+    value's shape. The macro name is validated (it must be a valid,
+    normalized BibDesk macro name), so an invalid name raises
+    {exc}`ValueError`. To force the opposite -- a literal braced value
+    for a macro-shaped string -- wrap it in {class}`ValueString`.
+
+    `MacroString` is the mirror image of {class}`ValueString`, which
+    forces the opposite (literal braced) storage. Both return the same
+    value through the `dict` interface -- the difference is only in how
+    the value is *stored* (as a bare macro reference vs. a literal
+    braced string), visible in the `"raw"` export format (see
+    {meth}`Library.export`):
+
+    ```python
+    >>> from bibdeskparser import Library
+    >>> from bibdeskparser.entry import Entry, MacroString
+    >>> bib = Library()
+    >>> entry = Entry("article", "Key2024")
+    >>> entry["journal"] = MacroString("prl")  # forced macro reference
+    >>> entry["journal"]
+    'prl'
+    >>> bib["Key2024"] = entry
+    >>> bib.export("Key2024", format="raw") == (
+    ...     "@article{Key2024,\n\tjournal = prl\n}\n"
+    ... )
+    True
+
+    ```
+    """
+
+    __slots__ = ()
+
+
 class Entry(MutableMapping):
-    """A single BibDesk `.bib` entry.
+    r"""A single BibDesk `.bib` entry, element type of
+    {attr}`Library.entries`.
+
+    A new entry can be instantiated with
 
     ```python
     Entry(entry_type, key, fields=None)
     ```
 
-    Creates a new entry that is not (yet) part of any `Library`; add
-    it to one with `library[key] = entry`. `fields` (if given, a
-    `dict` mapping field name to a `str` or {any}`Value`) is applied
-    field by field, the same way as `entry[field_key] = value` -- so a
-    `keywords` field is rejected with `KeyError`, like any other key
-    outside the `dict` interface: keywords are edited only through the
-    owning `Library`, after the entry has been added to one.
-    `date-added` and `date-modified` are set to the current time (see
-    {any}`dirty`).
+    where the (case-insensitively handled) `entry_type` is one of the
+    [supported entry types](bib-entry-types), `key` is the citation
+    key, and `fields` is a mapping of field name to a `str`,
+    {class}`ValueString`, or {class}`MacroString`. The `fields` mapping
+    is applied field by field, the same way as `entry[field_key] =
+    value`. The `entry_type` is validated and lowercased (see
+    {attr}`entry_type`).
 
-    An entry obtained from a `Library` (e.g. `library[key]`, or by
-    iterating {any}`Library.entries`) is not constructed this way: it
-    keeps the `date-added`/`date-modified` values and `dirty` state it
-    had when the library was loaded, rather than being reset to "just
-    created".
+    An `Entry` acts as a read-write dictionary for the fields in the
+    entry. The keys (field names) are case insensitive, normalized to
+    lowercase. The values are decoded unicode strings
+    ({class}`ValueString` for literal/braced values, {class}`MacroString`
+    for a bare `@string` macro reference) mapping one-to-one to the
+    "raw" values in the `.bib` file. The decoded strings exclude the
+    `{...}`/`"..."` delimiters. On write, they are automatically encoded
+    according to BibDesk's requirements (e.g., converting unicode back
+    to ascii-encoded accented characters).
 
-    See the module docstring for the full behavior of the `dict`
-    interface and the other properties.
+    Values can be assigned as plain `str`; they are automatically
+    recognized as literal text or a macro reference. Assigning a field
+    that is not appropriate for the entry type (see the [supported entry
+    types](bib-entry-types)) emits a `UserWarning`, and assigning an
+    unparseable `author`/`editor` value raises {exc}`ValueError`. The
+    type and field checks can be disabled or customized through a
+    configuration file (see the [configuration](configuration)).
+
+    The following raw field names are excluded from the dictionary
+    interface:
+
+    - `date-added`: Managed automatically, accessible (read-only) via
+      the {attr}`date_added` property.
+    - `date-modified`: Managed automatically, accessible (read-only) via
+      the {attr}`date_modified` property.
+    - `bdsk-file-N` fields. File attachments can be accessed via the
+      read-only {attr}`files` property and can be managed at the
+      {class}`Library` level via {meth}`Library.add_file`,
+      {meth}`Library.replace_file`, {meth}`Library.unlink_file`, and
+      {meth}`Library.rename_file`.
+    - `bdsk-url-N` fields. URLs can be accessed via the read-only
+      {attr}`urls` property, and can be managed via the `Entry` methods
+      {meth}`add_url`, {meth}`replace_url`, {meth}`remove_url`, as well
+      as {meth}`Library.add_url`, {meth}`Library.replace_url`, and
+      {meth}`Library.remove_url`.
+
+    The `keywords` field is readable through the dictionary interface
+    (`entry["keywords"]` returns the comma-joined string, and
+    `"keywords"` appears in iteration and `len`), but it is *not*
+    writable that way: `entry["keywords"] = ...` and `del
+    entry["keywords"]` raise `KeyError`. Edit keywords through the
+    {attr}`keywords` tuple property or the owning {class}`Library`.
+
+    Some fields can also be accessed as _structured data_ via
+    properties, in addition to the "flat" strings accessible via the
+    dictionary interface:
+
+    - {attr}`author`: Structured view of the `author` field (read-only).
+    - {attr}`editor`: Same, but for the `editor` field.
+    - {attr}`keywords`: The entry's keywords (a tuple, read-only).
+
+    The {attr}`keywords` property has some similarity with
+    {attr}`groups`, the main difference being that `groups` are stored
+    at the {class}`Library` level only: entries that are not part of a
+    `Library` cannot have `groups`.
     """
 
     def __init__(self, entry_type, key, fields=None):
+        entry_type = normalize_entry_type(entry_type)
         self._entry = model.Entry(entry_type=entry_type, key=key, fields=[])
         self._groups = ()
         self._dirty = False
@@ -207,8 +250,9 @@ class Entry(MutableMapping):
         """Wrap an already-parsed `bibtexparser.model.Entry` (internal).
 
         Unlike the constructor, this does not touch `model_entry`'s
-        fields or dates: a freshly loaded entry is pristine (`dirty` is
-        `False`) until it is modified. Used by the library loader.
+        fields or dates: a freshly loaded entry is pristine
+        (unmodified, `_dirty` is `False`) until it is modified, and its
+        `entry_type` is *not* validated. Used by the library loader.
         """
         self = object.__new__(cls)
         self._entry = model_entry
@@ -238,9 +282,10 @@ class Entry(MutableMapping):
             )
         if lkey == "keywords":
             raise KeyError(
-                "'keywords' is not accessible via the dict interface; "
-                "use the read-only Entry.keywords property, or the "
-                "Library methods add_to_keyword/remove_from_keyword"
+                "'keywords' is readable but not writable via the dict "
+                "interface; use the read-only Entry.keywords property, "
+                "or the Library methods add_to_keyword/"
+                "remove_from_keyword"
             )
         if lkey.startswith("bdsk-"):
             raise KeyError(
@@ -263,7 +308,7 @@ class Entry(MutableMapping):
 
     def _touch(self):
         """Set `date-modified` (and `date-added`, if unset) to now, and
-        mark the entry {any}`dirty`."""
+        mark the entry modified (`_dirty`)."""
         now = datetime.datetime.now().astimezone()
         rendered = "{" + now.strftime(_DATE_FORMAT) + "}"
         self._set_raw_field("date-modified", rendered)
@@ -272,7 +317,11 @@ class Entry(MutableMapping):
         self._dirty = True
 
     def _decode(self, key, value):
-        """Decode a raw stored field value for `__getitem__`."""
+        """Decode a raw stored field value for `__getitem__`.
+
+        A literal/braced value (and the keyword and fallback branches)
+        is returned as a {class}`ValueString`; a bare `@string` macro
+        reference is returned as a {class}`MacroString`."""
         if not isinstance(value, str):
             return value
         if len(value) >= 2 and (
@@ -280,7 +329,7 @@ class Entry(MutableMapping):
             or (value[0] == '"' and value[-1] == '"')
         ):
             inner = value[1:-1]
-            return inner if skip_texify(key) else detexify(inner)
+            return ValueString(inner if skip_texify(key) else detexify(inner))
         # A bare macro-shaped `keywords` value is *not* a macro
         # reference: keywords are always literal text (BibDesk's own
         # keyword machinery expands any macro and writes back a plain
@@ -288,10 +337,10 @@ class Entry(MutableMapping):
         if key.lower() != "keywords" and is_valid_macro_name(
             value, normalized=True
         ):
-            return normalize_macro_name(value)
+            return MacroString(normalize_macro_name(value))
         # bare and not a valid macro name: shouldn't normally happen for
         # well-formed data, but be defensive and return it as-is
-        return value if skip_texify(key) else detexify(value)
+        return ValueString(value if skip_texify(key) else detexify(value))
 
     # -- MutableMapping interface (normal fields only) ---------------- #
 
@@ -303,26 +352,42 @@ class Entry(MutableMapping):
 
     def __setitem__(self, key, value):
         self._check_writable(key)
-        if isinstance(value, Value):
-            text = str(value)
-            text = text if skip_texify(key) else texify(text)
-            rendered = "{" + text + "}"
-        elif isinstance(value, str):
-            if is_valid_macro_name(value, normalized=True):
-                warnings.warn(
-                    f"field {key!r} set to macro reference {value!r}; "
-                    "ensure it is defined in library.strings",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                rendered = value
-            else:
-                text = value if skip_texify(key) else texify(value)
-                rendered = "{" + text + "}"
-        else:
+        if not isinstance(value, str):
             raise TypeError(
-                f"field value must be a str or Value, not {type(value)!r}"
+                "field value must be a str, ValueString, or "
+                f"MacroString, not {type(value)!r}"
             )
+        if not field_is_appropriate(self.entry_type, key):
+            warnings.warn(
+                f"field {key!r} is not appropriate for entry type "
+                f"{self.entry_type!r}",
+                UserWarning,
+                stacklevel=2,
+            )
+        text = str(value)
+        if key.lower() in ("author", "editor"):
+            try:
+                structured_names(text)
+            except Exception as exc:  # pylint: disable=broad-except
+                raise ValueError(
+                    f"invalid {key} field: not parseable as names: {exc}"
+                ) from exc
+        if isinstance(value, MacroString):
+            # Force a bare macro reference; validate the name (raising a
+            # clear ValueError if invalid) but do not warn.
+            if not is_valid_macro_name(text, normalized=True):
+                normalize_macro_name(text)  # raises ValueError
+            rendered = text
+        elif isinstance(value, ValueString):
+            # Force a literal braced value.
+            rendered = "{" + (text if skip_texify(key) else texify(text)) + "}"
+        elif is_valid_macro_name(text, normalized=True):
+            # A plain str that looks like a valid macro name is stored
+            # as a bare macro reference (matching how BibDesk would read
+            # it back). Wrap in ValueString to force literal text instead.
+            rendered = text
+        else:
+            rendered = "{" + (text if skip_texify(key) else texify(text)) + "}"
         self._set_raw_field(key, rendered)
         self._touch()
 
@@ -348,25 +413,22 @@ class Entry(MutableMapping):
 
     @property
     def date_added(self):
-        """`datetime.datetime` of the `date-added` field (read-only).
+        """Timestamp of when the entry was constructed (read-only).
 
-        `None` if the field is absent (shouldn't normally happen: the
-        constructor always sets it)."""
+        This is a {class}`datetime.datetime` representation of the raw
+        `date-added` field.
+        """
         field = self._find_field("date-added")
         return None if field is None else _parse_date(field.value)
 
     @property
     def date_modified(self):
-        """`datetime.datetime` of the `date-modified` field
-        (read-only)."""
+        """Timestamp of when the entry was last modified (read-only).
+
+        This is a {class}`datetime.datetime` representation of the
+        `date-modified` field."""
         field = self._find_field("date-modified")
         return None if field is None else _parse_date(field.value)
-
-    @property
-    def dirty(self):
-        """Whether the entry has been modified since it was loaded
-        (always `True` for a freshly constructed entry)."""
-        return self._dirty
 
     # -- key / entry_type ------------------------------------------------ #
 
@@ -376,20 +438,27 @@ class Entry(MutableMapping):
 
         Set at construction time and immutable afterwards -- an
         `Entry` cannot rename itself. An entry already in a
-        {any}`bibdeskparser.library.Library` is renamed through
-        {any}`bibdeskparser.library.Library.rekey`, which keeps the
-        library's key-based lookups consistent.
+        {class}`Library` is renamed through {meth}`Library.rekey`, which
+        keeps the library's key-based lookups consistent.
         """
         return self._entry.key
 
     @property
     def entry_type(self):
-        """The BibTeX entry type, e.g. `"article"`."""
+        """The BibTeX entry type, e.g. `"article"`.
+
+        Assigning validates the value against the [supported entry
+        types](bib-entry-types) and lowercases it, raising
+        {exc}`ValueError` for an unrecognized type (unless type
+        validation is disabled; see the [configuration](configuration)).
+        Validation applies only to assignment/construction; loading a
+        `.bib` file never validates the entry type.
+        """
         return self._entry.entry_type
 
     @entry_type.setter
     def entry_type(self, value):
-        self._entry.entry_type = value
+        self._entry.entry_type = normalize_entry_type(value)
         self._touch()
 
     # -- groups ------------------------------------------------------ #
@@ -401,13 +470,11 @@ class Entry(MutableMapping):
 
         Maintained by the owning `Library`: group data lives in the
         library, and every mutation of it (`library.groups[name] =
-        ...`, `del library.groups[name]`,
-        {any}`bibdeskparser.library.Library.add_to_group`,
-        {any}`bibdeskparser.library.Library.remove_from_group`)
-        immediately refreshes this property for every affected entry,
-        so it is always consistent with `library.groups`. `()` if the
-        entry is not (yet) attached to a `Library`, or is a member of
-        no group.
+        ...`, `del library.groups[name]`, {meth}`Library.add_to_group`,
+        {meth}`Library.remove_from_group`) immediately refreshes this
+        property for every affected entry, so it is always consistent
+        with `library.groups`. `()` if the entry is not (yet) attached
+        to a `Library`, or is a member of no group.
         """
         return tuple(self._groups)
 
@@ -418,15 +485,14 @@ class Entry(MutableMapping):
         """The entry's keywords (a tuple, read-only).
 
         Parsed on access from the stored `keywords` field (a
-        comma-separated list, not accessible through the `dict`
-        interface). Keywords are edited through the owning
-        {any}`bibdeskparser.library.Library`
-        ({any}`bibdeskparser.library.Library.add_to_keyword`,
-        {any}`bibdeskparser.library.Library.remove_from_keyword`, or
-        the `Library.keywords` mapping), which is what keeps that
-        mapping and the entries consistent. Unlike {any}`groups`,
-        keywords are stored in the entry itself, so they are preserved
-        by {any}`copy` and readable on a detached entry.
+        comma-separated list that is readable, but not writable,
+        through the `dict` interface). Keywords are edited through the
+        owning {class}`Library` ({meth}`Library.add_to_keyword`,
+        {meth}`Library.remove_from_keyword`, or the `Library.keywords`
+        mapping), which is what keeps that mapping and the entries
+        consistent. Unlike {attr}`groups`, keywords are stored in the
+        entry itself, so they are preserved by {meth}`copy` and
+        readable on a detached entry.
         """
         field = self._find_field("keywords")
         if field is None:
@@ -474,13 +540,10 @@ class Entry(MutableMapping):
         The paths are relative to the directory of the library's
         `.bib` file, which the entry itself does not know, so
         attachments can only be modified through the owning
-        {any}`bibdeskparser.library.Library`: see
-        {any}`bibdeskparser.library.Library.add_file`,
-        {any}`bibdeskparser.library.Library.replace_file`,
-        {any}`bibdeskparser.library.Library.unlink_file`, and
-        {any}`bibdeskparser.library.Library.rename_file` (an entry
-        must be added to a library before files can be attached to
-        it).
+        {class}`Library`: see {meth}`Library.add_file`,
+        {meth}`Library.replace_file`, {meth}`Library.unlink_file`, and
+        {meth}`Library.rename_file` (an entry must be added to a
+        library before files can be attached to it).
         """
         return [f.relative_path for f in self._file_objects()]
 
@@ -527,24 +590,32 @@ class Entry(MutableMapping):
     @property
     def urls(self):
         """URLs of attached links (the `bdsk-url-N` fields), in numeric
-        order (1, 2, 3, ...), without their enclosing braces.
+        order (1, 2, 3, ...), without their enclosing braces; a
+        read-only tuple.
 
-        Assign a list of URL strings to replace them; each one must
-        include both a scheme and a host (e.g.
-        `https://example.com/paper.pdf`), or `ValueError` is raised.
+        Modify the linked URLs with {meth}`add_url`, {meth}`replace_url`,
+        and {meth}`remove_url` (or the corresponding
+        {meth}`Library.add_url`, {meth}`Library.replace_url`, and
+        {meth}`Library.remove_url`). Unlike file attachments, URLs are
+        self-contained, so these are `Entry` methods (no path
+        resolution relative to the library file is needed).
         """
-        return [
+        return tuple(
             _strip_enclosing(field.value)
             for _, field in self._bdsk_url_fields()
-        ]
+        )
 
-    @urls.setter
-    def urls(self, urls):
-        urls = list(urls)
-        for url in urls:
-            parsed = urllib.parse.urlparse(url)
-            if not parsed.scheme or not parsed.netloc:
-                raise ValueError(f"not a valid URL: {url!r}")
+    @staticmethod
+    def _validate_url(url):
+        """Raise `ValueError` unless `url` has both a scheme and a
+        host."""
+        parsed = urllib.parse.urlparse(url)
+        if not parsed.scheme or not parsed.netloc:
+            raise ValueError(f"not a valid URL: {url!r}")
+
+    def _set_urls(self, urls):
+        """Replace all `bdsk-url-N` fields with `urls` (an iterable of
+        URL strings), renumbering from 1, and `_touch`."""
         for _, field in self._bdsk_url_fields():
             self._entry.fields.remove(field)
         for i, url in enumerate(urls, start=1):
@@ -552,6 +623,44 @@ class Entry(MutableMapping):
                 model.Field(key=f"bdsk-url-{i}", value="{" + url + "}")
             )
         self._touch()
+
+    def add_url(self, url):
+        """Attach `url` to the entry, appending a `bdsk-url-N` field.
+
+        `url` must include both a scheme and a host (e.g.
+        `https://example.com/paper.pdf`), or `ValueError` is raised.
+        Raises `ValueError` if `url` is already linked from the entry.
+        """
+        self._validate_url(url)
+        if url in self.urls:
+            raise ValueError(f"{url!r} is already linked from this entry")
+        self._set_urls(self.urls + (url,))
+
+    def replace_url(self, old_url, new_url):
+        """Replace the linked `old_url` with `new_url`, keeping its
+        position in {attr}`urls`.
+
+        Raises `ValueError` if `old_url` is not linked from the entry,
+        if `new_url` is not a valid URL, or if `new_url` is already
+        linked from the entry (and differs from `old_url`).
+        """
+        urls = self.urls
+        if old_url not in urls:
+            raise ValueError(f"{old_url!r} is not linked from this entry")
+        self._validate_url(new_url)
+        if new_url != old_url and new_url in urls:
+            raise ValueError(f"{new_url!r} is already linked from this entry")
+        self._set_urls(new_url if u == old_url else u for u in urls)
+
+    def remove_url(self, url):
+        """Remove `url` from the entry's linked URLs.
+
+        Raises `ValueError` if `url` is not linked from the entry.
+        """
+        urls = self.urls
+        if url not in urls:
+            raise ValueError(f"{url!r} is not linked from this entry")
+        self._set_urls(u for u in urls if u != url)
 
     # -- structured names ---------------------------------------------- #
 
@@ -566,7 +675,7 @@ class Entry(MutableMapping):
     @property
     def editor(self):
         """Structured view of the `editor` field (read-only), like
-        {any}`author`."""
+        {attr}`author`."""
         return structured_names(self.get("editor", ""))
 
     def __repr__(self):
@@ -600,12 +709,12 @@ class Entry(MutableMapping):
 
         Mutating the copy (or its fields) never affects the original.
         The copy is not a member of any `Library` (its `groups` is
-        `()`) until you add it to one, and starts with `dirty` set to
-        `False`: its fields (including `date-added`, `date-modified`,
-        and `keywords`, which travels with the entry, unlike `groups`)
-        are copied verbatim from the original, so the copy is a
-        faithful snapshot of the original's current state, not a
-        fresh, empty entry.
+        `()`) until you add it to one, and starts out marked unmodified:
+        its fields (including `date-added`, `date-modified`, and
+        `keywords`, which travels with the entry, unlike `groups`) are
+        copied verbatim from the original, so the copy is a faithful
+        snapshot of the original's current state, not a fresh, empty
+        entry.
         """
         new_fields = [
             model.Field(key=field.key, value=field.value)

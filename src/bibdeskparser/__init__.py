@@ -7,17 +7,33 @@ databases as maintained by the BibDesk application.
 
 from importlib.metadata import version
 
-from .entry import Entry, Value
+from . import config as _config
+from .entry import Entry, MacroString, ValueString
 from .library import Library, StaleFileError
 
 __version__ = version("bibdeskparser")
+
+# Load any bibdeskparser.toml from the current working directory or the
+# XDG location once, at import. Wrapped so that a malformed config file
+# can never prevent `import bibdeskparser`; it surfaces as a warning and
+# the built-in defaults are used instead. A `Library` re-applies the
+# configuration for its own directory when constructed.
+try:
+    _config.load()
+# pylint: disable-next=broad-except
+except Exception as _exc:  # pragma: no cover - config must not break import
+    import warnings as _warnings
+
+    _warnings.warn(f"failed to load bibdeskparser.toml: {_exc}", UserWarning)
+    del _warnings
 
 # All members whose name does not start with an underscore must be listed
 # either in __all__ or in __private__
 __all__ = [
     "Library",
     "Entry",
-    "Value",
+    "ValueString",
+    "MacroString",
     "StaleFileError",
 ]
 __private__ = []

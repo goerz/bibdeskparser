@@ -36,6 +36,8 @@ BibDesk's .bib Format <bibdesk_format>
 :caption: Reference
 :glob:
 
+bib_entry_types
+config
 apidocs/bibdeskparser/*
 ```
 

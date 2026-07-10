@@ -1,7 +1,7 @@
 r"""Serialization of `Entry` objects to bibtex text ("export" snippets).
 
-Provides {any}`export_entries`, which renders one or more
-{any}`bibdeskparser.entry.Entry` objects to a bibtex snippet in one of
+Provides {func}`export_entries`, which renders one or more
+{class}`bibdeskparser.entry.Entry` objects to a bibtex snippet in one of
 three formats:
 
 - `"default"`: every stored field except the BibDesk bookkeeping fields
@@ -291,7 +291,7 @@ def export_entries(
 
     # Arguments
 
-    * `entries`: an iterable of {any}`bibdeskparser.entry.Entry`.
+    * `entries`: an iterable of {class}`bibdeskparser.entry.Entry`.
     * `strings`: an optional `dict` mapping macro name to its Unicode
       value (e.g. `library.strings`), used to prepend `@string`
       definitions for every macro actually referenced by `entries`
@@ -300,7 +300,7 @@ def export_entries(
       an error -- this is a best-effort self-containment feature, not
       a validator).
     * `format`: one of `"default"`, `"raw"`, `"minimal"` (see the
-      module docstring); raises {any}`ValueError` for any other value.
+      module docstring); raises {exc}`ValueError` for any other value.
     * `outfile`: if given, a path (`str`/`pathlib.Path`) or an
       already-open text file object (anything with a `write` method;
       if already open, it is written to but not closed).

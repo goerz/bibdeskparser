@@ -20,7 +20,7 @@ Every `.bib` file BibDesk writes starts with a fixed comment block:
 %% http://bibdesk.sourceforge.net/
 
 
-%% Created for Michael Goerz at 2026-07-04 13:45:42 -0400
+%% Created for Michael Goerz at 2026-07-09 07:22:48 -0400
 
 
 %% Saved with string encoding Unicode (UTF-8)
@@ -48,10 +48,10 @@ library leaves the header (and the rest of the file) untouched:
 ...     warnings.simplefilter("ignore")  # the duplicate-key warning, see below
 ...     bib = Library(str(copy_dir / "refs.bib"))
 >>> bib.timestamp
-datetime.datetime(2026, 7, 4, 13, 45, 42, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
+datetime.datetime(2026, 7, 9, 7, 22, 48, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
 >>> bib.save()  # no changes made: the header timestamp is unchanged
 >>> bib.timestamp
-datetime.datetime(2026, 7, 4, 13, 45, 42, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
+datetime.datetime(2026, 7, 9, 7, 22, 48, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
 >>> tmpdir.cleanup()
 
 ```
@@ -78,16 +78,17 @@ exposed as read-only `datetime.datetime` objects:
 ```
 
 Any mutation of an `Entry` -- setting or deleting a field, changing
-`.entry_type`, reassigning `.urls`, or a file-attachment change made
-through the owning `Library` -- updates
-`date-modified` to the current time and marks the entry
-{py:attr}`~bibdeskparser.entry.Entry.dirty`. For ordinary fields and
+{attr}`~bibdeskparser.Entry.entry_type`, adding or removing a URL with
+{meth}`~bibdeskparser.Entry.add_url` and friends, or a file-attachment
+change made through the owning `Library` -- updates
+`date-modified` to the current time and marks the entry as modified
+since it was loaded. For ordinary fields and
 the entry type this mirrors what BibDesk itself does when a record is
 edited in its UI; for `bdsk-file-N`/`bdsk-url-N` changes BibDesk
 leaves `date-modified` untouched, and `bibdeskparser` deliberately
-updates it anyway, since the entry's stored fields do change. `dirty`
-is what
-{py:meth}`~bibdeskparser.library.Library.save` uses to decide which
+updates it anyway, since the entry's stored fields do change. That
+modified state is what
+{meth}`~bibdeskparser.Library.save` uses to decide which
 entries need to be rewritten (and reordered into BibDesk's field
 order) rather than copied through verbatim.
 
@@ -147,14 +148,23 @@ BibDesk also lets you link a URL to an entry, independently of the
 ... fields, again numbered in order. Unlike linked files, there is no
 bookmark or path resolution involved: each field is just the URL
 string itself. `Entry` exposes them as
-{py:attr}`~bibdeskparser.entry.Entry.urls`, a plain list of URL
+{attr}`~bibdeskparser.Entry.urls`, a read-only tuple of URL
 strings:
 
 ```python
 >>> entry.urls
-['http://stacks.iop.org/1367-2630/16/i=5/a=055012']
+('http://stacks.iop.org/1367-2630/16/i=5/a=055012',)
 
 ```
+
+Because URLs are self-contained (no path resolution is needed), they
+can be managed directly on the `Entry` with
+{meth}`~bibdeskparser.Entry.add_url`,
+{meth}`~bibdeskparser.Entry.replace_url`, and
+{meth}`~bibdeskparser.Entry.remove_url` (or the equivalent
+{meth}`~bibdeskparser.Library.add_url`,
+{meth}`~bibdeskparser.Library.replace_url`, and
+{meth}`~bibdeskparser.Library.remove_url`).
 
 ## `@string` macros and journal abbreviations
 
@@ -197,19 +207,23 @@ a message explaining what's wrong.
 When you *do* want to store literal text that happens to look like a
 macro name -- so that it round-trips as a quoted/braced string rather
 than a bare reference -- wrap it in
-{py:class}`~bibdeskparser.entry.Value`:
+{class}`~bibdeskparser.ValueString`:
 
 ```python
->>> from bibdeskparser import Value
->>> entry["journal"] = Value("prl")  # stored as literal text {prl}
+>>> from bibdeskparser import ValueString
+>>> entry["journal"] = ValueString("prl")  # stored as literal text {prl}
 >>> entry["journal"]  # still just reads back as 'prl'
 'prl'
 
 ```
 
 A plain `str` assigned to a field that happens to match a defined (or
-even undefined) macro name is instead stored as a bare reference, with
-a `UserWarning` to flag the ambiguity.
+even undefined) macro name is instead stored as a bare reference, the
+same way BibDesk would read it back. To make that intent explicit --
+or to force bare-reference storage in code that cannot rely on the
+value's shape -- wrap the value in
+{class}`~bibdeskparser.MacroString` instead, the mirror image of
+`ValueString`.
 
 ## BibDesk Static Groups
 
@@ -291,12 +305,14 @@ exempt, so a file with stale group data still loads and round-trips.
 BibTeX's conventional `keywords` field -- a comma-separated list of
 tags inside each entry -- is how BibDesk populates its "Keywords"
 sidebar. `bibdeskparser` treats it as structured data rather than as
-an ordinary field: it is *not* accessible through the entry's `dict`
-interface (`entry["keywords"]` raises `KeyError`, like `date-added`
-or the `bdsk-*` fields). Instead, each entry exposes
-{py:attr}`~bibdeskparser.entry.Entry.keywords`, a read-only tuple,
+an ordinary field: it is readable through the entry's `dict`
+interface (`entry["keywords"]` returns the comma-joined string, and
+`keywords` appears in iteration and `len`), but *not* writable that
+way -- `entry["keywords"] = ...` and `del entry["keywords"]` raise
+`KeyError`. Instead, each entry exposes
+{attr}`~bibdeskparser.Entry.keywords`, a read-only tuple,
 and the library exposes
-{py:attr}`~bibdeskparser.library.Library.keywords`, a `dict`-like
+{attr}`~bibdeskparser.Library.keywords`, a `dict`-like
 mapping from each keyword to the tuple of citation keys of the
 entries carrying it, mirroring `.groups`:
 
@@ -324,9 +340,9 @@ keyword cannot be represented: `add_to_keyword` creates a keyword
 implicitly with its first entry, and assigning `()` is equivalent to
 deleting it. Second, keyword edits change the affected entries'
 stored fields, so they bump each entry's `date-modified` and mark it
-{py:attr}`~bibdeskparser.entry.Entry.dirty`, whereas group edits only
+as modified since it was loaded, whereas group edits only
 touch the groups `@comment` block. Third, keywords travel with an
-entry -- {py:meth}`~bibdeskparser.entry.Entry.copy` preserves them --
+entry -- {meth}`~bibdeskparser.Entry.copy` preserves them --
 while group membership belongs to the library and does not.
 
 The `keywords` field is also always literal text: a value that

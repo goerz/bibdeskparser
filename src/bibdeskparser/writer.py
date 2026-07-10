@@ -77,14 +77,14 @@ def serialize_block(block):
       written verbatim.
     * `Entry`: the entry type and key, then one tab-indented line per
       field, with the closing brace directly after the last field
-      value. {any}`bibdeskparser.bdskfile.BibDeskFile` values are
+      value. {class}`bibdeskparser.bdskfile.BibDeskFile` values are
       serialized via their
-      {any}`~bibdeskparser.bdskfile.BibDeskFile.to_field_value` method.
+      {meth}`~bibdeskparser.bdskfile.BibDeskFile.to_field_value` method.
     * `ParsingFailedBlock` (e.g., a `DuplicateBlockKeyBlock` for an
       entry with a duplicate key): the block's `raw` source slice,
       verbatim, so that files with duplicate keys still round-trip.
 
-    Raises {any}`TypeError` for any other block type.
+    Raises {exc}`TypeError` for any other block type.
 
     ```python
     >>> from bibtexparser.model import Entry, Field, String

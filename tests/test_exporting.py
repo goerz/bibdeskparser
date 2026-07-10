@@ -63,14 +63,16 @@ def raw_diploma_entry(raw_library):
 def test_default_field_order(jpb_entry):
     """Normal fields come first (alphabetical), then bdsk-* fields.
 
-    The exported fields are the entry's dict interface plus
-    `keywords` (hidden from the dict interface, but still exported).
+    The exported normal fields are exactly the entry's dict interface
+    (which now includes the readable-but-not-writable `keywords`
+    field).
     """
     text = export_entries([jpb_entry], format="default")
     names = [
         line.split(" = ", 1)[0].strip() for line in text.splitlines()[1:-1]
     ]
-    expected = sorted(list(jpb_entry.keys()) + ["keywords"], key=str.lower) + [
+    assert "keywords" in jpb_entry.keys()
+    expected = sorted(jpb_entry.keys(), key=str.lower) + [
         "bdsk-file-1",
         "bdsk-url-1",
     ]
@@ -79,13 +81,12 @@ def test_default_field_order(jpb_entry):
 
 def test_keywords_exported(jpb_entry):
     """The `keywords` field is exported in the "default" and "raw"
-    formats, even though it is hidden from the `Entry` dict
-    interface."""
+    formats, and is readable (but not writable) through the `Entry`
+    dict interface."""
     line = "\tkeywords = {Rydberg atoms, quantum computing, "
     assert line in export_entries([jpb_entry], format="default")
     assert line in export_entries([jpb_entry], format="raw")
-    with pytest.raises(KeyError):
-        jpb_entry["keywords"]  # pylint: disable=pointless-statement
+    assert jpb_entry["keywords"].startswith("Rydberg atoms, quantum computing")
 
 
 def test_one_word_keyword_never_a_macro():

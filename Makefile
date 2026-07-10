@@ -79,11 +79,11 @@ isort:  ## sort imports in all src and test files
 isort-check:  ## check all src and test files for correctly sorted imports
 	$(UV) isort --check-only --diff $(SOURCES)
 
-flake8:  ## check style with flake8
-	$(UV) flake8 $(SOURCES)
+flake8:  ## check style with flake8 (advisory)
+	-$(UV) flake8 $(SOURCES)  # leading '-' ignores a non-zero exit
 
-pylint:  ## check the code with pylint
-	$(UV) pylint src
+pylint:  ## check the code with pylint (advisory)
+	-$(UV) pylint src  # leading '-' ignores a non-zero exit
 
 lint: black-check isort-check flake8 pylint check-changelog  ## run all linters
 

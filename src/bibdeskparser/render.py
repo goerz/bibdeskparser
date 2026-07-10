@@ -5,9 +5,9 @@ A citation is assembled from *authors*, *title*, *published-in*,
 joined with sentence-like punctuation.
 
 Three output formats are supported (the `format` argument of
-{any}`render_entry`/{any}`render_entries`): `"markdown"` (the default),
+{func}`render_entry`/{func}`render_entries`): `"markdown"` (the default),
 `"tex"`, and `"html"`. When rendering several citations at once,
-{any}`render_entries` also takes a `style` argument controlling their
+{func}`render_entries` also takes a `style` argument controlling their
 layout (paragraphs, a numbered list, or an itemized list).
 
 The **published-in** segment has dedicated formatting for the
@@ -57,10 +57,10 @@ __all__ = []
 # either in __all__ or in __private__
 __private__ = ["render_entry", "render_entries"]
 
-#: Output formats understood by {any}`render_entry`/{any}`render_entries`.
+#: Output formats understood by {func}`render_entry`/{func}`render_entries`.
 _VALID_FORMATS = ("markdown", "tex", "html")
 
-#: Layout styles understood by {any}`render_entries` (its `style`
+#: Layout styles understood by {func}`render_entries` (its `style`
 #: argument).
 _VALID_STYLES = ("default", "paragraphs", "numbered list", "itemized list")
 
@@ -182,7 +182,7 @@ def _visible_edges(text):
     already-formatted segment (e.g. to decide whether a segment
     "starts with an uppercase letter" although it may actually start
     with a Markdown `"*"` or an HTML `"<i>"`), never returned to a
-    caller of {any}`render_entry`.
+    caller of {func}`render_entry`.
     """
     return _strip_trailing_markup(_strip_leading_markup(text))
 
@@ -531,10 +531,10 @@ def render_entry(entry, format="markdown"):  # noqa: A002 (shadows builtin)
     *eprint*, and *note* segments (see the module docstring), joined
     with sentence-like punctuation.
 
-    * `entry`: a {any}`bibdeskparser.entry.Entry`.
+    * `entry`: a {class}`bibdeskparser.entry.Entry`.
     * `format`: one of `"markdown"` (default), `"tex"`, `"html"`.
 
-    Raises {any}`ValueError` if `format` is not one of the above.
+    Raises {exc}`ValueError` if `format` is not one of the above.
 
     ```python
     >>> from bibdeskparser.entry import Entry
@@ -581,7 +581,7 @@ def render_entries(entries, format="markdown", style="default"):  # noqa: A002
     render_entries(entries, format="markdown", style="default")
     ```
 
-    * `entries`: an iterable of {any}`bibdeskparser.entry.Entry`,
+    * `entries`: an iterable of {class}`bibdeskparser.entry.Entry`,
       rendered in the given order.
     * `format`: one of `"markdown"` (default), `"tex"`, `"html"`.
     * `style`: the layout of the citations relative to one another; one
@@ -597,9 +597,9 @@ def render_entries(entries, format="markdown", style="default"):  # noqa: A002
       * `"default"` (the default): like `"paragraphs"`, except that a
         single `"html"` citation is *not* wrapped in a `<p>...</p>`.
 
-    Each citation is rendered with {any}`render_entry`.
+    Each citation is rendered with {func}`render_entry`.
 
-    Raises {any}`ValueError` if `format` or `style` is not one of the
+    Raises {exc}`ValueError` if `format` or `style` is not one of the
     above.
 
     ```python

@@ -38,7 +38,7 @@ def is_valid_macro_name(name, normalized=True):
     * `name`: the macro name to check.
     * `normalized`: if `True` (default), `name` must additionally be
       non-empty and already lowercase, i.e. in the canonical form produced
-      by {any}`normalize_macro_name`. If `False`, the empty string is
+      by {func}`normalize_macro_name`. If `False`, the empty string is
       accepted (BibDesk permits it as an in-progress edit) and uppercase
       letters are allowed.
 
@@ -86,8 +86,8 @@ def normalize_macro_name(name):
     * `name`: the macro name as written (e.g. from a parsed `@string`
       block).
 
-    Raises {any}`ValueError` if `name` is empty or is not a valid macro
-    name according to {any}`is_valid_macro_name`.
+    Raises {exc}`ValueError` if `name` is empty or is not a valid macro
+    name according to {func}`is_valid_macro_name`.
 
     ```python
     >>> from bibdeskparser.macros import normalize_macro_name

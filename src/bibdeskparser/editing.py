@@ -1,13 +1,13 @@
 r"""`$EDITOR` round-trip editing of `Entry` objects and `Library` strings.
 
-Provides {any}`edit_entries` and {any}`edit_strings`: pure functions that
+Provides {func}`edit_entries` and {func}`edit_strings`: pure functions that
 export data to a temporary `.bib`-like file, open it in `$EDITOR`, wait
 for the editor to exit, re-parse the (possibly edited) result, validate
 it, and merge any changes back into the *original*
-{any}`bibdeskparser.entry.Entry` objects (and, optionally, a
-{any}`bibdeskparser.library.Library`'s `.strings`). This includes an
+{class}`bibdeskparser.entry.Entry` objects (and, optionally, a
+{class}`bibdeskparser.library.Library`'s `.strings`). This includes an
 entry's `keywords = {...}` line, which merges back through the entry's
-keywords accessors ({any}`bibdeskparser.entry.Entry.keywords` is not
+keywords accessors ({attr}`bibdeskparser.entry.Entry.keywords` is not
 part of the dict interface). Neither function is
 a method on `Library` -- wiring those up (e.g. `Library.edit()`) is
 out of scope for this module.
@@ -18,7 +18,7 @@ exact text shape.
 
 ## Known limitations
 
-* {any}`edit_entries` can only edit the fields of *existing* entries
+* {func}`edit_entries` can only edit the fields of *existing* entries
   matched by citation key: it cannot add or remove entries. An
   original entry whose key does not appear in the edited text is left
   untouched (with a `UserWarning`); an entry block in the edited text
@@ -26,10 +26,10 @@ exact text shape.
   (also with a `UserWarning`). Renaming a citekey is not supported
   either, since that has wider implications (e.g. `Library` dict-key
   consistency) that are out of scope here.
-* Only `format="default"` is accepted (see {any}`edit_entries`'s
+* Only `format="default"` is accepted (see {func}`edit_entries`'s
   docstring for why); the parameter still exists for API symmetry with
   `export_entries`/`render_entry`.
-* In {any}`edit_strings`, a macro whose deletion fails (because it is
+* In {func}`edit_strings`, a macro whose deletion fails (because it is
   still referenced by an entry) is reported as a validation problem
   for that round and can be fixed by reopening the editor; however,
   *other* changes from that same round (new/redefined/renamed macros)
@@ -332,9 +332,9 @@ def _parse_and_validate_strings(text):
 def _merge_fields(original_entry, parsed_entry):
     """Merge `parsed_entry`'s normal fields into `original_entry`
     in-place: set changed/new fields, delete fields absent from the
-    edited block. The `keywords` field is not part of `Entry`'s dict
-    interface, so it is merged through the entry's dedicated keywords
-    accessors instead."""
+    edited block. The `keywords` field is readable through `Entry`'s
+    dict interface but not writable, so it is merged through the
+    entry's dedicated keywords accessors instead."""
     parsed_by_key = {}
     for field in parsed_entry.fields:
         if _is_bdsk_field(field.key) or field.key.lower() in _DATE_KEYS:
@@ -350,6 +350,10 @@ def _merge_fields(original_entry, parsed_entry):
         # pylint: disable=protected-access
         original_entry._set_keywords(new_keywords)
     for key in list(original_entry.keys()):
+        # `keywords` is readable via the dict interface but merged
+        # separately (above), so it is never deleted through the dict.
+        if key.lower() == "keywords":
+            continue
         if key.lower() not in parsed_by_key:
             del original_entry[key]
     for orig_key, raw_value in parsed_by_key.values():
@@ -403,8 +407,8 @@ def _merge_files_urls(original_entry, parsed_entry, base_dir):
                 for path in new_files
             ]
         )
-    if new_urls != original_entry.urls:
-        original_entry.urls = new_urls
+    if list(new_urls) != list(original_entry.urls):
+        original_entry._set_urls(new_urls)  # pylint: disable=protected-access
 
 
 def _merge_entries(entries, parsed, base_dir):
@@ -511,8 +515,8 @@ def edit_entries(entries, library=None, format="default", editor=None):
     edit_entries(entries, library=None, format="default", editor=None)
     ```
 
-    Exports `entries` (an iterable of {any}`bibdeskparser.entry.Entry`)
-    to a temporary file via {any}`bibdeskparser.exporting.export_entries`,
+    Exports `entries` (an iterable of {class}`bibdeskparser.entry.Entry`)
+    to a temporary file via {func}`bibdeskparser.exporting.export_entries`,
     opens it in `editor`, waits for the editor to exit, re-parses the
     result, validates it, and merges the changes back into the
     *original* `Entry` objects (not copies) -- see the module docstring
@@ -520,7 +524,7 @@ def edit_entries(entries, library=None, format="default", editor=None):
 
     * `entries`: an iterable of `Entry` to edit together in one file
       (also covers "edit a single entry": pass a one-element list).
-    * `library`: optional {any}`bibdeskparser.library.Library`-like
+    * `library`: optional {class}`bibdeskparser.library.Library`-like
       object (only `.strings` mapping semantics and
       `.rename_string(old, new)` are required -- no import of the
       `Library` class happens here). If given, its current `@string`
@@ -631,16 +635,16 @@ def edit_strings(library, editor=None):
       docstring's "known limitations" for why other changes in the
       same round are not rolled back).
 
-    * `library`: a {any}`bibdeskparser.library.Library`-like object
+    * `library`: a {class}`bibdeskparser.library.Library`-like object
       (only `.strings` mapping semantics and `.rename_string` are
       used).
-    * `editor`: as in {any}`edit_entries`.
+    * `editor`: as in {func}`edit_entries`.
 
     Validation failure (parse error, or an `@string` name that is not
     a valid BibDesk macro name per
-    {any}`bibdeskparser.macros.is_valid_macro_name`, or a failed
+    {func}`bibdeskparser.macros.is_valid_macro_name`, or a failed
     deletion) triggers the same warn-and-prompt-to-reopen-or-abandon
-    flow as {any}`edit_entries`.
+    flow as {func}`edit_entries`.
     """
     before = dict(library.strings)
     text = "\n".join(
