@@ -113,6 +113,34 @@ Preskill2018 (article)
   keywords: NISQ
 ```
 
+### `search QUERY`
+
+List the keys of the entries matching `QUERY`, best match first, one
+per line. See {py:meth}`~bibdeskparser.Library.search`. With `--json`:
+an array of keys.
+
+The query is matched against the stored field values (bare `@string`
+macro names intact), the decoded Unicode values, and macro expansions.
+`--field FIELD` (repeatable) limits the search to the given fields; the
+special name `key` matches against the citation key. `--match` sets the
+match strictness (the levels up to `fuzzy` match everything from the
+previous level and are case-insensitive; `regex` follows standard
+{mod}`re` semantics):
+
+- `exact`: the query occurs verbatim as a substring.
+- `folded`: additionally ignores accents (`Schrodinger` and
+  `Schroedinger` both find `Schrödinger`).
+- `words` (the default): additionally matches when most of the query's
+  words occur in a field, in any order.
+- `fuzzy`: additionally tolerates small typos in individual words.
+- `regex`: the query is a regular expression (case-sensitive unless the
+  pattern says `(?i)`).
+
+```console
+$ bibdeskparser search library.bib "Schroedinger" --field author
+Schroedinger1926
+```
+
 ### `groups`
 
 List all static groups and the keys they contain. See

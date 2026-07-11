@@ -237,6 +237,37 @@ def show(bibfile, citekeys, as_json):
     _emit(data, as_json, text)
 
 
+@main.command(name="search", cls=_BibCommand)
+@click.argument("query")
+@click.option(
+    "--field",
+    "fields",
+    multiple=True,
+    metavar="FIELD",
+    help=(
+        "Limit the search to this field (repeatable). The special "
+        "name 'key' matches against the citation key."
+    ),
+)
+@click.option(
+    "--match",
+    "match_",
+    type=click.Choice(["exact", "folded", "words", "fuzzy", "regex"]),
+    default="words",
+    show_default=True,
+    help="The match strictness.",
+)
+@_json_option
+@click.pass_obj
+def search(bibfile, query, fields, match_, as_json):
+    """List the keys of the entries matching QUERY, best match first,
+    one per line."""
+    lib = Library(bibfile)
+    entries = lib.search(query, fields=fields or None, match=match_)
+    data = [entry.key for entry in entries]
+    _emit(data, as_json, "\n".join(data))
+
+
 @main.command(name="groups", cls=_BibCommand)
 @_json_option
 @click.pass_obj
