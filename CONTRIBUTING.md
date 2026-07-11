@@ -77,6 +77,8 @@ Commit Messages
 
 Write a short imperative subject line (50 chars or less) that completes the sentence "If applied, this commit will …", followed by a blank line and an optional body wrapped at 72 characters. Reference issues as e.g. `#1`, and close them with a `Closes #1` line (see [closing issues using keywords](https://help.github.com/articles/closing-issues-using-keywords/)).
 
+Use markdown syntax (GitHub Flavored Markdown) in the commit message. In particular, use inline code (backticks) for any snippet of text that refers to code.
+
 Testing
 -------
 

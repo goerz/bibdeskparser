@@ -22,12 +22,22 @@ __all__ = []
 # All members whose name does not start with an underscore must be listed
 # either in __all__ or in __private__
 __private__ = [
+    "is_groups_comment",
     "is_static_groups_comment",
     "parse_static_groups",
     "render_static_groups",
 ]
 
 _STATIC_GROUPS_HEAD = "BibDesk Static Groups{"
+
+#: The heads of all group-storing `@comment` blocks BibDesk writes, in
+#: the order in which BibDesk writes them (after the last entry).
+_GROUPS_COMMENT_HEADS = (
+    _STATIC_GROUPS_HEAD,
+    "BibDesk Smart Groups{",
+    "BibDesk URL Groups{",
+    "BibDesk Script Groups{",
+)
 
 
 def is_static_groups_comment(comment):
@@ -54,6 +64,38 @@ def is_static_groups_comment(comment):
     ```
     """
     return isinstance(comment, str) and comment.startswith(_STATIC_GROUPS_HEAD)
+
+
+def is_groups_comment(comment):
+    """Check whether a comment body holds any BibDesk group block.
+
+    ```python
+    is_groups_comment(comment)
+    ```
+
+    Return `True` if `comment` (the string body of an `@comment`
+    block) is one of the group-storing blocks BibDesk appends after
+    the last entry: `BibDesk Static Groups`, `BibDesk Smart Groups`,
+    `BibDesk URL Groups`, or `BibDesk Script Groups`. Of these, only
+    static groups are parsed (see `parse_static_groups`); the others
+    are preserved verbatim. Non-string input yields `False`.
+
+    ```python
+    >>> from bibdeskparser.groups import is_groups_comment
+    >>> is_groups_comment("BibDesk Static Groups{...}")
+    True
+    >>> is_groups_comment("BibDesk Smart Groups{...}")
+    True
+    >>> is_groups_comment("some other comment")
+    False
+    >>> is_groups_comment(None)
+    False
+
+    ```
+    """
+    return isinstance(comment, str) and comment.startswith(
+        _GROUPS_COMMENT_HEADS
+    )
 
 
 def parse_static_groups(comment):

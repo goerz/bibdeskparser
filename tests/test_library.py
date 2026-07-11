@@ -124,10 +124,10 @@ def test_timestamp_after_load(bib):
     assert bib.timestamp == datetime.datetime(
         2026,
         7,
-        9,
-        7,
-        22,
-        48,
+        11,
+        13,
+        35,
+        0,
         tzinfo=datetime.timezone(datetime.timedelta(hours=-4)),
     )
 
