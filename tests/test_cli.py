@@ -134,6 +134,65 @@ def test_show_json(runner, bibfile):
     assert entry["date_added"] == lib["GoerzJPB2011"].date_added.isoformat()
 
 
+def test_search(runner, bibfile):
+    result = _run(runner, "search", bibfile, "Universitaet Kassel")
+    assert result.output.splitlines() == ["GoerzPhd2015"]
+
+
+def test_search_json(runner, bibfile):
+    result = _run(runner, "search", bibfile, "Sebastian", "--json")
+    data = json.loads(result.output)
+    assert isinstance(data, list)
+    assert "GoerzQ2022" in data
+
+
+def test_search_options(runner, bibfile):
+    result = _run(
+        runner,
+        "search",
+        bibfile,
+        r"^10\.1103/",
+        "--field",
+        "doi",
+        "--match",
+        "regex",
+    )
+    assert result.output.splitlines() == ["GoerzPRA2014"]
+    result = _run(
+        runner,
+        "search",
+        bibfile,
+        "pra",
+        "--field",
+        "journal",
+        "--field",
+        "key",
+        "--match",
+        "exact",
+    )
+    assert result.output.splitlines() == ["GoerzPRA2014"]
+
+
+def test_search_no_results(runner, bibfile):
+    result = _run(runner, "search", bibfile, "no such thing anywhere")
+    assert result.output == ""
+
+
+def test_search_bad_match(runner, bibfile):
+    result = runner.invoke(
+        main, ["search", str(bibfile), "x", "--match", "bogus"]
+    )
+    assert result.exit_code != 0
+
+
+def test_search_bad_regex(runner, bibfile):
+    result = runner.invoke(
+        main, ["search", str(bibfile), "(", "--match", "regex"]
+    )
+    assert result.exit_code != 0
+    assert "invalid regular expression" in result.stderr
+
+
 def test_groups(runner, bibfile):
     result = _run(runner, "groups", bibfile)
     assert "My Papers: " in result.output

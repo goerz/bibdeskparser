@@ -32,6 +32,7 @@ from .header import make_header, parse_header, peek_timestamp, update_header
 from .macros import is_valid_macro_name, normalize_macro_name
 from .middleware import parse_stack
 from .render import render_entries
+from .search import search_entries
 from .writer import bibdesk_field_order, render_library
 
 __all__ = ["Library", "StaleFileError"]
@@ -1609,7 +1610,82 @@ class Library(MutableMapping, metaclass=_LibraryMeta):
             # API boundary.
             entry._dirty = False  # pylint: disable=protected-access
 
-    # -- render/export/edit ----------------------------------------------#
+    # -- search/render/export/edit ---------------------------------------#
+
+    def search(self, query, *, fields=None, match="words"):
+        r"""Return a list of the entries matching `query`, best match
+        first.
+
+        ```python
+        results = library.search(query, fields=None, match="words")
+        ```
+
+        For every searched field, the query is matched against the
+        stored value (bare `@string` macro names like `pra` intact),
+        the decoded Unicode value, and -- for a bare `@string` macro
+        reference -- the macro's expansion. Thus, an entry with
+        `journal = pra` is found both by searching for `"pra"` and for
+        `"Phys. Rev. A"`. A query containing TeX markup is decoded
+        before matching, so searching for `Schr{\"o}dinger` finds
+        `Schrödinger`.
+
+        By default, the citation key and all fields of each entry are
+        searched; `fields` (an iterable of field names, or a single
+        name) restricts the search, with the pseudo-field name `"key"`
+        selecting the citation key. Fields an entry does not have are
+        skipped.
+
+        `match` sets the match strictness. The first four levels form
+        a ladder -- each level matches everything the previous one
+        does, plus more -- and are all case-insensitive:
+
+        * `"exact"`: the query occurs verbatim (up to case) as a
+          substring of a raw or decoded value.
+        * `"folded"`: additionally ignores accents, including their
+          transliterations: `"Schrodinger"` and `"Schroedinger"` both
+          find `"Schrödinger"`.
+        * `"words"` (the default): additionally matches when most of
+          the query's words occur in a value, in any order (e.g. a
+          title search from a partially remembered phrase).
+        * `"fuzzy"`: additionally tolerates small typos in individual words.
+           Two words count as a fuzzy match when they agree on about 80% of
+           their letters, and at least 70% of the query's words must match.
+        * `"regex"`: the query is a regular expression, tried against
+          the raw and decoded values, with standard {mod}`re`
+          semantics (case-sensitive unless the pattern says `(?i)`).
+          An invalid pattern raises {exc}`ValueError`.
+
+        Any other `match` value raises {exc}`ValueError`. Entries
+        matching at a stricter ladder level rank above looser matches;
+        ties keep the library's entry order.
+
+        ```python
+        >>> from bibdeskparser import Entry, Library
+        >>> bib = Library()
+        >>> bib["Schroedinger1926"] = Entry(
+        ...     "article",
+        ...     "Schroedinger1926",
+        ...     fields={
+        ...         "author": "Schrödinger, Erwin",
+        ...         "title": "Quantisierung als Eigenwertproblem",
+        ...     },
+        ... )
+        >>> [e.key for e in bib.search("Schrodinger")]
+        ['Schroedinger1926']
+        >>> [e.key for e in bib.search("Schroedinger", fields=["author"])]
+        ['Schroedinger1926']
+        >>> [e.key for e in bib.search("eigenwertproblem quantisierung")]
+        ['Schroedinger1926']
+
+        ```
+        """
+        return search_entries(
+            self.values(),
+            query,
+            strings=dict(self.strings),
+            fields=fields,
+            match=match,
+        )
 
     def render(self, *keys, format="markdown", style="default"):
         # pylint: disable=redefined-builtin

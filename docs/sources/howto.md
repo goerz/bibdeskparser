@@ -200,6 +200,117 @@ entry's `.keywords` consistent at all times. Since these edits change
 the entry's stored fields, they also bump its `date-modified` and mark
 it as modified since it was loaded.
 
+## How to search a library
+
+{py:meth}`~bibdeskparser.library.Library.search` returns the entries
+matching a query, best match first:
+
+```python
+>>> bib = Library()
+>>> bib.strings["adp"] = "Ann. Phys."
+>>> bib["Schroedinger1926"] = Entry(
+...     "article",
+...     "Schroedinger1926",
+...     fields={
+...         "author": "Schrödinger, Erwin",
+...         "title": "Quantisierung als Eigenwertproblem",
+...         "journal": "adp",
+...         "year": "1926",
+...     },
+... )
+>>> bib["Einstein1905"] = Entry(
+...     "article",
+...     "Einstein1905",
+...     fields={
+...         "author": "Einstein, Albert",
+...         "title": "Zur Elektrodynamik bewegter Körper",
+...         "journal": "adp",
+...         "year": "1905",
+...     },
+... )
+>>> [e.key for e in bib.search("quantisierung eigenwertproblem")]
+['Schroedinger1926']
+
+```
+
+Accented text is found by its accented, accent-stripped, and
+transliterated spellings alike:
+
+```python
+>>> for query in ("Schrödinger", "Schrodinger", "Schroedinger"):
+...     print([e.key for e in bib.search(query, fields=["author"])])
+['Schroedinger1926']
+['Schroedinger1926']
+['Schroedinger1926']
+
+```
+
+A bare `@string` macro reference is found both by the macro's name and
+by its expansion (and `fields` limits the search, with the pseudo-field
+`"key"` selecting the citation key):
+
+```python
+>>> [e.key for e in bib.search("adp", fields=["journal"], match="exact")]
+['Schroedinger1926', 'Einstein1905']
+>>> [e.key for e in bib.search("Ann. Phys.", match="exact")]
+['Schroedinger1926', 'Einstein1905']
+>>> [e.key for e in bib.search("einstein", fields=["key"])]
+['Einstein1905']
+
+```
+
+The `match` argument sets the match strictness, from `"exact"`
+(verbatim substring, up to case) through `"folded"` (accent-insensitive)
+and `"words"` (the default: most of the query's words occur, in any
+order) to `"fuzzy"` (tolerates small typos); `match="regex"` instead
+treats the query as a regular expression:
+
+```python
+>>> bib.search("Schrodinger", match="exact")
+[]
+>>> [e.key for e in bib.search("Schrodinger", match="folded")]
+['Schroedinger1926']
+>>> [e.key for e in bib.search("Eigenwertproblm", match="fuzzy")]
+['Schroedinger1926']
+>>> [e.key for e in bib.search(r"^Zur ", fields=["title"], match="regex")]
+['Einstein1905']
+
+```
+
+At the `"fuzzy"` level, two words match when they agree on about 80% of
+their letters. In practice this forgives a single typo per word -- one
+wrong, missing, or extra letter, or one adjacent swap -- and along the
+way bridges US/UK spellings and the plain-ASCII spelling of a
+transliterated name. Because the threshold is a *fraction* of the word,
+shorter words tolerate less: a four-letter word can lose or gain a
+letter but not swap one for another, and a three-letter word is
+essentially exact-only. A second typo survives only in longer words.
+
+| Query word | Entry word | Matches? | Note |
+| --- | --- | --- | --- |
+| `quantom` | `quantum` | yes | one wrong letter |
+| `hamltonian` | `hamiltonian` | yes | one missing letter |
+| `controll` | `control` | yes | one extra letter |
+| `theroy` | `theory` | yes | adjacent swap |
+| `optimisation` | `optimization` | yes | US/UK spelling |
+| `schrodinger` | `schroedinger` | yes | ASCII vs. transliteration |
+| `gate` | `gates` | yes | short word, missing letter |
+| `gate` | `rate` | no | short word, wrong letter |
+| `cat` | `hat` | no | three-letter word |
+
+A complementary guard rejects word pairs whose lengths differ by more
+than two characters, and the `"words"`/`"fuzzy"` levels additionally
+require at least 70% of the query's words to match, so a two-word query
+tolerates one unmatched word but a three-word query still needs two of
+its three.
+
+On the command line, the `search` subcommand prints the matching keys
+one per line, which composes with the other subcommands:
+
+```console
+$ bibdeskparser render library.bib $(bibdeskparser search library.bib "Schroedinger")
+```
+
 ## How to find and resolve duplicate citation keys
 
 A `.bib` file with two entries sharing a key still loads; the

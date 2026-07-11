@@ -1388,3 +1388,126 @@ def test_attachments_roundtrip_through_save(tmp_path):
     bib.save()
     reloaded = Library(tmp_path / "lib.bib")
     assert reloaded["K1"].files == ["a.pdf"]
+
+
+# -- search -----------------------------------------------------------------#
+
+
+def _keys(entries):
+    """The citation keys of `entries` (a list)."""
+    return [entry.key for entry in entries]
+
+
+def test_search_macro_literal(bib):
+    """A bare `@string` macro name matches as a literal, and the
+    macro's expansion matches, too."""
+    assert _keys(bib.search("pra", fields=["journal"], match="exact")) == [
+        "GoerzPRA2014"
+    ]
+    assert _keys(
+        bib.search("Phys. Rev. A", fields=["journal"], match="exact")
+    ) == ["GoerzPRA2014"]
+    assert _keys(bib.search("njp", fields=["journal"], match="exact")) == [
+        "GoerzNJP2014"
+    ]
+
+
+def test_search_accented_all_variants(bib):
+    """Accented text is found by its accented, accent-stripped, and
+    transliterated spellings alike."""
+    for query in (
+        "Universität Kassel",
+        "Universitat Kassel",
+        "Universitaet Kassel",
+    ):
+        assert _keys(bib.search(query)) == ["GoerzPhd2015"]
+        assert _keys(bib.search(query, match="folded")) == ["GoerzPhd2015"]
+    for query in ("Sebastián", "Sebastian"):
+        result = _keys(bib.search(query, fields=["author"]))
+        assert result == ["GoerzQ2022", "GoerzJOSS2025", "Aiello2605.00152"]
+
+
+def test_search_tex_query(bib):
+    """A query containing TeX markup is decoded before matching."""
+    result = _keys(bib.search('Universit{\\"a}t', match="exact"))
+    assert result == ["GoerzPhd2015", "GoerzDiploma2010"]
+
+
+def test_search_title_word_overlap(bib):
+    """A scrambled subset of title words finds the title."""
+    result = bib.search("gates quantum open robust optimizing")
+    assert result[0].key == "GoerzPhd2015"
+
+
+def test_search_field_limiting(bib):
+    """`fields` restricts the search; unrestricted search over the
+    same query returns a superset. A single field may be given as a
+    plain string."""
+    limited = _keys(
+        bib.search("optimal control", fields=["keywords"], match="exact")
+    )
+    assert limited == ["GoerzDiploma2010"]
+    unlimited = _keys(bib.search("optimal control", match="exact"))
+    assert set(unlimited) > set(limited)
+    assert limited == _keys(
+        bib.search("optimal control", fields="keywords", match="exact")
+    )
+
+
+def test_search_match_levels_subsumption(bib):
+    """Each ladder level matches everything the stricter levels do,
+    plus more."""
+    assert bib.search("Universitat", match="exact") == []
+    folded = bib.search("Universitat", match="folded")
+    assert _keys(folded) == ["GoerzPhd2015", "GoerzDiploma2010"]
+    typo_query = "quantom optimal controll"
+    assert bib.search(typo_query, match="words") == []
+    assert len(bib.search(typo_query, match="fuzzy")) > 0
+    for stricter, looser in [
+        ("exact", "folded"),
+        ("folded", "words"),
+        ("words", "fuzzy"),
+    ]:
+        for query in ("Universitat", "optimal control", typo_query):
+            strict_keys = set(_keys(bib.search(query, match=stricter)))
+            loose_keys = set(_keys(bib.search(query, match=looser)))
+            assert strict_keys <= loose_keys
+
+
+def test_search_regex(bib):
+    """`match="regex"` treats the query as a regular expression, with
+    standard case-sensitive `re` semantics."""
+    result = _keys(bib.search(r"^10\.1103/", fields=["doi"], match="regex"))
+    assert result == ["GoerzPRA2014"]
+    assert bib.search(r"^10\.1103/PHYSREV", match="regex") == []
+    result = _keys(bib.search(r"(?i)^10\.1103/PHYSREV", match="regex"))
+    assert result == ["GoerzPRA2014"]
+
+
+def test_search_key_pseudofield(bib):
+    """The pseudo-field `"key"` matches against the citation key."""
+    result = _keys(bib.search("goerzphd", fields=["key"], match="exact"))
+    assert result == ["GoerzPhd2015"]
+
+
+def test_search_ranking_and_ties(bib):
+    """Stricter matches rank first; equally ranked entries keep the
+    library's entry order."""
+    result = bib.search("optimal control", match="words")
+    # exact substring in the short `keywords` field outranks matches
+    # inside longer fields
+    assert result[0].key == "GoerzDiploma2010"
+    regex_matches = _keys(bib.search("(?i)goerz", match="regex"))
+    assert regex_matches == [key for key in bib if key in set(regex_matches)]
+
+
+def test_search_errors_and_edge_cases(bib):
+    """Bad `match` values and bad regexes raise `ValueError`; empty
+    queries and unknown fields yield no matches."""
+    with pytest.raises(ValueError, match="invalid match level"):
+        bib.search("Goerz", match="bogus")
+    with pytest.raises(ValueError, match="invalid regular expression"):
+        bib.search("(", match="regex")
+    assert bib.search("") == []
+    assert bib.search("   ") == []
+    assert bib.search("Goerz", fields=["nosuchfield"]) == []
