@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added: `Library.search` and a corresponding `search` CLI subcommand: find entries matching a query, ranked best match first. Matching runs against the stored field values (bare `@string` macro names intact), the decoded Unicode values, and macro expansions, with accent-insensitive, word-overlap, fuzzy, and regex match levels, optionally limited to specific fields. [[#5]]
 * Added: a `bibdeskparser` command-line tool that exposes the public `Library` API as subcommands (`keys`, `show`, `render`, `export`, `add_to_group`, `set_string`, `edit`, ...). Data-output commands accept `--json`; the `.bib` file argument may be omitted when `default_bib_file` is configured. [[#4]]
 * Added: a `default_bib_file` option in `bibdeskparser.toml`, naming the `.bib` file the command-line tool operates on when none is given. [[#4]]
+* Added: the `BIBDESKPARSER_CONFIG` environment variable, naming the user-level `bibdeskparser.toml` in place of the XDG location. Setting it to an empty value disables the user-level configuration entirely. [[#7]]
 * Added: `MacroString`, mirroring `ValueString`, to force a field value to be stored as a bare `@string` macro reference. Both are subtypes of `str`.
 * Added: `Entry.add_url`, `Entry.replace_url`, `Entry.remove_url` and the corresponding `Library.add_url`, `Library.replace_url`, `Library.remove_url` methods for managing an entry's linked URLs.
 * Added: validation and normalization of `Entry` types: constructing or assigning an entry type now lowercases it and rejects unrecognized types with a `ValueError`. Loading a `.bib` file still never validates.
@@ -30,3 +31,4 @@ Initial release.
 [v0.1.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.1.0
 [#4]: https://github.com/goerz/bibdeskparser/pull/4
 [#5]: https://github.com/goerz/bibdeskparser/pull/5
+[#7]: https://github.com/goerz/bibdeskparser/pull/7
