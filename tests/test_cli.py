@@ -477,7 +477,10 @@ def test_default_bib_file_from_xdg(runner, bibfile, tmp_path, monkeypatch):
     xdg_dir = tmp_path / "xdg-config" / "bibdeskparser"
     xdg_dir.mkdir(parents=True)
     (xdg_dir / "bibdeskparser.toml").write_text(
-        f'default_bib_file = "{bibfile}"\n', encoding="utf-8"
+        # forward slashes keep the path a valid TOML basic string on
+        # Windows (backslashes would be read as escape sequences)
+        f'default_bib_file = "{bibfile.as_posix()}"\n',
+        encoding="utf-8",
     )
     workdir = tmp_path / "elsewhere"
     workdir.mkdir()
@@ -491,6 +494,8 @@ def test_default_bib_file_tilde_expansion(
 ):
     """A leading `~` in `default_bib_file` expands to `$HOME`."""
     monkeypatch.setenv("HOME", str(tmp_path))
+    # Windows `expanduser` resolves `~` from USERPROFILE, not HOME
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
     workdir = tmp_path / "work"
     workdir.mkdir()
     (workdir / "bibdeskparser.toml").write_text(

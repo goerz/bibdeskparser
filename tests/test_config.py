@@ -179,6 +179,8 @@ def test_default_bib_file(tmp_path, monkeypatch):
     `$VAR`-expanded, and cleared again by `reset()`."""
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
     monkeypatch.setenv("HOME", str(tmp_path))
+    # Windows `expanduser` resolves `~` from USERPROFILE, not HOME
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
     _write(tmp_path, 'default_bib_file = "~/refs.bib"\n')
     config.load(bib_dir=tmp_path)
     assert config.get_default_bib_file() == tmp_path / "refs.bib"
