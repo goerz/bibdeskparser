@@ -219,8 +219,9 @@ class Entry(MutableMapping):
     (`entry["keywords"]` returns the comma-joined string, and
     `"keywords"` appears in iteration and `len`), but it is *not*
     writable that way: `entry["keywords"] = ...` and `del
-    entry["keywords"]` raise `KeyError`. Edit keywords through the
-    {attr}`keywords` tuple property or the owning {class}`Library`.
+    entry["keywords"]` raise `KeyError`. The {attr}`keywords` tuple
+    property is read-only, too; keywords are edited only through the
+    owning {class}`Library`.
 
     Some fields can also be accessed as _structured data_ via
     properties, in addition to the "flat" strings accessible via the
@@ -283,8 +284,8 @@ class Entry(MutableMapping):
         if lkey == "keywords":
             raise KeyError(
                 "'keywords' is readable but not writable via the dict "
-                "interface; use the read-only Entry.keywords property, "
-                "or the Library methods add_to_keyword/"
+                "interface; the Entry.keywords property is read-only, "
+                "too. Use the Library methods add_to_keyword/"
                 "remove_from_keyword"
             )
         if lkey.startswith("bdsk-"):

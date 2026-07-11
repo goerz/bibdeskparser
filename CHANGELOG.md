@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added: a "Configuration" reference page documenting the `bibdeskparser.toml` file.
 * Changed: `Value` has been renamed to `ValueString` (**breaking**: rename `Value` to `ValueString` in your code). Values returned by the `Entry` dict interface are now `ValueString` (for literal/braced values) or `MacroString` (for bare `@string` macro references) instances; both are `str` subclasses and compare as plain strings.
 * Changed: `Entry.urls` is now a read-only tuple (**breaking**: replace assignment to `entry.urls` with the new `add_url`/`replace_url`/`remove_url` methods).
-* Changed: the `keywords` field is now readable through the `Entry` dict interface (indexing an entry by `keywords` returns the comma-joined string). It is still not writable that way; edit keywords through the `Entry.keywords` property or the owning `Library`.
+* Changed: the `keywords` field is now readable through the `Entry` dict interface (indexing an entry by `keywords` returns the comma-joined string). It is still not writable that way, and the `Entry.keywords` property remains read-only; keywords are edited only through the owning `Library`.
 * Removed: the public `Entry.dirty` property (**breaking**: there is no public replacement; it was an internal detail).
 
 ## [v0.1.0] - 2026-07-07

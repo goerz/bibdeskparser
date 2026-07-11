@@ -373,6 +373,17 @@ def test_constructor_rejects_keywords_field():
         Entry("article", "K", fields={"keywords": "a, b"})
 
 
+def test_keywords_property_is_read_only():
+    """The `keywords` property has no setter: assigning it raises
+    `AttributeError`. Keywords are edited only through the `Library`."""
+    entry = _pristine_entry(
+        extra_fields=[model.Field(key="keywords", value="{a, b}")]
+    )
+    with pytest.raises(AttributeError):
+        entry.keywords = ("x",)
+    assert entry.keywords == ("a", "b")
+
+
 def test_keywords_property_parses_stored_field():
     """`.keywords` parses the stored comma-separated field on access,
     decoding TeX accents like any other field value."""
