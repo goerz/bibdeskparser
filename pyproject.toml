@@ -25,8 +25,12 @@ classifiers = [
 ]
 dependencies = [
     "bibtexparser==2.0.0b9",
+    "click>=8",
     "tomli>=1.1.0; python_version < '3.11'",
 ]
+
+[project.scripts]
+bibdeskparser = "bibdeskparser.cli:main"
 
 [project.optional-dependencies]
 macos = ["pyobjc-framework-Cocoa; sys_platform == 'darwin'"]

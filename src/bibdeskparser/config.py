@@ -37,6 +37,7 @@ __private__ = [
     "set_verify_fields",
     "get_config_file",
     "set_config_file",
+    "get_default_bib_file",
 ]
 
 #: The name of the configuration file that is searched for.
@@ -49,8 +50,13 @@ _config_file_override = None
 # The recognized top-level keys of a `bibdeskparser.toml`; anything else
 # triggers a (non-fatal) warning, for forward compatibility.
 _KNOWN_TOP_LEVEL_KEYS = frozenset(
-    ("verify_types", "verify_fields", "types", "fields")
+    ("verify_types", "verify_fields", "types", "fields", "default_bib_file")
 )
+
+# The `default_bib_file` from the most recently applied config file (a
+# `Path`, with environment variables and `~` expanded), or `None`. Used
+# by the command-line interface when no bibfile is given explicitly.
+_default_bib_file = None
 
 
 def _xdg_config_path():
@@ -196,6 +202,22 @@ def _build(raw):
     }
 
 
+def _parse_default_bib_file(raw):
+    """Read the optional `default_bib_file` key from `raw`.
+
+    Returns a `Path` with environment variables (`$VAR`) and a leading
+    `~` expanded, or `None` if the key is absent.
+    """
+    value = raw.get("default_bib_file", None)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(
+            f"default_bib_file must be a string, not {type(value)!r}"
+        )
+    return Path(os.path.expandvars(value)).expanduser()
+
+
 def load(bib_dir=None, config_file=None):
     """Discover and apply a `bibdeskparser.toml`.
 
@@ -208,22 +230,29 @@ def load(bib_dir=None, config_file=None):
     {exc}`FileNotFoundError` if an explicit `config_file` does not
     exist.
     """
+    global _default_bib_file
     path = discover(bib_dir=bib_dir, config_file=config_file)
     if path is None:
         entrytypes.reset_active()
+        _default_bib_file = None
         return None
-    entrytypes.set_active(**_build(_parse(path)))
+    raw = _parse(path)
+    default_bib_file = _parse_default_bib_file(raw)
+    entrytypes.set_active(**_build(raw))
+    _default_bib_file = default_bib_file
     return path
 
 
 def reset():
     """Reset all configuration to the built-in defaults.
 
-    Clears the `Library.config_file` override and resets the active
-    entry-type/field configuration. Mainly useful for tests.
+    Clears the `Library.config_file` override, the `default_bib_file`
+    setting, and resets the active entry-type/field configuration.
+    Mainly useful for tests.
     """
-    global _config_file_override
+    global _config_file_override, _default_bib_file
     _config_file_override = None
+    _default_bib_file = None
     entrytypes.reset_active()
 
 
@@ -255,3 +284,7 @@ def get_config_file():
 def set_config_file(value):
     global _config_file_override
     _config_file_override = value
+
+
+def get_default_bib_file():
+    return _default_bib_file

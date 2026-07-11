@@ -171,6 +171,48 @@ def test_custom_universal_field(tmp_path):
     assert entrytypes.field_is_appropriate("book", "myglobal")
 
 
+# -- default_bib_file -------------------------------------------------- #
+
+
+def test_default_bib_file(tmp_path, monkeypatch):
+    """`default_bib_file` is stored as a `Path`, `~`- and
+    `$VAR`-expanded, and cleared again by `reset()`."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    monkeypatch.setenv("HOME", str(tmp_path))
+    _write(tmp_path, 'default_bib_file = "~/refs.bib"\n')
+    config.load(bib_dir=tmp_path)
+    assert config.get_default_bib_file() == tmp_path / "refs.bib"
+    config.reset()
+    assert config.get_default_bib_file() is None
+
+
+def test_default_bib_file_envvar_expansion(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    monkeypatch.setenv("MYBIBDIR", str(tmp_path / "bibs"))
+    _write(tmp_path, 'default_bib_file = "$MYBIBDIR/refs.bib"\n')
+    config.load(bib_dir=tmp_path)
+    assert config.get_default_bib_file() == tmp_path / "bibs" / "refs.bib"
+
+
+def test_default_bib_file_cleared_when_no_config(tmp_path, monkeypatch):
+    """A `load()` that finds no config file clears `default_bib_file`."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, 'default_bib_file = "refs.bib"\n')
+    config.load(bib_dir=tmp_path)
+    assert config.get_default_bib_file() is not None
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    config.load(bib_dir=empty)
+    assert config.get_default_bib_file() is None
+
+
+def test_default_bib_file_non_string_raises(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "default_bib_file = 42\n")
+    with pytest.raises(ValueError, match="default_bib_file"):
+        config.load(bib_dir=tmp_path)
+
+
 # -- error handling --------------------------------------------------- #
 
 
