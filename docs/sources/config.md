@@ -69,6 +69,19 @@ configuration file is discovered, which overrides changes made directly
 to these attributes; set the attributes *after* constructing a library,
 or point `config_file` at a file, to make a setting stick.
 
+## The `default_bib_file` option
+
+A string option, unset by default, naming the `.bib` file that the
+{ref}`command-line interface <cli>` operates on when no `BIBFILE`
+argument is given:
+
+```toml
+default_bib_file = "$HOME/Documents/library.bib"
+```
+
+Environment variables (`$VAR`) and a leading `~` in the value are
+expanded. The option has no effect on the Python API.
+
 ## Custom and extended entry types
 
 A `[types.NAME]` table defines the mandatory (`required`) and optional
