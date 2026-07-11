@@ -28,6 +28,7 @@ __all__ = []
 # either in __all__ or in __private__
 __private__ = [
     "CONFIG_FILENAME",
+    "CONFIG_ENV_VAR",
     "discover",
     "load",
     "reset",
@@ -42,6 +43,10 @@ __private__ = [
 
 #: The name of the configuration file that is searched for.
 CONFIG_FILENAME = "bibdeskparser.toml"
+
+#: The environment variable naming the user-level configuration file,
+#: replacing the XDG location.
+CONFIG_ENV_VAR = "BIBDESKPARSER_CONFIG"
 
 # Backs the `Library.config_file` class attribute: an explicit config
 # file path that takes precedence over directory-based discovery.
@@ -79,7 +84,12 @@ def discover(bib_dir=None, config_file=None):
        raises {exc}`FileNotFoundError` if it does not exist.
     2. `CONFIG_FILENAME` in `bib_dir` (the directory of the `.bib` file,
        or the current working directory if `bib_dir` is `None`).
-    3. `CONFIG_FILENAME` in the XDG location (see `_xdg_config_path`).
+    3. The file named by the `BIBDESKPARSER_CONFIG` environment
+       variable, if the variable is set; raises
+       {exc}`FileNotFoundError` if it does not exist. An empty value
+       disables the user-level location entirely (no error).
+    4. `CONFIG_FILENAME` in the XDG location (see `_xdg_config_path`),
+       only when `BIBDESKPARSER_CONFIG` is unset.
 
     Returns the `Path` of the first existing file, or `None` if none of
     the locations has one.
@@ -94,6 +104,17 @@ def discover(bib_dir=None, config_file=None):
     local = Path(bib_dir or Path.cwd()) / CONFIG_FILENAME
     if local.exists():
         return local
+    env = os.environ.get(CONFIG_ENV_VAR)
+    if env is not None:
+        # Unlike $XDG_CONFIG_HOME (where empty means "unset", per the
+        # XDG spec), an explicitly empty value is meaningful here: no
+        # user-level config at all.
+        if not env:
+            return None
+        path = Path(env)
+        if not path.exists():
+            raise FileNotFoundError(f"${CONFIG_ENV_VAR} does not exist: {env}")
+        return path
     xdg = _xdg_config_path()
     if xdg.exists():
         return xdg

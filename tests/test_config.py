@@ -45,7 +45,9 @@ def test_discover_bib_dir(tmp_path, monkeypatch):
 
 
 def test_discover_xdg(tmp_path, monkeypatch):
-    """With nothing local, the XDG location is used."""
+    """With nothing local and `$BIBDESKPARSER_CONFIG` unset, the XDG
+    location is used."""
+    monkeypatch.delenv("BIBDESKPARSER_CONFIG")
     xdg = tmp_path / "xdg"
     monkeypatch.setenv("XDG_CONFIG_HOME", str(xdg))
     target = xdg / "bibdeskparser" / _CONFIG
@@ -56,6 +58,7 @@ def test_discover_xdg(tmp_path, monkeypatch):
 
 def test_discover_precedence_first_found_wins(tmp_path, monkeypatch):
     """config_file beats the bib directory, which beats XDG."""
+    monkeypatch.delenv("BIBDESKPARSER_CONFIG")
     xdg = tmp_path / "xdg" / "bibdeskparser"
     xdg.mkdir(parents=True)
     _write(xdg, "verify_types = false\n")
@@ -73,6 +76,47 @@ def test_discover_missing_config_file_raises(tmp_path):
     """An explicit config_file that does not exist raises."""
     with pytest.raises(FileNotFoundError):
         config.discover(config_file=tmp_path / "nope.toml")
+
+
+def test_discover_env_var(tmp_path, monkeypatch):
+    """`$BIBDESKPARSER_CONFIG` names the user-level config file, and
+    takes precedence over the XDG location."""
+    xdg = tmp_path / "xdg"
+    target = xdg / "bibdeskparser" / _CONFIG
+    target.parent.mkdir(parents=True)
+    _write(target.parent, "verify_types = false\n")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(xdg))
+    custom = tmp_path / "custom.toml"
+    custom.write_text("verify_fields = false\n", encoding="utf-8")
+    monkeypatch.setenv("BIBDESKPARSER_CONFIG", str(custom))
+    assert config.discover(bib_dir=tmp_path / "empty") == custom
+
+
+def test_discover_env_var_empty_disables_xdg(tmp_path, monkeypatch):
+    """An empty `$BIBDESKPARSER_CONFIG` disables the XDG location."""
+    xdg = tmp_path / "xdg"
+    target = xdg / "bibdeskparser" / _CONFIG
+    target.parent.mkdir(parents=True)
+    _write(target.parent, "verify_types = false\n")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(xdg))
+    monkeypatch.setenv("BIBDESKPARSER_CONFIG", "")
+    assert config.discover(bib_dir=tmp_path / "empty") is None
+
+
+def test_discover_env_var_missing_raises(tmp_path, monkeypatch):
+    """A `$BIBDESKPARSER_CONFIG` that does not exist raises."""
+    monkeypatch.setenv("BIBDESKPARSER_CONFIG", str(tmp_path / "nope.toml"))
+    with pytest.raises(FileNotFoundError, match="BIBDESKPARSER_CONFIG"):
+        config.discover(bib_dir=tmp_path)
+
+
+def test_discover_local_beats_env_var(tmp_path, monkeypatch):
+    """A file next to the .bib file beats `$BIBDESKPARSER_CONFIG`."""
+    _write(tmp_path, "verify_types = false\n")
+    custom = tmp_path / "custom.toml"
+    custom.write_text("verify_fields = false\n", encoding="utf-8")
+    monkeypatch.setenv("BIBDESKPARSER_CONFIG", str(custom))
+    assert config.discover(bib_dir=tmp_path) == tmp_path / _CONFIG
 
 
 # -- flags ------------------------------------------------------------ #

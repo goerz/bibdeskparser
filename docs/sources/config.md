@@ -21,10 +21,16 @@ precedence. **The first file found wins**; the others are ignored.
 2. The directory containing the `.bib` file that is being loaded (or
    the current working directory, for a library not loaded from a file
    -- and at import time).
-3. The XDG configuration directory:
+3. The file named by the `$BIBDESKPARSER_CONFIG` environment variable,
+   if the variable is set. A file that does not exist raises a
+   {exc}`FileNotFoundError`. Setting the variable to an empty value
+   disables the user-level configuration (this step and the next)
+   entirely.
+4. The XDG configuration directory:
    `$XDG_CONFIG_HOME/bibdeskparser/bibdeskparser.toml`, falling back to
    `~/.config/bibdeskparser/bibdeskparser.toml` when `$XDG_CONFIG_HOME`
-   is unset.
+   is unset. This location is only considered when
+   `$BIBDESKPARSER_CONFIG` is unset.
 
 The configuration is applied **process-wide**: it affects every
 {class}`~bibdeskparser.Entry`, whether or not it belongs to a library.

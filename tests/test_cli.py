@@ -533,6 +533,7 @@ def test_default_bib_file_from_cwd(runner, bibfile, tmp_path, monkeypatch):
 
 def test_default_bib_file_from_xdg(runner, bibfile, tmp_path, monkeypatch):
     """`default_bib_file` from the XDG config location."""
+    monkeypatch.delenv("BIBDESKPARSER_CONFIG")
     xdg_dir = tmp_path / "xdg-config" / "bibdeskparser"
     xdg_dir.mkdir(parents=True)
     (xdg_dir / "bibdeskparser.toml").write_text(
