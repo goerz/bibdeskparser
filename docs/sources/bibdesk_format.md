@@ -3,7 +3,7 @@
 BibDesk stores its database as an ordinary BibTeX `.bib` file, but it leans on
 a handful of BibDesk-specific conventions on top of plain BibTeX: a header
 comment, extra bookkeeping fields, an encoding of linked files and URLs into
-otherwise-plain-looking fields, and an `@comment` block for user-defined
+otherwise-plain-looking fields, and `@comment` blocks for user-defined
 groups. The `bibdeskparser` library understands all of these and reproduces
 them exactly, so that a file loaded and saved again -- without any changes --
 comes back byte-for-byte identical. This page walks through each of these
@@ -20,7 +20,7 @@ Every `.bib` file BibDesk writes starts with a fixed comment block:
 %% http://bibdesk.sourceforge.net/
 
 
-%% Created for Michael Goerz at 2026-07-09 07:22:48 -0400
+%% Created for Michael Goerz at 2026-07-11 13:35:00 -0400
 
 
 %% Saved with string encoding Unicode (UTF-8)
@@ -48,10 +48,10 @@ library leaves the header (and the rest of the file) untouched:
 ...     warnings.simplefilter("ignore")  # the duplicate-key warning, see below
 ...     bib = Library(str(copy_dir / "refs.bib"))
 >>> bib.timestamp
-datetime.datetime(2026, 7, 9, 7, 22, 48, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
+datetime.datetime(2026, 7, 11, 13, 35, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
 >>> bib.save()  # no changes made: the header timestamp is unchanged
 >>> bib.timestamp
-datetime.datetime(2026, 7, 9, 7, 22, 48, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
+datetime.datetime(2026, 7, 11, 13, 35, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
 >>> tmpdir.cleanup()
 
 ```
@@ -299,6 +299,71 @@ data never accumulates dangling keys. Conversely, keys assigned to a
 group must belong to entries in the library (a `KeyError` otherwise);
 only keys already present in a group loaded from a `.bib` file are
 exempt, so a file with stale group data still loads and round-trips.
+
+## BibDesk Smart Groups
+
+Besides static groups, BibDesk supports *smart* groups: saved
+searches that dynamically collect every entry matching a set of
+conditions, e.g. "all `@article` entries whose author contains
+'Goerz'". A smart group is recorded in an `@comment` block of the
+same shape as the static groups, but its plist stores the group's
+*query* -- an array of conditions plus the AND/OR `conjunction`
+combining them -- rather than a list of citation keys:
+
+```
+@comment{BibDesk Smart Groups{
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" ...>
+<plist version="1.0">
+<array>
+	<dict>
+		<key>conditions</key>
+		<array>
+			<dict>
+				<key>comparison</key>
+				<integer>2</integer>
+				<key>key</key>
+				<string>Author</string>
+				<key>value</key>
+				<string>Goerz</string>
+				<key>version</key>
+				<string>1</string>
+			</dict>
+			...
+		</array>
+		<key>conjunction</key>
+		<integer>0</integer>
+		<key>group name</key>
+		<string>Goerz Articles</string>
+	</dict>
+</array>
+</plist>
+}}
+```
+
+`bibdeskparser` preserves this block verbatim: it survives any
+combination of modifications and
+{py:meth}`~bibdeskparser.library.Library.save` byte-for-byte, exactly
+as BibDesk wrote it. Beyond that, smart groups are deliberately *not*
+supported: they do not appear in
+{py:attr}`~bibdeskparser.library.Library.groups`, and there is no API
+to evaluate one. A smart group is a live query against BibDesk's
+search machinery, not a list of keys. Its conditions are typed --
+string, date, attachment count, boolean, rating, and more, each type
+with its own set of comparison operators (the `comparison` integer
+above; strings alone have ten, from "contains" to "smaller than") --
+and date conditions include relative ones like "in the last two
+weeks", which BibDesk re-evaluates continuously as time passes.
+Computing a smart group's membership faithfully would mean
+reimplementing all of BibDesk's matching semantics, and any
+divergence would silently disagree with what BibDesk displays for the
+same group. For ad-hoc queries from Python or the command line, use
+{py:meth}`~bibdeskparser.library.Library.search` instead.
+
+BibDesk's *external file groups* and *script groups* are stored in
+analogous `BibDesk URL Groups` / `BibDesk Script Groups` `@comment`
+blocks, and are likewise preserved verbatim without being
+interpreted.
 
 ## Keywords
 

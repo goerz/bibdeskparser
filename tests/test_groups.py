@@ -24,12 +24,16 @@ GROUP_NAMES = [
 def refs_comment():
     """The `BibDesk Static Groups` comment body from `refs.bib`.
 
-    This is the text between `@comment{` and the final `}` of the file,
-    i.e. `BibDesk Static Groups{\\n<?xml ...</plist>\\n}`.
+    This is the text between `@comment{` and the `}` closing that
+    comment, i.e. `BibDesk Static Groups{\\n<?xml ...</plist>\\n}`.
+    The file may contain further `@comment` blocks after this one
+    (e.g. `BibDesk Smart Groups`), so the comment's own closing
+    `}` must be found via the end of its plist, not from the end of
+    the file.
     """
     text = REFS_BIB.read_text(encoding="utf-8")
     start = text.rindex("BibDesk Static Groups{")
-    end = text.rindex("}")  # the `}` closing the `@comment{`
+    end = text.index("</plist>\n}", start) + len("</plist>\n}")
     return text[start:end]
 
 

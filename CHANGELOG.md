@@ -5,6 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Fixed: newly added entries, new `@string` macros, and a newly synthesized static-groups `@comment` block were appended at the very end of the `.bib` file, after BibDesk's group `@comment` blocks. They are now written at their canonical position: macros in the alphabetically sorted `@string` run before the first entry, entries before the group `@comment` blocks, and the static-groups block before the smart-groups block, matching the layout BibDesk itself writes.
 * Added: `Library.search` and a corresponding `search` CLI subcommand: find entries matching a query, ranked best match first. Matching runs against the stored field values (bare `@string` macro names intact), the decoded Unicode values, and macro expansions, with accent-insensitive, word-overlap, fuzzy, and regex match levels, optionally limited to specific fields. [[#5]]
 * Added: a `bibdeskparser` command-line tool that exposes the public `Library` API as subcommands (`keys`, `show`, `render`, `export`, `add_to_group`, `set_string`, `edit`, ...). Data-output commands accept `--json`; the `.bib` file argument may be omitted when `default_bib_file` is configured. [[#4]]
 * Added: a `default_bib_file` option in `bibdeskparser.toml`, naming the `.bib` file the command-line tool operates on when none is given. [[#4]]

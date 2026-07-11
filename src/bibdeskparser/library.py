@@ -12,10 +12,12 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import bibtexparser
+from bibtexparser.model import DuplicateBlockKeyBlock
+from bibtexparser.model import Entry as _RawEntry
 from bibtexparser.model import (
-    DuplicateBlockKeyBlock,
     ExplicitComment,
     ImplicitComment,
+    ParsingFailedBlock,
     String,
 )
 
@@ -24,6 +26,7 @@ from .bdskfile import BibDeskFile
 from .entry import Entry, _strip_enclosing
 from .exporting import export_entries
 from .groups import (
+    is_groups_comment,
     is_static_groups_comment,
     parse_static_groups,
     render_static_groups,
@@ -236,6 +239,67 @@ def _find_groups_block(raw_library):
     return None
 
 
+def _is_groups_comment_block(block):
+    """Whether `block` is any of BibDesk's group-storing `@comment`
+    blocks (static, smart, URL, or script groups)."""
+    return isinstance(block, ExplicitComment) and is_groups_comment(
+        block.comment
+    )
+
+
+def _hoist_last_block_above_groups(raw_library):
+    """Move the just-appended last block of `raw_library` up, directly
+    above the first BibDesk group `@comment` block (no-op if there is
+    none).
+
+    `bibtexparser.Library.add` always appends, but BibDesk's canonical
+    layout keeps the group `@comment` blocks at the very end of the
+    file, so a newly added entry (or a newly synthesized static-groups
+    block) must be placed above them. `raw_library.blocks` is the
+    library's actual block list, so it can be reordered in place;
+    reordering does not affect bibtexparser's by-key lookups.
+    """
+    blocks = raw_library.blocks
+    for i, block in enumerate(blocks[:-1]):
+        if _is_groups_comment_block(block):
+            blocks.insert(i, blocks.pop())
+            return
+
+
+def _place_string_block(raw_library):
+    """Move the just-appended `@string` block of `raw_library` to its
+    canonical position.
+
+    BibDesk keeps all `@string` definitions in a single alphabetically
+    sorted run between the header and the first entry. The new block
+    goes at its sorted position within the existing `@string` blocks;
+    if there are none, it goes above the first entry (a failed block,
+    e.g. for a duplicate key, counts as an entry) or, failing that,
+    above the group `@comment` blocks. See
+    `_hoist_last_block_above_groups` for why in-place reordering of
+    `raw_library.blocks` is safe.
+    """
+    blocks = raw_library.blocks
+    key = blocks[-1].key.lower()
+    string_indices = [
+        i for i, block in enumerate(blocks[:-1]) if isinstance(block, String)
+    ]
+    if string_indices:
+        target = string_indices[-1] + 1  # after the last `@string`
+        for i in string_indices:
+            if blocks[i].key.lower() > key:
+                target = i
+                break
+        blocks.insert(target, blocks.pop())
+        return
+    for i, block in enumerate(blocks[:-1]):
+        if isinstance(
+            block, (_RawEntry, ParsingFailedBlock)
+        ) or _is_groups_comment_block(block):
+            blocks.insert(i, blocks.pop())
+            return
+
+
 # -- views ------------------------------------------------------------- #
 
 
@@ -270,6 +334,7 @@ class _StringsView(MutableMapping):
         else:
             new_string = String(key=name, value="{" + value + "}")
             self._owner._library.add([new_string], fail_on_duplicate_key=False)
+            _place_string_block(self._owner._library)
         self._owner._modified = True
         _check_duplicate_macro_values(self._strings_dict)
 
@@ -767,6 +832,11 @@ class Library(MutableMapping, metaclass=_LibraryMeta):
         views are always consistent. Deleting an entry from the
         library (or renaming one via {meth}`rekey`) likewise updates
         the group data, so groups never accumulate dangling keys.
+
+        BibDesk's *smart* groups (saved searches) are not included:
+        they are queries, not lists of citation keys, and are
+        preserved in the file verbatim without being interpreted
+        (as are BibDesk's URL and script groups).
         """
         return self._groups_view
 
@@ -1055,6 +1125,7 @@ class Library(MutableMapping, metaclass=_LibraryMeta):
                 old._groups = ()  # pylint: disable=protected-access
         else:
             self._library.add([entry._entry], fail_on_duplicate_key=True)
+            _hoist_last_block_above_groups(self._library)
             # Sets date-added (only if not already set) and marks the
             # entry dirty, matching BibDesk's "adding sets date-added"
             # behavior.
@@ -1589,6 +1660,10 @@ class Library(MutableMapping, metaclass=_LibraryMeta):
                 render_static_groups(self._group_data)
             )
             self._library.add([groups_block], fail_on_duplicate_key=False)
+            # BibDesk writes the static-groups block as the first of
+            # its group `@comment` blocks (before smart/URL/script
+            # groups).
+            _hoist_last_block_above_groups(self._library)
             self._groups_block = groups_block
 
         for entry in self._entries.values():
