@@ -43,6 +43,16 @@ library directly in Python -- for batch edits, automation, or
 integration with other tools. It provides a simplified API on top
 of the [BibtexParser][] library.
 
+Making the bibliographic database accessible to AI coding agents is an
+explicit goal of the project: the [`bibdeskparser` command-line
+tool][cli] mirrors the public Python API, so any agent that can run
+shell commands can inspect and edit a BibDesk library, with no
+dedicated integration and no server to keep running. See [How to give
+an AI coding agent access to your library][howto-ai].
+
+[cli]: https://goerz.github.io/bibdeskparser/cli.html
+[howto-ai]: https://goerz.github.io/bibdeskparser/howto.html#how-to-give-an-ai-coding-agent-access-to-your-library
+
 
 ## Installation
 
@@ -52,10 +62,18 @@ To install the latest released version of BibDeskParser:
 pip install bibdeskparser
 ```
 
-or, if you use [uv](https://docs.astral.sh/uv/):
+If you use [uv](https://docs.astral.sh/uv/), add BibDeskParser as a
+dependency of your project with
 
 ```
 uv add bibdeskparser
+```
+
+or install the `bibdeskparser` [command-line tool][cli] on your `PATH`,
+independently of any project, with
+
+```
+uv tool install bibdeskparser
 ```
 
 

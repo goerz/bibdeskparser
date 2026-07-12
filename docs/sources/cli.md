@@ -6,7 +6,16 @@ The `bibdeskparser` command-line tool exposes the public
 {class}`~bibdeskparser.Library` API as subcommands, so that a BibDesk
 `.bib` database can be inspected and modified from the shell without
 writing Python code. The `bibdeskparser` script is installed together
-with the package (e.g. via `pip install bibdeskparser`).
+with the package (e.g. via `pip install bibdeskparser`); to install
+just the command-line tool on your `PATH`, without adding the package
+to a Python environment, use
+[`uv tool install bibdeskparser`](https://docs.astral.sh/uv/guides/tools/).
+
+The command-line tool is also the project's intended integration
+surface for AI coding agents: an agent that can run shell commands can
+work with a BibDesk library through one-shot `bibdeskparser`
+invocations, guided by the `--help` output alone (see
+{ref}`howto-ai`).
 
 ## Usage
 
@@ -163,15 +172,23 @@ $ bibdeskparser keywords library.bib
 NISQ: Preskill2018
 ```
 
+(cli-strings)=
+
 ### `strings`
 
 List all `@string` macro definitions. See
 {py:attr}`~bibdeskparser.Library.strings`. With `--json`: an object
-mapping each macro name to its value.
+mapping each macro name to its value. With `--bib` (mutually exclusive
+with `--json`): re-parseable `@string{name = {value}}` lines, sorted
+by name -- exactly the text that [`edit_strings`](cli-edit-strings)
+presents in the editor, and thus the baseline for a non-interactive
+`edit_strings --stdin` round trip.
 
 ```console
 $ bibdeskparser strings library.bib
 prl = Phys. Rev. Lett.
+$ bibdeskparser strings library.bib --bib
+@string{prl = {Phys. Rev. Lett.}}
 ```
 
 ### `timestamp`
@@ -200,6 +217,8 @@ another (`default`, `paragraphs`, `numbered list`, or
 ```console
 $ bibdeskparser render library.bib Preskill2018 --format tex
 ```
+
+(cli-export)=
 
 ### `export KEY...`
 
@@ -396,27 +415,61 @@ Remove `URL` from the entry `KEY`, via
 $ bibdeskparser remove_url library.bib Preskill2018 https://arxiv.org/abs/1801.00862
 ```
 
-## Interactive editing
+## Free-form editing
+
+The `edit` and `edit_strings` commands accept arbitrary edits as
+BibTeX text -- interactively through `$EDITOR`, or non-interactively
+by piping the edited text to `--stdin`. Neither command ever blocks
+without a terminal: invoked with no TTY on stdin and with neither
+`--stdin` nor an explicit `--editor`, they fail immediately with a
+usage error rather than hanging on `$EDITOR`.
 
 ### `edit KEY...`
 
-Open one or more entries in an editor (as BibTeX text) and merge the
-changes back into the library, via
-{py:meth}`~bibdeskparser.Library.edit`. The `--format` option
-(`default`, `raw`, or `minimal`) controls how the entries are
-presented; `--editor CMD` overrides the editor command (which defaults
-to `$EDITOR`).
+Edit one or more entries (as BibTeX text) and merge the changes back
+into the library, via {py:meth}`~bibdeskparser.Library.edit`. The
+`--format` option (`default`, `raw`, or `minimal`) controls how the
+entries are presented; `--editor CMD` overrides the editor command
+(which defaults to `$EDITOR`).
 
 ```console
 $ bibdeskparser edit library.bib Preskill2018 --editor vim
 ```
 
+With `--stdin` (mutually exclusive with `--editor`), the full edited
+text is read from standard input instead of opening an editor. The
+text to edit is exactly what [`export`](cli-export) prints for the
+same keys, so any pipeline that transforms the exported text works;
+piping it back unchanged is a no-op:
+
+```console
+$ bibdeskparser export library.bib Preskill2018 \
+    | sed 's/NISQ era/noisy intermediate-scale quantum era/' \
+    | bibdeskparser edit library.bib Preskill2018 --stdin
+```
+
+Empty input to `--stdin` is a usage error (so an accidental
+`< /dev/null` cannot silently apply a no-op edit), and text that fails
+validation -- an unparseable block, or a reference to an undefined
+`@string` macro -- exits with code 1 and the list of problems on
+stderr, leaving the `.bib` file untouched.
+
+(cli-edit-strings)=
+
 ### `edit_strings`
 
-Open the `@string` macro definitions in an editor and merge the
-changes back into the library, via
-{py:meth}`~bibdeskparser.Library.edit_strings`.
+Edit the `@string` macro definitions and merge the changes back into
+the library, via {py:meth}`~bibdeskparser.Library.edit_strings`.
 
 ```console
 $ bibdeskparser edit_strings library.bib
+```
+
+With `--stdin`, the edited definitions are read from standard input;
+the baseline text comes from [`strings --bib`](cli-strings):
+
+```console
+$ bibdeskparser strings library.bib --bib \
+    | sed 's/Phys. Rev. Lett./Physical Review Letters/' \
+    | bibdeskparser edit_strings library.bib --stdin
 ```
