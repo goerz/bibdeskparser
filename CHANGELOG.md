@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Added: a "How to give an AI coding agent access to your library" how-to guide, describing the lightweight path for letting a shell-capable agent (such as Claude Code) drive the `bibdeskparser` CLI, and expanded the top-level `--help` text to orient such callers (read-only vs. mutating commands, `--json`, exit codes). [[#8]]
+* Added: `Library.edit` and `Library.edit_strings` accept a function for `editor`, as an alternative to an editor command string. The function receives the path of the temporary file and must edit it in place; validation problems then raise a `ValueError` instead of prompting interactively. [[#8]]
+* Added: a `--stdin` option on the `edit` and `edit_strings` CLI commands, reading the full edited text from standard input instead of opening an editor, and a `--bib` option on `strings`, printing the `@string` definitions as re-parseable `@string{name = {value}}` lines. Together with `export`, these allow non-interactive (e.g., scripted or AI-agent) editing via pipes: `export KEY... | ... | edit KEY... --stdin` and `strings --bib | ... | edit_strings --stdin`. [[#8]]
+* Changed: the `edit` and `edit_strings` CLI commands now fail immediately with a usage error when invoked without a terminal on standard input and without `--stdin` or an explicit `--editor`, instead of blocking on `$EDITOR`. Non-interactive callers must pass `--stdin` (piping in the edited text) or `--editor` with a command that needs no terminal. [[#8]]
 * Fixed: newly added entries, new `@string` macros, and a newly synthesized static-groups `@comment` block were appended at the very end of the `.bib` file, after BibDesk's group `@comment` blocks. They are now written at their canonical position: macros in the alphabetically sorted `@string` run before the first entry, entries before the group `@comment` blocks, and the static-groups block before the smart-groups block, matching the layout BibDesk itself writes.
 * Added: `Library.search` and a corresponding `search` CLI subcommand: find entries matching a query, ranked best match first. Matching runs against the stored field values (bare `@string` macro names intact), the decoded Unicode values, and macro expansions, with accent-insensitive, word-overlap, fuzzy, and regex match levels, optionally limited to specific fields. [[#5]]
 * Added: a `bibdeskparser` command-line tool that exposes the public `Library` API as subcommands (`keys`, `show`, `render`, `export`, `add_to_group`, `set_string`, `edit`, ...). Data-output commands accept `--json`; the `.bib` file argument may be omitted when `default_bib_file` is configured. [[#4]]
@@ -32,3 +36,4 @@ Initial release.
 [#4]: https://github.com/goerz/bibdeskparser/pull/4
 [#5]: https://github.com/goerz/bibdeskparser/pull/5
 [#7]: https://github.com/goerz/bibdeskparser/pull/7
+[#8]: https://github.com/goerz/bibdeskparser/pull/8

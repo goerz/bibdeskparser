@@ -14,11 +14,13 @@ in place.
 """
 
 import json
+import sys
 from pathlib import Path
 
 import click
 
 from . import __version__, config
+from .editing import strings_bib_text
 from .library import Library, StaleFileError
 
 __all__ = []
@@ -172,6 +174,15 @@ def main():
     argument (any argument ending in `.bib`). If omitted, the file
     named by the `default_bib_file` key of a discovered
     `bibdeskparser.toml` is used instead.
+
+    Read-only commands (`keys`, `show`, `search`, `groups`, `keywords`,
+    `strings`, `duplicate_keys`, `timestamp`) print to stdout and accept
+    `--json` for machine-readable output. The other commands modify the
+    `.bib` file in place and print nothing on success. On any error they
+    print `Error: <message>` to stderr and exit non-zero (2 for bad
+    usage, 1 for a library error such as an unknown key or a `.bib` file
+    changed on disk since it was read). Run `bibdeskparser COMMAND
+    --help` for a command's arguments.
     """
 
 
@@ -299,11 +310,28 @@ def keywords(bibfile, as_json):
 
 
 @main.command(name="strings", cls=_BibCommand)
+@click.option(
+    "--bib",
+    "as_bib",
+    is_flag=True,
+    help=(
+        "Print the definitions as re-parseable `@string{name = "
+        "{value}}` lines, sorted by name: the exact baseline text for "
+        "`edit_strings --stdin`."
+    ),
+)
 @_json_option
 @click.pass_obj
-def strings(bibfile, as_json):
+def strings(bibfile, as_bib, as_json):
     """List all @string macro definitions."""
+    if as_bib and as_json:
+        raise click.UsageError("--bib and --json are mutually exclusive")
     data = dict(Library(bibfile).strings)
+    if as_bib:
+        text = strings_bib_text(data)
+        if text:
+            _echo_block(text)
+        return
     text = "\n".join(f"{name} = {value}" for name, value in data.items())
     _emit(data, as_json, text)
 
@@ -611,6 +639,46 @@ def remove_url(bibfile, key, url):
     lib.save()
 
 
+_stdin_option = click.option(
+    "--stdin",
+    "use_stdin",
+    is_flag=True,
+    help=(
+        "Read the full edited text from standard input instead of "
+        "launching an editor (for non-interactive callers)."
+    ),
+)
+
+
+def _resolve_editor(editor, use_stdin):
+    """The `editor` argument for `Library.edit`/`.edit_strings`.
+
+    With `--stdin`, returns a callable that overwrites the temporary
+    file with the text read from standard input (empty input is a
+    usage error, so that redirecting from `/dev/null` cannot silently
+    apply a no-op edit). Without `--stdin` or an explicit `--editor`,
+    a non-terminal stdin is a usage error: the command fails fast
+    rather than blocking on `$EDITOR`.
+    """
+    if use_stdin:
+        if editor is not None:
+            raise click.UsageError(
+                "--stdin and --editor are mutually exclusive"
+            )
+        text = sys.stdin.read()
+        if not text.strip():
+            raise click.UsageError(
+                "--stdin was given, but standard input is empty"
+            )
+        return lambda path: path.write_text(text, encoding="utf-8")
+    if editor is None and not sys.stdin.isatty():
+        raise click.UsageError(
+            "stdin is not a terminal; pipe the edited content with "
+            '--stdin, or pass --editor "CMD"'
+        )
+    return editor
+
+
 @main.command(name="edit", cls=_BibCommand)
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.option(
@@ -626,10 +694,19 @@ def remove_url(bibfile, key, url):
     default=None,
     help="The editor command to use (default: $EDITOR).",
 )
+@_stdin_option
 @click.pass_obj
-def edit(bibfile, citekeys, format_, editor):
-    """Edit the entries with the given keys in an editor and merge the
-    changes back into the library."""
+def edit(bibfile, citekeys, format_, editor, use_stdin):
+    """Edit the entries with the given keys and merge the changes back
+    into the library (modifies the `.bib` file in place). From a
+    terminal, this opens the entries as BibTeX text in `$EDITOR` (or
+    `--editor`). Non-interactive callers pass `--stdin` and pipe in
+    the full edited text instead: obtain the current text with
+    `export KEY...`, modify it, and pipe it back (`export KEY... |
+    edit KEY... --stdin` is a no-op). Without a terminal, `--stdin`,
+    or `--editor`, the command fails immediately instead of
+    blocking."""
+    editor = _resolve_editor(editor, use_stdin)
     lib = Library(bibfile)
     lib.edit(*citekeys, format=format_, editor=editor)
     lib.save()
@@ -641,10 +718,18 @@ def edit(bibfile, citekeys, format_, editor):
     default=None,
     help="The editor command to use (default: $EDITOR).",
 )
+@_stdin_option
 @click.pass_obj
-def edit_strings(bibfile, editor):
-    """Edit the @string macro definitions in an editor and merge the
-    changes back into the library."""
+def edit_strings(bibfile, editor, use_stdin):
+    """Edit the @string macro definitions and merge the changes back
+    into the library (modifies the `.bib` file in place). From a
+    terminal, this opens the definitions in `$EDITOR` (or `--editor`).
+    Non-interactive callers pass `--stdin` and pipe in the full edited
+    definitions instead: obtain the current definitions with `strings
+    --bib`, modify them, and pipe them back. Without a terminal,
+    `--stdin`, or `--editor`, the command fails immediately instead of
+    blocking."""
+    editor = _resolve_editor(editor, use_stdin)
     lib = Library(bibfile)
     lib.edit_strings(editor=editor)
     lib.save()

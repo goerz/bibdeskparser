@@ -1807,6 +1807,15 @@ class Library(MutableMapping, metaclass=_LibraryMeta):
         """Edit the entries with the given citation `keys` (at least
         one required) together, in `editor` (or `$EDITOR`), merging
         changes back into them (and into `.strings`) in place.
+
+        `editor` may be a shell command string (e.g. `"code
+        --wait"`), or a callable taking the temporary file's
+        {class}`pathlib.Path` as its only argument and overwriting
+        that file in place, like a text editor would -- for
+        non-interactive use (scripts, tests). With a callable
+        `editor`, a validation failure raises {exc}`ValueError`
+        (listing the problems, and leaving the library unchanged)
+        instead of interactively prompting to reopen the editor.
         """
         editing.edit_entries(
             [self[key] for key in keys],
@@ -1818,5 +1827,13 @@ class Library(MutableMapping, metaclass=_LibraryMeta):
     def edit_strings(self, editor=None):
         """Edit `.strings` in `editor` (or `$EDITOR`), merging changes
         back in place.
+
+        `editor` may be a shell command string or a callable, as in
+        {meth}`edit`. With a callable `editor`, a validation failure
+        raises {exc}`ValueError` instead of interactively prompting;
+        note that deleting a macro that is still referenced by an
+        entry is only detected while merging, so other changes from
+        the same edit may already have been applied to `.strings`
+        when the exception is raised.
         """
         editing.edit_strings(self, editor=editor)

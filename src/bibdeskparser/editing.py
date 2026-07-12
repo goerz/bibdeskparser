@@ -1,20 +1,34 @@
 r"""`$EDITOR` round-trip editing of `Entry` objects and `Library` strings.
 
 Provides {func}`edit_entries` and {func}`edit_strings`: pure functions that
-export data to a temporary `.bib`-like file, open it in `$EDITOR`, wait
-for the editor to exit, re-parse the (possibly edited) result, validate
-it, and merge any changes back into the *original*
+export data to a temporary `.bib`-like file, open it in `$EDITOR` (or
+pass it to a caller-supplied *function* acting as the editor -- see
+below), wait for the editor to finish, re-parse the (possibly edited)
+result, validate it, and merge any changes back into the *original*
 {class}`bibdeskparser.entry.Entry` objects (and, optionally, a
 {class}`bibdeskparser.library.Library`'s `.strings`). This includes an
 entry's `keywords = {...}` line, which merges back through the entry's
 keywords accessors ({attr}`bibdeskparser.entry.Entry.keywords` is not
 part of the dict interface). Neither function is
 a method on `Library` -- wiring those up (e.g. `Library.edit()`) is
-out of scope for this module.
+out of scope for this module. Also provides {func}`strings_bib_text`,
+which renders a `{name: value}` macro mapping as the exact `@string`
+text that {func}`edit_strings` presents in the editor (used by the
+command-line tool's `strings --bib` to produce a byte-identical
+baseline for `edit_strings --stdin`).
 
 Only the `"default"` export format can be round-tripped this way (see
 "Known limitations" below): re-parsing and merging back relies on its
 exact text shape.
+
+In both functions, the `editor` argument may be a shell command string
+(or `None`, falling back to `$EDITOR`, then `"vi"`), or a *callable*
+taking the temporary file's {class}`pathlib.Path` as its only argument
+and overwriting that file in place, like a text editor would (its
+return value is ignored; any exception it raises propagates to the
+caller). With a callable editor there is no interactive
+reopen-or-abandon prompt: a validation failure raises {exc}`ValueError`
+instead (see {func}`edit_entries`/{func}`edit_strings`).
 
 ## Known limitations
 
@@ -38,10 +52,26 @@ exact text shape.
   simplification (deletions are rare and usually singular); see the
   function's docstring.
 
-This module intentionally has no doctest: exercising it means
-launching a real subprocess and waiting on an interactive editor,
-which cannot be done safely inside a doctest. See `tests/test_editing.py`
-for coverage using a scripted fake editor instead.
+A callable editor makes the round trip usable without any subprocess
+or user interaction:
+
+```python
+>>> from bibdeskparser.entry import Entry
+>>> from bibdeskparser.editing import edit_entries
+>>> entry = Entry("article", "Key2024", fields={"title": "A Titel"})
+>>> def editor(path):
+...     text = path.read_text(encoding="utf-8")
+...     path.write_text(text.replace("Titel", "Title"), encoding="utf-8")
+>>> edit_entries([entry], editor=editor)
+>>> entry["title"]
+'A Title'
+
+```
+
+The interactive path (launching an editor subprocess and prompting to
+reopen or abandon on a validation failure) cannot be exercised in a
+doctest; see `tests/test_editing.py` for its coverage, using scripted
+editor commands.
 """
 
 import os
@@ -62,7 +92,7 @@ __all__ = []
 
 # All members whose name does not start with an underscore must be listed
 # either in __all__ or in __private__
-__private__ = ["edit_entries", "edit_strings"]
+__private__ = ["edit_entries", "edit_strings", "strings_bib_text"]
 
 _DATE_KEYS = frozenset(("date-added", "date-modified"))
 _BDSK_FILE_RE = re.compile(r"bdsk-file-(\d+)$", re.IGNORECASE)
@@ -120,14 +150,19 @@ def _write_temp_file(text):
 
 
 def _run_editor(editor, path):
-    """Resolve and run the editor command on `path`, waiting for it to
-    exit.
+    """Run the editor on `path`, waiting for it to finish.
 
-    Resolution order: the explicit `editor` argument, else
-    `$EDITOR`, else `"vi"`. Any exception raised by a missing command
-    or a non-zero exit status (`subprocess.CalledProcessError`)
-    propagates to the caller unchanged.
+    A callable `editor` is simply called with `path` (it must edit the
+    file in place; its return value is ignored). Otherwise, `editor` is
+    a shell command string, resolved in the order: the explicit
+    `editor` argument, else `$EDITOR`, else `"vi"`. Any exception
+    raised by the callable, by a missing command, or by a non-zero
+    exit status (`subprocess.CalledProcessError`) propagates to the
+    caller unchanged.
     """
+    if callable(editor):
+        editor(path)
+        return
     command = editor or os.environ.get("EDITOR") or "vi"
     if os.name == "nt":
         # shlex.split is POSIX-only: it treats backslashes as escape
@@ -540,17 +575,27 @@ def edit_entries(entries, library=None, format="default", editor=None):
       `"minimal"` drops most fields -- neither can be merged back
       correctly.
     * `editor`: a shell command string (may include arguments, e.g.
-      `"code --wait"`); resolution order: this argument, else
-      `$EDITOR`, else `"vi"`.
+      `"code --wait"`), with resolution order: this argument, else
+      `$EDITOR`, else `"vi"` -- or a callable taking the temporary
+      file's {class}`pathlib.Path` as its only argument and
+      overwriting that file in place, like a text editor would (its
+      return value is ignored; any exception it raises propagates,
+      and the temporary file is removed).
 
     If the edited text fails to parse or fails validation (see the
-    module docstring), a `UserWarning` describing the problem(s) is
-    emitted and the user is interactively prompted (via `input()`) to
-    either reopen the editor on the same file (preserving their
-    partial edit) or abandon the edit entirely. Under non-interactive
-    stdin (`input()` raising `EOFError`/`OSError`, e.g. under
-    pytest/CI), the edit is silently abandoned. On abandonment,
-    `entries`/`library` are left completely unchanged.
+    module docstring), the behavior depends on the kind of `editor`:
+
+    * With a command-string (or default) editor, a `UserWarning`
+      describing the problem(s) is emitted and the user is
+      interactively prompted (via `input()`) to either reopen the
+      editor on the same file (preserving their partial edit) or
+      abandon the edit entirely. Under non-interactive stdin
+      (`input()` raising `EOFError`/`OSError`, e.g. under pytest/CI),
+      the edit is silently abandoned. On abandonment,
+      `entries`/`library` are left completely unchanged.
+    * With a callable editor, there is no prompt: a {exc}`ValueError`
+      listing the problem(s) is raised instead, and
+      `entries`/`library` are left completely unchanged.
 
     `bdsk-file-N` paths in the edited text are interpreted relative
     to the directory of `library`'s `.bib` file (falling back to the
@@ -594,6 +639,10 @@ def edit_entries(entries, library=None, format="default", editor=None):
                 edited_text, library, entries, base_dir
             )
             if problems:
+                if callable(editor):
+                    raise ValueError(
+                        "Validation failed:\n" + "\n".join(problems)
+                    )
                 if _prompt_reopen_or_abandon(problems):
                     continue
                 return
@@ -609,6 +658,24 @@ def edit_entries(entries, library=None, format="default", editor=None):
             return
     finally:
         path.unlink(missing_ok=True)
+
+
+def strings_bib_text(strings):
+    """Render `strings` (a `{name: value}` mapping) as a series of
+    `@string{name = {value}}` lines, sorted by name, with a trailing
+    newline (the empty string for an empty mapping).
+
+    This is exactly the text that {func}`edit_strings` presents in the
+    editor, so it can serve as the baseline for a non-interactive
+    (callable-editor) round trip.
+    """
+    text = "\n".join(
+        f"@string{{{name} = {{{value}}}}}"
+        for name, value in sorted(strings.items())
+    )
+    if text:
+        text += "\n"
+    return text
 
 
 def edit_strings(library, editor=None):
@@ -644,16 +711,16 @@ def edit_strings(library, editor=None):
     a valid BibDesk macro name per
     {func}`bibdeskparser.macros.is_valid_macro_name`, or a failed
     deletion) triggers the same warn-and-prompt-to-reopen-or-abandon
-    flow as {func}`edit_entries`.
+    flow as {func}`edit_entries` -- or, with a callable `editor`,
+    raises {exc}`ValueError` instead of prompting. Note that a failed
+    *deletion* is only detected while merging, after the other changes
+    from the same round (new/redefined/renamed macros, and any other
+    successful deletions) have already been applied: when catching the
+    `ValueError` and continuing to use `library`, be aware that those
+    changes are not rolled back.
     """
     before = dict(library.strings)
-    text = "\n".join(
-        f"@string{{{name} = {{{value}}}}}"
-        for name, value in sorted(before.items())
-    )
-    if text:
-        text += "\n"
-    path = _write_temp_file(text)
+    path = _write_temp_file(strings_bib_text(before))
     try:
         while True:
             _run_editor(editor, path)
@@ -669,6 +736,10 @@ def edit_strings(library, editor=None):
                 )
                 before = dict(library.strings)
             if problems:
+                if callable(editor):
+                    raise ValueError(
+                        "Validation failed:\n" + "\n".join(problems)
+                    )
                 if _prompt_reopen_or_abandon(problems):
                     continue
                 return

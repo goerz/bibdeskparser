@@ -509,6 +509,125 @@ def test_edit_strings(runner, bibfile, tmp_path):
     assert _load(bibfile).strings["jpb"] == "Journal of Physics B"
 
 
+def test_edit_stdin_noop_roundtrip(runner, bibfile):
+    """Piping `export` output back through `edit --stdin` is a no-op."""
+    before = dict(_load(bibfile)["GoerzJPB2011"])
+    exported = _run(runner, "export", bibfile, "GoerzJPB2011").output
+    result = runner.invoke(
+        main,
+        ["edit", str(bibfile), "GoerzJPB2011", "--stdin"],
+        input=exported,
+    )
+    assert result.exit_code == 0, result.output + result.stderr
+    assert dict(_load(bibfile)["GoerzJPB2011"]) == before
+
+
+def test_edit_stdin_changes_field(runner, bibfile):
+    """A field change piped through `edit --stdin` lands in the file."""
+    exported = _run(runner, "export", bibfile, "GoerzJPB2011").output
+    edited = exported.replace(
+        "trapped neutral atoms", "confined neutral atoms"
+    )
+    assert edited != exported
+    result = runner.invoke(
+        main, ["edit", str(bibfile), "GoerzJPB2011", "--stdin"], input=edited
+    )
+    assert result.exit_code == 0, result.output + result.stderr
+    title = _load(bibfile)["GoerzJPB2011"]["title"]
+    assert "confined neutral atoms" in title
+    assert "trapped" not in title
+
+
+def test_edit_stdin_empty_input(runner, bibfile):
+    """Empty stdin is rejected instead of silently doing nothing."""
+    result = runner.invoke(
+        main, ["edit", str(bibfile), "GoerzJPB2011", "--stdin"], input=""
+    )
+    assert result.exit_code == 2
+    assert "standard input is empty" in result.stderr
+
+
+def test_edit_stdin_editor_mutually_exclusive(runner, bibfile):
+    result = runner.invoke(
+        main,
+        ["edit", str(bibfile), "GoerzJPB2011", "--stdin", "--editor", "vi"],
+        input="x",
+    )
+    assert result.exit_code == 2
+    assert "mutually exclusive" in result.stderr
+
+
+def test_edit_requires_terminal_or_stdin(runner, bibfile):
+    """Without a terminal, `edit` fails fast instead of blocking on
+    `$EDITOR` (the `CliRunner` stdin is never a TTY)."""
+    result = runner.invoke(main, ["edit", str(bibfile), "GoerzJPB2011"])
+    assert result.exit_code == 2
+    assert "stdin is not a terminal" in result.stderr
+    assert "--stdin" in result.stderr
+
+
+def test_edit_strings_requires_terminal_or_stdin(runner, bibfile):
+    result = runner.invoke(main, ["edit_strings", str(bibfile)])
+    assert result.exit_code == 2
+    assert "stdin is not a terminal" in result.stderr
+    assert "--stdin" in result.stderr
+
+
+def test_edit_stdin_validation_failure(runner, bibfile):
+    """Invalid edited text exits 1 with the validation problems; the
+    file is left unchanged."""
+    before = bibfile.read_text(encoding="utf-8")
+    exported = _run(runner, "export", bibfile, "GoerzJPB2011").output
+    edited = exported.replace("year = {2011}", "year = nosuchmacro")
+    assert edited != exported
+    result = runner.invoke(
+        main, ["edit", str(bibfile), "GoerzJPB2011", "--stdin"], input=edited
+    )
+    assert result.exit_code == 1
+    assert "Validation failed" in result.stderr
+    assert "nosuchmacro" in result.stderr
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_strings_bib(runner, bibfile):
+    result = _run(runner, "strings", bibfile, "--bib")
+    expected = [
+        f"@string{{{name} = {{{value}}}}}"
+        for name, value in sorted(_load(bibfile).strings.items())
+    ]
+    assert result.output.splitlines() == expected
+    assert "@string{jpb = {J. Phys. B}}" in expected
+
+
+def test_strings_bib_json_mutually_exclusive(runner, bibfile):
+    result = runner.invoke(main, ["strings", str(bibfile), "--bib", "--json"])
+    assert result.exit_code == 2
+    assert "mutually exclusive" in result.stderr
+
+
+def test_edit_strings_stdin_noop_roundtrip(runner, bibfile):
+    """Piping `strings --bib` back through `edit_strings --stdin` is a
+    no-op."""
+    before = dict(_load(bibfile).strings)
+    baseline = _run(runner, "strings", bibfile, "--bib").output
+    result = runner.invoke(
+        main, ["edit_strings", str(bibfile), "--stdin"], input=baseline
+    )
+    assert result.exit_code == 0, result.output + result.stderr
+    assert dict(_load(bibfile).strings) == before
+
+
+def test_edit_strings_stdin_changes_macro(runner, bibfile):
+    baseline = _run(runner, "strings", bibfile, "--bib").output
+    edited = baseline.replace("{J. Phys. B}", "{Journal of Physics B}")
+    assert edited != baseline
+    result = runner.invoke(
+        main, ["edit_strings", str(bibfile), "--stdin"], input=edited
+    )
+    assert result.exit_code == 0, result.output + result.stderr
+    assert _load(bibfile).strings["jpb"] == "Journal of Physics B"
+
+
 # -- bibfile resolution ------------------------------------------------- #
 
 

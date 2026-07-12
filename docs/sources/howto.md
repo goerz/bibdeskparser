@@ -382,6 +382,96 @@ J. Doe. \textit{Another Title}. J. Test (2021).
 
 ```
 
+(howto-ai)=
+
+## How to give an AI coding agent access to your library
+
+`bibdeskparser` ships no dedicated AI integration, because it does not
+need one: the {ref}`command-line tool <cli>` *is* the integration
+surface.
+Any agent that can run shell commands, such as
+[Claude Code](https://claude.com/claude-code), can inspect and edit
+your BibDesk library by calling `bibdeskparser`. Each invocation is a
+one-shot process that loads the `.bib` file, does its work, and exits,
+so there is no server to run and nothing to keep alive.
+
+**1. Put the tool on `PATH`.** Install the package into an environment
+the agent can reach (see [Installation](readme)); the simplest way is
+`uv tool install bibdeskparser`. Verify that `bibdeskparser` runs from
+a plain shell:
+
+```console
+$ bibdeskparser --version
+```
+
+**2. Point it at your library.** Set `default_bib_file` in a
+`bibdeskparser.toml` (see [Configuration](configuration)) so commands
+need no path argument:
+
+```toml
+default_bib_file = "/Users/you/Documents/references.bib"
+```
+
+Otherwise the agent must pass the `.bib` path as the first argument to
+every command.
+
+**3. Tell the agent the tool exists.** In an environment file the agent
+reads at startup (for Claude Code, a `CLAUDE.md`), describe the tool and
+point it at the built-in help. The agent discovers the full command set
+itself from `--help`; you only need a few lines:
+
+```markdown
+## Bibliography
+
+My BibDesk reference database is managed with the `bibdeskparser` CLI
+(`default_bib_file` is configured, so commands need no path argument).
+Run `bibdeskparser --help` for the command list and
+`bibdeskparser COMMAND --help` for a command's arguments. Use `--json`
+on read-only commands (`show`, `search`, `keys`, ...) for reliable
+parsing. To find entries, prefer `bibdeskparser search`. For free-form
+edits, pipe modified `export` output back through `edit --stdin`.
+```
+
+**4. Reduce permission prompts (optional).** Agents that gate shell
+access can be told to allow the tool without prompting. In Claude Code,
+add `bibdeskparser` to the allowlist (`Bash(bibdeskparser:*)` in
+`.claude/settings.json`).
+
+A few properties make the CLI safe to hand to an agent:
+
+- **Machine-readable output.** Every read-only command accepts `--json`,
+  so the agent parses structured data instead of scraping text.
+- **Concurrent-edit safety.** Mutating commands save in place and refuse
+  to overwrite a `.bib` file that changed on disk since it was read
+  (whether by BibDesk, by you, or by another agent), failing with a
+  {exc}`~bibdeskparser.StaleFileError` and exit code 1 rather than
+  clobbering the newer version. Nothing coordinates *between* agents up
+  front, but no write silently loses another's changes.
+- **Nothing blocks.** Every command is usable non-interactively.
+  `edit` and `edit_strings` open `$EDITOR` only when run from a
+  terminal; an agent passes `--stdin` instead and pipes in the edited
+  text (see below). Invoked without a terminal and without
+  `--stdin`/`--editor`, they fail fast with a usage error rather than
+  hanging on `$EDITOR`.
+
+For edits beyond the dedicated mutating commands (changing a title,
+fixing an author list, adding an arbitrary field), the agent round-trips
+an entry through `export` and `edit --stdin`: `export` prints exactly
+the text that `edit` would show in an editor, so transforming that text
+and piping it back applies the change, and piping it back unchanged is
+a no-op.
+
+```console
+$ bibdeskparser export Preskill2018 \
+    | sed 's/NISQ era/noisy intermediate-scale quantum era/' \
+    | bibdeskparser edit Preskill2018 --stdin
+```
+
+The `@string` macro definitions round-trip the same way, from
+`strings --bib` into `edit_strings --stdin`. Invalid edited text (an
+unparseable block, a reference to an undefined macro) exits with code 1
+and the list of problems on stderr, leaving the `.bib` file untouched.
+
 ## How to export a minimal BibTeX file for LaTeX
 
 {py:meth}`~bibdeskparser.library.Library.export` writes selected
