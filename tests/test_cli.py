@@ -617,6 +617,39 @@ def test_edit_strings_stdin_noop_roundtrip(runner, bibfile):
     assert dict(_load(bibfile).strings) == before
 
 
+def test_edit_strings_stdin_empty_roundtrip(runner, tmp_path):
+    """For a library without `@string` macros, `strings --bib` prints
+    nothing, and piping that empty text back through `edit_strings
+    --stdin` is still an accepted no-op."""
+    nostrings = tmp_path / "nostrings.bib"
+    nostrings.write_text(
+        "@article{Key2024,\n\tTitle = {A Title},\n\tYear = {2024}}\n",
+        encoding="utf-8",
+    )
+    baseline = _run(runner, "strings", nostrings, "--bib").output
+    assert baseline == ""
+    result = runner.invoke(
+        main, ["edit_strings", str(nostrings), "--stdin"], input=baseline
+    )
+    assert result.exit_code == 0, result.output + result.stderr
+    lib = _load(nostrings)
+    assert dict(lib.strings) == {}
+    assert lib["Key2024"]["title"] == "A Title"
+
+
+def test_edit_strings_stdin_empty_input_with_macros(runner, bibfile):
+    """With existing `@string` macros, empty stdin is rejected instead
+    of silently deleting them all."""
+    before = bibfile.read_text(encoding="utf-8")
+    assert dict(_load(bibfile).strings)
+    result = runner.invoke(
+        main, ["edit_strings", str(bibfile), "--stdin"], input=""
+    )
+    assert result.exit_code == 2
+    assert "standard input is empty" in result.stderr
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
 def test_edit_strings_stdin_changes_macro(runner, bibfile):
     baseline = _run(runner, "strings", bibfile, "--bib").output
     edited = baseline.replace("{J. Phys. B}", "{Journal of Physics B}")

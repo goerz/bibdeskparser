@@ -650,15 +650,17 @@ _stdin_option = click.option(
 )
 
 
-def _resolve_editor(editor, use_stdin):
+def _resolve_editor(editor, use_stdin, allow_empty=False):
     """The `editor` argument for `Library.edit`/`.edit_strings`.
 
     With `--stdin`, returns a callable that overwrites the temporary
-    file with the text read from standard input (empty input is a
-    usage error, so that redirecting from `/dev/null` cannot silently
-    apply a no-op edit). Without `--stdin` or an explicit `--editor`,
-    a non-terminal stdin is a usage error: the command fails fast
-    rather than blocking on `$EDITOR`.
+    file with the text read from standard input. Unless `allow_empty`
+    is given, empty input is a usage error, so that redirecting from
+    `/dev/null` cannot silently apply a destructive edit; the caller
+    sets `allow_empty` when empty input is a valid no-op (a library
+    with no `@string` macros in `edit_strings`). Without `--stdin` or
+    an explicit `--editor`, a non-terminal stdin is a usage error: the
+    command fails fast rather than blocking on `$EDITOR`.
     """
     if use_stdin:
         if editor is not None:
@@ -666,7 +668,7 @@ def _resolve_editor(editor, use_stdin):
                 "--stdin and --editor are mutually exclusive"
             )
         text = sys.stdin.read()
-        if not text.strip():
+        if not text.strip() and not allow_empty:
             raise click.UsageError(
                 "--stdin was given, but standard input is empty"
             )
@@ -729,7 +731,10 @@ def edit_strings(bibfile, editor, use_stdin):
     --bib`, modify them, and pipe them back. Without a terminal,
     `--stdin`, or `--editor`, the command fails immediately instead of
     blocking."""
-    editor = _resolve_editor(editor, use_stdin)
     lib = Library(bibfile)
+    # Empty stdin is a valid no-op exactly when there are no macros
+    # (so an empty `strings --bib` round-trips); with macros present
+    # it is rejected rather than deleting them all.
+    editor = _resolve_editor(editor, use_stdin, allow_empty=not lib.strings)
     lib.edit_strings(editor=editor)
     lib.save()
