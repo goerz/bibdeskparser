@@ -6,6 +6,7 @@
         black black-check isort isort-check flake8 pylint lint pre-commit \
         check-changelog changelog \
         dist dist-check test-upload upload release \
+        install uninstall \
         upgrade clean distclean
 
 .DEFAULT_GOAL := help
@@ -111,6 +112,12 @@ upload: dist-check  ## package and upload a release to pypi.org
 
 release:  ## create a new version, package and upload it
 	$(UV) python scripts/release.py
+
+install:  ## install the `bibdeskparser` CLI as an editable uv tool
+	uv tool install --editable .
+
+uninstall:  ## remove the `bibdeskparser` CLI installed via `make install`
+	uv tool uninstall bibdeskparser
 
 upgrade:  ## upgrade locked dependency versions to the latest compatible release
 	uv lock --upgrade

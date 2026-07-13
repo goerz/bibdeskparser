@@ -132,6 +132,14 @@ make develop
 
 to create a virtual environment with all development dependencies. Run `make help` for an overview of available targets, and see [CONTRIBUTING.md][] for full contributing guidelines.
 
+To put the `bibdeskparser` [command-line tool][cli] on your `PATH` as an *editable* install that links back to your working copy — so changes to the source take effect without reinstalling — run
+
+```
+make install
+```
+
+Use `make uninstall` to remove it again.
+
 [BibDesk]: https://bibdesk.sourceforge.io
 [BibTeX]: https://en.wikipedia.org/wiki/BibTeX
 [BibtexParser]: https://bibtexparser.readthedocs.io/en/main/
