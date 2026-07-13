@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.2.0] - 2026-07-13
 
 * Added: automatic filing of file attachments, mirroring BibDesk's AutoFile feature. `Library.rename_file` without a `new_filename` moves an attachment into the configured auto-file location and renames it according to a file-name format in BibDesk's format-specifier language (the recommended format is `%f{Cite Key}%u0%e`, naming each file after its entry's citation key while keeping the real extension); `Library.add_file` files newly attached files the same way when auto-filing is in effect (`file_automatically = true` in the configuration, or explicit `format_spec`/`auto_file_location` arguments, with `auto_file_location=""` forcing a plain attach). A file whose name already matches the format is left in place (re-filing is idempotent), and the format's required `%u`/`%U`/`%n` specifier disambiguates against existing files on disk. The `rename_file` and `add_file` CLI commands gain the corresponding options. [[#10]]
 * Added: an `auto_file` table in `bibdeskparser.toml`, with `format_spec` (a single format or a per-type table), `location` (the directory files are moved into, relative to the `.bib` file or absolute), `lowercase`, `clean`, and `file_automatically` keys, exposed as `Library.config.auto_file`. [[#10]]
@@ -42,7 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial release.
 
-[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.1.0..HEAD
+[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.2.0..HEAD
+[v0.2.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.2.0
 [v0.1.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.1.0
 [#4]: https://github.com/goerz/bibdeskparser/pull/4
 [#5]: https://github.com/goerz/bibdeskparser/pull/5
