@@ -20,6 +20,39 @@ class Renderer(MystRenderer):
     `render_package` beyond its first few yields.
     """
 
+    def render_data(self, item: ItemData):
+        """Create the content for a data/attribute item, omitting
+        autodoc2's ``:value:`` field.
+
+        `MystRenderer.render_data` derives that field from the
+        assignment's source and falls back to the literal string
+        ``"None"`` whenever the right-hand side isn't itself a
+        literal -- e.g. `Library.config = active`, a name reference --
+        which would otherwise render as a spurious "None" line above
+        the attribute's actual docstring.
+        """
+        short_name = item["full_name"].split(".")[-1]
+
+        yield f"````{{py:{item['type']}}} {short_name}"
+        yield f":canonical: {item['full_name']}"
+        if self.no_index(item):
+            yield ":noindex:"
+        for prop in ("abstractmethod", "classmethod"):
+            if prop in item.get("properties", []):
+                yield f":{prop}:"
+        if item.get("annotation"):
+            yield f":type: {self.format_annotation(item['annotation'])}"
+
+        yield ""
+        if self.show_docstring(item):
+            yield f"```{{autodoc2-docstring}} {item['full_name']}"
+            if parser_name := self.get_doc_parser(item["full_name"]):
+                yield f":parser: {parser_name}"
+            yield "```"
+            yield ""
+        yield "````"
+        yield ""
+
     def render_package(self, item: ItemData):
         full_name = item["full_name"]
         if "." in full_name:

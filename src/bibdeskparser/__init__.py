@@ -8,8 +8,9 @@ databases as maintained by the BibDesk application.
 from importlib.metadata import version
 
 from . import config as _config
-from .entry import Entry, MacroString, ValueString
+from .entry import Entry
 from .library import Library, StaleFileError
+from .macros import MacroString, ValueString
 
 __version__ = version("bibdeskparser")
 
@@ -19,7 +20,7 @@ __version__ = version("bibdeskparser")
 # the built-in defaults are used instead. A `Library` re-applies the
 # configuration for its own directory when constructed.
 try:
-    _config.load()
+    _config.active.load()
 # pylint: disable-next=broad-except
 except Exception as _exc:  # pragma: no cover - config must not break import
     import warnings as _warnings

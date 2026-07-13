@@ -5,7 +5,8 @@ from pathlib import Path
 import bibtexparser
 import pytest
 
-from bibdeskparser.entry import Entry, ValueString
+from bibdeskparser import ValueString
+from bibdeskparser.entry import Entry
 from bibdeskparser.middleware import parse_stack
 from bibdeskparser.render import (
     _bold,

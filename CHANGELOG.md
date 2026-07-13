@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Added: automatic citation-key generation. Calling `Library.rekey` without a `new_key` generates the key from an auto-key format in BibDesk's format-specifier language (e.g. `%a1%c{journal}0%Y%u0`), taken from the new `auto_key` table of `bibdeskparser.toml` or from the new `format_spec` keyword argument. A key that already matches the format is kept unchanged, and a `%u`/`%U`/`%n` specifier in the format disambiguates collisions, like in BibDesk. The `rekey` CLI command correspondingly makes `NEW_KEY` optional, adds a `--format-spec PATTERN` option, and prints the generated key. [[#9]]
+* Added: `Library.eval_format_spec` and a matching read-only `eval_format_spec` CLI command, evaluating an auto-key format for an entry and returning the key it yields, without renaming anything. A key that already matches the format evaluates to itself, so this identifies the entries whose citation key does not follow a given format. [[#9]]
+* Added: per-type auto-key formats. The `auto_key` table's `format_spec` may be a table mapping each entry type to its own format (with `""` as the fallback for unlisted types), so a mixed-type library can name `journal` for articles, `booktitle` for conference papers, and so on. The `auto_key` settings are also available and settable as `Library.config.auto_key` (with `format_spec`, `lowercase`, and `clean` attributes). [[#9]]
+* Added: an `initials` table in `bibdeskparser.toml`, defining per-field exceptions (e.g. journal or conference-proceedings initials) to the acronym that the `%c` format specifier builds from a field value. [[#9]]
+* Added: a "Format Specifiers" reference page documenting the format-specifier language. [[#9]]
+* Changed: `Library.rekey` now returns the resulting citation key (previously `None`). [[#9]]
 * Added: a "How to give an AI coding agent access to your library" how-to guide, describing the lightweight path for letting a shell-capable agent (such as Claude Code) drive the `bibdeskparser` CLI, and expanded the top-level `--help` text to orient such callers (read-only vs. mutating commands, `--json`, exit codes). [[#8]]
 * Added: `Library.edit` and `Library.edit_strings` accept a function for `editor`, as an alternative to an editor command string. The function receives the path of the temporary file and must edit it in place; validation problems then raise a `ValueError` instead of prompting interactively. [[#8]]
 * Added: a `--stdin` option on the `edit` and `edit_strings` CLI commands, reading the full edited text from standard input instead of opening an editor, and a `--bib` option on `strings`, printing the `@string` definitions as re-parseable `@string{name = {value}}` lines. Together with `export`, these allow non-interactive (e.g., scripted or AI-agent) editing via pipes: `export KEY... | ... | edit KEY... --stdin` and `strings --bib | ... | edit_strings --stdin`. [[#8]]
@@ -20,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added: validation of the `author`/`editor` fields: assigning an unparseable value raises `ValueError`.
 * Added: a `UserWarning` when assigning a field that is not appropriate for the entry type.
 * Added: a "Bib Entry Types" reference page documenting the supported entry types and fields.
-* Added: support for a `bibdeskparser.toml` configuration file (searched for next to the `.bib` file and in the XDG config location), with `verify_types` and `verify_fields` flags to disable entry-type validation and field-appropriateness warnings, and `types`/`fields` tables to define custom entry types and fields or extend the built-in ones. The flags are also exposed as the `Library.verify_types`, `Library.verify_fields`, and `Library.config_file` class attributes.
+* Added: support for a `bibdeskparser.toml` configuration file (searched for next to the `.bib` file and in the XDG config location), with `verify_types` and `verify_fields` flags to disable entry-type validation and field-appropriateness warnings, and `types`/`fields` tables to define custom entry types and fields or extend the built-in ones. The active configuration is exposed as the `Library.config` class attribute (equally readable from a library instance as `bib.config`), whose attributes -- `verify_types`, `verify_fields`, `config_file`, `auto_key`, and others -- can be assigned for in-process overrides that never write back to the configuration file.
 * Added: a "Configuration" reference page documenting the `bibdeskparser.toml` file.
 * Changed: `Value` has been renamed to `ValueString` (**breaking**: rename `Value` to `ValueString` in your code). Values returned by the `Entry` dict interface are now `ValueString` (for literal/braced values) or `MacroString` (for bare `@string` macro references) instances; both are `str` subclasses and compare as plain strings.
 * Changed: `Entry.urls` is now a read-only tuple (**breaking**: replace assignment to `entry.urls` with the new `add_url`/`replace_url`/`remove_url` methods).
@@ -37,3 +43,4 @@ Initial release.
 [#5]: https://github.com/goerz/bibdeskparser/pull/5
 [#7]: https://github.com/goerz/bibdeskparser/pull/7
 [#8]: https://github.com/goerz/bibdeskparser/pull/8
+[#9]: https://github.com/goerz/bibdeskparser/pull/9

@@ -38,6 +38,7 @@ BibDesk's .bib Format <bibdesk_format>
 
 bib_entry_types
 config
+Format Specifiers <specifiers>
 CLI <cli>
 apidocs/bibdeskparser/*
 ```

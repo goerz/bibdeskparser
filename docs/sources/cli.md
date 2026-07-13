@@ -203,6 +203,27 @@ $ bibdeskparser timestamp library.bib
 2026-07-07T12:30:05-04:00
 ```
 
+(cli-eval-format-spec)=
+
+### `eval_format_spec KEY [FORMAT]`
+
+Print the citation key that an auto-key format in the
+[format-specifier language](format-specifiers) yields for the entry
+at `KEY`, via
+{py:meth}`~bibdeskparser.Library.eval_format_spec` -- without
+renaming anything (unlike [`rekey`](cli-rekey)). `FORMAT` defaults to
+the `format_spec` configured in the `[auto_key]` table of
+`bibdeskparser.toml` (which may map a format per entry type). With
+`--json`: a string.
+
+A key that already matches the format evaluates to itself, so any
+output other than `KEY` itself flags a nonconforming key:
+
+```console
+$ bibdeskparser eval_format_spec library.bib Preskill2018 '%a1%c{journal}0%Y%u0'
+PreskillQ2018
+```
+
 ## Rendering and exporting
 
 ### `render KEY...`
@@ -234,7 +255,9 @@ $ bibdeskparser export library.bib Preskill2018 --format minimal --outfile out.b
 
 ## Entries
 
-### `rekey OLD_KEY NEW_KEY`
+(cli-rekey)=
+
+### `rekey OLD_KEY [NEW_KEY]`
 
 Change the citation key of an entry, via
 {py:meth}`~bibdeskparser.Library.rekey`.
@@ -242,6 +265,25 @@ Change the citation key of an entry, via
 ```console
 $ bibdeskparser rekey library.bib Preskill2018 Preskill2018NISQ
 ```
+
+Without `NEW_KEY`, the key is **generated** from an auto-key format in
+the [format-specifier language](format-specifiers) -- the
+`--format-spec PATTERN` option if given, or else the `format_spec`
+configured in the `[auto_key]` table of `bibdeskparser.toml` (which may
+map a format per entry type; see the [configuration](configuration)) --
+and printed to stdout:
+
+```console
+$ bibdeskparser rekey library.bib Preskill2018NISQ
+Preskill2018
+$ bibdeskparser rekey library.bib Preskill2018 --format-spec '%a1%c{journal}0%Y%u0'
+PreskillQ2018
+```
+
+A key that already matches the format is kept unchanged, and a
+`%u`/`%U`/`%n` specifier in the format resolves collisions with the
+other entries in the library. To preview the generated key without
+renaming, use [`eval_format_spec`](cli-eval-format-spec).
 
 ### `delete KEY...`
 

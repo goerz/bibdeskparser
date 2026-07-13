@@ -6,7 +6,6 @@ import logging
 import os
 import sys
 import warnings
-from abc import ABCMeta
 from collections.abc import MutableMapping
 from contextlib import contextmanager
 from pathlib import Path
@@ -21,8 +20,9 @@ from bibtexparser.model import (
     String,
 )
 
-from . import config, editing
+from . import editing, specifiers
 from .bdskfile import BibDeskFile
+from .config import active
 from .entry import Entry, _strip_enclosing
 from .exporting import export_entries
 from .groups import (
@@ -475,48 +475,7 @@ class _KeywordsView(MutableMapping):
 # -- Library ------------------------------------------------------------ #
 
 
-class _LibraryMeta(ABCMeta):
-    """Metaclass exposing the configuration flags as `Library` class
-    attributes.
-
-    `Library.verify_types`, `Library.verify_fields`, and
-    `Library.config_file` read and write the process-global
-    configuration in `bibdeskparser.config` (see the
-    [configuration](configuration)). They live on the metaclass so that
-    plain class-attribute access -- `Library.verify_types` and
-    `Library.verify_types = False` -- routes through it.
-    """
-
-    # pylint: disable=missing-function-docstring
-    # (each property just forwards to `bibdeskparser.config`; the
-    # class docstring above already documents all three)
-
-    @property
-    def verify_types(cls):
-        return config.get_verify_types()
-
-    @verify_types.setter
-    def verify_types(cls, value):
-        config.set_verify_types(bool(value))
-
-    @property
-    def verify_fields(cls):
-        return config.get_verify_fields()
-
-    @verify_fields.setter
-    def verify_fields(cls, value):
-        config.set_verify_fields(bool(value))
-
-    @property
-    def config_file(cls):
-        return config.get_config_file()
-
-    @config_file.setter
-    def config_file(cls, value):
-        config.set_config_file(value)
-
-
-class Library(MutableMapping, metaclass=_LibraryMeta):
+class Library(MutableMapping):
     r"""A BibDesk `.bib` database.
 
     ```python
@@ -586,23 +545,36 @@ class Library(MutableMapping, metaclass=_LibraryMeta):
       render a bibliography, export to bibtex text, or edit in
       `$EDITOR`, for one or more selected citation keys at once.
 
-    Three class attributes reflect the configuration (see the
-    [configuration](configuration) reference page):
+    The process-global configuration (see the
+    [configuration](configuration) reference page) is exposed as the
+    `Library.config` class attribute -- equally readable from any
+    instance, as `bib.config`. Its attributes can be assigned for an
+    in-process override (which never writes back to the configuration
+    file); the most important ones are:
 
-    - `Library.verify_types` (default `True`): whether an unrecognized
-      {attr}`Entry.entry_type` is rejected with a `ValueError`.
-    - `Library.verify_fields` (default `True`): whether assigning a
-      field inappropriate for an entry's type emits a `UserWarning`.
-    - `Library.config_file` (default `None`): an explicit
+    - `Library.config.verify_types` (default `True`): whether an
+      unrecognized {attr}`Entry.entry_type` is rejected with a
+      `ValueError`.
+    - `Library.config.verify_fields` (default `True`): whether
+      assigning a field inappropriate for an entry's type emits a
+      `UserWarning`.
+    - `Library.config.config_file` (default `None`): an explicit
       `bibdeskparser.toml` path that takes precedence over the
       directory-based search.
+    - `Library.config.auto_key.format_spec` (default `None`): the
+      auto-key format for {meth}`rekey`/{meth}`eval_format_spec` -- a
+      single format string in BibDesk's
+      [format-specifier language](format-specifiers), or a per-type
+      `dict` mapping entry-type names (with `""` as the fallback) to
+      format strings. Assigning a spec validates every format string
+      in it.
 
     Constructing a `Library` (re)discovers a `bibdeskparser.toml`
-    (`config_file`, then the `.bib` file's own directory -- the current
-    working directory for a from-scratch library -- then the XDG
-    location, first found wins) and applies it. The configuration is
-    process-global; with no config file present, the defaults above
-    give exactly the behavior of previous versions.
+    (`config.config_file`, then the `.bib` file's own directory -- the
+    current working directory for a from-scratch library -- then the
+    XDG location, first found wins) and applies it, replacing any
+    in-process overrides. With no config file present, the defaults
+    above apply.
 
     ```python
     >>> from bibdeskparser import Entry, Library
@@ -647,16 +619,21 @@ class Library(MutableMapping, metaclass=_LibraryMeta):
     ```
     """
 
+    config = active
+    """The process-global configuration (documented in the class
+    docstring above): the single `bibdeskparser.config.active` object,
+    which `load()`/`reset()` mutate in place."""
+
     def __init__(self, path=None, creator=None):
         self._path = path
         self._creator = creator
 
         # (Re)discover and apply the configuration for this library's
         # directory (the `.bib` file's folder, or the cwd for a
-        # from-scratch library): Library.config_file, then that
+        # from-scratch library): config.config_file, then that
         # directory, then the XDG location; first found wins.
         bib_dir = Path(path).resolve().parent if path is not None else None
-        config.load(bib_dir=bib_dir, config_file=type(self).config_file)
+        active.load(bib_dir=bib_dir)
 
         if path is not None:
             text = Path(path).read_text(encoding="utf-8")
@@ -1150,21 +1127,47 @@ class Library(MutableMapping, metaclass=_LibraryMeta):
                 self._set_group(name, tuple(k for k in keys if k != key))
         self._modified = True
 
-    def rekey(self, old_key, new_key):
-        """Rename the entry at `old_key` to `new_key`.
+    def rekey(self, old_key, new_key=None, *, format_spec=None):
+        """Rename the entry at `old_key`; returns the new key.
 
         `Entry.key` is read-only, so this is the only way to rename
         an entry that is already in the library. The entry's
         static-group memberships follow the rename: `new_key` replaces
         `old_key` in place (keeping its position) in every group that
-        contained it. Raises `KeyError` if `old_key` is not present,
-        or `ValueError` if `new_key` is already used by a different
-        entry.
+        contained it.
+
+        With `new_key` omitted (or `None`), a key is **generated** from
+        an auto-key format in BibDesk's
+        [format-specifier language](format-specifiers): the
+        `format_spec` argument if given, or else the configured
+        `config.auto_key.format_spec` (from the `[auto_key]` table of
+        `bibdeskparser.toml`; see the
+        [configuration](configuration)). `format_spec` is either a
+        single format string or a per-type `dict` mapping entry-type
+        names (with `""` as the fallback) to format strings; the entry's
+        own type selects the format. A key that already matches the
+        format is kept as is, so regenerating is idempotent; a
+        `%u`/`%U`/`%n` specifier in the format resolves collisions
+        with the other entries in the library.
+
+        Raises `KeyError` if `old_key` is not present, and
+        `ValueError` if `new_key` is already used by a different
+        entry, if both `new_key` and `format_spec` are given, if no
+        auto-key format is available for the entry's type or the entry
+        lacks a field the format requires, or if the generated key
+        would equal the entry's own `crossref` value.
+
+        To preview the key a format would generate, without renaming
+        anything, use {meth}`eval_format_spec`.
         """
         if old_key not in self._entries:
             raise KeyError(old_key)
+        if new_key is None:
+            new_key = self._generate_key(old_key, format_spec)
+        elif format_spec is not None:
+            raise ValueError("give either new_key or format_spec, not both")
         if new_key == old_key:
-            return
+            return new_key
         if new_key in self._entries:
             raise ValueError(
                 f"key {new_key!r} is already used by another entry in "
@@ -1181,6 +1184,97 @@ class Library(MutableMapping, metaclass=_LibraryMeta):
                 )
                 self._modified = True
         self[new_key] = self.pop(old_key)
+        return new_key
+
+    def eval_format_spec(self, key, format_spec=None):
+        """Evaluate an auto-key format for the entry at `key`; returns
+        the resulting citation key without renaming anything.
+
+        This is exactly the key that {meth}`rekey` without a `new_key`
+        would generate: `format_spec` is a format in BibDesk's
+        [format-specifier language](format-specifiers), or a per-type
+        `dict` mapping entry-type names (with `""` as the fallback) to
+        format strings; if it is `None`, the configured
+        `config.auto_key.format_spec` (from the `[auto_key]` table of
+        `bibdeskparser.toml`) is used (see the
+        [configuration](configuration)).
+
+        A key that already matches the format evaluates to itself, so
+        the entries whose key does not follow a given format are
+        exactly those with `bib.eval_format_spec(key) != key`.
+
+        Raises `KeyError` if `key` is not present, and `ValueError`
+        if no auto-key format is available for the entry's type, if the
+        entry lacks a field the format requires, or if the resulting
+        key would equal the entry's own `crossref` value.
+        """
+        if key not in self._entries:
+            raise KeyError(key)
+        return self._generate_key(key, format_spec)
+
+    @staticmethod
+    def _resolve_format_spec(format_spec, entry_type):
+        """Resolve `format_spec` (or, if it is `None`, the configured
+        `config.auto_key.format_spec`) to a single format string for an
+        entry of `entry_type`, picking the per-type entry (or the `""`
+        fallback) from a `dict` spec."""
+        if format_spec is None:
+            format_spec = active.auto_key.format_spec
+        if format_spec is None:
+            raise ValueError(
+                "cannot generate a citation key: no auto-key format is "
+                "configured (set 'format_spec' in the [auto_key] table "
+                "of bibdeskparser.toml, or pass a format explicitly)"
+            )
+        if isinstance(format_spec, str):
+            return format_spec
+        if entry_type in format_spec:
+            return format_spec[entry_type]
+        if "" in format_spec:
+            return format_spec[""]
+        raise ValueError(
+            "cannot generate a citation key: the auto-key format_spec "
+            f"has no entry for type {entry_type!r} and no '' fallback"
+        )
+
+    def _generate_key(self, key, format_spec=None):
+        """Generate a citation key for the entry at `key`, from
+        `format_spec` or (if that is `None`) the configured
+        `config.auto_key.format_spec`; backs {meth}`rekey` and
+        {meth}`eval_format_spec`."""
+        entry = self._entries[key]
+        format_string = self._resolve_format_spec(
+            format_spec, entry.entry_type
+        )
+        fmt = specifiers.compile_format(format_string)
+        missing = specifiers.missing_required_fields(fmt, entry)
+        if missing:
+            raise ValueError(
+                f"cannot generate a citation key for {key!r}: the "
+                f"format {format_string!r} requires the missing "
+                f"field(s) {', '.join(sorted(missing))}"
+            )
+        new_key = specifiers.render_format(
+            fmt,
+            entry,
+            strings=dict(self.strings),
+            initials=active.initials,
+            lowercase=active.auto_key.lowercase,
+            clean=active.auto_key.clean,
+            current_key=key,
+            is_key_free=lambda k: k == key or k not in self._entries,
+            document_name=(
+                Path(self._path).stem if self._path is not None else None
+            ),
+        )
+        # a key must never equal the entry's own crossref parent
+        # (BibDesk skips generation for such entries)
+        if new_key == str(entry.get("crossref", "") or ""):
+            raise ValueError(
+                f"the generated key {new_key!r} for {key!r} would "
+                "equal the entry's own crossref"
+            )
+        return new_key
 
     def __iter__(self):
         return iter(self._entries)

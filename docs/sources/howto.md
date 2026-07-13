@@ -328,6 +328,67 @@ directly in the `.bib` file, then reload:
 
 ```
 
+(howto-auto-keys)=
+
+## How to automatically generate citation keys
+
+Configure an auto-key format (in BibDesk's
+[format-specifier language](format-specifiers)) in your
+`bibdeskparser.toml`, then call
+{py:meth}`~bibdeskparser.library.Library.rekey` with just the old
+key:
+
+```toml
+[auto_key]
+format_spec = "%a1%c{journal}0%Y%u0"
+```
+
+This particular format is a recommended scheme for a journal article:
+first author's last name, the journal's initials, the full year, and
+(only if needed) a disambiguating letter — e.g. `GoerzPRA2014`. For a
+library that mixes entry types, give `format_spec` a
+[per-type table](config-auto-key-per-type) instead (naming `booktitle`
+for conference papers, `series` for books, and so on). The `[initials]`
+table of the configuration handles venues whose initials should not be
+the plain acronym (see [Venue initials](specifiers-initials)).
+
+```python
+>>> bib.rekey("GoerzPRA2014")               # doctest: +SKIP
+'GoerzPRA2014'
+```
+
+The `format_spec` argument overrides the configured format ad hoc; keys
+that already match the format are kept unchanged, so regenerating is
+idempotent and safe to run over a whole library:
+
+```python
+>>> bib.rekey("GoerzPRA2014", format_spec="%a1%c{journal}0%Y%u0")
+'GoerzPRA2014'
+>>> for key in list(bib):
+...     _ = bib.rekey(key, format_spec="%a1:%Y%u0")
+>>> bib.rekey("Goerz:2014", format_spec="%a1%c{journal}0%Y%u0")
+'GoerzNJP2014'
+
+```
+
+{py:meth}`~bibdeskparser.library.Library.eval_format_spec` evaluates
+a format for an entry and returns the resulting key *without renaming
+anything*. Since a key that already matches the format evaluates to
+itself, this finds all citation keys that do not follow a given
+format:
+
+```python
+>>> fmt = "%a1:%Y%u0"
+>>> [key for key in bib if bib.eval_format_spec(key, fmt) != key]
+['GoerzNJP2014']
+
+```
+
+On the command line, the same is available as `bibdeskparser rekey
+BIBFILE OLD_KEY` (see the {ref}`CLI reference <cli-rekey>`), which
+prints the generated key, and as the read-only `bibdeskparser
+eval_format_spec BIBFILE KEY [FORMAT]`.
+
 ## How to edit an entry in your text editor
 
 {py:meth}`~bibdeskparser.library.Library.edit` opens one or more

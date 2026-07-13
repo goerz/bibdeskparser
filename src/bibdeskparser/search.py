@@ -24,7 +24,8 @@ import difflib
 import re
 import unicodedata
 
-from .entry import MacroString, _is_normal_key
+from .entry import _is_normal_key
+from .macros import MacroString
 from .texmap import detexify
 
 __all__ = []
