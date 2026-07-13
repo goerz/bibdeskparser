@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.library &mdash; BibDeskParser 0.2.0 documentation</title>
+  <title>bibdeskparser.library &mdash; BibDeskParser 0.2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../_static/documentation_options.js?v=37f418d5"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.2.0
+    v0.2.1
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -168,7 +168,13 @@
     <span class="n">render_static_groups</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.header</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_header</span><span class="p">,</span> <span class="n">parse_header</span><span class="p">,</span> <span class="n">peek_timestamp</span><span class="p">,</span> <span class="n">update_header</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.macros</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_valid_macro_name</span><span class="p">,</span> <span class="n">normalize_macro_name</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.importing</span><span class="w"> </span><span class="kn">import</span> <span class="n">import_entries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.macros</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MacroString</span><span class="p">,</span>
+    <span class="n">ValueString</span><span class="p">,</span>
+    <span class="n">is_valid_macro_name</span><span class="p">,</span>
+    <span class="n">normalize_macro_name</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_stack</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.render</span><span class="w"> </span><span class="kn">import</span> <span class="n">render_entries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.search</span><span class="w"> </span><span class="kn">import</span> <span class="n">search_entries</span>
@@ -323,6 +329,23 @@
             <span class="ne">UserWarning</span><span class="p">,</span>
             <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_expand_macros</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">strings</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a copy of `entry` with every field that is a bare</span>
+<span class="sd">    `@string` macro reference replaced by its literal value from</span>
+<span class="sd">    `strings` (an undefined macro is left as the macro name).</span>
+
+<span class="sd">    Used by {meth}`Library.render` so that a citation shows the resolved</span>
+<span class="sd">    value (e.g. the full journal name) rather than the macro name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">expanded</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">entry</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">MacroString</span><span class="p">):</span>
+            <span class="n">resolved</span> <span class="o">=</span> <span class="n">strings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+            <span class="n">expanded</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">resolved</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">expanded</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_delete_file</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
@@ -1535,7 +1558,6 @@
 <span class="sd">        (relative to the library directory, or absolute). Returns the</span>
 <span class="sd">        absolute target `Path`; backs the auto-file modes of</span>
 <span class="sd">        {meth}`rename_file` and {meth}`add_file`.&quot;&quot;&quot;</span>
-        <span class="n">base_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">location</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;cannot generate a file name: auto_file_location must &quot;</span>
@@ -2308,9 +2330,9 @@
 <span class="sd">        * `&quot;default&quot;` (the default): like `&quot;paragraphs&quot;`, except a</span>
 <span class="sd">          single `&quot;html&quot;` citation is not wrapped in `&lt;p&gt;...&lt;/p&gt;`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">render_entries</span><span class="p">(</span>
-            <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="n">style</span>
-        <span class="p">)</span></div>
+        <span class="n">strings</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strings</span><span class="p">)</span>
+        <span class="n">entries</span> <span class="o">=</span> <span class="p">[</span><span class="n">_expand_macros</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">strings</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">render_entries</span><span class="p">(</span><span class="n">entries</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="n">style</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Library.export">
@@ -2375,6 +2397,147 @@
 <span class="sd">        when the exception is raised.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">editing</span><span class="o">.</span><span class="n">edit_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">editor</span><span class="o">=</span><span class="n">editor</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Library.import_bibtex">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.import_bibtex">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">import_bibtex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">keep_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fix_uppercase</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Import the entries of the BibTeX snippet `text`, sanitized</span>
+<span class="sd">        and normalized, into the library.</span>
+
+<span class="sd">        Every entry of `text` (which may also contain `@string`</span>
+<span class="sd">        definitions and comments, e.g. a complete `.bib` file or the</span>
+<span class="sd">        output of {meth}`export`) is cleaned up as follows:</span>
+
+<span class="sd">        * The `journal` is replaced by an `@string` macro reference:</span>
+<span class="sd">          a macro already in {attr}`strings` (matched by value), a</span>
+<span class="sd">          macro configured in the `[journal_macros]` table of the</span>
+<span class="sd">          [configuration](configuration) (its `@string` definition is</span>
+<span class="sd">          added to the library as needed), or -- with a `UserWarning`</span>
+<span class="sd">          -- a newly created macro named by the journal&#39;s lowercased</span>
+<span class="sd">          initials (honoring `[initials.journal]` exceptions). A</span>
+<span class="sd">          literal `arXiv:...` pseudo-journal is the one exception: it</span>
+<span class="sd">          marks an arXiv preprint and stays literal, and the entry&#39;s</span>
+<span class="sd">          `eprint` and `archiveprefix` fields are derived from it if</span>
+<span class="sd">          missing.</span>
+<span class="sd">        * Capitalized words inside the `title` (assumed to be proper</span>
+<span class="sd">          nouns) are wrapped in braces to protect their</span>
+<span class="sd">          capitalization, unless the title looks like it is already</span>
+<span class="sd">          in (English) title case; any of the configured</span>
+<span class="sd">          `protected_words` are brace-protected in every title.</span>
+<span class="sd">        * A `doi` is normalized to its bare, lowercase form (no</span>
+<span class="sd">          `https://doi.org/` or `doi:` prefix).</span>
+<span class="sd">        * For an `@article`, a `pages` range collapses to its first</span>
+<span class="sd">          page, the fields `month`, `day`, `publisher`, `address`,</span>
+<span class="sd">          `numpages`, and `issn` are dropped, and a `url` is dropped</span>
+<span class="sd">          when there is a `doi`. For other entry types, page ranges</span>
+<span class="sd">          are kept, with the dash normalized to `--`.</span>
+<span class="sd">        * Every entry gets a newly generated citation key (unless</span>
+<span class="sd">          `keep_keys` is given): from the `[auto_key]` format of the</span>
+<span class="sd">          [configuration](configuration) if one is set, else</span>
+<span class="sd">          `%p1%c{journal}0%Y%u0` for an article (e.g.</span>
+<span class="sd">          `GoerzPRA2014`), `%p1%c{booktitle}0%Y%u0` for</span>
+<span class="sd">          inproceedings/incollection, and `%p1%Y%u0` for any other</span>
+<span class="sd">          type. ArXiv preprints always use `%p1%f{eprint}[.]` (e.g.</span>
+<span class="sd">          `Goerz2205.15044`). An incoming key that already matches</span>
+<span class="sd">          the format is kept.</span>
+<span class="sd">        * TeX-encoded accents (`Schr{\\&quot;o}dinger`) are decoded to</span>
+<span class="sd">          Unicode, exactly as if the values had been read from a</span>
+<span class="sd">          `.bib` file (saving re-encodes them).</span>
+
+<span class="sd">        With `fix_uppercase=True`, all-uppercase `author`/`editor`</span>
+<span class="sd">        names and `title` values (as found in some publisher data)</span>
+<span class="sd">        are down-cased to name case/sentence case first; the result</span>
+<span class="sd">        may need manual correction. `keep_keys=True` keeps the</span>
+<span class="sd">        incoming citation keys instead of generating new ones.</span>
+
+<span class="sd">        An entry whose `doi` or `eprint` is already in the library is</span>
+<span class="sd">        rejected. `keywords`, `bdsk-url-N`, and `date-added` fields</span>
+<span class="sd">        are preserved; `bdsk-file-N` fields must hold plain file</span>
+<span class="sd">        paths (as written by {meth}`export`) that exist relative to</span>
+<span class="sd">        the library&#39;s `.bib` directory, and become regular file</span>
+<span class="sd">        attachments. Inappropriate fields for an entry&#39;s type are</span>
+<span class="sd">        kept, with a `UserWarning` (see the</span>
+<span class="sd">        [configuration](configuration)).</span>
+
+<span class="sd">        Returns the list of citation keys of the added entries, in</span>
+<span class="sd">        snippet order. Raises {exc}`ValueError`, listing *all*</span>
+<span class="sd">        problems, if anything about `text` is not acceptable -- the</span>
+<span class="sd">        library is guaranteed unmodified in that case. Like any other</span>
+<span class="sd">        modification, an import only becomes permanent with</span>
+<span class="sd">        {meth}`save`.</span>
+
+<span class="sd">        ```python</span>
+<span class="sd">        &gt;&gt;&gt; from bibdeskparser import Library</span>
+<span class="sd">        &gt;&gt;&gt; bib = Library()</span>
+<span class="sd">        &gt;&gt;&gt; bib.strings[&quot;pra&quot;] = &quot;Phys. Rev. A&quot;</span>
+<span class="sd">        &gt;&gt;&gt; keys = bib.import_bibtex(&#39;&#39;&#39;</span>
+<span class="sd">        ... @article{PhysRevA.89.032334,</span>
+<span class="sd">        ...     Author = {Goerz, Michael and Reich, Daniel M.},</span>
+<span class="sd">        ...     Title = {Optimal control theory for a quantum gate},</span>
+<span class="sd">        ...     Journal = {Phys. Rev. A},</span>
+<span class="sd">        ...     Year = {2014},</span>
+<span class="sd">        ...     Doi = {10.1103/PhysRevA.89.032334},</span>
+<span class="sd">        ...     Pages = {032334},</span>
+<span class="sd">        ...     Volume = {89},</span>
+<span class="sd">        ... }&#39;&#39;&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; keys</span>
+<span class="sd">        [&#39;GoerzPRA2014&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; bib[&quot;GoerzPRA2014&quot;][&quot;journal&quot;]</span>
+<span class="sd">        &#39;pra&#39;</span>
+<span class="sd">        &gt;&gt;&gt; bib[&quot;GoerzPRA2014&quot;][&quot;doi&quot;]</span>
+<span class="sd">        &#39;10.1103/physreva.89.032334&#39;</span>
+
+<span class="sd">        ```</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">import_entries</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">keep_keys</span><span class="o">=</span><span class="n">keep_keys</span><span class="p">,</span> <span class="n">fix_uppercase</span><span class="o">=</span><span class="n">fix_uppercase</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Library.add">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fix_uppercase</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch bibliographic data for `query` from the appropriate</span>
+<span class="sd">        online source and add it to the library as a new, sanitized</span>
+<span class="sd">        entry (via {meth}`import_bibtex`, see there for the</span>
+<span class="sd">        normalization applied and for `fix_uppercase`).</span>
+
+<span class="sd">        `query` is one of:</span>
+
+<span class="sd">        * an arXiv identifier (`2205.15044`, `quant-ph/0106057`), or</span>
+<span class="sd">          any string containing `arXiv` followed by an identifier</span>
+<span class="sd">          (e.g. an `https://arxiv.org/abs/...` URL) -- fetched from</span>
+<span class="sd">          the [arXiv API](https://info.arxiv.org/help/api/), added as</span>
+<span class="sd">          an `@article` preprint with a literal `arXiv:...` journal;</span>
+<span class="sd">        * a DOI (`10.1103/PhysRevA.89.032334`), or a URL containing</span>
+<span class="sd">          one (e.g. `https://doi.org/...` or most publisher article</span>
+<span class="sd">          pages) -- fetched from</span>
+<span class="sd">          [Crossref](https://www.crossref.org);</span>
+<span class="sd">        * any other free-form text (anything containing a space) --</span>
+<span class="sd">          a Crossref bibliographic search, using the best match</span>
+<span class="sd">          (typically: a paper&#39;s title, or a formatted citation).</span>
+
+<span class="sd">        An arXiv identifier wins over a DOI when `query` contains</span>
+<span class="sd">        both. Crossref works of a type with no BibTeX equivalent are</span>
+<span class="sd">        retrieved as publisher BibTeX via DOI content negotiation and</span>
+<span class="sd">        imported as-is (still sanitized).</span>
+
+<span class="sd">        Returns the citation key of the added entry. Raises</span>
+<span class="sd">        {exc}`ValueError` if the data cannot be fetched (network</span>
+<span class="sd">        errors, no match for the query) or fails import validation</span>
+<span class="sd">        (e.g. its `doi`/`eprint` is already in the library). Like any</span>
+<span class="sd">        other modification, the new entry only becomes permanent with</span>
+<span class="sd">        {meth}`save`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Imported lazily: the fetch module pulls in the network</span>
+        <span class="c1"># dependencies (habanero/arxiv/httpx), which nothing else in</span>
+        <span class="c1"># the package needs.</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch</span>  <span class="c1"># pylint: disable=import-outside-toplevel</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">import_bibtex</span><span class="p">(</span>
+            <span class="n">fetch</span><span class="o">.</span><span class="n">fetch_bibtex</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="n">fix_uppercase</span><span class="o">=</span><span class="n">fix_uppercase</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
 </div>
 
 </pre></div>
@@ -2387,7 +2550,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 13, 2026.
+      <span class="lastupdated">Last updated on Jul 14, 2026.
       </span></p>
   </div>
 

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Package API &mdash; BibDeskParser 0.2.0 documentation</title>
+  <title>Package API &mdash; BibDeskParser 0.2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../_static/documentation_options.js?v=37f418d5"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.2.0
+    v0.2.1
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -912,6 +912,128 @@ the same edit may already have been applied to <code class="docutils literal not
 when the exception is raised.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="bibdeskparser.Library.import_bibtex">
+<span class="sig-name descname"><span class="pre">import_bibtex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_uppercase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.import_bibtex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.import_bibtex" title="Link to this definition"></a></dt>
+<dd><p>Import the entries of the BibTeX snippet <code class="docutils literal notranslate"><span class="pre">text</span></code>, sanitized
+and normalized, into the library.</p>
+<p>Every entry of <code class="docutils literal notranslate"><span class="pre">text</span></code> (which may also contain <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code>
+definitions and comments, e.g. a complete <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file or the
+output of <a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a>) is cleaned up as follows:</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">journal</span></code> is replaced by an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference:
+a macro already in <a class="reference internal" href="#bibdeskparser.Library.strings" title="bibdeskparser.Library.strings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strings</span></code></a> (matched by value), a
+macro configured in the <code class="docutils literal notranslate"><span class="pre">[journal_macros]</span></code> table of the
+<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a> (its <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definition is
+added to the library as needed), or – with a <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>
+– a newly created macro named by the journal’s lowercased
+initials (honoring <code class="docutils literal notranslate"><span class="pre">[initials.journal]</span></code> exceptions). A
+literal <code class="docutils literal notranslate"><span class="pre">arXiv:...</span></code> pseudo-journal is the one exception: it
+marks an arXiv preprint and stays literal, and the entry’s
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code> and <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> fields are derived from it if
+missing.</p></li>
+<li><p>Capitalized words inside the <code class="docutils literal notranslate"><span class="pre">title</span></code> (assumed to be proper
+nouns) are wrapped in braces to protect their
+capitalization, unless the title looks like it is already
+in (English) title case; any of the configured
+<code class="docutils literal notranslate"><span class="pre">protected_words</span></code> are brace-protected in every title.</p></li>
+<li><p>A <code class="docutils literal notranslate"><span class="pre">doi</span></code> is normalized to its bare, lowercase form (no
+<code class="docutils literal notranslate"><span class="pre">https://doi.org/</span></code> or <code class="docutils literal notranslate"><span class="pre">doi:</span></code> prefix).</p></li>
+<li><p>For an <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code>, a <code class="docutils literal notranslate"><span class="pre">pages</span></code> range collapses to its first
+page, the fields <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">day</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>,
+<code class="docutils literal notranslate"><span class="pre">numpages</span></code>, and <code class="docutils literal notranslate"><span class="pre">issn</span></code> are dropped, and a <code class="docutils literal notranslate"><span class="pre">url</span></code> is dropped
+when there is a <code class="docutils literal notranslate"><span class="pre">doi</span></code>. For other entry types, page ranges
+are kept, with the dash normalized to <code class="docutils literal notranslate"><span class="pre">--</span></code>.</p></li>
+<li><p>Every entry gets a newly generated citation key (unless
+<code class="docutils literal notranslate"><span class="pre">keep_keys</span></code> is given): from the <code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> format of the
+<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a> if one is set, else
+<code class="docutils literal notranslate"><span class="pre">%p1%c{journal}0%Y%u0</span></code> for an article (e.g.
+<code class="docutils literal notranslate"><span class="pre">GoerzPRA2014</span></code>), <code class="docutils literal notranslate"><span class="pre">%p1%c{booktitle}0%Y%u0</span></code> for
+inproceedings/incollection, and <code class="docutils literal notranslate"><span class="pre">%p1%Y%u0</span></code> for any other
+type. ArXiv preprints always use <code class="docutils literal notranslate"><span class="pre">%p1%f{eprint}[.]</span></code> (e.g.
+<code class="docutils literal notranslate"><span class="pre">Goerz2205.15044</span></code>). An incoming key that already matches
+the format is kept.</p></li>
+<li><p>TeX-encoded accents (<code class="docutils literal notranslate"><span class="pre">Schr{\&quot;o}dinger</span></code>) are decoded to
+Unicode, exactly as if the values had been read from a
+<code class="docutils literal notranslate"><span class="pre">.bib</span></code> file (saving re-encodes them).</p></li>
+</ul>
+<p>With <code class="docutils literal notranslate"><span class="pre">fix_uppercase=True</span></code>, all-uppercase <code class="docutils literal notranslate"><span class="pre">author</span></code>/<code class="docutils literal notranslate"><span class="pre">editor</span></code>
+names and <code class="docutils literal notranslate"><span class="pre">title</span></code> values (as found in some publisher data)
+are down-cased to name case/sentence case first; the result
+may need manual correction. <code class="docutils literal notranslate"><span class="pre">keep_keys=True</span></code> keeps the
+incoming citation keys instead of generating new ones.</p>
+<p>An entry whose <code class="docutils literal notranslate"><span class="pre">doi</span></code> or <code class="docutils literal notranslate"><span class="pre">eprint</span></code> is already in the library is
+rejected. <code class="docutils literal notranslate"><span class="pre">keywords</span></code>, <code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code>, and <code class="docutils literal notranslate"><span class="pre">date-added</span></code> fields
+are preserved; <code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> fields must hold plain file
+paths (as written by <a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a>) that exist relative to
+the library’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code> directory, and become regular file
+attachments. Inappropriate fields for an entry’s type are
+kept, with a <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code> (see the
+<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a>).</p>
+<p>Returns the list of citation keys of the added entries, in
+snippet order. Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a>, listing <em>all</em>
+problems, if anything about <code class="docutils literal notranslate"><span class="pre">text</span></code> is not acceptable – the
+library is guaranteed unmodified in that case. Like any other
+modification, an import only becomes permanent with
+<a class="reference internal" href="#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Library</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">&quot;pra&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Phys. Rev. A&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">keys</span> <span class="o">=</span> <span class="n">bib</span><span class="o">.</span><span class="n">import_bibtex</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="gp">... </span><span class="s1">@article{PhysRevA.89.032334,</span>
+<span class="gp">... </span><span class="s1">    Author = {Goerz, Michael and Reich, Daniel M.},</span>
+<span class="gp">... </span><span class="s1">    Title = {Optimal control theory for a quantum gate},</span>
+<span class="gp">... </span><span class="s1">    Journal = {Phys. Rev. A},</span>
+<span class="gp">... </span><span class="s1">    Year = </span><span class="si">{2014}</span><span class="s1">,</span>
+<span class="gp">... </span><span class="s1">    Doi = {10.1103/PhysRevA.89.032334},</span>
+<span class="gp">... </span><span class="s1">    Pages = </span><span class="si">{032334}</span><span class="s1">,</span>
+<span class="gp">... </span><span class="s1">    Volume = </span><span class="si">{89}</span><span class="s1">,</span>
+<span class="gp">... </span><span class="s1">}&#39;&#39;&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">keys</span>
+<span class="go">[&#39;GoerzPRA2014&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">][</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
+<span class="go">&#39;pra&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">][</span><span class="s2">&quot;doi&quot;</span><span class="p">]</span>
+<span class="go">&#39;10.1103/physreva.89.032334&#39;</span>
+
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bibdeskparser.Library.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_uppercase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.add" title="Link to this definition"></a></dt>
+<dd><p>Fetch bibliographic data for <code class="docutils literal notranslate"><span class="pre">query</span></code> from the appropriate
+online source and add it to the library as a new, sanitized
+entry (via <a class="reference internal" href="#bibdeskparser.Library.import_bibtex" title="bibdeskparser.Library.import_bibtex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">import_bibtex()</span></code></a>, see there for the
+normalization applied and for <code class="docutils literal notranslate"><span class="pre">fix_uppercase</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">query</span></code> is one of:</p>
+<ul class="simple">
+<li><p>an arXiv identifier (<code class="docutils literal notranslate"><span class="pre">2205.15044</span></code>, <code class="docutils literal notranslate"><span class="pre">quant-ph/0106057</span></code>), or
+any string containing <code class="docutils literal notranslate"><span class="pre">arXiv</span></code> followed by an identifier
+(e.g. an <code class="docutils literal notranslate"><span class="pre">https://arxiv.org/abs/...</span></code> URL) – fetched from
+the <a class="reference external" href="https://info.arxiv.org/help/api/">arXiv API</a>, added as
+an <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code> preprint with a literal <code class="docutils literal notranslate"><span class="pre">arXiv:...</span></code> journal;</p></li>
+<li><p>a DOI (<code class="docutils literal notranslate"><span class="pre">10.1103/PhysRevA.89.032334</span></code>), or a URL containing
+one (e.g. <code class="docutils literal notranslate"><span class="pre">https://doi.org/...</span></code> or most publisher article
+pages) – fetched from
+<a class="reference external" href="https://www.crossref.org">Crossref</a>;</p></li>
+<li><p>any other free-form text (anything containing a space) –
+a Crossref bibliographic search, using the best match
+(typically: a paper’s title, or a formatted citation).</p></li>
+</ul>
+<p>An arXiv identifier wins over a DOI when <code class="docutils literal notranslate"><span class="pre">query</span></code> contains
+both. Crossref works of a type with no BibTeX equivalent are
+retrieved as publisher BibTeX via DOI content negotiation and
+imported as-is (still sanitized).</p>
+<p>Returns the citation key of the added entry. Raises
+<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> if the data cannot be fetched (network
+errors, no match for the query) or fails import validation
+(e.g. its <code class="docutils literal notranslate"><span class="pre">doi</span></code>/<code class="docutils literal notranslate"><span class="pre">eprint</span></code> is already in the library). Like any
+other modification, the new entry only becomes permanent with
+<a class="reference internal" href="#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1244,7 +1366,7 @@ it now would silently discard those changes. Pass <code class="docutils literal 
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 13, 2026.
+      <span class="lastupdated">Last updated on Jul 14, 2026.
       </span></p>
   </div>
 

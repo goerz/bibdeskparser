@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How-to Guides &mdash; BibDeskParser 0.2.0 documentation</title>
+  <title>How-to Guides &mdash; BibDeskParser 0.2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/documentation_options.js?v=37f418d5"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.2.0
+    v0.2.1
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -67,6 +67,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#how-to-search-a-library">How to search a library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-find-and-resolve-duplicate-citation-keys">How to find and resolve duplicate citation keys</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-automatically-generate-citation-keys">How to automatically generate citation keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-add-a-reference-from-a-doi-arxiv-id-or-search-query">How to add a reference from a DOI, arXiv ID, or search query</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-import-bibtex-entries-from-a-publisher-or-another-library">How to import BibTeX entries from a publisher or another library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-edit-an-entry-in-your-text-editor">How to edit an entry in your text editor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-render-a-bibliography-in-a-specific-citation-format">How to render a bibliography in a specific citation format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-give-an-ai-coding-agent-access-to-your-library">How to give an AI coding agent access to your library</a></li>
@@ -622,6 +624,62 @@ format:</p>
 <p>On the command line, the same is available as <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span> <span class="pre">rekey</span> <span class="pre">BIBFILE</span> <span class="pre">OLD_KEY</span></code> (see the <a class="reference internal" href="cli.html#cli-rekey"><span class="std std-ref">CLI reference</span></a>), which
 prints the generated key, and as the read-only <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span> <span class="pre">eval_format_spec</span> <span class="pre">BIBFILE</span> <span class="pre">KEY</span> <span class="pre">[FORMAT]</span></code>.</p>
 </section>
+<section id="how-to-add-a-reference-from-a-doi-arxiv-id-or-search-query">
+<h2>How to add a reference from a DOI, arXiv ID, or search query<a class="headerlink" href="#how-to-add-a-reference-from-a-doi-arxiv-id-or-search-query" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add" title="bibdeskparser.library.Library.add"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add()</span></code></a> fetches the metadata
+from the appropriate online source (Crossref for a DOI or free-text
+search, the arXiv API for an arXiv identifier), sanitizes it, and
+adds a new entry:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bib</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;10.1103/PhysRevA.89.032334&quot;</span><span class="p">)</span>        <span class="c1"># a DOI</span>
+<span class="n">bib</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;https://arxiv.org/abs/2205.15044&quot;</span><span class="p">)</span>  <span class="c1"># an arXiv preprint</span>
+<span class="n">bib</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;pulser open-source pulse sequences&quot;</span><span class="p">)</span>  <span class="c1"># best search match</span>
+<span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>On the command line (<a class="reference internal" href="cli.html#cli-add"><span class="std std-ref">CLI reference</span></a>):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add<span class="w"> </span>library.bib<span class="w"> </span><span class="m">10</span>.1103/PhysRevA.89.032334
+<span class="go">MuellerPRA2014</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>add<span class="w"> </span>library.bib<span class="w"> </span>--dry-run<span class="w"> </span>some<span class="w"> </span>paper<span class="w"> </span>title<span class="w">  </span><span class="c1"># no write</span>
+</pre></div>
+</div>
+<p>The new entry follows the library’s conventions automatically: the
+journal is stored as an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro (see the
+<a class="reference internal" href="config.html#config-journal-macros"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[journal_macros]</span></code> configuration</span></a>), the title
+is brace-protected, and the citation key is generated (e.g.
+<code class="docutils literal notranslate"><span class="pre">MuellerPRA2014</span></code>, or <code class="docutils literal notranslate"><span class="pre">Goerz2205.15044</span></code> for a preprint). An entry
+whose DOI or arXiv eprint is already in the library is rejected, so
+re-adding the same paper is safe.</p>
+</section>
+<section id="how-to-import-bibtex-entries-from-a-publisher-or-another-library">
+<h2>How to import BibTeX entries from a publisher or another library<a class="headerlink" href="#how-to-import-bibtex-entries-from-a-publisher-or-another-library" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.import_bibtex" title="bibdeskparser.library.Library.import_bibtex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">import_bibtex()</span></code></a> runs any
+BibTeX snippet – a publisher’s “export citation” download, or
+entries from another <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file – through the same sanitization and
+adds the entries:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">bib</span><span class="o">.</span><span class="n">import_bibtex</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>   <span class="c1"># text: BibTeX for one or more entries</span>
+<span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>On the command line, <code class="docutils literal notranslate"><span class="pre">import</span></code> reads from a file, stdin, or a URL
+(<a class="reference internal" href="cli.html#cli-import"><span class="std std-ref">CLI reference</span></a>):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>library.bib<span class="w"> </span>entries.bib
+<span class="gp">$ </span>pbpaste<span class="w"> </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>library.bib<span class="w"> </span>--stdin
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>library.bib<span class="w"> </span>--url<span class="w"> </span>https://example.com/refs.bib
+</pre></div>
+</div>
+<p>Since <a class="reference internal" href="cli.html#cli-export"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">export</span></code></span></a> writes exactly the kind of snippet that
+<code class="docutils literal notranslate"><span class="pre">import</span></code> accepts (including the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions), this also
+moves entries between libraries:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>library.bib<span class="w"> </span>GoerzPRA2014<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>other.bib<span class="w"> </span>--stdin
+<span class="go">GoerzPRA2014</span>
+</pre></div>
+</div>
+<p>If anything about a snippet is not acceptable (an undefined macro, an
+entry whose DOI is already present, …), the whole import is
+rejected with a list of all problems and the library is left
+untouched.</p>
+</section>
 <section id="how-to-edit-an-entry-in-your-text-editor">
 <h2>How to edit an entry in your text editor<a class="headerlink" href="#how-to-edit-an-entry-in-your-text-editor" title="Link to this heading"></a></h2>
 <p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.edit" title="bibdeskparser.library.Library.edit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">edit()</span></code></a> opens one or more
@@ -798,7 +856,7 @@ file:</p>
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 13, 2026.
+      <span class="lastupdated">Last updated on Jul 14, 2026.
       </span></p>
   </div>
 

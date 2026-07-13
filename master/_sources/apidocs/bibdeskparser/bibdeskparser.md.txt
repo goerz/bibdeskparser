@@ -302,6 +302,24 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
+````{py:method} import_bibtex(text, *, keep_keys=False, fix_uppercase=False)
+:canonical: bibdeskparser.library.Library.import_bibtex
+
+```{autodoc2-docstring} bibdeskparser.library.Library.import_bibtex
+:parser: myst
+```
+
+````
+
+````{py:method} add(query, *, fix_uppercase=False)
+:canonical: bibdeskparser.library.Library.add
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add
+:parser: myst
+```
+
+````
+
 `````
 
 `````{py:class} Entry(entry_type, key, fields=None)

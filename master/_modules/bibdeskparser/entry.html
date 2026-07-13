@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.entry &mdash; BibDeskParser 0.2.0 documentation</title>
+  <title>bibdeskparser.entry &mdash; BibDeskParser 0.2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../_static/documentation_options.js?v=37f418d5"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.2.0
+    v0.2.1
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -421,11 +421,12 @@
                     <span class="sa">f</span><span class="s2">&quot;invalid </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> field: not parseable as names: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">MacroString</span><span class="p">):</span>
-            <span class="c1"># Force a bare macro reference; validate the name (raising a</span>
-            <span class="c1"># clear ValueError if invalid) but do not warn.</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_valid_macro_name</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-                <span class="n">normalize_macro_name</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>  <span class="c1"># raises ValueError</span>
-            <span class="n">rendered</span> <span class="o">=</span> <span class="n">text</span>
+            <span class="c1"># Force a bare macro reference, normalized to BibDesk&#39;s</span>
+            <span class="c1"># canonical (lowercase) form -- matching how `@string`</span>
+            <span class="c1"># definitions are stored (`Library.strings`), and so that</span>
+            <span class="c1"># the value round-trips back as a MacroString on read.</span>
+            <span class="c1"># Raises a clear ValueError for an invalid name.</span>
+            <span class="n">rendered</span> <span class="o">=</span> <span class="n">normalize_macro_name</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ValueString</span><span class="p">):</span>
             <span class="c1"># Force a literal braced value.</span>
             <span class="n">rendered</span> <span class="o">=</span> <span class="s2">&quot;{&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="n">text</span> <span class="k">if</span> <span class="n">skip_texify</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">else</span> <span class="n">texify</span><span class="p">(</span><span class="n">text</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
@@ -797,7 +798,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 13, 2026.
+      <span class="lastupdated">Last updated on Jul 14, 2026.
       </span></p>
   </div>
 
