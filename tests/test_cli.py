@@ -341,6 +341,38 @@ def test_eval_format_spec_without_format_fails(runner, bibfile):
     assert "no auto-key format" in result.stderr
 
 
+def test_eval_format_spec_filename(runner, bibfile):
+    """With `--filename`, `eval_format_spec` evaluates the format as a
+    file name without touching the filesystem. The file need not
+    exist; only its extension feeds the format here."""
+    before = bibfile.read_text(encoding="utf-8")
+    result = _run(
+        runner,
+        "eval_format_spec",
+        bibfile,
+        "GoerzJPB2011",
+        "%f{Cite Key}%u0%e",
+        "--filename",
+        "no-such-file.pdf",
+    )
+    assert result.output.strip() == "GoerzJPB2011.pdf"
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_eval_format_spec_empty_filename(runner, bibfile):
+    """An empty `--filename` still selects the file-name dialect."""
+    result = _run(
+        runner,
+        "eval_format_spec",
+        bibfile,
+        "GoerzJPB2011",
+        "%f{Cite Key}%u0",
+        "--filename",
+        "",
+    )
+    assert result.output.strip() == "GoerzJPB2011"
+
+
 # -- mutating commands -------------------------------------------------- #
 
 
@@ -518,6 +550,86 @@ def test_add_file_missing_fails(runner, bibfile):
     assert "Traceback" not in result.stderr
 
 
+def test_add_file_auto_from_config(runner, bibfile, tmp_path):
+    """With `file_automatically = true`, `add_file` moves the file
+    and prints the stored path."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        "[auto_file]\n"
+        'format_spec = "%f{Cite Key}%u0%e"\n'
+        "file_automatically = true\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "extra.pdf").write_bytes(b"%PDF-1.4 fake")
+    result = _run(runner, "add_file", bibfile, "GoerzDiploma2010", "extra.pdf")
+    assert result.output.strip() == "GoerzDiploma2010.pdf"
+    assert _load(bibfile)["GoerzDiploma2010"].files == ["GoerzDiploma2010.pdf"]
+    assert (tmp_path / "GoerzDiploma2010.pdf").exists()
+    assert not (tmp_path / "extra.pdf").exists()
+
+
+def test_add_file_no_auto_file(runner, bibfile, tmp_path):
+    """`--no-auto-file` forces a plain attach despite the config."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        "[auto_file]\n"
+        'format_spec = "%f{Cite Key}%u0%e"\n'
+        "file_automatically = true\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "extra.pdf").write_bytes(b"%PDF-1.4 fake")
+    result = _run(
+        runner,
+        "add_file",
+        bibfile,
+        "GoerzDiploma2010",
+        "extra.pdf",
+        "--no-auto-file",
+    )
+    assert result.output == ""
+    assert _load(bibfile)["GoerzDiploma2010"].files == ["extra.pdf"]
+    assert (tmp_path / "extra.pdf").exists()
+
+
+def test_add_file_no_auto_file_with_location_fails(runner, bibfile, tmp_path):
+    (tmp_path / "extra.pdf").write_bytes(b"%PDF-1.4 fake")
+    result = runner.invoke(
+        main,
+        [
+            "add_file",
+            str(bibfile),
+            "GoerzDiploma2010",
+            "extra.pdf",
+            "--no-auto-file",
+            "--location",
+            "Papers",
+        ],
+    )
+    assert result.exit_code == 2
+    assert "--no-auto-file" in result.stderr
+
+
+def test_add_file_location_option(runner, bibfile, tmp_path):
+    """Explicit `--format-spec`/`--location` auto-file without any
+    configuration."""
+    (tmp_path / "extra.pdf").write_bytes(b"%PDF-1.4 fake")
+    result = _run(
+        runner,
+        "add_file",
+        bibfile,
+        "GoerzDiploma2010",
+        "extra.pdf",
+        "--format-spec",
+        "%f{Cite Key}%u0%e",
+        "--location",
+        "Papers",
+    )
+    assert result.output.strip() == "Papers/GoerzDiploma2010.pdf"
+    assert _load(bibfile)["GoerzDiploma2010"].files == [
+        "Papers/GoerzDiploma2010.pdf"
+    ]
+    assert (tmp_path / "Papers" / "GoerzDiploma2010.pdf").exists()
+    assert not (tmp_path / "extra.pdf").exists()
+
+
 def test_replace_file(runner, bibfile, tmp_path):
     (tmp_path / "new.pdf").write_bytes(b"%PDF-1.4 fake")
     _run(
@@ -564,6 +676,57 @@ def test_rename_file(runner, bibfile, tmp_path):
     assert _load(bibfile)["GoerzJPB2011"].files == ["renamed.pdf"]
     assert (tmp_path / "renamed.pdf").exists()
     assert not (tmp_path / "GoerzJPB11.pdf").exists()
+
+
+def test_rename_file_auto_from_config(runner, bibfile, tmp_path):
+    """`rename_file` without NEW auto-files per the `[auto_file]`
+    table and prints the new library-relative path."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        '[auto_file]\nformat_spec = "%f{Cite Key}%u0%e"\n',
+        encoding="utf-8",
+    )
+    result = _run(
+        runner, "rename_file", bibfile, "GoerzJPB2011", "GoerzJPB11.pdf"
+    )
+    assert result.output.strip() == "GoerzJPB2011.pdf"
+    assert _load(bibfile)["GoerzJPB2011"].files == ["GoerzJPB2011.pdf"]
+    assert (tmp_path / "GoerzJPB2011.pdf").exists()
+    assert not (tmp_path / "GoerzJPB11.pdf").exists()
+
+
+def test_rename_file_options(runner, bibfile, tmp_path):
+    """Explicit `--location`/`--format-spec` override the config."""
+    result = _run(
+        runner,
+        "rename_file",
+        bibfile,
+        "GoerzJPB2011",
+        "GoerzJPB11.pdf",
+        "--format-spec",
+        "%f{Cite Key}%u0%e",
+        "--location",
+        "Papers",
+    )
+    assert result.output.strip() == "Papers/GoerzJPB2011.pdf"
+    assert _load(bibfile)["GoerzJPB2011"].files == ["Papers/GoerzJPB2011.pdf"]
+    assert (tmp_path / "Papers" / "GoerzJPB2011.pdf").exists()
+
+
+def test_rename_file_new_with_format_spec_fails(runner, bibfile):
+    result = runner.invoke(
+        main,
+        [
+            "rename_file",
+            str(bibfile),
+            "GoerzJPB2011",
+            "GoerzJPB11.pdf",
+            "new.pdf",
+            "--format-spec",
+            "%f{Cite Key}%u0%e",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "not both" in result.stderr
 
 
 def test_add_url(runner, bibfile):
@@ -937,3 +1100,6 @@ def test_add_file_help(runner):
     result = _run(runner, "add_file", "--help")
     assert "[BIBFILE]" in result.output
     assert "--no-check-exists" in result.output
+    assert "--no-auto-file" in result.output
+    assert "--format-spec" in result.output
+    assert "--location" in result.output

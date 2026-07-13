@@ -1,6 +1,7 @@
 """Tests for `bibdeskparser.config` and the config-file feature."""
 
 import warnings
+from pathlib import Path
 
 import pytest
 
@@ -393,6 +394,118 @@ def test_auto_key_option_validation(tmp_path, monkeypatch):
         config.active.load(bib_dir=tmp_path)
     _write(tmp_path, '[auto_key]\nformat_spec = "%a1"\nnonsense = 1\n')
     with pytest.warns(UserWarning, match=r"unknown key\(s\) in \[auto_key\]"):
+        config.active.load(bib_dir=tmp_path)
+
+
+# -- auto_file ---------------------------------------------------------- #
+
+
+def test_auto_file_defaults(tmp_path, monkeypatch):
+    """Without an `[auto_file]` table, no format is configured and the
+    other settings are at their defaults."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "verify_types = false\n")
+    config.active.load(bib_dir=tmp_path)
+    auto_file = config.active.auto_file
+    assert auto_file.format_spec is None
+    assert auto_file.location == Path(".")
+    assert auto_file.lowercase is False
+    assert auto_file.clean == "tex"
+    assert auto_file.file_automatically is False
+
+
+def test_auto_file_settings(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(
+        tmp_path,
+        "[auto_file]\n"
+        'format_spec = "%f{Cite Key}%u0%e"\n'
+        'location = "Papers"\n'
+        "lowercase = true\n"
+        'clean = "braces"\n'
+        "file_automatically = true\n",
+    )
+    config.active.load(bib_dir=tmp_path)
+    auto_file = config.active.auto_file
+    assert auto_file.format_spec == "%f{Cite Key}%u0%e"
+    assert auto_file.location == Path("Papers")
+    assert auto_file.lowercase is True
+    assert auto_file.clean == "braces"
+    assert auto_file.file_automatically is True
+    config.active.reset()
+    assert config.active.auto_file.format_spec is None
+    assert config.active.auto_file.file_automatically is False
+
+
+def test_auto_file_per_type_format_spec(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(
+        tmp_path,
+        "[auto_file.format_spec]\n"
+        '"" = "%l%u0%e"\n'
+        'Article = "%f{Cite Key}%u0%e"\n',
+    )
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.auto_file.format_spec == {
+        "": "%l%u0%e",
+        "article": "%f{Cite Key}%u0%e",
+    }
+
+
+def test_auto_file_format_spec_required(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, '[auto_file]\nlocation = "."\n')
+    with pytest.raises(ValueError, match="'format_spec'"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_auto_file_format_spec_requires_unique(tmp_path, monkeypatch):
+    """A file-name format without a `%u`/`%U`/`%n` specifier is
+    rejected at load time."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, '[auto_file]\nformat_spec = "%f{Cite Key}%e"\n')
+    with pytest.raises(ValueError, match="unique specifier"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_auto_file_location_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    base = '[auto_file]\nformat_spec = "%l%u0%e"\n'
+    _write(tmp_path, base + 'location = ""\n')
+    with pytest.raises(ValueError, match="location"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, base + "location = 3\n")
+    with pytest.raises(ValueError, match="location"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_auto_file_location_expansion(tmp_path, monkeypatch):
+    """`~` and `$VAR` are expanded in the auto-file location."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    monkeypatch.setenv("PAPERS_DIR", str(tmp_path / "papers"))
+    base = '[auto_file]\nformat_spec = "%l%u0%e"\n'
+    _write(tmp_path, base + 'location = "$PAPERS_DIR"\n')
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.auto_file.location == tmp_path / "papers"
+    _write(tmp_path, base + 'location = "~/Papers"\n')
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.auto_file.location == Path.home() / "Papers"
+
+
+def test_auto_file_option_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    base = '[auto_file]\nformat_spec = "%l%u0%e"\n'
+    _write(tmp_path, base + 'lowercase = "yes"\n')
+    with pytest.raises(ValueError, match="lowercase"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, base + 'file_automatically = "yes"\n')
+    with pytest.raises(ValueError, match="file_automatically"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, base + 'clean = "all"\n')
+    with pytest.raises(ValueError, match="clean"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, base + "nonsense = 1\n")
+    with pytest.warns(UserWarning, match=r"unknown key\(s\) in \[auto_file\]"):
         config.active.load(bib_dir=tmp_path)
 
 

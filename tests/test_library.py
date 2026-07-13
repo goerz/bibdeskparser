@@ -1597,6 +1597,262 @@ def test_attachments_roundtrip_through_save(tmp_path):
     assert reloaded["K1"].files == ["a.pdf"]
 
 
+# -- auto-file (generated attachment file names) ---------------------------#
+
+
+AUTO_FILE_FORMAT = "%f{Cite Key}%u0%e"
+
+
+@pytest.fixture(name="auto_file_config")
+def fixture_auto_file_config(tmp_path):
+    """Load a config file with an `[auto_file]` format (but without
+    `file_automatically`), resetting the process-global configuration
+    afterwards."""
+    import bibdeskparser.config as config
+
+    toml = tmp_path / "bibdeskparser.toml"
+    toml.write_text(
+        f'[auto_file]\nformat_spec = "{AUTO_FILE_FORMAT}"\n',
+        encoding="utf-8",
+    )
+    config.active.config_file = toml
+    config.active.load()
+    yield config
+    config.active.reset()
+
+
+def test_add_file_returns_relative_path(tmp_path):
+    """A plain `add_file` returns the stored library-relative path."""
+    bib = _file_bib(tmp_path, files=())
+    (tmp_path / "a.pdf").write_bytes(b"%PDF-1.4 fake")
+    with _quiet_bookmarks():
+        assert bib.add_file("K1", "a.pdf") == "a.pdf"
+
+
+def test_add_file_auto_files_with_explicit_args(tmp_path):
+    """With `format_spec`/`auto_file_location`, `add_file` moves the
+    file to its generated name instead of attaching it as-is."""
+    bib = _file_bib(tmp_path, files=())
+    (tmp_path / "download.pdf").write_bytes(b"%PDF-1.4 fake")
+    with _quiet_bookmarks():
+        rel = bib.add_file(
+            "K1",
+            "download.pdf",
+            format_spec=AUTO_FILE_FORMAT,
+            auto_file_location=".",
+        )
+    assert rel == "K1.pdf"
+    assert bib["K1"].files == ["K1.pdf"]
+    assert not (tmp_path / "download.pdf").exists()
+    assert (tmp_path / "K1.pdf").exists()
+
+
+def test_add_file_format_spec_alone_triggers_auto_filing(tmp_path):
+    """`format_spec` alone auto-files, with the location from the
+    configuration (default: the library directory)."""
+    bib = _file_bib(tmp_path, files=())
+    (tmp_path / "download.pdf").write_bytes(b"%PDF-1.4 fake")
+    with _quiet_bookmarks():
+        rel = bib.add_file("K1", "download.pdf", format_spec=AUTO_FILE_FORMAT)
+    assert rel == "K1.pdf"
+    assert not (tmp_path / "download.pdf").exists()
+
+
+def test_add_file_files_automatically_from_config(tmp_path):
+    """With `file_automatically = true` in the `[auto_file]` table, a
+    plain `add_file` auto-files; `auto_file_location=""` opts out."""
+    import bibdeskparser.config as config
+
+    bib = _file_bib(tmp_path, files=())
+    toml = tmp_path / "bibdeskparser.toml"
+    toml.write_text(
+        f'[auto_file]\nformat_spec = "{AUTO_FILE_FORMAT}"\n'
+        "file_automatically = true\n",
+        encoding="utf-8",
+    )
+    try:
+        config.active.load(bib_dir=tmp_path)
+        (tmp_path / "download.pdf").write_bytes(b"%PDF-1.4 fake")
+        with _quiet_bookmarks():
+            assert bib.add_file("K1", "download.pdf") == "K1.pdf"
+        assert not (tmp_path / "download.pdf").exists()
+        (tmp_path / "plain.pdf").write_bytes(b"%PDF-1.4 fake plain")
+        with _quiet_bookmarks():
+            rel = bib.add_file("K1", "plain.pdf", auto_file_location="")
+        assert rel == "plain.pdf"
+        assert (tmp_path / "plain.pdf").exists()
+        assert bib["K1"].files == ["K1.pdf", "plain.pdf"]
+    finally:
+        config.active.reset()
+
+
+def test_add_file_auto_filing_errors(tmp_path):
+    """Contradictory or unusable auto-filing arguments raise
+    `ValueError`, leaving the entry (and the file) unchanged."""
+    bib = _file_bib(tmp_path, files=())
+    (tmp_path / "d.pdf").write_bytes(b"%PDF-1.4 fake")
+    with pytest.raises(ValueError, match="no effect"):
+        bib.add_file(
+            "K1",
+            "d.pdf",
+            format_spec=AUTO_FILE_FORMAT,
+            auto_file_location="",
+        )
+    with pytest.raises(ValueError, match="check_that_file_exists"):
+        bib.add_file(
+            "K1",
+            "d.pdf",
+            format_spec=AUTO_FILE_FORMAT,
+            auto_file_location=".",
+            check_that_file_exists=False,
+        )
+    with pytest.raises(ValueError, match=r"\[auto_file\]"):
+        bib.add_file("K1", "d.pdf", auto_file_location=".")
+    # K1 has no author/year, which "%a1%Y%u0%e" requires
+    with pytest.raises(ValueError, match="missing"):
+        bib.add_file(
+            "K1",
+            "d.pdf",
+            format_spec="%a1%Y%u0%e",
+            auto_file_location=".",
+        )
+    assert bib["K1"].files == []
+    assert (tmp_path / "d.pdf").exists()
+
+
+def test_rename_file_auto(tmp_path, auto_file_config):
+    """Without `new_filename`, `rename_file` moves the file to the
+    generated name; re-filing an already-conforming file is a no-op."""
+    bib = _file_bib(tmp_path, files=("a.pdf",))
+    with _quiet_bookmarks():
+        assert bib.rename_file("K1", "a.pdf") == "K1.pdf"
+    assert bib["K1"].files == ["K1.pdf"]
+    assert not (tmp_path / "a.pdf").exists()
+    assert (tmp_path / "K1.pdf").exists()
+    mtime = (tmp_path / "K1.pdf").stat().st_mtime_ns
+    assert bib.rename_file("K1", "K1.pdf") == "K1.pdf"
+    assert bib["K1"].files == ["K1.pdf"]
+    assert (tmp_path / "K1.pdf").stat().st_mtime_ns == mtime
+    assert sorted(p.name for p in tmp_path.glob("*.pdf")) == ["K1.pdf"]
+
+
+def test_rename_file_auto_collision_bumps_unique(tmp_path, auto_file_config):
+    """A file already at the generated name bumps the `%u0` unique
+    characters of the next one."""
+    bib = _file_bib(tmp_path, files=("a.pdf", "b.pdf"))
+    with _quiet_bookmarks():
+        assert bib.rename_file("K1", "a.pdf") == "K1.pdf"
+        assert bib.rename_file("K1", "b.pdf") == "K1a.pdf"
+    assert bib["K1"].files == ["K1.pdf", "K1a.pdf"]
+
+
+def test_rename_file_auto_creates_subdirectories(tmp_path):
+    """A format with `/` files into (newly created) subfolders."""
+    bib = _file_bib(tmp_path, files=("a.pdf",))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        bib["K1"]["author"] = "Goerz, Michael H."
+        bib["K1"]["year"] = "2014"
+    with _quiet_bookmarks():
+        rel = bib.rename_file("K1", "a.pdf", format_spec="%a1/%Y%u0%e")
+    assert rel == "Goerz/2014.pdf"
+    assert (tmp_path / "Goerz" / "2014.pdf").exists()
+    assert bib["K1"].files == ["Goerz/2014.pdf"]
+
+
+def test_rename_file_auto_absolute_location(tmp_path):
+    """An absolute `auto_file_location` outside the library directory
+    works and is created on demand."""
+    lib_dir = tmp_path / "lib"
+    lib_dir.mkdir()
+    bib = _file_bib(lib_dir, files=("a.pdf",))
+    papers = tmp_path / "papers"
+    with _quiet_bookmarks():
+        rel = bib.rename_file(
+            "K1",
+            "a.pdf",
+            format_spec=AUTO_FILE_FORMAT,
+            auto_file_location=str(papers),
+        )
+    assert rel == "../papers/K1.pdf"
+    assert (papers / "K1.pdf").exists()
+    assert bib["K1"].files == ["../papers/K1.pdf"]
+
+
+def test_rename_file_auto_per_type_format(tmp_path):
+    """A per-type `dict` works as an auto-file `format_spec`."""
+    bib = _file_bib(tmp_path, files=("a.pdf",))
+    spec = {"article": "art-%f{Cite Key}%u0%e", "": AUTO_FILE_FORMAT}
+    with _quiet_bookmarks():
+        assert bib.rename_file("K1", "a.pdf", format_spec=spec) == (
+            "art-K1.pdf"
+        )
+
+
+def test_rename_file_auto_updates_all_entries(tmp_path, auto_file_config):
+    """Auto-filing a file linked from several entries updates every
+    one of them."""
+    bib = _file_bib(tmp_path, files=("shared.pdf",))
+    with _quiet_bookmarks():
+        bib.add_file("K2", "shared.pdf")
+        assert bib.rename_file("K2", "shared.pdf") == "K2.pdf"
+    assert bib["K1"].files == ["K2.pdf"]
+    assert bib["K2"].files == ["K2.pdf"]
+
+
+def test_rename_file_explicit_with_auto_args_raises(tmp_path):
+    """`new_filename` is mutually exclusive with `format_spec` and
+    `auto_file_location`."""
+    bib = _file_bib(tmp_path, files=("a.pdf",))
+    with pytest.raises(ValueError, match="not both"):
+        bib.rename_file("K1", "a.pdf", "b.pdf", format_spec=AUTO_FILE_FORMAT)
+    with pytest.raises(ValueError, match="not both"):
+        bib.rename_file("K1", "a.pdf", "b.pdf", auto_file_location=".")
+    assert bib["K1"].files == ["a.pdf"]
+
+
+def test_rename_file_to_itself_is_noop(tmp_path):
+    """Renaming a file to itself does not touch the filesystem."""
+    bib = _file_bib(tmp_path, files=("a.pdf",))
+    mtime = (tmp_path / "a.pdf").stat().st_mtime_ns
+    assert bib.rename_file("K1", "a.pdf", "a.pdf") == "a.pdf"
+    assert bib["K1"].files == ["a.pdf"]
+    assert (tmp_path / "a.pdf").stat().st_mtime_ns == mtime
+
+
+def test_rename_file_creates_parent_dirs(tmp_path):
+    """An explicit rename into a nonexistent directory creates it."""
+    bib = _file_bib(tmp_path, files=("a.pdf",))
+    with _quiet_bookmarks():
+        bib.rename_file("K1", "a.pdf", "sub/dir/a.pdf")
+    assert (tmp_path / "sub" / "dir" / "a.pdf").exists()
+    assert bib["K1"].files == ["sub/dir/a.pdf"]
+
+
+def test_eval_format_spec_filename(tmp_path, auto_file_config):
+    """`eval_format_spec` with a `filename` evaluates the format as a
+    file name, without touching the filesystem."""
+    bib = _file_bib(tmp_path, files=("a.pdf",))
+    assert bib.eval_format_spec("K1", filename="a.pdf") == "K1.pdf"
+    assert (tmp_path / "a.pdf").exists()
+    assert not (tmp_path / "K1.pdf").exists()
+    assert bib["K1"].files == ["a.pdf"]
+    # `filename` only feeds %l/%L/%e/%E; it need not exist or be
+    # attached -- only its extension matters here
+    assert bib.eval_format_spec("K1", filename="whatever.epub") == "K1.epub"
+    # the empty string still selects the file-name dialect
+    assert bib.eval_format_spec("K1", filename="") == "K1"
+    # an attachment whose current path already matches is idempotent
+    assert bib.eval_format_spec("K1", filename="K1.pdf") == "K1.pdf"
+
+
+def test_eval_format_spec_filename_no_path(auto_file_config):
+    """The file-name preview does not require a saved library."""
+    bib = Library()
+    bib["K1"] = Entry("article", "K1", fields={"title": "T1"})
+    assert bib.eval_format_spec("K1", filename="x.pdf") == "K1.pdf"
+
+
 # -- search -----------------------------------------------------------------#
 
 

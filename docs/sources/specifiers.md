@@ -7,10 +7,17 @@ BibDesk has a small *format-specifier language* -- `%`-templates like
 uses it in two places: to autogenerate **citation keys** (its
 *Preferences → Cite Key* pane) and to autogenerate **attachment file
 names** (its AutoFile feature). This page documents the language
-itself. `bibdeskparser` currently applies it to citation keys;
-file-name generation will use the same specifiers in the future.
+itself. `bibdeskparser` applies it in the same two places: citation
+keys ({meth}`Library.rekey <bibdeskparser.Library.rekey>`, configured
+by the [`[auto_key]` table](config-auto-key)) and attachment file
+names ({meth}`Library.add_file <bibdeskparser.Library.add_file>` and
+{meth}`Library.rename_file <bibdeskparser.Library.rename_file>`,
+configured by the [`[auto_file]` table](config-auto-file)). The two
+uses share the specifiers described below; the
+[file-name dialect](specifiers-files) differs only in the few points
+covered in its own section.
 
-The primary use today is autogenerating a citation key from a *format
+The most common use is autogenerating a citation key from a *format
 string*, via single-argument
 {meth}`Library.rekey <bibdeskparser.Library.rekey>` (or the
 [`rekey` CLI command](cli-rekey) without a `NEW_KEY`):
@@ -216,6 +223,26 @@ For example, an entry with the keywords `quantum control` and
 `rydberg` renders `%k[-][_]` as `quantum-control_rydberg` (spaces
 become `-`, and the keywords are joined by `_`).
 
+### Original file name: `%l`, `%L`, `%e`, `%E`
+
+These four specifiers exist only in
+[file-name formats](specifiers-files) (they are rejected in a
+citation-key format, exactly as in BibDesk). They refer to the
+attached file that is being renamed, under its *current* name -- the
+name it has before the move; no separate "original" name is stored
+anywhere:
+
+* `%l` -- the file's name without its extension.
+* `%L` -- the file's full name, including the extension.
+* `%e` -- the extension, *with* its leading dot (`.pdf`), or nothing
+  if the file has no extension.
+* `%E` -- the extension *without* the dot. *Argument* `[default]`, a
+  fallback used when the file has no extension.
+
+BibDesk's default file-name format, `%l%n0%e`, keeps every file's
+name and merely appends a number when a file of that name already
+exists at the target location.
+
 ### Random and unique characters: `%r`, `%R`, `%d`, `%u`, `%U`, `%n`
 
 * `%r` / `%R` / `%d` -- random lowercase letters / uppercase letters /
@@ -309,7 +336,9 @@ of the series, and `[initials.booktitle]` needs only the single entry
 
 At most one `%u` (lowercase letters), `%U` (uppercase letters), or
 `%n` (digits) may occur in a format. It inserts, at its position,
-characters that make the key unique within the library. With a
+characters that make the key unique within the library (in a
+[file-name format](specifiers-files), where it is required, unique
+against the files at the target location). With a
 trailing count of `0`, characters are only added when needed for
 disambiguation; with a fixed count `N`, exactly `N` characters are
 always added:
@@ -371,6 +400,8 @@ reference manager.
 
 ## Sanitization
 
+This section describes the citation-key context; file names are
+sanitized differently (see [file-name formats](specifiers-files)).
 Generated keys must be TeX-safe. Every field value is cleaned up
 before it enters the key:
 
@@ -410,23 +441,125 @@ The `lowercase` option of the `[auto_key]` table lowercases the whole
 generated key; a `%U` specifier then adds lowercase characters, like
 `%u`.
 
+(specifiers-files)=
+
+## File-name formats
+
+A format for attachment file names (BibDesk's *AutoFile* feature) is
+the same language, with a few differences. It is configured in the
+[`[auto_file]` table](config-auto-file) and used by
+{meth}`Library.rename_file <bibdeskparser.Library.rename_file>`
+without a `new_filename` and by
+{meth}`Library.add_file <bibdeskparser.Library.add_file>` when
+auto-filing (see the [how-to guide](howto-auto-file)); the generated
+name is interpreted relative to the configured auto-file *location*.
+
+* The original-file-name specifiers `%l`, `%L`, `%e`, and `%E`
+  (documented above) are available.
+* A **unique specifier** (`%u`/`%U`/`%n`) is **required**, so that
+  generated names can never collide. Uniqueness is checked against
+  the *files on disk* at the target location, not against the
+  library: a candidate name is taken if a file already exists there.
+* A literal `/` in the format is a **directory separator**: the file
+  is filed into (newly created, as needed) subfolders of the
+  location. A `/` inside a *field value* becomes `-` instead, so
+  values can never introduce unintended subfolders.
+* Sanitization is file-name oriented: after the TeX cleanup (the
+  `clean` option of `[auto_file]`), only `:` -- the one character
+  invalid in a file name -- is removed. In particular, spaces,
+  parentheses, and non-ASCII text all survive, unlike in a citation
+  key. The `lowercase` option of `[auto_file]` lowercases the whole
+  generated name.
+
+To preview the file name a format generates, use
+{meth}`Library.eval_format_spec <bibdeskparser.Library.eval_format_spec>`
+with a `filename`. This is a pure evaluation of the format: it never
+touches the filesystem and moves nothing. The `filename` argument only
+supplies the original-name specifiers `%l`/`%L`/`%e`/`%E` (above); it
+need not exist or be one of the entry's attachments, and any
+non-`None` value -- including the empty string `""` -- selects the
+file-name dialect:
+
+```python
+>>> filebib = Library()
+>>> filebib["GoerzPRA2014"] = Entry(
+...     "article",
+...     "GoerzPRA2014",
+...     {
+...         "author": "Goerz, Michael H. and Koch, Christiane P.",
+...         "title": "Robustness of high-fidelity {Rydberg} gates",
+...         "journal": "Phys. Rev. A",
+...         "year": "2014",
+...     },
+... )
+>>> filebib.eval_format_spec(
+...     "GoerzPRA2014", "%f{Cite Key}%u0%e", filename="downloaded.pdf"
+... )
+'GoerzPRA2014.pdf'
+>>> filebib.eval_format_spec(
+...     "GoerzPRA2014", "%a1/%Y%u0%e", filename="downloaded.pdf"
+... )
+'Goerz/2014.pdf'
+>>> filebib.eval_format_spec(  # spaces survive in a file name
+...     "GoerzPRA2014", "%t%u0%e", filename="downloaded.pdf"
+... )
+'Robustness of high-fidelity Rydberg gates.pdf'
+>>> filebib.eval_format_spec(  # "" still selects the file dialect
+...     "GoerzPRA2014", "%f{Cite Key}%u0", filename=""
+... )
+'GoerzPRA2014'
+
+```
+
+A preview shows the *base* name, with the required unique specifier
+contributing no disambiguation. On-disk collision avoidance happens
+only during actual filing ({meth}`~bibdeskparser.Library.rename_file`
+/ {meth}`~bibdeskparser.Library.add_file`), where the unique specifier
+grows a suffix (e.g. `GoerzPRA2014a.pdf`) whenever another file already
+occupies the target name.
+
+If `filename` is an attachment's current library-relative path (as
+listed by {attr}`~bibdeskparser.Entry.files`) and already matches the format, it
+evaluates to itself -- the same idempotency as a regenerated citation
+key. `bib.eval_format_spec(key, fmt, filename=name) != name` thus
+identifies the attachments that do not yet follow the format:
+
+```python
+>>> filebib.eval_format_spec(  # "downloaded.pdf" matches %l%n0%e
+...     "GoerzPRA2014", "%l%n0%e", filename="downloaded.pdf"
+... )
+'downloaded.pdf'
+
+```
+
+**The recommended format is `%f{Cite Key}%u0%e`:** it names each
+attachment after its entry's citation key while preserving the file's
+real extension. Prefer `%e` over hard-coding an extension like
+`.pdf`, which would mislabel a `.ps` or `.epub` attachment; `%e`
+renders identically for PDFs and stays correct for everything else.
+
 (specifiers-differences)=
 
 ## Differences from BibDesk
 
-- `%l`, `%L`, `%e`, `%E` (the original file name/extension) exist
-  only for BibDesk's AutoFile file-name templates and are rejected in
-  a cite-key format, exactly as BibDesk's own validation rejects
-  them.
 - `%i{Key}` (BibDesk *document info*) is recognized but raises
   `NotImplementedError`: `bibdeskparser` does not currently model the
   `@bibdesk_info` block in which BibDesk stores document-level
   metadata.
-- BibDesk applies its *Preferences → Cite Key* options; the
-  equivalents here are the `format_spec`, `lowercase`, and `clean` keys
-  of the `[auto_key]` configuration table.
-- BibDesk has a single, global cite-key format. Here, `format_spec` may
-  instead be a [per-type mapping](config-auto-key) that applies a
-  different format to each entry type — a `bibdeskparser` extension.
+- BibDesk applies its *Preferences → Cite Key* and *Preferences →
+  AutoFile* options; the equivalents here are the `format_spec`,
+  `lowercase`, and `clean` keys of the `[auto_key]` and `[auto_file]`
+  configuration tables. BibDesk's two strictest file-name cleaning
+  levels (Windows-safe characters, and lossy ASCII) have no
+  equivalent; `clean` stops at `"tex"`.
+- BibDesk files attachments into its global *Papers Folder*
+  preference, falling back to the document's own directory when it is
+  empty. The equivalent here is the `location` key of `[auto_file]`,
+  whose default `"."` (the `.bib` file's directory) corresponds to
+  the empty Papers Folder.
+- BibDesk has a single, global cite-key format and a single file-name
+  format. Here, `format_spec` may instead be a
+  [per-type mapping](config-auto-key) that applies a different format
+  to each entry type — a `bibdeskparser` extension.
 - The `[initials]` exception mapping for `%c` is a `bibdeskparser`
   extension; BibDesk always uses the plain acronym.
