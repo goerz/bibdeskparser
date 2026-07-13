@@ -1,13 +1,17 @@
-r"""Validation and normalization of BibDesk macro (`@string`) names.
+r"""BibDesk macro (`@string`) names and macro-aware field values.
 
 BibDesk restricts the names of macros (BibTeX `@string` definitions) to a
 subset of printable ASCII and treats them case-insensitively: its macro
 editor forces names to lowercase as they are typed, and its macro table
 (`BDSKMacroResolver`) looks names up by their lowercased form. This module
-replicates those rules.
+replicates those rules, and defines the {class}`ValueString` /
+{class}`MacroString` marker types that force a field value to be stored
+as a literal braced string or as a bare macro reference, respectively.
 """
 
-__all__ = []
+# ValueString and MacroString are re-exported from the top-level
+# `bibdeskparser` package, which is their public (documented) location.
+__all__ = ["ValueString", "MacroString"]
 
 # All members whose name does not start with an underscore must be listed
 # either in __all__ or in __private__
@@ -107,3 +111,94 @@ def normalize_macro_name(name):
     if not is_valid_macro_name(name, normalized=False):
         raise ValueError(f"invalid BibDesk macro name: {name!r}")
     return name.lower()
+
+
+class ValueString(str):
+    r"""Force a field value to be stored as a braced BibTeX string.
+
+    ```python
+    ValueString(value)
+    ```
+
+    A plain `str` value assigned via `entry[field] = value` is stored
+    bare (no enclosing `{...}`) when it happens to be a valid,
+    normalized BibDesk macro name, since such a value is ambiguous
+    with a reference to a `@string` macro of that name. Wrap the
+    value in `ValueString` to force it to be treated as literal text
+    instead, even though it would otherwise pass as a macro name.
+
+    `ValueString` is the mirror image of {class}`MacroString`, which
+    forces the opposite (bare `@string` macro reference) storage. Both
+    return the same value through the `dict` interface -- the
+    difference is only in how the value is *stored* (as a literal
+    braced string vs. a bare macro reference), visible in the `"raw"`
+    export format (see {meth}`Library.export`):
+
+    ```python
+    >>> from bibdeskparser import Entry, Library, ValueString
+    >>> bib = Library()
+    >>> entry = Entry("article", "Key2024")
+    >>> entry["journal"] = ValueString("prl")  # forced literal text
+    >>> entry["journal"]
+    'prl'
+    >>> bib["Key2024"] = entry
+    >>> bib.export("Key2024", format="raw") == (
+    ...     "@article{Key2024,\n\tjournal = {prl}\n}\n"
+    ... )
+    True
+    >>> entry["journal"] = "prl"  # bare str: treated as a macro ref
+    >>> entry["journal"]
+    'prl'
+    >>> bib.export("Key2024", format="raw") == (
+    ...     "@article{Key2024,\n\tjournal = prl\n}\n"
+    ... )
+    True
+
+    ```
+    """
+
+    __slots__ = ()
+
+
+class MacroString(str):
+    r"""Force a field value to be stored as a bare `@string` macro
+    reference.
+
+    ```python
+    MacroString(value)
+    ```
+
+    A plain `str` value assigned via `entry[field] = value` is already
+    stored as a bare macro reference whenever it looks like a valid
+    macro name (e.g. `entry["journal"] = "prl"` stores `journal = prl`).
+    Wrapping the value in `MacroString` makes that intent explicit and
+    forces bare-macro storage even in code that cannot rely on the
+    value's shape. The macro name is validated (it must be a valid,
+    normalized BibDesk macro name), so an invalid name raises
+    {exc}`ValueError`. To force the opposite -- a literal braced value
+    for a macro-shaped string -- wrap it in {class}`ValueString`.
+
+    `MacroString` is the mirror image of {class}`ValueString`, which
+    forces the opposite (literal braced) storage. Both return the same
+    value through the `dict` interface -- the difference is only in how
+    the value is *stored* (as a bare macro reference vs. a literal
+    braced string), visible in the `"raw"` export format (see
+    {meth}`Library.export`):
+
+    ```python
+    >>> from bibdeskparser import Entry, Library, MacroString
+    >>> bib = Library()
+    >>> entry = Entry("article", "Key2024")
+    >>> entry["journal"] = MacroString("prl")  # forced macro reference
+    >>> entry["journal"]
+    'prl'
+    >>> bib["Key2024"] = entry
+    >>> bib.export("Key2024", format="raw") == (
+    ...     "@article{Key2024,\n\tjournal = prl\n}\n"
+    ... )
+    True
+
+    ```
+    """
+
+    __slots__ = ()

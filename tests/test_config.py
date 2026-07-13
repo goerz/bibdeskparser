@@ -5,7 +5,6 @@ import warnings
 import pytest
 
 import bibdeskparser.config as config
-import bibdeskparser.entrytypes as entrytypes
 from bibdeskparser import Entry, Library
 
 _CONFIG = "bibdeskparser.toml"
@@ -19,9 +18,9 @@ def _reset_config():
     process-global, so a test that loads a custom config or flips a flag
     must not leak into any other test.
     """
-    config.reset()
+    config.active.reset()
     yield
-    config.reset()
+    config.active.reset()
 
 
 def _write(directory, text):
@@ -123,28 +122,43 @@ def test_discover_local_beats_env_var(tmp_path, monkeypatch):
 
 
 def test_defaults():
-    assert Library.verify_types is True
-    assert Library.verify_fields is True
-    assert Library.config_file is None
+    assert Library.config.verify_types is True
+    assert Library.config.verify_fields is True
+    assert Library.config.config_file is None
+
+
+def test_config_instance_access():
+    """The configuration is the same object on the class and on any
+    instance, and mutating it through one is visible through the
+    other."""
+    bib = Library()
+    assert bib.config is Library.config
+    assert bib.config is config.active
+    assert bib.config.verify_types is True
+    Library.config.verify_types = False
+    assert bib.config.verify_types is False
+    bib.config.verify_types = True
+    assert Library.config.verify_types is True
 
 
 def test_verify_types_flag_via_class_attribute():
-    """Library.verify_types controls whether unknown types raise."""
+    """Library.config.verify_types controls whether unknown types raise."""
     with pytest.raises(ValueError):
         Entry("nosuchtype", "k")
-    Library.verify_types = False
+    Library.config.verify_types = False
     entry = Entry("nosuchtype", "k")  # accepted, lowercased
     assert entry.entry_type == "nosuchtype"
-    Library.verify_types = True
+    Library.config.verify_types = True
     with pytest.raises(ValueError):
         Entry("nosuchtype", "k")
 
 
 def test_verify_fields_flag_via_class_attribute():
-    """Library.verify_fields controls the inappropriate-field warning."""
+    """Library.config.verify_fields controls the inappropriate-field
+    warning."""
     with pytest.warns(UserWarning, match="not appropriate"):
         Entry("article", "k")["publisher"] = "ACME"
-    Library.verify_fields = False
+    Library.config.verify_fields = False
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         Entry("article", "k")["publisher"] = "ACME"  # no warning
@@ -153,16 +167,16 @@ def test_verify_fields_flag_via_class_attribute():
 def test_load_from_bib_dir_sets_flags(tmp_path):
     """Loading a config file with verify_types=false disables it."""
     _write(tmp_path, "verify_types = false\nverify_fields = false\n")
-    config.load(bib_dir=tmp_path)
-    assert Library.verify_types is False
-    assert Library.verify_fields is False
+    config.active.load(bib_dir=tmp_path)
+    assert Library.config.verify_types is False
+    assert Library.config.verify_fields is False
 
 
 def test_load_none_resets_to_defaults(tmp_path):
     """load() with no file found resets to the built-in defaults."""
-    Library.verify_types = False
-    assert config.load(bib_dir=tmp_path) is None
-    assert Library.verify_types is True
+    Library.config.verify_types = False
+    assert config.active.load(bib_dir=tmp_path) is None
+    assert Library.config.verify_types is True
 
 
 # -- custom types / fields -------------------------------------------- #
@@ -176,21 +190,21 @@ def test_custom_type_defined(tmp_path):
         'required = ["author", "title"]\n'
         'optional = ["note"]\n',
     )
-    config.load(bib_dir=tmp_path)
+    config.active.load(bib_dir=tmp_path)
     entry = Entry("mytype", "k")  # does not raise
     assert entry.entry_type == "mytype"
-    assert entrytypes.field_is_appropriate("mytype", "note")
-    assert not entrytypes.field_is_appropriate("mytype", "publisher")
+    assert config.active.field_is_appropriate("mytype", "note")
+    assert not config.active.field_is_appropriate("mytype", "publisher")
 
 
 def test_type_extend_adds_optional_field(tmp_path):
     """Without replace, a [types.X] table extends the built-in fields."""
     _write(tmp_path, '[types.article]\noptional = ["customfield"]\n')
-    config.load(bib_dir=tmp_path)
+    config.active.load(bib_dir=tmp_path)
     # built-in article fields still appropriate ...
-    assert entrytypes.field_is_appropriate("article", "journal")
+    assert config.active.field_is_appropriate("article", "journal")
     # ... plus the new one
-    assert entrytypes.field_is_appropriate("article", "customfield")
+    assert config.active.field_is_appropriate("article", "customfield")
 
 
 def test_type_replace(tmp_path):
@@ -200,19 +214,19 @@ def test_type_replace(tmp_path):
         "[types.article]\nreplace = true\n"
         'required = ["title"]\noptional = ["note"]\n',
     )
-    config.load(bib_dir=tmp_path)
-    assert entrytypes.field_is_appropriate("article", "note")
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.field_is_appropriate("article", "note")
     # 'journal' was a built-in article field, now gone (and not
     # universal), so it is no longer appropriate
-    assert not entrytypes.field_is_appropriate("article", "journal")
+    assert not config.active.field_is_appropriate("article", "journal")
 
 
 def test_custom_universal_field(tmp_path):
     """[fields] universal makes a field appropriate on every type."""
     _write(tmp_path, '[fields]\nuniversal = ["myglobal"]\n')
-    config.load(bib_dir=tmp_path)
-    assert entrytypes.field_is_appropriate("article", "myglobal")
-    assert entrytypes.field_is_appropriate("book", "myglobal")
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.field_is_appropriate("article", "myglobal")
+    assert config.active.field_is_appropriate("book", "myglobal")
 
 
 # -- default_bib_file -------------------------------------------------- #
@@ -226,37 +240,180 @@ def test_default_bib_file(tmp_path, monkeypatch):
     # Windows `expanduser` resolves `~` from USERPROFILE, not HOME
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     _write(tmp_path, 'default_bib_file = "~/refs.bib"\n')
-    config.load(bib_dir=tmp_path)
-    assert config.get_default_bib_file() == tmp_path / "refs.bib"
-    config.reset()
-    assert config.get_default_bib_file() is None
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.default_bib_file == tmp_path / "refs.bib"
+    config.active.reset()
+    assert config.active.default_bib_file is None
 
 
 def test_default_bib_file_envvar_expansion(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
     monkeypatch.setenv("MYBIBDIR", str(tmp_path / "bibs"))
     _write(tmp_path, 'default_bib_file = "$MYBIBDIR/refs.bib"\n')
-    config.load(bib_dir=tmp_path)
-    assert config.get_default_bib_file() == tmp_path / "bibs" / "refs.bib"
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.default_bib_file == tmp_path / "bibs" / "refs.bib"
 
 
 def test_default_bib_file_cleared_when_no_config(tmp_path, monkeypatch):
     """A `load()` that finds no config file clears `default_bib_file`."""
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
     _write(tmp_path, 'default_bib_file = "refs.bib"\n')
-    config.load(bib_dir=tmp_path)
-    assert config.get_default_bib_file() is not None
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.default_bib_file is not None
     empty = tmp_path / "empty"
     empty.mkdir()
-    config.load(bib_dir=empty)
-    assert config.get_default_bib_file() is None
+    config.active.load(bib_dir=empty)
+    assert config.active.default_bib_file is None
 
 
 def test_default_bib_file_non_string_raises(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
     _write(tmp_path, "default_bib_file = 42\n")
     with pytest.raises(ValueError, match="default_bib_file"):
-        config.load(bib_dir=tmp_path)
+        config.active.load(bib_dir=tmp_path)
+
+
+# -- auto_key and initials --------------------------------------------- #
+
+
+def test_auto_key_defaults(tmp_path, monkeypatch):
+    """Without an `[auto_key]` table, no format is configured and the
+    post-processing options are at their defaults."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "verify_types = false\n")
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.auto_key.format_spec is None
+    assert config.active.auto_key.lowercase is False
+    assert config.active.auto_key.clean == "tex"
+    assert config.active.initials == {}
+
+
+def test_auto_key_settings(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(
+        tmp_path,
+        "[auto_key]\n"
+        'format_spec = "%a1%c{journal}0%Y%u0"\n'
+        "lowercase = true\n"
+        'clean = "braces"\n'
+        "\n"
+        "[initials.journal]\n"
+        '"npj Quantum Inf" = "NPJQI"\n'
+        '"SIAM Rev." = "SR"\n',
+    )
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.auto_key.format_spec == "%a1%c{journal}0%Y%u0"
+    assert config.active.auto_key.lowercase is True
+    assert config.active.auto_key.clean == "braces"
+    assert config.active.initials == {
+        "journal": {"npj Quantum Inf": "NPJQI", "SIAM Rev.": "SR"}
+    }
+    config.active.reset()
+    assert config.active.auto_key.format_spec is None
+    assert config.active.initials == {}
+
+
+def test_auto_key_format_spec_override_not_persisted(tmp_path, monkeypatch):
+    """Assigning `Library.config.auto_key.format_spec` overrides the
+    value for the current process only; it does not write back to the
+    config file."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    original = '[auto_key]\nformat_spec = "%a1%Y%u0"\n'
+    _write(tmp_path, original)
+    config.active.load(bib_dir=tmp_path)
+    assert Library.config.auto_key.format_spec == "%a1%Y%u0"
+
+    Library.config.auto_key.format_spec = "%a1%c{journal}0%Y"
+    assert Library.config.auto_key.format_spec == "%a1%c{journal}0%Y"
+    # the file on disk is untouched
+    assert (tmp_path / _CONFIG).read_text(encoding="utf-8") == original
+    # reloading discards the in-process override
+    config.active.load(bib_dir=tmp_path)
+    assert Library.config.auto_key.format_spec == "%a1%Y%u0"
+
+
+def test_auto_key_per_type_format_spec(tmp_path, monkeypatch):
+    """An `[auto_key.format_spec]` table maps a format per entry type,
+    with type names lowercased and `""` kept as the fallback."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(
+        tmp_path,
+        "[auto_key.format_spec]\n"
+        '"" = "%a1%Y%u0"\n'
+        'Article = "%a1%c{journal}0%Y%u0"\n'
+        'inproceedings = "%a1%c{booktitle}0%Y%u0"\n',
+    )
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.auto_key.format_spec == {
+        "": "%a1%Y%u0",
+        "article": "%a1%c{journal}0%Y%u0",
+        "inproceedings": "%a1%c{booktitle}0%Y%u0",
+    }
+
+
+def test_auto_key_format_spec_required(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "[auto_key]\nlowercase = true\n")
+    with pytest.raises(ValueError, match="'format_spec'"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_auto_key_format_spec_validated(tmp_path, monkeypatch):
+    """A malformed format is rejected at load time, whether it is a
+    single string or a per-type table value."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, '[auto_key]\nformat_spec = "%a1%x"\n')
+    with pytest.raises(ValueError, match="invalid specifier"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[auto_key]\nformat_spec = "%a1%i{Project}"\n')
+    with pytest.raises(NotImplementedError, match="%i"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[auto_key.format_spec]\narticle = "%a1%x"\n')
+    with pytest.raises(ValueError, match="invalid specifier"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[auto_key.format_spec]\narticle = 3\n")
+    with pytest.raises(ValueError, match="format_spec values"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_auto_key_format_spec_non_string_key():
+    """A per-type table with a non-string key (only reachable via the
+    Python API) raises `ValueError`, not `AttributeError`."""
+    with pytest.raises(ValueError, match="format_spec keys"):
+        Library.config.auto_key.format_spec = {1: "%a1%Y"}
+
+
+def test_auto_key_option_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, '[auto_key]\nformat_spec = "%a1"\nlowercase = "yes"\n')
+    with pytest.raises(ValueError, match="lowercase"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[auto_key]\nformat_spec = "%a1"\nclean = "all"\n')
+    with pytest.raises(ValueError, match="clean"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[auto_key]\nformat_spec = "%a1"\nnonsense = 1\n')
+    with pytest.warns(UserWarning, match=r"unknown key\(s\) in \[auto_key\]"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_initials_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "initials = 1\n")
+    with pytest.raises(ValueError, match=r"\[initials\] must be a table"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[initials]\njournal = 1\n")
+    with pytest.raises(ValueError, match=r"\[initials.journal\]"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[initials.journal]\n"npj Quantum Inf" = 1\n')
+    with pytest.raises(ValueError, match=r"\[initials.journal\]"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_initials_field_names_lowercased(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, '[initials.Journal]\n"npj Quantum Inf" = "NPJQI"\n')
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.initials == {"journal": {"npj Quantum Inf": "NPJQI"}}
 
 
 # -- error handling --------------------------------------------------- #
@@ -265,19 +422,19 @@ def test_default_bib_file_non_string_raises(tmp_path, monkeypatch):
 def test_malformed_toml_raises(tmp_path):
     _write(tmp_path, "this is not = valid = toml\n")
     with pytest.raises(ValueError, match="invalid config file"):
-        config.load(bib_dir=tmp_path)
+        config.active.load(bib_dir=tmp_path)
 
 
 def test_non_bool_flag_raises(tmp_path):
     _write(tmp_path, 'verify_types = "yes"\n')
     with pytest.raises(ValueError, match="verify_types"):
-        config.load(bib_dir=tmp_path)
+        config.active.load(bib_dir=tmp_path)
 
 
 def test_unknown_key_warns(tmp_path):
     _write(tmp_path, "nonsense = 1\n")
     with pytest.warns(UserWarning, match="unknown key"):
-        config.load(bib_dir=tmp_path)
+        config.active.load(bib_dir=tmp_path)
 
 
 # -- Library integration ---------------------------------------------- #
@@ -288,7 +445,7 @@ def test_library_construction_applies_bib_dir_config(tmp_path):
     _write(tmp_path, "verify_types = false\n")
     (tmp_path / "x.bib").write_text("@nosuchtype{k,\n}\n", encoding="utf-8")
     Library(str(tmp_path / "x.bib"))
-    assert Library.verify_types is False
+    assert Library.config.verify_types is False
     # a fresh Entry now accepts unknown types
     assert Entry("anothernonexistenttype", "k").entry_type == (
         "anothernonexistenttype"
@@ -296,12 +453,14 @@ def test_library_construction_applies_bib_dir_config(tmp_path):
 
 
 def test_config_file_override(tmp_path):
-    """Library.config_file takes precedence over directory discovery."""
+    """Library.config.config_file takes precedence over directory
+    discovery."""
     explicit = tmp_path / "custom.toml"
     explicit.write_text("verify_fields = false\n", encoding="utf-8")
-    Library.config_file = str(explicit)
+    _write(tmp_path, "verify_fields = true\n")  # would otherwise win
+    Library.config.config_file = str(explicit)
     try:
-        config.load(bib_dir=tmp_path, config_file=Library.config_file)
-        assert Library.verify_fields is False
+        assert config.active.load(bib_dir=tmp_path) == explicit
+        assert Library.config.verify_fields is False
     finally:
-        Library.config_file = None
+        Library.config.config_file = None

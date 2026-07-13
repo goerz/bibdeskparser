@@ -20,6 +20,8 @@ Run a single test with `uv run pytest tests/test_bibdeskparser.py::test_name`.
 
 Keep `CHANGELOG.md` up to date with every user-facing change — see the "Changelog" section of @CONTRIBUTING.md for the conventions. Breaking changes must include user instructions on how to adapt to the change as part of the changelog.
 
+Before the 1.0 release, backwards compatibility is not a concern. The API should be optimized for simplicity and maintainability, and any breaking change that facilitates that should be encouraged.
+
 ## Conventions
 
 - Line length 79.

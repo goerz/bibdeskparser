@@ -9,8 +9,9 @@ import pytest
 from bibtexparser import model
 
 import bibdeskparser.entry as entry_module
+from bibdeskparser import MacroString, ValueString
 from bibdeskparser.bdskfile import BibDeskFile
-from bibdeskparser.entry import Entry, MacroString, ValueString
+from bibdeskparser.entry import Entry
 from bibdeskparser.middleware import parse_stack
 
 REFS_BIB = Path(__file__).parent / "Refs" / "refs.bib"

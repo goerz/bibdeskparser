@@ -904,6 +904,213 @@ def test_rekey_same_key_is_noop(bib):
     assert bib["GoerzQ2022"] is entry
 
 
+# -- auto-generated keys (rekey without new_key) ----------------------- #
+
+
+GETBIBTEX_FORMAT = "%a1%c{journal}0%Y%u0"
+
+
+@pytest.fixture(name="auto_key_config")
+def fixture_auto_key_config(tmp_path):
+    """Load a config file with an `[auto_key]` format and an
+    `[initials]` mapping, resetting the process-global configuration
+    afterwards."""
+    import bibdeskparser.config as config
+
+    toml = tmp_path / "bibdeskparser.toml"
+    toml.write_text(
+        f'[auto_key]\nformat_spec = "{GETBIBTEX_FORMAT}"\n\n'
+        '[initials.journal]\n"npj Quantum Inf" = "NPJQI"\n',
+        encoding="utf-8",
+    )
+    config.active.config_file = toml
+    config.active.load()
+    yield config
+    config.active.reset()
+
+
+def test_rekey_returns_new_key(bib):
+    """`rekey` returns the resulting key, also for explicit renames
+    and no-ops."""
+    assert bib.rekey("GoerzQ2022", "xxx") == "xxx"
+    assert bib.rekey("xxx", "xxx") == "xxx"
+
+
+def test_rekey_auto_requires_format(bib):
+    """Without a configured auto-key format, single-argument `rekey`
+    is an error."""
+    with pytest.raises(ValueError, match="no auto-key format"):
+        bib.rekey("GoerzPRA2014")
+
+
+def test_rekey_format_spec_pattern(bib):
+    """A `format_spec` pattern generates the key, expanding the
+    journal's `@string` macro for `%c{journal}`."""
+    assert bib.rekey("GoerzQ2022", format_spec=GETBIBTEX_FORMAT) == (
+        "GoerzQ2022"  # idempotent: already matches the pattern
+    )
+    assert bib.rekey("GoerzNJP2014", format_spec="%a1%Y%u0") == "Goerz2014"
+    assert bib["Goerz2014"].key == "Goerz2014"
+
+
+def test_rekey_auto_collision_suffix(bib):
+    """A `%u0` suffix grows as needed to avoid other entries' keys."""
+    assert bib.rekey("GoerzPRA2014", format_spec="%Y%u0") == "2014"
+    assert bib.rekey("GoerzNJP2014", format_spec="%Y%u0") == "2014a"
+
+
+def test_rekey_auto_updates_groups(bib):
+    """A generated key replaces the old key in static groups, like an
+    explicit rename."""
+    entry = bib["GoerzQ2022"]
+    groups = entry.groups
+    assert groups
+    new_key = bib.rekey("GoerzQ2022", format_spec="%a1%Y%u0")
+    assert new_key == "Goerz2022"
+    assert bib["Goerz2022"].groups == groups
+    for name in groups:
+        assert "Goerz2022" in bib.groups[name]
+
+
+def test_rekey_auto_both_args_raises(bib):
+    with pytest.raises(ValueError, match="not both"):
+        bib.rekey("GoerzPRA2014", "NewKey", format_spec="%a1%Y%u0")
+
+
+def test_rekey_auto_missing_fields_raises(bib):
+    """A format that needs a field the entry does not have is an
+    error, not a degenerate key."""
+    with pytest.raises(ValueError, match="journal"):
+        bib.rekey("GoerzDiploma2010", format_spec=GETBIBTEX_FORMAT)
+
+
+def test_rekey_auto_crossref_guard(bib):
+    """A generated key must not equal the entry's own crossref."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        bib["GoerzPRA2014"]["crossref"] = "Goerz2014"
+    with pytest.raises(ValueError, match="crossref"):
+        bib.rekey("GoerzPRA2014", format_spec="%a1%Y")
+
+
+def test_rekey_auto_document_name(bib):
+    """`%b` renders the library file's name."""
+    assert bib.rekey("GoerzQ2022", format_spec="%b:%Y%u0") == "refs:2022"
+
+
+def test_rekey_auto_from_config(bib, auto_key_config):
+    """Single-argument `rekey` uses the configured `[auto_key]`
+    format and the `[initials]` mapping."""
+    # pylint: disable=unused-argument
+    # GoerzNPJQI2017 already matches the configured format thanks to
+    # the [initials] mapping for "npj Quantum Inf":
+    assert bib.rekey("GoerzNPJQI2017") == "GoerzNPJQI2017"
+    # the [initials] mapping also applies with a format_spec pattern
+    # (format_spec only overrides the format itself):
+    assert (
+        bib.rekey("GoerzNPJQI2017", format_spec="x%c{journal}0%Y")
+        == "xNPJQI2017"
+    )
+    # ... and the configured format restores the original key:
+    assert bib.rekey("xNPJQI2017") == "GoerzNPJQI2017"
+
+
+def test_rekey_per_type_format_spec(bib):
+    """A per-type `format_spec` dict selects the format by the entry's
+    type, using the `""` key as the fallback."""
+    spec = {
+        "": "%a1%Y%u0",
+        "article": "%a1%c{journal}0%Y%u0",
+    }
+    # GoerzNJP2014 is an article -> the article format applies:
+    assert bib.eval_format_spec("GoerzNJP2014", spec) == "GoerzNJP2014"
+    # GoerzQ2022 (an article) -> the article format:
+    assert bib.eval_format_spec("GoerzQ2022", spec) == "GoerzQ2022"
+    # GoerzDiploma2010 has no journal, but its type is not in the dict,
+    # so the "" fallback (which needs no journal) applies:
+    assert bib.eval_format_spec("GoerzDiploma2010", spec) == "Goerz2010"
+
+
+def test_rekey_per_type_format_spec_no_fallback(bib):
+    """Without a `""` fallback, an entry whose type is absent from the
+    dict is an error."""
+    spec = {"article": "%a1%Y"}
+    with pytest.raises(ValueError, match="no entry for type"):
+        bib.eval_format_spec("GoerzDiploma2010", spec)
+
+
+def test_auto_key_format_spec_class_attribute(bib):
+    """`Library.config.auto_key.format_spec` is a settable
+    configuration attribute backing single-argument
+    `rekey`/`eval_format_spec`; assigning validates."""
+    import bibdeskparser.config as config
+
+    assert Library.config.auto_key.format_spec is None
+    try:
+        Library.config.auto_key.format_spec = {
+            "": "%a1%Y%u0",
+            "article": "%a1%Y",
+        }
+        assert Library.config.auto_key.format_spec == {
+            "": "%a1%Y%u0",
+            "article": "%a1%Y",
+        }
+        assert bib.eval_format_spec("GoerzNJP2014") == "Goerz2014"
+        with pytest.raises(ValueError, match="invalid specifier"):
+            Library.config.auto_key.format_spec = "%a1%x"
+    finally:
+        config.active.reset()
+
+
+def test_eval_format_spec(bib):
+    """`eval_format_spec` returns the key a format yields, without
+    renaming anything."""
+    assert bib.eval_format_spec("GoerzQ2022", GETBIBTEX_FORMAT) == (
+        "GoerzQ2022"  # a key matching the format evaluates to itself
+    )
+    assert bib.eval_format_spec("GoerzNJP2014", "%a1%Y%u0") == "Goerz2014"
+    assert "GoerzNJP2014" in bib  # read-only: nothing was renamed
+    assert "Goerz2014" not in bib
+
+
+def test_eval_format_spec_detects_nonconforming_key(bib):
+    """A key that does not follow the format does not evaluate to
+    itself, which identifies it as nonconforming."""
+    bib.rekey("GoerzQ2022", "quantum-gates-2022")
+    assert (
+        bib.eval_format_spec("quantum-gates-2022", GETBIBTEX_FORMAT)
+        == "GoerzQ2022"
+    )
+
+
+def test_eval_format_spec_requires_format(bib):
+    """Without a configured auto-key format, single-argument
+    `eval_format_spec` is an error."""
+    with pytest.raises(ValueError, match="no auto-key format"):
+        bib.eval_format_spec("GoerzPRA2014")
+
+
+def test_eval_format_spec_missing_key_raises(bib):
+    with pytest.raises(KeyError):
+        bib.eval_format_spec("NoSuchKey", "%a1%Y%u0")
+
+
+def test_eval_format_spec_missing_fields_raises(bib):
+    """A format that needs a field the entry does not have is an
+    error, like in `rekey`."""
+    with pytest.raises(ValueError, match="journal"):
+        bib.eval_format_spec("GoerzDiploma2010", GETBIBTEX_FORMAT)
+
+
+def test_eval_format_spec_from_config(bib, auto_key_config):
+    """Single-argument `eval_format_spec` uses the configured
+    `[auto_key]` format and the `[initials]` mapping."""
+    # pylint: disable=unused-argument
+    assert bib.eval_format_spec("GoerzNPJQI2017") == "GoerzNPJQI2017"
+    bib.rekey("GoerzNPJQI2017", "xNPJQI2017")
+    assert bib.eval_format_spec("xNPJQI2017") == "GoerzNPJQI2017"
+
+
 def test_setitem_rejects_non_entry(bib):
     """Only `Entry` instances may be assigned."""
     with pytest.raises(TypeError):

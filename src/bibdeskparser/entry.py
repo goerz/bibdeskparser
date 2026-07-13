@@ -1,6 +1,4 @@
-"""The `Entry` class and its supporting `ValueString`/`MacroString`
-field-value types.
-"""
+"""The `Entry` class."""
 
 import datetime
 import re
@@ -11,12 +9,17 @@ from collections.abc import MutableMapping
 from bibtexparser import model
 
 from .bdskfile import BibDeskFile
-from .entrytypes import field_is_appropriate, normalize_entry_type
-from .macros import is_valid_macro_name, normalize_macro_name
+from .config import active
+from .macros import (
+    MacroString,
+    ValueString,
+    is_valid_macro_name,
+    normalize_macro_name,
+)
 from .names import structured_names
 from .texmap import detexify, skip_texify, texify
 
-__all__ = ["Entry", "ValueString", "MacroString"]
+__all__ = ["Entry"]
 
 # All members whose name does not start with an underscore must be listed
 # either in __all__ or in __private__
@@ -66,99 +69,6 @@ def _parse_date(value):
     if not isinstance(value, str):
         return None
     return datetime.datetime.strptime(_strip_enclosing(value), _DATE_FORMAT)
-
-
-class ValueString(str):
-    r"""Force a field value to be stored as a braced BibTeX string.
-
-    ```python
-    ValueString(value)
-    ```
-
-    A plain `str` value assigned via `entry[field] = value` is stored
-    bare (no enclosing `{...}`) when it happens to be a valid,
-    normalized BibDesk macro name, since such a value is ambiguous
-    with a reference to a `@string` macro of that name. Wrap the
-    value in `ValueString` to force it to be treated as literal text
-    instead, even though it would otherwise pass as a macro name.
-
-    `ValueString` is the mirror image of {class}`MacroString`, which
-    forces the opposite (bare `@string` macro reference) storage. Both
-    return the same value through the `dict` interface -- the
-    difference is only in how the value is *stored* (as a literal
-    braced string vs. a bare macro reference), visible in the `"raw"`
-    export format (see {meth}`Library.export`):
-
-    ```python
-    >>> from bibdeskparser import Library
-    >>> from bibdeskparser.entry import Entry, ValueString
-    >>> bib = Library()
-    >>> entry = Entry("article", "Key2024")
-    >>> entry["journal"] = ValueString("prl")  # forced literal text
-    >>> entry["journal"]
-    'prl'
-    >>> bib["Key2024"] = entry
-    >>> bib.export("Key2024", format="raw") == (
-    ...     "@article{Key2024,\n\tjournal = {prl}\n}\n"
-    ... )
-    True
-    >>> entry["journal"] = "prl"  # bare str: treated as a macro ref
-    >>> entry["journal"]
-    'prl'
-    >>> bib.export("Key2024", format="raw") == (
-    ...     "@article{Key2024,\n\tjournal = prl\n}\n"
-    ... )
-    True
-
-    ```
-    """
-
-    __slots__ = ()
-
-
-class MacroString(str):
-    r"""Force a field value to be stored as a bare `@string` macro
-    reference.
-
-    ```python
-    MacroString(value)
-    ```
-
-    A plain `str` value assigned via `entry[field] = value` is already
-    stored as a bare macro reference whenever it looks like a valid
-    macro name (e.g. `entry["journal"] = "prl"` stores `journal = prl`).
-    Wrapping the value in `MacroString` makes that intent explicit and
-    forces bare-macro storage even in code that cannot rely on the
-    value's shape. The macro name is validated (it must be a valid,
-    normalized BibDesk macro name), so an invalid name raises
-    {exc}`ValueError`. To force the opposite -- a literal braced value
-    for a macro-shaped string -- wrap it in {class}`ValueString`.
-
-    `MacroString` is the mirror image of {class}`ValueString`, which
-    forces the opposite (literal braced) storage. Both return the same
-    value through the `dict` interface -- the difference is only in how
-    the value is *stored* (as a bare macro reference vs. a literal
-    braced string), visible in the `"raw"` export format (see
-    {meth}`Library.export`):
-
-    ```python
-    >>> from bibdeskparser import Library
-    >>> from bibdeskparser.entry import Entry, MacroString
-    >>> bib = Library()
-    >>> entry = Entry("article", "Key2024")
-    >>> entry["journal"] = MacroString("prl")  # forced macro reference
-    >>> entry["journal"]
-    'prl'
-    >>> bib["Key2024"] = entry
-    >>> bib.export("Key2024", format="raw") == (
-    ...     "@article{Key2024,\n\tjournal = prl\n}\n"
-    ... )
-    True
-
-    ```
-    """
-
-    __slots__ = ()
 
 
 class Entry(MutableMapping):
@@ -238,7 +148,7 @@ class Entry(MutableMapping):
     """
 
     def __init__(self, entry_type, key, fields=None):
-        entry_type = normalize_entry_type(entry_type)
+        entry_type = active.normalize_entry_type(entry_type)
         self._entry = model.Entry(entry_type=entry_type, key=key, fields=[])
         self._groups = ()
         self._dirty = False
@@ -358,7 +268,7 @@ class Entry(MutableMapping):
                 "field value must be a str, ValueString, or "
                 f"MacroString, not {type(value)!r}"
             )
-        if not field_is_appropriate(self.entry_type, key):
+        if not active.field_is_appropriate(self.entry_type, key):
             warnings.warn(
                 f"field {key!r} is not appropriate for entry type "
                 f"{self.entry_type!r}",
@@ -459,7 +369,7 @@ class Entry(MutableMapping):
 
     @entry_type.setter
     def entry_type(self, value):
-        self._entry.entry_type = normalize_entry_type(value)
+        self._entry.entry_type = active.normalize_entry_type(value)
         self._touch()
 
     # -- groups ------------------------------------------------------ #

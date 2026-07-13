@@ -27,9 +27,9 @@ def _reset_config(tmp_path, monkeypatch):
     user-level `bibdeskparser.toml` can never leak into a test.
     """
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg-config"))
-    config.reset()
+    config.active.reset()
     yield
-    config.reset()
+    config.active.reset()
 
 
 @pytest.fixture(name="bibfile")
@@ -299,14 +299,120 @@ def test_export_minimal(runner, bibfile):
     assert "abstract" not in result.output
 
 
+def test_eval_format_spec(runner, bibfile):
+    """`eval_format_spec` prints the key a format yields, without
+    modifying the `.bib` file."""
+    before = bibfile.read_text(encoding="utf-8")
+    result = _run(
+        runner, "eval_format_spec", bibfile, "GoerzPRA2014", "%a1%Y%u0"
+    )
+    assert result.output.strip() == "Goerz2014"
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_eval_format_spec_json(runner, bibfile):
+    result = _run(
+        runner,
+        "eval_format_spec",
+        bibfile,
+        "GoerzPRA2014",
+        "%a1%Y%u0",
+        "--json",
+    )
+    assert json.loads(result.output) == "Goerz2014"
+
+
+def test_eval_format_spec_from_config(runner, bibfile):
+    """Without a FORMAT argument, the `[auto_key]` format from the
+    `bibdeskparser.toml` next to the `.bib` file is used."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        '[auto_key]\nformat_spec = "%a1%c{journal}0%Y%u0"\n',
+        encoding="utf-8",
+    )
+    result = _run(runner, "eval_format_spec", bibfile, "GoerzPRA2014")
+    assert result.output.strip() == "GoerzPRA2014"  # already matches
+
+
+def test_eval_format_spec_without_format_fails(runner, bibfile):
+    result = runner.invoke(
+        main, ["eval_format_spec", str(bibfile), "GoerzPRA2014"]
+    )
+    assert result.exit_code == 1
+    assert "no auto-key format" in result.stderr
+
+
 # -- mutating commands -------------------------------------------------- #
 
 
 def test_rekey(runner, bibfile):
-    _run(runner, "rekey", bibfile, "GoerzDiploma2010", "Goerz2010")
+    result = _run(runner, "rekey", bibfile, "GoerzDiploma2010", "Goerz2010")
+    assert result.output == ""  # explicit renames print nothing
     lib = _load(bibfile)
     assert "Goerz2010" in lib
     assert "GoerzDiploma2010" not in lib
+
+
+def test_rekey_format_spec_option(runner, bibfile):
+    """`rekey` without NEW_KEY generates the key from the
+    `--format-spec` pattern and prints it."""
+    result = _run(
+        runner, "rekey", bibfile, "GoerzPRA2014", "--format-spec", "%a1%Y%u0"
+    )
+    assert result.output.strip() == "Goerz2014"
+    lib = _load(bibfile)
+    assert "Goerz2014" in lib
+    assert "GoerzPRA2014" not in lib
+
+
+def test_rekey_auto_from_config(runner, bibfile):
+    """`rekey` without NEW_KEY falls back to the `[auto_key]` format
+    from the `bibdeskparser.toml` next to the `.bib` file, including
+    the `[initials]` mapping."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        '[auto_key]\nformat_spec = "%a1%c{journal}0%Y%u0"\n\n'
+        '[initials.journal]\n"npj Quantum Inf" = "NPJQI"\n',
+        encoding="utf-8",
+    )
+    # already matching keys are kept (idempotent):
+    result = _run(runner, "rekey", bibfile, "GoerzNPJQI2017")
+    assert result.output.strip() == "GoerzNPJQI2017"
+    # a non-matching key is regenerated:
+    _run(runner, "rekey", bibfile, "GoerzNPJQI2017", "xxx")
+    result = _run(runner, "rekey", bibfile, "xxx")
+    assert result.output.strip() == "GoerzNPJQI2017"
+
+
+def test_rekey_auto_without_format_fails(runner, bibfile):
+    result = runner.invoke(main, ["rekey", str(bibfile), "GoerzPRA2014"])
+    assert result.exit_code == 1
+    assert "no auto-key format" in result.stderr
+
+
+def test_rekey_format_spec_with_new_key_fails(runner, bibfile):
+    result = runner.invoke(
+        main,
+        [
+            "rekey",
+            str(bibfile),
+            "GoerzPRA2014",
+            "NewKey",
+            "--format-spec",
+            "%a1%Y%u0",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "not both" in result.stderr
+
+
+def test_rekey_format_spec_not_implemented_specifier(runner, bibfile):
+    """`%i` in a `--format-spec` pattern is a clean error."""
+    result = runner.invoke(
+        main,
+        ["rekey", str(bibfile), "GoerzPRA2014", "--format-spec", "%i{X}"],
+    )
+    assert result.exit_code == 1
+    assert "%i" in result.stderr
+    assert "Traceback" not in result.stderr
 
 
 def test_delete(runner, bibfile):

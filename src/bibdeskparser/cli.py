@@ -38,6 +38,7 @@ __private__ = [
     "timestamp",
     "render",
     "export",
+    "eval_format_spec",
     "rekey",
     "delete",
     "add_to_group",
@@ -62,12 +63,15 @@ __private__ = [
 
 # Exceptions raised by the `Library` API for invalid user input; the
 # CLI converts these into clean one-line error messages (exit code 1).
+# `NotImplementedError` covers recognized-but-unsupported format
+# specifiers (`%i`) in `rekey --format-spec` patterns.
 _API_ERRORS = (
     KeyError,
     ValueError,
     FileNotFoundError,
     FileExistsError,
     StaleFileError,
+    NotImplementedError,
 )
 
 
@@ -90,10 +94,10 @@ def _default_bibfile(ctx):
     configured.
     """
     try:
-        config.load()
+        config.active.load()
     except (ValueError, FileNotFoundError) as exc:
         raise click.ClickException(str(exc)) from exc
-    bibfile = config.get_default_bib_file()
+    bibfile = config.active.default_bib_file
     if bibfile is None:
         raise click.UsageError(
             "no BIBFILE given, and no 'default_bib_file' is configured "
@@ -176,9 +180,11 @@ def main():
     `bibdeskparser.toml` is used instead.
 
     Read-only commands (`keys`, `show`, `search`, `groups`, `keywords`,
-    `strings`, `duplicate_keys`, `timestamp`) print to stdout and accept
-    `--json` for machine-readable output. The other commands modify the
-    `.bib` file in place and print nothing on success. On any error they
+    `strings`, `duplicate_keys`, `timestamp`, `eval_format_spec`) print
+    to stdout and accept `--json` for machine-readable output; `render`
+    and `export` are read-only as well. The other commands modify the
+    `.bib` file in place and print nothing on success (except `rekey`
+    without NEW_KEY, which prints the generated key). On any error they
     print `Error: <message>` to stderr and exit non-zero (2 for bad
     usage, 1 for a library error such as an unknown key or a `.bib` file
     changed on disk since it was read). Run `bibdeskparser COMMAND
@@ -405,18 +411,60 @@ def export(bibfile, citekeys, format_, outfile):
         _echo_block(text)
 
 
+@main.command(name="eval_format_spec", cls=_BibCommand)
+@click.argument("citekey", metavar="KEY")
+@click.argument("format_spec", metavar="FORMAT", required=False)
+@_json_option
+@click.pass_obj
+def eval_format_spec(bibfile, citekey, format_spec, as_json):
+    """Print the citation key that an auto-key format yields for the
+    entry with the given KEY. Read-only: nothing is renamed.
+
+    FORMAT is a pattern in BibDesk's format-specifier language (e.g.
+    "%a1%c{journal}0%Y%u0"); if omitted, the 'format_spec' key of the
+    [auto_key] table in bibdeskparser.toml is used (which may map a
+    different format to each entry type). A key that already matches
+    the format evaluates to itself, so printing anything other than
+    KEY means the entry's key does not follow the format.
+    """
+    data = Library(bibfile).eval_format_spec(citekey, format_spec)
+    _emit(data, as_json, data)
+
+
 # -- mutating commands -------------------------------------------------- #
 
 
 @main.command(name="rekey", cls=_BibCommand)
 @click.argument("old_key")
-@click.argument("new_key")
+@click.argument("new_key", required=False)
+@click.option(
+    "--format-spec",
+    "format_spec",
+    metavar="PATTERN",
+    default=None,
+    help=(
+        "Generate the new key from this auto-key format pattern "
+        '(e.g. "%a1%c{journal}0%Y%u0") instead of the configured one. '
+        "Only valid without NEW_KEY."
+    ),
+)
 @click.pass_obj
-def rekey(bibfile, old_key, new_key):
-    """Change the citation key of an entry from OLD_KEY to NEW_KEY."""
+def rekey(bibfile, old_key, new_key, format_spec):
+    """Change the citation key of an entry from OLD_KEY to NEW_KEY.
+
+    If NEW_KEY is omitted, generate it from an auto-key format in
+    BibDesk's format-specifier language: the --format-spec PATTERN if
+    given, or else the 'format_spec' key of the [auto_key] table in
+    bibdeskparser.toml (which may map a different format to each entry
+    type). A generated key is printed to stdout. A key that already
+    matches the format is kept unchanged, and a %u/%U/%n specifier in
+    the format resolves collisions with other entries.
+    """
     lib = Library(bibfile)
-    lib.rekey(old_key, new_key)
+    result = lib.rekey(old_key, new_key, format_spec=format_spec)
     lib.save()
+    if new_key is None:
+        click.echo(result)
 
 
 @main.command(name="delete", cls=_BibCommand)
