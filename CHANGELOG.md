@@ -3,6 +3,8 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [v0.2.0] - 2026-07-13
 
 * Added: automatic filing of file attachments, mirroring BibDesk's AutoFile feature. `Library.rename_file` without a `new_filename` moves an attachment into the configured auto-file location and renames it according to a file-name format in BibDesk's format-specifier language (the recommended format is `%f{Cite Key}%u0%e`, naming each file after its entry's citation key while keeping the real extension); `Library.add_file` files newly attached files the same way when auto-filing is in effect (`file_automatically = true` in the configuration, or explicit `format_spec`/`auto_file_location` arguments, with `auto_file_location=""` forcing a plain attach). A file whose name already matches the format is left in place (re-filing is idempotent), and the format's required `%u`/`%U`/`%n` specifier disambiguates against existing files on disk. The `rename_file` and `add_file` CLI commands gain the corresponding options. [[#10]]
