@@ -184,11 +184,12 @@ def main():
     to stdout and accept `--json` for machine-readable output; `render`
     and `export` are read-only as well. The other commands modify the
     `.bib` file in place and print nothing on success (except `rekey`
-    without NEW_KEY, which prints the generated key). On any error they
-    print `Error: <message>` to stderr and exit non-zero (2 for bad
-    usage, 1 for a library error such as an unknown key or a `.bib` file
-    changed on disk since it was read). Run `bibdeskparser COMMAND
-    --help` for a command's arguments.
+    without NEW_KEY and `rename_file` without NEW, which print the
+    generated key or file path, as does `add_file` when it auto-files).
+    On any error they print `Error: <message>` to stderr and exit
+    non-zero (2 for bad usage, 1 for a library error such as an unknown
+    key or a `.bib` file changed on disk since it was read). Run
+    `bibdeskparser COMMAND --help` for a command's arguments.
     """
 
 
@@ -414,20 +415,39 @@ def export(bibfile, citekeys, format_, outfile):
 @main.command(name="eval_format_spec", cls=_BibCommand)
 @click.argument("citekey", metavar="KEY")
 @click.argument("format_spec", metavar="FORMAT", required=False)
+@click.option(
+    "--filename",
+    default=None,
+    metavar="FILE",
+    help=(
+        "Evaluate FORMAT as a file name instead of a citation key, in "
+        "the file-name dialect. FILE only supplies the original-name "
+        "specifiers %l/%L/%e/%E (e.g. its extension); it need not "
+        "exist or be attached to KEY. Pass an empty string to select "
+        "the dialect when FORMAT uses none of those specifiers."
+    ),
+)
 @_json_option
 @click.pass_obj
-def eval_format_spec(bibfile, citekey, format_spec, as_json):
-    """Print the citation key that an auto-key format yields for the
-    entry with the given KEY. Read-only: nothing is renamed.
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def eval_format_spec(bibfile, citekey, format_spec, filename, as_json):
+    """Print the citation key (or, with --filename, the file name)
+    that a format yields for the entry with the given KEY. Read-only:
+    nothing is renamed or moved.
 
     FORMAT is a pattern in BibDesk's format-specifier language (e.g.
-    "%a1%c{journal}0%Y%u0"); if omitted, the 'format_spec' key of the
-    [auto_key] table in bibdeskparser.toml is used (which may map a
-    different format to each entry type). A key that already matches
-    the format evaluates to itself, so printing anything other than
-    KEY means the entry's key does not follow the format.
+    "%a1%c{journal}0%Y%u0"; with --filename e.g. "%f{Cite Key}%u0%e");
+    if omitted, the 'format_spec' key of the [auto_key] table in
+    bibdeskparser.toml is used ([auto_file], with --filename), which
+    may map a different format to each entry type. If FILE is an
+    attachment's current path and already matches the format, it
+    evaluates to itself, so printing anything else means it does not
+    follow the format.
     """
-    data = Library(bibfile).eval_format_spec(citekey, format_spec)
+    data = Library(bibfile).eval_format_spec(
+        citekey, format_spec, filename=filename
+    )
     _emit(data, as_json, data)
 
 
@@ -582,14 +602,84 @@ def remove_from_keyword(bibfile, keyword, citekeys):
 @click.option(
     "--no-check-exists",
     is_flag=True,
-    help="Do not require FILENAME to exist on disk.",
+    help=(
+        "Do not require FILENAME to exist on disk (incompatible "
+        "with auto-filing)."
+    ),
+)
+@click.option(
+    "--format-spec",
+    "format_spec",
+    metavar="PATTERN",
+    default=None,
+    help=(
+        "Auto-file using this file-name format pattern (e.g. "
+        '"%f{Cite Key}%u0%e") instead of the configured one. '
+        "Implies auto-filing."
+    ),
+)
+@click.option(
+    "--location",
+    default=None,
+    metavar="DIR",
+    help=(
+        "Auto-file into this directory (relative to the .bib file, "
+        "or absolute) instead of the configured one. Implies "
+        "auto-filing."
+    ),
+)
+@click.option(
+    "--no-auto-file",
+    is_flag=True,
+    help=(
+        "Attach FILENAME under its original name, even if the "
+        "configuration sets 'file_automatically = true'."
+    ),
 )
 @click.pass_obj
-def add_file(bibfile, key, filename, no_check_exists):
-    """Attach the file FILENAME to the entry KEY."""
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def add_file(
+    bibfile,
+    key,
+    filename,
+    no_check_exists,
+    format_spec,
+    location,
+    no_auto_file,
+):
+    """Attach the file FILENAME to the entry KEY.
+
+    When auto-filing is in effect -- --location or --format-spec
+    given, or 'file_automatically = true' in the [auto_file] table of
+    bibdeskparser.toml -- the file is not attached under its original
+    name: it is *moved* into the auto-file location, renamed according
+    to the file-name format, and the stored path (relative to the .bib
+    file) is printed to stdout. A plain attach prints nothing.
+    """
+    if no_auto_file and (format_spec is not None or location is not None):
+        raise click.UsageError(
+            "--no-auto-file cannot be combined with --format-spec or "
+            "--location"
+        )
     lib = Library(bibfile)
-    lib.add_file(key, filename, check_that_file_exists=not no_check_exists)
+    auto_file_location = "" if no_auto_file else location
+    result = lib.add_file(
+        key,
+        filename,
+        check_that_file_exists=not no_check_exists,
+        format_spec=format_spec,
+        auto_file_location=auto_file_location,
+    )
     lib.save()
+    if auto_file_location is None:
+        auto_filed = (
+            format_spec is not None or lib.config.auto_file.file_automatically
+        )
+    else:
+        auto_filed = str(auto_file_location) != ""
+    if auto_filed:
+        click.echo(result)
 
 
 @main.command(name="replace_file", cls=_BibCommand)
@@ -643,14 +733,58 @@ def unlink_file(bibfile, key, filename, remove):
 @main.command(name="rename_file", cls=_BibCommand)
 @click.argument("key")
 @click.argument("old_filename", metavar="OLD")
-@click.argument("new_filename", metavar="NEW")
+@click.argument("new_filename", metavar="NEW", required=False)
+@click.option(
+    "--format-spec",
+    "format_spec",
+    metavar="PATTERN",
+    default=None,
+    help=(
+        "Generate the new file name from this file-name format "
+        'pattern (e.g. "%f{Cite Key}%u0%e") instead of the '
+        "configured one. Only valid without NEW."
+    ),
+)
+@click.option(
+    "--location",
+    default=None,
+    metavar="DIR",
+    help=(
+        "Move the file into this directory (relative to the .bib "
+        "file, or absolute) instead of the configured auto-file "
+        "location. Only valid without NEW."
+    ),
+)
 @click.pass_obj
-def rename_file(bibfile, key, old_filename, new_filename):
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def rename_file(
+    bibfile, key, old_filename, new_filename, format_spec, location
+):
     """Rename (or move) entry KEY's attached file OLD to NEW on the
-    filesystem, updating every entry that links it."""
+    filesystem, updating every entry that links it.
+
+    If NEW is omitted, the target is generated by **auto-filing**: the
+    file is moved into the auto-file location and renamed according to
+    a file-name format in BibDesk's format-specifier language -- the
+    --format-spec/--location options if given, or else the
+    'format_spec' and 'location' keys of the [auto_file] table in
+    bibdeskparser.toml -- and the new path (relative to the .bib file)
+    is printed to stdout. A file whose name already matches the format
+    is left in place, and a %u/%U/%n specifier in the format resolves
+    collisions with existing files.
+    """
     lib = Library(bibfile)
-    lib.rename_file(key, old_filename, new_filename)
+    result = lib.rename_file(
+        key,
+        old_filename,
+        new_filename,
+        format_spec=format_spec,
+        auto_file_location=location,
+    )
     lib.save()
+    if new_filename is None:
+        click.echo(result)
 
 
 @main.command(name="add_url", cls=_BibCommand)

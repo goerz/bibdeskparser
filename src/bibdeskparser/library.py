@@ -4,6 +4,7 @@ import datetime
 import getpass
 import logging
 import os
+import shutil
 import sys
 import warnings
 from collections.abc import MutableMapping
@@ -1186,44 +1187,105 @@ class Library(MutableMapping):
         self[new_key] = self.pop(old_key)
         return new_key
 
-    def eval_format_spec(self, key, format_spec=None):
-        """Evaluate an auto-key format for the entry at `key`; returns
-        the resulting citation key without renaming anything.
+    def eval_format_spec(self, key, format_spec=None, *, filename=None):
+        """Evaluate a format specification for the entry at `key`;
+        returns the resulting citation key or file name without
+        renaming or moving anything.
 
-        This is exactly the key that {meth}`rekey` without a `new_key`
-        would generate: `format_spec` is a format in BibDesk's
+        `format_spec` is a format in BibDesk's
         [format-specifier language](format-specifiers), or a per-type
         `dict` mapping entry-type names (with `""` as the fallback) to
-        format strings; if it is `None`, the configured
-        `config.auto_key.format_spec` (from the `[auto_key]` table of
-        `bibdeskparser.toml`) is used (see the
-        [configuration](configuration)).
+        format strings; the entry's own type selects the format.
 
-        A key that already matches the format evaluates to itself, so
-        the entries whose key does not follow a given format are
-        exactly those with `bib.eval_format_spec(key) != key`.
+        Without `filename` (i.e. `filename=None`), the format is
+        evaluated as a **citation key**: exactly the key that
+        {meth}`rekey` without a `new_key` would generate. A
+        `format_spec` of `None` falls back to the configured
+        `config.auto_key.format_spec` (from the `[auto_key]` table of
+        `bibdeskparser.toml`; see the [configuration](configuration)).
+
+        With any `filename` (including the empty string `""`), the
+        format is evaluated as a **file name**, in the
+        [file-name dialect](specifiers-files): `format_spec` falls
+        back to `config.auto_file.format_spec` (the `[auto_file]`
+        table). `filename` only supplies the original-name specifiers
+        `%l`/`%L`/`%e`/`%E` (e.g. its extension); it need not exist or
+        be one of the entry's attachments, and `""` is fine when the
+        format uses none of those specifiers. If `filename` *is* an
+        attachment's current library-relative path (as listed by
+        {attr}`Entry.files`) and already matches the format, it
+        evaluates to itself (the same idempotency as the key context),
+        so the attachments that do not follow a given format are
+        exactly those where the result differs from the current path.
 
         Raises `KeyError` if `key` is not present, and `ValueError`
-        if no auto-key format is available for the entry's type, if the
-        entry lacks a field the format requires, or if the resulting
-        key would equal the entry's own `crossref` value.
+        if no format is available for the entry's type, if the entry
+        lacks a field the format requires, or (in the key context) if
+        the resulting key would equal the entry's own `crossref` value.
         """
         if key not in self._entries:
             raise KeyError(key)
-        return self._generate_key(key, format_spec)
+        if filename is None:
+            return self._generate_key(key, format_spec)
+        entry, fmt = self._compile_file_format(key, format_spec)
+        # Evaluate in the same location-relative frame that filing uses:
+        # `filename` is library-relative, but the format renders a name
+        # relative to `auto_file.location`, and the result is stored
+        # library-relative again (see `_generate_filename`). A library
+        # with no path yet cannot resolve a location (and cannot be
+        # filed at all), so it falls back to a plain, location-less
+        # render (equivalent to `location="."`).
+        base_dir = None if self._path is None else self._files_base_dir()
+        loc_dir = None
+        if base_dir is not None:
+            loc_dir = self._auto_file_location_dir(active.auto_file.location)
+        current_name = None
+        render_filename = filename
+        if loc_dir is not None and filename:
+            abs_name = os.path.normpath(base_dir / filename)
+            render_filename = str(abs_name)
+            rel = os.path.relpath(abs_name, loc_dir)
+            if not rel.startswith(os.pardir):
+                current_name = Path(rel).as_posix()
+        else:
+            current_name = filename or None
+        new_name = specifiers.render_format(
+            fmt,
+            entry,
+            strings=dict(self.strings),
+            initials=active.initials,
+            lowercase=active.auto_file.lowercase,
+            clean=active.auto_file.clean,
+            current_key=key,
+            document_name=(
+                Path(self._path).stem if self._path is not None else None
+            ),
+            filename=render_filename,
+            current_name=current_name,
+        )
+        if loc_dir is None:
+            return new_name
+        return Path(os.path.relpath(loc_dir / new_name, base_dir)).as_posix()
 
     @staticmethod
-    def _resolve_format_spec(format_spec, entry_type):
+    def _resolve_format_spec(format_spec, entry_type, *, context="key"):
         """Resolve `format_spec` (or, if it is `None`, the configured
-        `config.auto_key.format_spec`) to a single format string for an
-        entry of `entry_type`, picking the per-type entry (or the `""`
+        `config.auto_key.format_spec` / `config.auto_file.format_spec`,
+        depending on `context`) to a single format string for an entry
+        of `entry_type`, picking the per-type entry (or the `""`
         fallback) from a `dict` spec."""
+        if context == "file":
+            what, kind, table = "file name", "auto-file", "[auto_file]"
+            configured = active.auto_file.format_spec
+        else:
+            what, kind, table = "citation key", "auto-key", "[auto_key]"
+            configured = active.auto_key.format_spec
         if format_spec is None:
-            format_spec = active.auto_key.format_spec
+            format_spec = configured
         if format_spec is None:
             raise ValueError(
-                "cannot generate a citation key: no auto-key format is "
-                "configured (set 'format_spec' in the [auto_key] table "
+                f"cannot generate a {what}: no {kind} format is "
+                f"configured (set 'format_spec' in the {table} table "
                 "of bibdeskparser.toml, or pass a format explicitly)"
             )
         if isinstance(format_spec, str):
@@ -1233,7 +1295,7 @@ class Library(MutableMapping):
         if "" in format_spec:
             return format_spec[""]
         raise ValueError(
-            "cannot generate a citation key: the auto-key format_spec "
+            f"cannot generate a {what}: the {kind} format_spec "
             f"has no entry for type {entry_type!r} and no '' fallback"
         )
 
@@ -1262,7 +1324,7 @@ class Library(MutableMapping):
             lowercase=active.auto_key.lowercase,
             clean=active.auto_key.clean,
             current_key=key,
-            is_key_free=lambda k: k == key or k not in self._entries,
+            is_free=lambda k: k == key or k not in self._entries,
             document_name=(
                 Path(self._path).stem if self._path is not None else None
             ),
@@ -1275,6 +1337,82 @@ class Library(MutableMapping):
                 "equal the entry's own crossref"
             )
         return new_key
+
+    def _compile_file_format(self, key, format_spec):
+        """Resolve and compile a file-name `format_spec` (or, if it is
+        `None`, the configured `config.auto_file.format_spec`) for entry
+        `key`, checking that the entry has every field the format
+        requires. Returns the `(entry, fmt)` pair; backs
+        {meth}`_generate_filename` and {meth}`eval_format_spec`."""
+        entry = self._entries[key]
+        format_string = self._resolve_format_spec(
+            format_spec, entry.entry_type, context="file"
+        )
+        fmt = specifiers.compile_format(format_string, context="file")
+        missing = specifiers.missing_required_fields(fmt, entry)
+        if missing:
+            raise ValueError(
+                f"cannot generate a file name for {key!r}: the "
+                f"format {format_string!r} requires the missing "
+                f"field(s) {', '.join(sorted(missing))}"
+            )
+        return entry, fmt
+
+    def _auto_file_location_dir(self, location):
+        """Resolve an auto-file `location` (relative to the library
+        directory, or absolute) to an absolute, resolved `Path`."""
+        loc_dir = Path(os.path.expandvars(str(location))).expanduser()
+        if not loc_dir.is_absolute():
+            loc_dir = self._files_base_dir() / loc_dir
+        return loc_dir.resolve()
+
+    def _generate_filename(self, key, old_path, format_spec, location):
+        """Generate the auto-file target for entry `key`'s attachment
+        at `old_path` (an absolute, resolved `Path`), from
+        `format_spec` or (if that is `None`) the configured
+        `config.auto_file.format_spec`, under the directory `location`
+        (relative to the library directory, or absolute). Returns the
+        absolute target `Path`; backs the auto-file modes of
+        {meth}`rename_file` and {meth}`add_file`."""
+        base_dir = self._files_base_dir()
+        if not str(location):
+            raise ValueError(
+                "cannot generate a file name: auto_file_location must "
+                "not be empty"
+            )
+        loc_dir = self._auto_file_location_dir(location)
+        entry, fmt = self._compile_file_format(key, format_spec)
+        try:
+            # feeds the idempotency check: a file already under
+            # `location` with a name matching the format keeps it
+            current_name = old_path.relative_to(loc_dir).as_posix()
+        except ValueError:
+            current_name = None
+
+        def is_free(name):
+            # a candidate is taken iff another file exists there (the
+            # file being filed may itself sit at the target already)
+            target = loc_dir / name
+            if target.exists():
+                return old_path.exists() and os.path.samefile(target, old_path)
+            return True
+
+        new_name = specifiers.render_format(
+            fmt,
+            entry,
+            strings=dict(self.strings),
+            initials=active.initials,
+            lowercase=active.auto_file.lowercase,
+            clean=active.auto_file.clean,
+            current_key=key,
+            is_free=is_free,
+            document_name=(
+                Path(self._path).stem if self._path is not None else None
+            ),
+            filename=str(old_path),
+            current_name=current_name,
+        )
+        return loc_dir / new_name
 
     def __iter__(self):
         return iter(self._entries)
@@ -1394,10 +1532,18 @@ class Library(MutableMapping):
         if abs_path.exists():
             _delete_file(abs_path)
 
-    def add_file(self, key, filename, *, check_that_file_exists=True):
+    def add_file(
+        self,
+        key,
+        filename,
+        *,
+        check_that_file_exists=True,
+        format_spec=None,
+        auto_file_location=None,
+    ):
         """Attach the file `filename` to entry `key`, appending a
-        `bdsk-file-N` field (see
-        {attr}`Entry.files`).
+        `bdsk-file-N` field (see {attr}`Entry.files`); returns the
+        stored library-relative path.
 
         * `key`: citation key of the entry (raises `KeyError` if not
           in the library).
@@ -1412,6 +1558,26 @@ class Library(MutableMapping):
           interpreted relative to the library directory, as a
           path-only attachment without a macOS bookmark (useful,
           e.g., for a file that only exists on another machine).
+          Incompatible with auto-filing (`ValueError`), which must
+          move the file.
+        * `format_spec`, `auto_file_location`: control **auto-filing**
+          (see below); they default to the `[auto_file]` configuration
+          (`config.auto_file.format_spec` /
+          `config.auto_file.location`; see the
+          [configuration](configuration)).
+
+        When auto-filing is in effect, the file is not attached under
+        its original name: it is *moved* into the `auto_file_location`
+        directory (relative to the library's `.bib` directory, or
+        absolute) and renamed according to `format_spec`, a file-name
+        format in BibDesk's
+        [format-specifier language](format-specifiers). Auto-filing
+        is in effect if `auto_file_location` is given non-empty, if
+        `format_spec` is given, or if the configuration sets
+        `file_automatically = true` in its `[auto_file]` table; pass
+        `auto_file_location=""` to force a plain attach regardless of
+        the configuration. The move itself (and the update of every
+        entry linking the file) is exactly {meth}`rename_file`.
 
         The stored path is always relative to the library directory.
         For a file that exists, a macOS bookmark is generated
@@ -1421,15 +1587,39 @@ class Library(MutableMapping):
         attached by path only, with a `UserWarning`.
 
         Raises `ValueError` if the file is already attached to the
-        entry, or if this library has no file path yet (a
-        from-scratch library must be saved first, so that relative
-        paths are well-defined).
+        entry, if auto-filing cannot generate a name (no format
+        configured, or a required field is missing), or if this
+        library has no file path yet (a from-scratch library must be
+        saved first, so that relative paths are well-defined).
         """
         entry = self._entries[key]
         base_dir = self._files_base_dir()
+        if auto_file_location is None:
+            if format_spec is not None or active.auto_file.file_automatically:
+                auto_file_location = active.auto_file.location
+            else:
+                auto_file_location = ""
+        auto_file = str(auto_file_location) != ""
+        if not auto_file and format_spec is not None:
+            raise ValueError(
+                "format_spec has no effect when auto-filing is "
+                "disabled (auto_file_location='')"
+            )
+        if auto_file and not check_that_file_exists:
+            raise ValueError(
+                "cannot auto-file with check_that_file_exists=False: "
+                "moving a file requires it to exist"
+            )
         path = self._resolve_file_arg(
             filename, must_exist=check_that_file_exists
         )
+        new_path = None
+        if auto_file:
+            # generate (and thereby validate) the target *before*
+            # attaching, so a failure leaves the entry unchanged
+            new_path = self._generate_filename(
+                key, path.resolve(), format_spec, auto_file_location
+            )
         bdsk_file = BibDeskFile(
             path, relative_to=base_dir, must_exist=check_that_file_exists
         )
@@ -1440,6 +1630,11 @@ class Library(MutableMapping):
             )
         # pylint: disable=protected-access
         entry._set_files(entry._file_objects() + [bdsk_file])
+        if new_path is not None:
+            return self.rename_file(
+                key, bdsk_file.relative_path, os.fspath(new_path)
+            )
+        return bdsk_file.relative_path
 
     def replace_file(
         self,
@@ -1527,11 +1722,19 @@ class Library(MutableMapping):
         if remove:
             self._remove_linked_file(rel_path)
 
-    def rename_file(self, key, old_filename, new_filename):
+    def rename_file(
+        self,
+        key,
+        old_filename,
+        new_filename=None,
+        *,
+        format_spec=None,
+        auto_file_location=None,
+    ):
         """Rename (or move) entry `key`'s attached file
-        `old_filename` to `new_filename` on the filesystem, updating
-        *every* entry that links the file (each with a fresh macOS
-        bookmark, where available).
+        `old_filename` on the filesystem, updating *every* entry that
+        links the file (each with a fresh macOS bookmark, where
+        available); returns the new library-relative path.
 
         * `key`: citation key of an entry linking the file (raises
           `KeyError` if not in the library). Other entries linking
@@ -1545,9 +1748,32 @@ class Library(MutableMapping):
           a relative path with a directory component is interpreted
           relative to the library's `.bib` directory; an absolute
           path is used as-is. Raises `FileExistsError` if the target
-          already exists.
+          already exists. Missing directories in the target path are
+          created.
 
-        Raises `ValueError` if this library has no file path yet
+        With `new_filename` omitted (or `None`), the target is
+        **generated**: the file is moved into the
+        `auto_file_location` directory (relative to the library's
+        `.bib` directory, or absolute) and renamed according to
+        `format_spec`, a file-name format in BibDesk's
+        [format-specifier language](format-specifiers) (a single
+        format string, or a per-type `dict` like in {meth}`rekey`).
+        Both default to the `[auto_file]` configuration
+        (`config.auto_file.format_spec` / `config.auto_file.location`;
+        see the [configuration](configuration)). A file whose name
+        already matches the format is left in place, so re-filing is
+        idempotent; the format's required `%u`/`%U`/`%n` specifier
+        resolves collisions with existing files at the target
+        location. To preview the generated path without moving
+        anything, use {meth}`eval_format_spec` with a `filename`.
+
+        Renaming a file to itself (`new_filename` naming the same
+        file, or a generated name that already matches) is a no-op.
+
+        Raises `ValueError` if `new_filename` is given together with
+        `format_spec` or `auto_file_location`, if no auto-file format
+        is available for the entry's type, if the entry lacks a field
+        the format requires, or if this library has no file path yet
         (see {meth}`add_file`).
         """
         entry = self._entries[key]
@@ -1556,15 +1782,33 @@ class Library(MutableMapping):
         old_path = (base_dir / old_rel).resolve()
         if not old_path.exists():
             raise FileNotFoundError(f"No such file: {old_path}")
-        new_path = Path(new_filename)
-        if not new_path.is_absolute():
-            if new_path.parent == Path("."):
-                new_path = old_path.parent / new_path
-            else:
-                new_path = base_dir / new_path
+        if new_filename is None:
+            if auto_file_location is None:
+                auto_file_location = active.auto_file.location
+            new_path = self._generate_filename(
+                key, old_path, format_spec, auto_file_location
+            )
+        else:
+            if format_spec is not None or auto_file_location is not None:
+                raise ValueError(
+                    "give either new_filename or format_spec/"
+                    "auto_file_location, not both"
+                )
+            new_path = Path(new_filename)
+            if not new_path.is_absolute():
+                if new_path.parent == Path("."):
+                    new_path = old_path.parent / new_path
+                else:
+                    new_path = base_dir / new_path
         if new_path.exists():
+            if os.path.samefile(new_path, old_path):
+                return old_rel  # no-op: already the same file
             raise FileExistsError(f"File already exists: {new_path}")
-        os.rename(old_path, new_path)
+        new_path.parent.mkdir(parents=True, exist_ok=True)
+        # `shutil.move` (unlike `os.rename`) also works across
+        # filesystems, e.g. for an absolute auto-file location on
+        # another volume
+        shutil.move(os.fspath(old_path), os.fspath(new_path))
         new_file = BibDeskFile(new_path, relative_to=base_dir)
         for other in self._entries.values():
             # pylint: disable=protected-access
@@ -1577,6 +1821,7 @@ class Library(MutableMapping):
                     changed = True
             if changed:
                 other._set_files(files)
+        return new_file.relative_path
 
     # -- urls -------------------------------------------------------- #
 

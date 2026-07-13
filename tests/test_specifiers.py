@@ -1,5 +1,5 @@
-"""Tests for `bibdeskparser.specifiers` (the cite-key format
-language)."""
+"""Tests for `bibdeskparser.specifiers` (the format-specifier
+language, in both the cite-key and the file-name context)."""
 
 import warnings
 
@@ -458,7 +458,7 @@ def test_random_specifiers(entry):
 def test_unique_grows_only_as_needed(entry):
     taken = set()
     for expected in ("Goerz2014", "Goerz2014a", "Goerz2014b"):
-        key = _gen(entry, "%a1%Y%u0", is_key_free=lambda k: k not in taken)
+        key = _gen(entry, "%a1%Y%u0", is_free=lambda k: k not in taken)
         assert key == expected
         taken.add(key)
 
@@ -467,7 +467,7 @@ def test_unique_fixed_count(entry):
     taken = {"Goerz:2014aa"}
     assert _gen(entry, "%a1:%Y%u2") == "Goerz:2014aa"
     assert (
-        _gen(entry, "%a1:%Y%u2", is_key_free=lambda k: k not in taken)
+        _gen(entry, "%a1:%Y%u2", is_free=lambda k: k not in taken)
         == "Goerz:2014ab"
     )
 
@@ -476,7 +476,7 @@ def test_unique_uppercase_and_numeric(entry):
     assert _gen(entry, "%a1%Y%U1") == "Goerz2014A"
     taken = {"Goerz2014"}
     assert (
-        _gen(entry, "%a1%Y%n0", is_key_free=lambda k: k not in taken)
+        _gen(entry, "%a1%Y%n0", is_free=lambda k: k not in taken)
         == "Goerz20141"
     )
 
@@ -485,7 +485,7 @@ def test_numeric_suffix_skips_leading_zero(entry):
     """A grown numeric suffix continues 8, 9, 10 (not 00)."""
     taken = {"Goerz2014"} | {f"Goerz2014{i}" for i in range(1, 10)}
     assert (
-        _gen(entry, "%a1%Y%n0", is_key_free=lambda k: k not in taken)
+        _gen(entry, "%a1%Y%n0", is_free=lambda k: k not in taken)
         == "Goerz201410"
     )
 
@@ -498,7 +498,7 @@ def test_unique_prefix_suffix(entry):
         _gen(
             entry,
             "%a1%Y%u[.][]0",
-            is_key_free=lambda k: k not in taken,
+            is_free=lambda k: k not in taken,
         )
         == "Goerz2014.a"
     )
@@ -509,7 +509,7 @@ def test_unique_infix_between_base_and_end(entry):
     not at the end."""
     taken = {"Goerz2014X"}
     assert (
-        _gen(entry, "%a1%Y%u0X", is_key_free=lambda k: k not in taken)
+        _gen(entry, "%a1%Y%u0X", is_free=lambda k: k not in taken)
         == "Goerz2014aX"
     )
 
@@ -545,7 +545,7 @@ def test_empty_format_yields_numbered_key(entry):
     empty = _entry(title="T")
     assert _gen(empty, "%f{note}") == "1"
     taken = {"1"}
-    assert _gen(empty, "%f{note}", is_key_free=lambda k: k not in taken) == "2"
+    assert _gen(empty, "%f{note}", is_free=lambda k: k not in taken) == "2"
 
 
 # -- idempotent regeneration ---------------------------------------------- #
@@ -560,7 +560,7 @@ def test_current_key_matching_pattern_is_kept(entry):
         entry,
         "%a1%c{journal}0%Y%u0",
         current_key="GoerzPRA2014b",
-        is_key_free=lambda k: k not in taken,
+        is_free=lambda k: k not in taken,
     )
     assert key == "GoerzPRA2014b"
 
@@ -606,3 +606,169 @@ def test_missing_required_fields(entry):
     assert missing_required_fields(fmt, editor_only) == []
     fmt = compile_format("%a1%t")
     assert missing_required_fields(fmt, editor_only) == ["author"]
+
+
+# -- file-name formats (the AutoFile context) ------------------------------ #
+
+
+def _gen_file(entry, format_string, **kwargs):
+    """Compile (in the file context) and render `format_string`."""
+    return render_format(
+        compile_format(format_string, context="file"), entry, **kwargs
+    )
+
+
+def test_invalid_context_rejected():
+    with pytest.raises(ValueError, match="invalid format context"):
+        compile_format("%n0", context="path")
+
+
+def test_file_specifiers_accepted_in_file_context():
+    for char in "lLeE":
+        compile_format(f"%{char}%n0", context="file")
+
+
+def test_file_format_requires_unique_specifier():
+    with pytest.raises(ValueError, match="unique specifier"):
+        compile_format("%l%e", context="file")
+    with pytest.raises(ValueError, match="%u, %U, or %n"):
+        compile_format("%f{Cite Key}.pdf", context="file")
+
+
+def test_file_format_second_unique_specifier_rejected():
+    with pytest.raises(ValueError, match="only once"):
+        compile_format("%l%u0%n0%e", context="file")
+
+
+def test_percent_escape_valid_in_file_context(entry):
+    """A literal `%` is fine in a file name (unlike in a cite key)."""
+    assert _gen_file(entry, "x%%y%n0") == "x%y"
+    assert _gen_file(entry, "%a[%%]2%n0") == "Goerz%Halperin"
+
+
+def test_old_filename_specifiers(entry):
+    """`%l`/`%L`/`%e` insert the linked file's current name; `:` (the
+    one invalid file-name character) is stripped, spaces are kept."""
+    filename = "/some/dir/My Paper: v2.pdf"
+    assert _gen_file(entry, "%l%n0", filename=filename) == "My Paper v2"
+    assert _gen_file(entry, "%L%n0", filename=filename) == "My Paper v2.pdf"
+    assert _gen_file(entry, "%l%n0%e", filename=filename) == (
+        "My Paper v2.pdf"
+    )
+
+
+def test_extension_without_dot(entry):
+    """`%E` inserts the extension without the leading dot, with an
+    optional `[default]` for extensionless files."""
+    assert _gen_file(entry, "x.%E%n0", filename="a/b.ps") == "x.ps"
+    assert _gen_file(entry, "x.%E[pdf]%n0", filename="a/b.ps") == "x.ps"
+    assert _gen_file(entry, "x.%E[pdf]%n0", filename="a/b") == "x.pdf"
+    assert _gen_file(entry, "x.%E%n0", filename="a/b") == "x."
+
+
+def test_old_filename_specifiers_without_filename(entry):
+    """Without a `filename`, the old-filename specifiers render
+    nothing."""
+    assert _gen_file(entry, "X%l%L%e%n0") == "X"
+
+
+def test_literal_slash_is_directory_separator(entry):
+    """A literal `/` in the format survives (creating subfolders),
+    while a `/` inside a field value becomes `-`."""
+    assert _gen_file(entry, "%Y/%f{doi}%n0") == (
+        "2014/10.1103-PhysRevA.90.032329"
+    )
+    # an explicit [slash] argument still overrides the default
+    assert _gen_file(entry, "%f{doi}[_]%n0") == "10.1103_PhysRevA.90.032329"
+
+
+def test_value_slash_replacement_in_words_and_keywords():
+    entry = _entry(title="T", doi="10.1103/PhysRevA.90.032329")
+    entry._set_keywords(  # pylint: disable=protected-access
+        ("quantum/control",)
+    )
+    assert _gen_file(entry, "%w{doi}[.]2%n0") == "101103-PhysRevA"
+    assert _gen_file(entry, "%k%n0") == "quantum-control"
+
+
+def test_file_names_keep_non_ascii():
+    """File names keep accented characters (cite keys fold them to
+    ASCII)."""
+    entry = _entry(author="Müller, Jörg", title="T")
+    assert _gen_file(entry, "%a1%n0") == "Müller"
+    assert _gen(entry, "%a1") == "Muller"
+
+
+def test_file_names_keep_spaces(entry):
+    assert _gen_file(entry, "%t22%n0") == "Robustness of high-fid"
+
+
+def test_cite_key_colon_stripped_in_file_context(entry):
+    assert (
+        _gen_file(entry, "%f{Cite Key}%n0", current_key="Goerz:2014")
+        == "Goerz2014"
+    )
+
+
+def test_file_clean_levels():
+    entry = _entry(title=r"\emph{Deep} Learning", year="2014")
+    assert _gen_file(entry, "%f{title}%n0", clean="tex") == "Deep Learning"
+    assert (
+        _gen_file(entry, "%f{title}%n0", clean="braces")
+        == r"\emphDeep Learning"
+    )
+    assert (
+        _gen_file(entry, "%f{title}%n0", clean="none")
+        == r"\emph{Deep} Learning"
+    )
+
+
+def test_file_lowercase(entry):
+    assert (
+        _gen_file(
+            entry,
+            "%f{Cite Key}%U0%e",
+            filename="dir/X.PDF",
+            current_key="Goerz",
+            lowercase=True,
+        )
+        == "goerz.pdf"
+    )
+
+
+def test_leading_slash_stripped(entry):
+    """A leading `/` cannot escape the auto-file location."""
+    assert _gen_file(entry, "/sub/%f{Cite Key}%n0", current_key="K") == "sub/K"
+
+
+def test_file_unique_from_filesystem_callback(entry):
+    """`is_free` decides uniqueness (the library checks the target
+    directory on disk); `%u0` grows characters only as needed."""
+    taken = {"Goerz2014.pdf"}
+    assert (
+        _gen_file(
+            entry,
+            "%f{Cite Key}%u0%e",
+            filename="old/paper.pdf",
+            current_key="Goerz2014",
+            is_free=lambda name: name not in taken,
+        )
+        == "Goerz2014a.pdf"
+    )
+
+
+def test_file_current_name_matching_pattern_is_kept(entry):
+    """A file whose current name already fits the format keeps it,
+    even though generation would pick different unique characters."""
+    taken = {"Goerz2014.pdf"}
+    assert (
+        _gen_file(
+            entry,
+            "%f{Cite Key}%u0%e",
+            filename="papers/Goerz2014b.pdf",
+            current_key="Goerz2014",
+            current_name="Goerz2014b.pdf",
+            is_free=lambda name: name not in taken,
+        )
+        == "Goerz2014b.pdf"
+    )

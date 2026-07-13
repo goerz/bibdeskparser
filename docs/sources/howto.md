@@ -6,6 +6,13 @@ basics of `bibdeskparser` (see the [introduction](readme)); for background on
 
 ## How to manage file attachments
 
+```{tip}
+Rather than naming and placing every attachment by hand, you can have
+`bibdeskparser` *auto-file* them -- moving each file into a configured
+location and renaming it by a file-name format (BibDesk's AutoFile
+feature). See [How to auto-file attachments](howto-auto-file) below.
+```
+
 Linked files are stored with paths relative to the library's `.bib`
 file, so attaching, replacing, unlinking, and renaming them are
 `Library` operations ({py:attr}`~bibdeskparser.entry.Entry.files`
@@ -36,8 +43,8 @@ both places is rejected as ambiguous; pass an absolute path instead):
 >>> bib.save(libdir / "library.bib")
 >>> with warnings.catch_warnings():
 ...     warnings.simplefilter("ignore")  # no macOS bookmark support here
-...     bib.add_file("Smith2020", libdir / "Smith2020.pdf")
-...     bib.add_file("Smith2020", "notes.pdf")  # library-relative
+...     _ = bib.add_file("Smith2020", libdir / "Smith2020.pdf")
+...     _ = bib.add_file("Smith2020", "notes.pdf")  # library-relative
 >>> bib["Smith2020"].files
 ['Smith2020.pdf', 'notes.pdf']
 
@@ -54,12 +61,15 @@ on its next save, once the file appears.
 
 {py:meth}`~bibdeskparser.library.Library.rename_file` renames (or,
 given a path with a directory component, moves) the file on disk and
-updates *every* entry that links it, each with a fresh bookmark:
+updates *every* entry that links it, each with a fresh bookmark; it
+returns the new stored path (relative to the library directory), as
+does `add_file`:
 
 ```python
 >>> with warnings.catch_warnings():
 ...     warnings.simplefilter("ignore")  # no macOS bookmark support here
 ...     bib.rename_file("Smith2020", "notes.pdf", "Smith2020-notes.pdf")
+'Smith2020-notes.pdf'
 >>> bib["Smith2020"].files
 ['Smith2020.pdf', 'Smith2020-notes.pdf']
 >>> (libdir / "Smith2020-notes.pdf").exists()
@@ -85,6 +95,83 @@ True
 >>> tmpdir.cleanup()
 
 ```
+
+(howto-auto-file)=
+
+## How to auto-file attachments
+
+Instead of naming every attachment by hand, let `bibdeskparser`
+*auto-file* them (BibDesk's AutoFile feature): move each file into a
+configured location and rename it according to a
+[file-name format](specifiers-files). Configure it once in the
+[`[auto_file]` table](config-auto-file) of `bibdeskparser.toml`:
+
+```toml
+[auto_file]
+format_spec = "%f{Cite Key}%u0%e"  # <citation key><the file's extension>
+location = "."                     # directory, relative to the .bib file
+```
+
+(equivalently, for the current process only,
+`Library.config.auto_file.format_spec = "%f{Cite Key}%u0%e"`).
+
+With that in place,
+{py:meth}`~bibdeskparser.library.Library.rename_file` *without* a new
+filename files an existing attachment, and
+{py:meth}`~bibdeskparser.library.Library.eval_format_spec` with a
+`filename` previews the generated path without moving anything:
+
+```python
+>>> tmpdir = tempfile.TemporaryDirectory()
+>>> libdir = Path(tmpdir.name)
+>>> _ = (libdir / "1512.02079v2.pdf").write_bytes(b"%PDF-1.4 fake")
+>>> bib = Library()
+>>> bib["Smith2020"] = Entry(
+...     "article", "Smith2020", fields={"title": "A Title"}
+... )
+>>> bib.save(libdir / "library.bib")
+>>> bib.config.auto_file.format_spec = "%f{Cite Key}%u0%e"
+>>> with warnings.catch_warnings():
+...     warnings.simplefilter("ignore")  # no macOS bookmark support here
+...     rel = bib.add_file("Smith2020", libdir / "1512.02079v2.pdf")
+>>> rel  # attached under its original name
+'1512.02079v2.pdf'
+>>> bib.eval_format_spec("Smith2020", filename=rel)  # preview only
+'Smith2020.pdf'
+>>> with warnings.catch_warnings():
+...     warnings.simplefilter("ignore")  # no macOS bookmark support here
+...     bib.rename_file("Smith2020", rel)  # move and rename the file
+'Smith2020.pdf'
+>>> bib["Smith2020"].files
+['Smith2020.pdf']
+
+```
+
+Re-running `rename_file` on an already-filed attachment is a no-op (a
+name that matches the format is kept), so auto-filing can safely be
+applied across a whole library.
+
+By default, `add_file` attaches a file under its original name, as
+above; filing is a separate, on-demand step. Setting
+`file_automatically = true` in `[auto_file]` makes `add_file`
+auto-file every new attachment immediately. Per call, an explicit
+`auto_file_location` (or `format_spec`) also enables auto-filing --
+here into a subdirectory next to the `.bib` file:
+
+```python
+>>> _ = (libdir / "notes.pdf").write_bytes(b"%PDF-1.4 fake notes")
+>>> with warnings.catch_warnings():
+...     warnings.simplefilter("ignore")  # no macOS bookmark support here
+...     bib.add_file("Smith2020", "notes.pdf", auto_file_location="Papers")
+'Papers/Smith2020.pdf'
+>>> bib.config.auto_file.format_spec = None  # restore the default
+>>> bib.save()
+>>> tmpdir.cleanup()
+
+```
+
+(Conversely, `auto_file_location=""` forces a plain attach even with
+`file_automatically = true`.)
 
 ## How to define or rename a `@string` macro (journal abbreviation)
 
