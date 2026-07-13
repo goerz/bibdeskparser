@@ -1853,6 +1853,28 @@ def test_eval_format_spec_filename_no_path(auto_file_config):
     assert bib.eval_format_spec("K1", filename="x.pdf") == "K1.pdf"
 
 
+def test_eval_format_spec_filename_nondefault_location(
+    tmp_path, auto_file_config
+):
+    """With a non-default `auto_file.location`, the preview is the
+    library-relative path that filing would store (including the
+    location prefix), and matching an already-filed attachment is
+    idempotent."""
+    bib = _file_bib(tmp_path, files=("a.pdf",))
+    # `_file_bib` builds a Library (which reloads config), so set the
+    # location afterwards, matching what filing will use
+    bib.config.auto_file.location = "Files"
+    # an unfiled name previews the full location-relative target ...
+    assert bib.eval_format_spec("K1", filename="a.pdf") == "Files/K1.pdf"
+    # ... and that is exactly what filing stores ...
+    with _quiet_bookmarks():
+        stored = bib.rename_file("K1", "a.pdf")
+    assert stored == "Files/K1.pdf"
+    # ... so evaluating the stored path is idempotent (identifies it as
+    # already conforming), not "Files/Files/K1.pdf" or "K1.pdf".
+    assert bib.eval_format_spec("K1", filename=stored) == stored
+
+
 # -- search -----------------------------------------------------------------#
 
 

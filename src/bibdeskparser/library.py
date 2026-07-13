@@ -1228,7 +1228,28 @@ class Library(MutableMapping):
         if filename is None:
             return self._generate_key(key, format_spec)
         entry, fmt = self._compile_file_format(key, format_spec)
-        return specifiers.render_format(
+        # Evaluate in the same location-relative frame that filing uses:
+        # `filename` is library-relative, but the format renders a name
+        # relative to `auto_file.location`, and the result is stored
+        # library-relative again (see `_generate_filename`). A library
+        # with no path yet cannot resolve a location (and cannot be
+        # filed at all), so it falls back to a plain, location-less
+        # render (equivalent to `location="."`).
+        base_dir = None if self._path is None else self._files_base_dir()
+        loc_dir = None
+        if base_dir is not None:
+            loc_dir = self._auto_file_location_dir(active.auto_file.location)
+        current_name = None
+        render_filename = filename
+        if loc_dir is not None and filename:
+            abs_name = os.path.normpath(base_dir / filename)
+            render_filename = str(abs_name)
+            rel = os.path.relpath(abs_name, loc_dir)
+            if not rel.startswith(os.pardir):
+                current_name = Path(rel).as_posix()
+        else:
+            current_name = filename or None
+        new_name = specifiers.render_format(
             fmt,
             entry,
             strings=dict(self.strings),
@@ -1239,9 +1260,12 @@ class Library(MutableMapping):
             document_name=(
                 Path(self._path).stem if self._path is not None else None
             ),
-            filename=filename,
-            current_name=filename or None,
+            filename=render_filename,
+            current_name=current_name,
         )
+        if loc_dir is None:
+            return new_name
+        return Path(os.path.relpath(loc_dir / new_name, base_dir)).as_posix()
 
     @staticmethod
     def _resolve_format_spec(format_spec, entry_type, *, context="key"):
@@ -1334,6 +1358,14 @@ class Library(MutableMapping):
             )
         return entry, fmt
 
+    def _auto_file_location_dir(self, location):
+        """Resolve an auto-file `location` (relative to the library
+        directory, or absolute) to an absolute, resolved `Path`."""
+        loc_dir = Path(os.path.expandvars(str(location))).expanduser()
+        if not loc_dir.is_absolute():
+            loc_dir = self._files_base_dir() / loc_dir
+        return loc_dir.resolve()
+
     def _generate_filename(self, key, old_path, format_spec, location):
         """Generate the auto-file target for entry `key`'s attachment
         at `old_path` (an absolute, resolved `Path`), from
@@ -1348,10 +1380,7 @@ class Library(MutableMapping):
                 "cannot generate a file name: auto_file_location must "
                 "not be empty"
             )
-        loc_dir = Path(os.path.expandvars(str(location))).expanduser()
-        if not loc_dir.is_absolute():
-            loc_dir = base_dir / loc_dir
-        loc_dir = loc_dir.resolve()
+        loc_dir = self._auto_file_location_dir(location)
         entry, fmt = self._compile_file_format(key, format_spec)
         try:
             # feeds the idempotency check: a file already under
