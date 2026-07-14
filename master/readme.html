@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; BibDeskParser 0.2.1 documentation</title>
+  <title>Introduction &mdash; BibDeskParser 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=37f418d5"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.2.1
+    v0.3.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -175,7 +175,8 @@ independently of any project, with</p>
 </div>
 <blockquote>
 <div><p><strong>Tip:</strong> If you use the command-line tool frequently, consider creating a
-shorter symlink for <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">bib</span></code>, so that you can write
+shorter symlink for <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">bib</span></code>, and set up a config file,
+with a <code class="docutils literal notranslate"><span class="pre">default_bib_file</span></code> so that you can write
 <code class="docutils literal notranslate"><span class="pre">bib</span> <span class="pre">import</span> <span class="pre">10.22331/q-2022-12-07-871</span></code>.</p>
 </div></blockquote>
 <p>To install the latest development version from <a class="reference external" href="https://github.com/goerz/bibdeskparser">Github</a>:</p>
@@ -185,40 +186,44 @@ shorter symlink for <code class="docutils literal notranslate"><span class="pre"
 </section>
 <section id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h1>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">Library</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tmpdir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;references.bib&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="s2">&quot;Smith2020&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="n">fields</span><span class="o">=</span><span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;A Title&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Smith, John and Doe, Jane&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;J. Test&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2020&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="p">},</span>
-<span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">bib_path</span><span class="p">)</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">(</span><span class="n">bib_path</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">]</span>
+<p><code class="docutils literal notranslate"><span class="pre">Library</span></code> loads an existing <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file and behaves like a dict of
+citation key to <code class="docutils literal notranslate"><span class="pre">Entry</span></code>. The examples below use the example database
+shipped in this repository at <code class="docutils literal notranslate"><span class="pre">tests/Refs/refs.bib</span></code>; substitute the
+path to your own library.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Library</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">(</span><span class="s2">&quot;tests/Refs/refs.bib&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">bib</span><span class="p">)</span>
+<span class="go">61</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzQ2022&quot;</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">])</span>
-<span class="go">A Title</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">author</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">last</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># &#39;Smith&#39;</span>
-<span class="go">Smith</span>
-
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;A Better Title&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;Favorites&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Smith2020&quot;</span><span class="p">,)</span>  <span class="c1"># BibDesk static group</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="o">.</span><span class="n">groups</span>
-<span class="go">(&#39;Favorites&#39;,)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">tmpdir</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+<span class="go">Quantum Optimal Control via Semi-Automatic Differentiation</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">author</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">last</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="go">Goerz</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="o">.</span><span class="n">files</span>  <span class="c1"># linked PDF attachment, relative to the .bib file</span>
+<span class="go">[&#39;GoerzQ2022.pdf&#39;]</span>
 
 </pre></div>
 </div>
+<p>Full-text search and rendering a formatted citation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;tractor atom interferometry&quot;</span><span class="p">)]</span>
+<span class="go">[&#39;RaithelQST2022&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s2">&quot;RaithelQST2022&quot;</span><span class="p">))</span>
+<span class="go">G. Raithel, A. Duspayev, B. Dash, *et al.* *Principles of tractor atom interferometry*. [Quantum Sci. Technol. **8**, p. 014001](https://doi.org/10.1088/2058-9565/ac9429) (2022), [arXiv:2207.09023](https://arxiv.org/abs/2207.09023).</span>
+
+</pre></div>
+</div>
+<p>Any change is written back with <code class="docutils literal notranslate"><span class="pre">save()</span></code>, preserving BibDesk’s file
+format byte-for-byte for everything that was not touched:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;note&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Implemented in the QuantumControl.jl framework.&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;To Read&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;BrifNJP2010&quot;</span><span class="p">,</span> <span class="s2">&quot;KochEPJQT2022&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;KochEPJQT2022&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">groups</span>
+<span class="go">(&#39;To Read&#39;,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+
+</pre></div>
+</div>
+<p>A new <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file can also be created from scratch, with <code class="docutils literal notranslate"><span class="pre">Library()</span></code>
+in Python or <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span> <span class="pre">create</span></code> on the command line.</p>
 </section>
 <section id="development">
 <h1>Development<a class="headerlink" href="#development" title="Link to this heading"></a></h1>
@@ -246,7 +251,7 @@ shorter symlink for <code class="docutils literal notranslate"><span class="pre"
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 14, 2026.
+      <span class="lastupdated">Last updated on Jul 18, 2026.
       </span></p>
   </div>
 

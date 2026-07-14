@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.macros &mdash; BibDeskParser 0.2.1 documentation</title>
+  <title>bibdeskparser.macros &mdash; BibDeskParser 0.3.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=37f418d5"></script>
+      <script src="../../_static/documentation_options.js?v=e259d695"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.2.1
+    v0.3.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -150,7 +150,37 @@
 
 <span class="c1"># All members whose name does not start with an underscore must be listed</span>
 <span class="c1"># either in __all__ or in __private__</span>
-<span class="n">__private__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;is_valid_macro_name&quot;</span><span class="p">,</span> <span class="s2">&quot;normalize_macro_name&quot;</span><span class="p">]</span>
+<span class="n">__private__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;is_valid_macro_name&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;normalize_macro_name&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;STANDARD_MACROS&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c1"># BibDesk&#39;s built-in &quot;standard&quot; macros: exactly the twelve BibTeX month</span>
+<span class="c1"># macros, and nothing else (`standardMacroDefinitions` in</span>
+<span class="c1"># `BDSKMacroResolver.m`). BibDesk maps them to the localized full month</span>
+<span class="c1"># names; we use the (deterministic) English names, which is also what</span>
+<span class="c1"># the standard BibTeX style `plain.bst` defines. These are a</span>
+<span class="c1"># lowest-priority *fallback* for resolving a bare reference, never part</span>
+<span class="c1"># of `Library.strings` and never written to the `.bib` file. A</span>
+<span class="c1"># `@string` definition of the same name is an ordinary macro -- it</span>
+<span class="c1"># overrides the fallback (as in BibTeX/BibDesk, where a `.bib`</span>
+<span class="c1"># `@string` beats a `.bst`/built-in definition) and round-trips through</span>
+<span class="c1"># `Library.strings` and save like any other macro.</span>
+<span class="n">STANDARD_MACROS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;jan&quot;</span><span class="p">:</span> <span class="s2">&quot;January&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;feb&quot;</span><span class="p">:</span> <span class="s2">&quot;February&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mar&quot;</span><span class="p">:</span> <span class="s2">&quot;March&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;apr&quot;</span><span class="p">:</span> <span class="s2">&quot;April&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;may&quot;</span><span class="p">:</span> <span class="s2">&quot;May&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jun&quot;</span><span class="p">:</span> <span class="s2">&quot;June&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jul&quot;</span><span class="p">:</span> <span class="s2">&quot;July&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;aug&quot;</span><span class="p">:</span> <span class="s2">&quot;August&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sep&quot;</span><span class="p">:</span> <span class="s2">&quot;September&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;oct&quot;</span><span class="p">:</span> <span class="s2">&quot;October&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nov&quot;</span><span class="p">:</span> <span class="s2">&quot;November&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dec&quot;</span><span class="p">:</span> <span class="s2">&quot;December&quot;</span><span class="p">,</span>
+<span class="p">}</span>
 
 <span class="c1"># Characters BibDesk allows in a field/macro name. Built exactly as</span>
 <span class="c1"># `invalidCiteKeyCharSet` in `BDSKTypeManager.m` (which</span>
@@ -353,7 +383,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 14, 2026.
+      <span class="lastupdated">Last updated on Jul 18, 2026.
       </span></p>
   </div>
 
