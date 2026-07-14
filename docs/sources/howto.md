@@ -476,6 +476,72 @@ BIBFILE OLD_KEY` (see the {ref}`CLI reference <cli-rekey>`), which
 prints the generated key, and as the read-only `bibdeskparser
 eval_format_spec BIBFILE KEY [FORMAT]`.
 
+## How to add a reference from a DOI, arXiv ID, or search query
+
+{py:meth}`~bibdeskparser.library.Library.add` fetches the metadata
+from the appropriate online source (Crossref for a DOI or free-text
+search, the arXiv API for an arXiv identifier), sanitizes it, and
+adds a new entry:
+
+```python
+bib.add("10.1103/PhysRevA.89.032334")        # a DOI
+bib.add("https://arxiv.org/abs/2205.15044")  # an arXiv preprint
+bib.add("pulser open-source pulse sequences")  # best search match
+bib.save()
+```
+
+On the command line ({ref}`CLI reference <cli-add>`):
+
+```console
+$ bibdeskparser add library.bib 10.1103/PhysRevA.89.032334
+MuellerPRA2014
+$ bibdeskparser add library.bib --dry-run some paper title  # no write
+```
+
+The new entry follows the library's conventions automatically: the
+journal is stored as an `@string` macro (see the
+[`[journal_macros]` configuration](config-journal-macros)), the title
+is brace-protected, and the citation key is generated (e.g.
+`MuellerPRA2014`, or `Goerz2205.15044` for a preprint). An entry
+whose DOI or arXiv eprint is already in the library is rejected, so
+re-adding the same paper is safe.
+
+## How to import BibTeX entries from a publisher or another library
+
+{py:meth}`~bibdeskparser.library.Library.import_bibtex` runs any
+BibTeX snippet -- a publisher's "export citation" download, or
+entries from another `.bib` file -- through the same sanitization and
+adds the entries:
+
+```python
+bib.import_bibtex(text)   # text: BibTeX for one or more entries
+bib.save()
+```
+
+On the command line, `import` reads from a file, stdin, or a URL
+({ref}`CLI reference <cli-import>`):
+
+```console
+$ bibdeskparser import library.bib entries.bib
+$ pbpaste | bibdeskparser import library.bib --stdin
+$ bibdeskparser import library.bib --url https://example.com/refs.bib
+```
+
+Since [`export`](cli-export) writes exactly the kind of snippet that
+`import` accepts (including the `@string` definitions), this also
+moves entries between libraries:
+
+```console
+$ bibdeskparser export library.bib GoerzPRA2014 \
+    | bibdeskparser import other.bib --stdin
+GoerzPRA2014
+```
+
+If anything about a snippet is not acceptable (an undefined macro, an
+entry whose DOI is already present, ...), the whole import is
+rejected with a list of all problems and the library is left
+untouched.
+
 ## How to edit an entry in your text editor
 
 {py:meth}`~bibdeskparser.library.Library.edit` opens one or more

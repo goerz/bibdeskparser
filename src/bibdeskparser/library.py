@@ -33,6 +33,7 @@ from .groups import (
     render_static_groups,
 )
 from .header import make_header, parse_header, peek_timestamp, update_header
+from .importing import import_entries
 from .macros import (
     MacroString,
     ValueString,
@@ -1396,7 +1397,6 @@ class Library(MutableMapping):
         (relative to the library directory, or absolute). Returns the
         absolute target `Path`; backs the auto-file modes of
         {meth}`rename_file` and {meth}`add_file`."""
-        base_dir = self._files_base_dir()
         if not str(location):
             raise ValueError(
                 "cannot generate a file name: auto_file_location must "
@@ -2198,3 +2198,138 @@ class Library(MutableMapping):
         when the exception is raised.
         """
         editing.edit_strings(self, editor=editor)
+
+    def import_bibtex(self, text, *, keep_keys=False, fix_uppercase=False):
+        """Import the entries of the BibTeX snippet `text`, sanitized
+        and normalized, into the library.
+
+        Every entry of `text` (which may also contain `@string`
+        definitions and comments, e.g. a complete `.bib` file or the
+        output of {meth}`export`) is cleaned up as follows:
+
+        * The `journal` is replaced by an `@string` macro reference:
+          a macro already in {attr}`strings` (matched by value), a
+          macro configured in the `[journal_macros]` table of the
+          [configuration](configuration) (its `@string` definition is
+          added to the library as needed), or -- with a `UserWarning`
+          -- a newly created macro named by the journal's lowercased
+          initials (honoring `[initials.journal]` exceptions). A
+          literal `arXiv:...` pseudo-journal is the one exception: it
+          marks an arXiv preprint and stays literal, and the entry's
+          `eprint` and `archiveprefix` fields are derived from it if
+          missing.
+        * Capitalized words inside the `title` (assumed to be proper
+          nouns) are wrapped in braces to protect their
+          capitalization, unless the title looks like it is already
+          in (English) title case; any of the configured
+          `protected_words` are brace-protected in every title.
+        * A `doi` is normalized to its bare, lowercase form (no
+          `https://doi.org/` or `doi:` prefix).
+        * For an `@article`, a `pages` range collapses to its first
+          page, the fields `month`, `day`, `publisher`, `address`,
+          `numpages`, and `issn` are dropped, and a `url` is dropped
+          when there is a `doi`. For other entry types, page ranges
+          are kept, with the dash normalized to `--`.
+        * Every entry gets a newly generated citation key (unless
+          `keep_keys` is given): from the `[auto_key]` format of the
+          [configuration](configuration) if one is set, else
+          `%p1%c{journal}0%Y%u0` for an article (e.g.
+          `GoerzPRA2014`), `%p1%c{booktitle}0%Y%u0` for
+          inproceedings/incollection, and `%p1%Y%u0` for any other
+          type. ArXiv preprints always use `%p1%f{eprint}[.]` (e.g.
+          `Goerz2205.15044`). An incoming key that already matches
+          the format is kept.
+        * TeX-encoded accents (`Schr{\\"o}dinger`) are decoded to
+          Unicode, exactly as if the values had been read from a
+          `.bib` file (saving re-encodes them).
+
+        With `fix_uppercase=True`, all-uppercase `author`/`editor`
+        names and `title` values (as found in some publisher data)
+        are down-cased to name case/sentence case first; the result
+        may need manual correction. `keep_keys=True` keeps the
+        incoming citation keys instead of generating new ones.
+
+        An entry whose `doi` or `eprint` is already in the library is
+        rejected. `keywords`, `bdsk-url-N`, and `date-added` fields
+        are preserved; `bdsk-file-N` fields must hold plain file
+        paths (as written by {meth}`export`) that exist relative to
+        the library's `.bib` directory, and become regular file
+        attachments. Inappropriate fields for an entry's type are
+        kept, with a `UserWarning` (see the
+        [configuration](configuration)).
+
+        Returns the list of citation keys of the added entries, in
+        snippet order. Raises {exc}`ValueError`, listing *all*
+        problems, if anything about `text` is not acceptable -- the
+        library is guaranteed unmodified in that case. Like any other
+        modification, an import only becomes permanent with
+        {meth}`save`.
+
+        ```python
+        >>> from bibdeskparser import Library
+        >>> bib = Library()
+        >>> bib.strings["pra"] = "Phys. Rev. A"
+        >>> keys = bib.import_bibtex('''
+        ... @article{PhysRevA.89.032334,
+        ...     Author = {Goerz, Michael and Reich, Daniel M.},
+        ...     Title = {Optimal control theory for a quantum gate},
+        ...     Journal = {Phys. Rev. A},
+        ...     Year = {2014},
+        ...     Doi = {10.1103/PhysRevA.89.032334},
+        ...     Pages = {032334},
+        ...     Volume = {89},
+        ... }''')
+        >>> keys
+        ['GoerzPRA2014']
+        >>> bib["GoerzPRA2014"]["journal"]
+        'pra'
+        >>> bib["GoerzPRA2014"]["doi"]
+        '10.1103/physreva.89.032334'
+
+        ```
+        """
+        return import_entries(
+            self, text, keep_keys=keep_keys, fix_uppercase=fix_uppercase
+        )
+
+    def add(self, query, *, fix_uppercase=False):
+        """Fetch bibliographic data for `query` from the appropriate
+        online source and add it to the library as a new, sanitized
+        entry (via {meth}`import_bibtex`, see there for the
+        normalization applied and for `fix_uppercase`).
+
+        `query` is one of:
+
+        * an arXiv identifier (`2205.15044`, `quant-ph/0106057`), or
+          any string containing `arXiv` followed by an identifier
+          (e.g. an `https://arxiv.org/abs/...` URL) -- fetched from
+          the [arXiv API](https://info.arxiv.org/help/api/), added as
+          an `@article` preprint with a literal `arXiv:...` journal;
+        * a DOI (`10.1103/PhysRevA.89.032334`), or a URL containing
+          one (e.g. `https://doi.org/...` or most publisher article
+          pages) -- fetched from
+          [Crossref](https://www.crossref.org);
+        * any other free-form text (anything containing a space) --
+          a Crossref bibliographic search, using the best match
+          (typically: a paper's title, or a formatted citation).
+
+        An arXiv identifier wins over a DOI when `query` contains
+        both. Crossref works of a type with no BibTeX equivalent are
+        retrieved as publisher BibTeX via DOI content negotiation and
+        imported as-is (still sanitized).
+
+        Returns the citation key of the added entry. Raises
+        {exc}`ValueError` if the data cannot be fetched (network
+        errors, no match for the query) or fails import validation
+        (e.g. its `doi`/`eprint` is already in the library). Like any
+        other modification, the new entry only becomes permanent with
+        {meth}`save`.
+        """
+        # Imported lazily: the fetch module pulls in the network
+        # dependencies (habanero/arxiv/httpx), which nothing else in
+        # the package needs.
+        from . import fetch  # pylint: disable=import-outside-toplevel
+
+        return self.import_bibtex(
+            fetch.fetch_bibtex(query), fix_uppercase=fix_uppercase
+        )[0]

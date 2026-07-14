@@ -126,6 +126,8 @@ def test_defaults():
     assert Library.config.verify_types is True
     assert Library.config.verify_fields is True
     assert Library.config.config_file is None
+    assert Library.config.journal_macros == {}
+    assert Library.config.protected_words == []
 
 
 def test_config_instance_access():
@@ -527,6 +529,72 @@ def test_initials_field_names_lowercased(tmp_path, monkeypatch):
     _write(tmp_path, '[initials.Journal]\n"npj Quantum Inf" = "NPJQI"\n')
     config.active.load(bib_dir=tmp_path)
     assert config.active.initials == {"journal": {"npj Quantum Inf": "NPJQI"}}
+
+
+def test_journal_macros_parsing(tmp_path, monkeypatch):
+    """Macro names are normalized; values may be a name or a list of
+    names (canonical value first, aliases after)."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(
+        tmp_path,
+        "[journal_macros]\n"
+        'PRL = "Phys. Rev. Lett."\n'
+        'jpb = ["J. Phys. B", "J. Phys. B: At. Mol. Opt. Phys."]\n',
+    )
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.journal_macros == {
+        "prl": ("Phys. Rev. Lett.",),
+        "jpb": ("J. Phys. B", "J. Phys. B: At. Mol. Opt. Phys."),
+    }
+    config.active.reset()
+    assert config.active.journal_macros == {}
+
+
+def test_journal_macros_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "journal_macros = 1\n")
+    with pytest.raises(
+        ValueError, match=r"\[journal_macros\] must be a table"
+    ):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[journal_macros]\n"1abc" = "Some Journal"\n')
+    with pytest.raises(ValueError, match="invalid macro name"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[journal_macros]\nprl = 1\n")
+    with pytest.raises(ValueError, match="journal name"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[journal_macros]\nprl = []\n")
+    with pytest.raises(ValueError, match="journal name"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[journal_macros]\nprl = ["Phys. Rev. Lett.", ""]\n')
+    with pytest.raises(ValueError, match="journal name"):
+        config.active.load(bib_dir=tmp_path)
+    _write(
+        tmp_path,
+        '[journal_macros]\nprl = "Phys. Rev. Lett."\nPRL = "PRL"\n',
+    )
+    with pytest.raises(ValueError, match="more than once"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_protected_words_parsing(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, 'protected_words = ["Rydberg", " NMR "]\n')
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.protected_words == ["Rydberg", "NMR"]
+    config.active.reset()
+    assert config.active.protected_words == []
+
+
+def test_protected_words_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    for bad in ('protected_words = "Rydberg"\n', "protected_words = [1]\n"):
+        _write(tmp_path, bad)
+        with pytest.raises(ValueError, match="protected_words"):
+            config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, 'protected_words = [""]\n')
+    with pytest.raises(ValueError, match="protected_words"):
+        config.active.load(bib_dir=tmp_path)
 
 
 # -- error handling --------------------------------------------------- #
