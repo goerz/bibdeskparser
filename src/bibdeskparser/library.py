@@ -33,7 +33,12 @@ from .groups import (
     render_static_groups,
 )
 from .header import make_header, parse_header, peek_timestamp, update_header
-from .macros import is_valid_macro_name, normalize_macro_name
+from .macros import (
+    MacroString,
+    ValueString,
+    is_valid_macro_name,
+    normalize_macro_name,
+)
 from .middleware import parse_stack
 from .render import render_entries
 from .search import search_entries
@@ -185,6 +190,23 @@ def _check_duplicate_macro_values(strings_dict):
             UserWarning,
             stacklevel=3,
         )
+
+
+def _expand_macros(entry, strings):
+    """Return a copy of `entry` with every field that is a bare
+    `@string` macro reference replaced by its literal value from
+    `strings` (an undefined macro is left as the macro name).
+
+    Used by {meth}`Library.render` so that a citation shows the resolved
+    value (e.g. the full journal name) rather than the macro name.
+    """
+    expanded = entry.copy()
+    for key in list(entry):
+        value = entry[key]
+        if isinstance(value, MacroString):
+            resolved = strings.get(str(value), str(value))
+            expanded[key] = ValueString(resolved)
+    return expanded
 
 
 def _delete_file(path):
@@ -2118,9 +2140,9 @@ class Library(MutableMapping):
         * `"default"` (the default): like `"paragraphs"`, except a
           single `"html"` citation is not wrapped in `<p>...</p>`.
         """
-        return render_entries(
-            [self[key] for key in keys], format=format, style=style
-        )
+        strings = dict(self.strings)
+        entries = [_expand_macros(self[key], strings) for key in keys]
+        return render_entries(entries, format=format, style=style)
 
     def export(self, *keys, format="default", outfile=None):
         # pylint: disable=redefined-builtin
