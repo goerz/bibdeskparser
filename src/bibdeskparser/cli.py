@@ -242,7 +242,11 @@ def _entry_block(entry):
     return "\n".join(lines)
 
 
-@main.command(name="show", cls=_BibCommand)
+@main.command(
+    name="show",
+    cls=_BibCommand,
+    short_help="Show the full data of the given entries.",
+)
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @_json_option
 @click.pass_obj
@@ -255,7 +259,11 @@ def show(bibfile, citekeys, as_json):
     _emit(data, as_json, text)
 
 
-@main.command(name="search", cls=_BibCommand)
+@main.command(
+    name="search",
+    cls=_BibCommand,
+    short_help="List the keys of entries matching QUERY.",
+)
 @click.argument("query")
 @click.option(
     "--field",
@@ -286,7 +294,11 @@ def search(bibfile, query, fields, match_, as_json):
     _emit(data, as_json, "\n".join(data))
 
 
-@main.command(name="groups", cls=_BibCommand)
+@main.command(
+    name="groups",
+    cls=_BibCommand,
+    short_help="List all static groups and their keys.",
+)
 @_json_option
 @click.pass_obj
 def groups(bibfile, as_json):
@@ -301,7 +313,11 @@ def groups(bibfile, as_json):
     _emit(data, as_json, text)
 
 
-@main.command(name="keywords", cls=_BibCommand)
+@main.command(
+    name="keywords",
+    cls=_BibCommand,
+    short_help="List all keywords and the entries using them.",
+)
 @_json_option
 @click.pass_obj
 def keywords(bibfile, as_json):
@@ -343,7 +359,11 @@ def strings(bibfile, as_bib, as_json):
     _emit(data, as_json, text)
 
 
-@main.command(name="duplicate_keys", cls=_BibCommand)
+@main.command(
+    name="duplicate_keys",
+    cls=_BibCommand,
+    short_help="List citation keys that occur more than once.",
+)
 @_json_option
 @click.pass_obj
 def duplicate_keys(bibfile, as_json):
@@ -352,7 +372,11 @@ def duplicate_keys(bibfile, as_json):
     _emit(data, as_json, "\n".join(data))
 
 
-@main.command(name="timestamp", cls=_BibCommand)
+@main.command(
+    name="timestamp",
+    cls=_BibCommand,
+    short_help="Print the modification timestamp from the header.",
+)
 @_json_option
 @click.pass_obj
 def timestamp(bibfile, as_json):
@@ -361,7 +385,11 @@ def timestamp(bibfile, as_json):
     _emit(data, as_json, data or "")
 
 
-@main.command(name="render", cls=_BibCommand)
+@main.command(
+    name="render",
+    cls=_BibCommand,
+    short_help="Render a citation for the given entries.",
+)
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.option(
     "--format",
@@ -387,7 +415,11 @@ def render(bibfile, citekeys, format_, style):
     _echo_block(lib.render(*citekeys, format=format_, style=style))
 
 
-@main.command(name="export", cls=_BibCommand)
+@main.command(
+    name="export",
+    cls=_BibCommand,
+    short_help="Export the given entries as bibtex text.",
+)
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.option(
     "--format",
@@ -412,7 +444,11 @@ def export(bibfile, citekeys, format_, outfile):
         _echo_block(text)
 
 
-@main.command(name="eval_format_spec", cls=_BibCommand)
+@main.command(
+    name="eval_format_spec",
+    cls=_BibCommand,
+    short_help="Show the key or file name a format yields.",
+)
 @click.argument("citekey", metavar="KEY")
 @click.argument("format_spec", metavar="FORMAT", required=False)
 @click.option(
@@ -454,7 +490,11 @@ def eval_format_spec(bibfile, citekey, format_spec, filename, as_json):
 # -- mutating commands -------------------------------------------------- #
 
 
-@main.command(name="rekey", cls=_BibCommand)
+@main.command(
+    name="rekey",
+    cls=_BibCommand,
+    short_help="Change an entry's citation key.",
+)
 @click.argument("old_key")
 @click.argument("new_key", required=False)
 @click.option(
@@ -487,7 +527,11 @@ def rekey(bibfile, old_key, new_key, format_spec):
         click.echo(result)
 
 
-@main.command(name="delete", cls=_BibCommand)
+@main.command(
+    name="delete",
+    cls=_BibCommand,
+    short_help="Delete the given entries from the library.",
+)
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.pass_obj
 def delete(bibfile, citekeys):
@@ -498,7 +542,11 @@ def delete(bibfile, citekeys):
     lib.save()
 
 
-@main.command(name="add_to_group", cls=_BibCommand)
+@main.command(
+    name="add_to_group",
+    cls=_BibCommand,
+    short_help="Add entries to the static group NAME.",
+)
 @click.argument("name")
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.pass_obj
@@ -509,7 +557,11 @@ def add_to_group(bibfile, name, citekeys):
     lib.save()
 
 
-@main.command(name="remove_from_group", cls=_BibCommand)
+@main.command(
+    name="remove_from_group",
+    cls=_BibCommand,
+    short_help="Remove entries from the group NAME.",
+)
 @click.argument("name")
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.pass_obj
@@ -520,7 +572,11 @@ def remove_from_group(bibfile, name, citekeys):
     lib.save()
 
 
-@main.command(name="set_group", cls=_BibCommand)
+@main.command(
+    name="set_group",
+    cls=_BibCommand,
+    short_help="Create or replace the static group NAME.",
+)
 @click.argument("name")
 @click.argument("citekeys", metavar="[KEY...]", nargs=-1)
 @click.pass_obj
@@ -531,7 +587,11 @@ def set_group(bibfile, name, citekeys):
     lib.save()
 
 
-@main.command(name="delete_group", cls=_BibCommand)
+@main.command(
+    name="delete_group",
+    cls=_BibCommand,
+    short_help="Delete the static group NAME.",
+)
 @click.argument("name")
 @click.pass_obj
 def delete_group(bibfile, name):
@@ -541,7 +601,11 @@ def delete_group(bibfile, name):
     lib.save()
 
 
-@main.command(name="set_string", cls=_BibCommand)
+@main.command(
+    name="set_string",
+    cls=_BibCommand,
+    short_help="Define or redefine the @string macro NAME.",
+)
 @click.argument("name")
 @click.argument("value")
 @click.pass_obj
@@ -552,7 +616,11 @@ def set_string(bibfile, name, value):
     lib.save()
 
 
-@main.command(name="delete_string", cls=_BibCommand)
+@main.command(
+    name="delete_string",
+    cls=_BibCommand,
+    short_help="Delete the @string macro NAME (must be unused).",
+)
 @click.argument("name")
 @click.pass_obj
 def delete_string(bibfile, name):
@@ -562,7 +630,11 @@ def delete_string(bibfile, name):
     lib.save()
 
 
-@main.command(name="rename_string", cls=_BibCommand)
+@main.command(
+    name="rename_string",
+    cls=_BibCommand,
+    short_help="Rename a @string macro, updating references.",
+)
 @click.argument("old_name")
 @click.argument("new_name")
 @click.pass_obj
@@ -574,7 +646,11 @@ def rename_string(bibfile, old_name, new_name):
     lib.save()
 
 
-@main.command(name="add_to_keyword", cls=_BibCommand)
+@main.command(
+    name="add_to_keyword",
+    cls=_BibCommand,
+    short_help="Add KEYWORD to the given entries.",
+)
 @click.argument("keyword")
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.pass_obj
@@ -585,7 +661,11 @@ def add_to_keyword(bibfile, keyword, citekeys):
     lib.save()
 
 
-@main.command(name="remove_from_keyword", cls=_BibCommand)
+@main.command(
+    name="remove_from_keyword",
+    cls=_BibCommand,
+    short_help="Remove KEYWORD from the given entries.",
+)
 @click.argument("keyword")
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.pass_obj
@@ -682,7 +762,11 @@ def add_file(
         click.echo(result)
 
 
-@main.command(name="replace_file", cls=_BibCommand)
+@main.command(
+    name="replace_file",
+    cls=_BibCommand,
+    short_help="Replace an entry's attached file OLD with NEW.",
+)
 @click.argument("key")
 @click.argument("old_filename", metavar="OLD")
 @click.argument("new_filename", metavar="NEW")
@@ -714,7 +798,11 @@ def replace_file(
     lib.save()
 
 
-@main.command(name="unlink_file", cls=_BibCommand)
+@main.command(
+    name="unlink_file",
+    cls=_BibCommand,
+    short_help="Remove a file from an entry's attachments.",
+)
 @click.argument("key")
 @click.argument("filename")
 @click.option(
@@ -730,7 +818,11 @@ def unlink_file(bibfile, key, filename, remove):
     lib.save()
 
 
-@main.command(name="rename_file", cls=_BibCommand)
+@main.command(
+    name="rename_file",
+    cls=_BibCommand,
+    short_help="Rename or move an entry's attached file.",
+)
 @click.argument("key")
 @click.argument("old_filename", metavar="OLD")
 @click.argument("new_filename", metavar="NEW", required=False)
@@ -863,7 +955,11 @@ def _resolve_editor(editor, use_stdin, allow_empty=False):
     return editor
 
 
-@main.command(name="edit", cls=_BibCommand)
+@main.command(
+    name="edit",
+    cls=_BibCommand,
+    short_help="Edit the given entries in $EDITOR.",
+)
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.option(
     "--format",
@@ -896,7 +992,11 @@ def edit(bibfile, citekeys, format_, editor, use_stdin):
     lib.save()
 
 
-@main.command(name="edit_strings", cls=_BibCommand)
+@main.command(
+    name="edit_strings",
+    cls=_BibCommand,
+    short_help="Edit the @string macro definitions in $EDITOR.",
+)
 @click.option(
     "--editor",
     default=None,
