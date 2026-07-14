@@ -154,6 +154,18 @@ def test_macro_string_validates_name():
         entry["journal"] = MacroString("not a macro")
 
 
+def test_macro_string_normalizes_name():
+    """A non-canonical `MacroString` name is normalized to BibDesk's
+    lowercase form on store, so it matches how `@string` definitions
+    are stored and round-trips back as a `MacroString`."""
+    entry = Entry("article", "K")
+    entry["journal"] = MacroString("PRA")
+    assert entry._entry.fields_dict["journal"].value == "pra"
+    value = entry["journal"]
+    assert isinstance(value, MacroString)
+    assert value == "pra"
+
+
 def test_decode_return_types():
     """The `dict` interface returns `ValueString` for a literal/braced
     value and `MacroString` for a bare `@string` macro reference."""

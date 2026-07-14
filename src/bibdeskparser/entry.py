@@ -284,11 +284,12 @@ class Entry(MutableMapping):
                     f"invalid {key} field: not parseable as names: {exc}"
                 ) from exc
         if isinstance(value, MacroString):
-            # Force a bare macro reference; validate the name (raising a
-            # clear ValueError if invalid) but do not warn.
-            if not is_valid_macro_name(text, normalized=True):
-                normalize_macro_name(text)  # raises ValueError
-            rendered = text
+            # Force a bare macro reference, normalized to BibDesk's
+            # canonical (lowercase) form -- matching how `@string`
+            # definitions are stored (`Library.strings`), and so that
+            # the value round-trips back as a MacroString on read.
+            # Raises a clear ValueError for an invalid name.
+            rendered = normalize_macro_name(text)
         elif isinstance(value, ValueString):
             # Force a literal braced value.
             rendered = "{" + (text if skip_texify(key) else texify(text)) + "}"
