@@ -324,6 +324,35 @@ def test_duplicate_macro_value_warning_on_load(tmp_path):
         Library(path)
 
 
+# -- 5b. .render --------------------------------------------------------- #
+
+
+def test_render_expands_string_macros(bib):
+    """`render` resolves a bare `@string` macro (e.g. `journal = pra`)
+    to its defined value, rather than emitting the macro name."""
+    assert bib.strings["pra"] == "Phys. Rev. A"
+    rendered = bib.render("GoerzPRA2014")
+    assert "Phys. Rev. A" in rendered
+    # The macro name itself must not leak into the rendered citation:
+    assert " pra " not in rendered
+    assert "**pra**" not in rendered
+
+
+def test_render_undefined_macro_falls_back_to_name(tmp_path):
+    """An unresolved macro reference renders as the macro name."""
+    text = (
+        "@article{k1,\n"
+        "\tauthor = {Doe, Jane},\n"
+        "\ttitle = {T},\n"
+        "\tjournal = undefinedmacro,\n"
+        "\tyear = {2024}}\n"
+    )
+    path = tmp_path / "undef.bib"
+    path.write_text(text, encoding="utf-8")
+    bib = Library(path)
+    assert "undefinedmacro" in bib.render("k1")
+
+
 # -- 6. .groups ---------------------------------------------------------- #
 
 GROUP_NAMES = [

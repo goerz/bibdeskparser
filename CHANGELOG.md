@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 * Fixed: the CLI's top-level `--help` now shows a complete, un-truncated one-line summary for every subcommand (previously long summaries were cut off with `...`). [[#11]]
+* Fixed: `Library.render` (and the `render` CLI command) now expands `@string` macros in the rendered citation, so a field like `journal = pra` shows its defined value (e.g. `Phys. Rev. A`) rather than the bare macro name. [[#12]]
 * Changed: bump the PyPI `Development Status` classifier from `2 - Pre-Alpha` to `3 - Alpha`.
 
 ## [v0.2.0] - 2026-07-13
@@ -57,3 +58,4 @@ Initial release.
 [#9]: https://github.com/goerz/bibdeskparser/pull/9
 [#10]: https://github.com/goerz/bibdeskparser/pull/10
 [#11]: https://github.com/goerz/bibdeskparser/pull/11
+[#12]: https://github.com/goerz/bibdeskparser/pull/12
