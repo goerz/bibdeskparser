@@ -76,6 +76,10 @@ independently of any project, with
 uv tool install bibdeskparser
 ```
 
+> **Tip:** If you use the command-line tool frequently, consider creating a
+> shorter symlink for `bibdeskparser`, e.g. `bib`, so that you can write
+> `bib import 10.22331/q-2022-12-07-871`.
+
 
 To install the latest development version from [Github][]:
 
