@@ -1,0 +1,1004 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command Line Interface &mdash; BibDeskParser 0.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=37f418d5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/docs-versions-menu.js?v=2187e224"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Package API" href="apidocs/bibdeskparser/bibdeskparser.html" />
+    <link rel="prev" title="Format Specifiers" href="specifiers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+  <a href="index.html" class="icon icon-home">
+    BibDeskParser
+  </a>
+
+  <div class="version">
+    v0.2.1
+  </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#development">Development</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="howto.html">How-to Guides</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CLI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#json-output">JSON output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#errors-and-exit-codes">Errors and exit codes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inspecting">Inspecting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#keys"><code class="docutils literal notranslate"><span class="pre">keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#duplicate-keys"><code class="docutils literal notranslate"><span class="pre">duplicate_keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#show-key"><code class="docutils literal notranslate"><span class="pre">show</span> <span class="pre">[KEY...]</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fields-key"><code class="docutils literal notranslate"><span class="pre">fields</span> <span class="pre">KEY</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-field-key-fieldname"><code class="docutils literal notranslate"><span class="pre">get_field</span> <span class="pre">KEY</span> <span class="pre">FIELDNAME</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#author-key-editor-key"><code class="docutils literal notranslate"><span class="pre">author</span> <span class="pre">KEY</span></code>, <code class="docutils literal notranslate"><span class="pre">editor</span> <span class="pre">KEY</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#search-query"><code class="docutils literal notranslate"><span class="pre">search</span> <span class="pre">QUERY</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#groups-key"><code class="docutils literal notranslate"><span class="pre">groups</span> <span class="pre">[KEY]</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#keywords-key"><code class="docutils literal notranslate"><span class="pre">keywords</span> <span class="pre">[KEY]</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strings"><code class="docutils literal notranslate"><span class="pre">strings</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#timestamp"><code class="docutils literal notranslate"><span class="pre">timestamp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#eval-format-spec-key-format"><code class="docutils literal notranslate"><span class="pre">eval_format_spec</span> <span class="pre">KEY</span> <span class="pre">[FORMAT]</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#rendering-and-exporting">Rendering and exporting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#render-key"><code class="docutils literal notranslate"><span class="pre">render</span> <span class="pre">KEY...</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#export-key"><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">KEY...</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#entries">Entries</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#rekey-old-key-new-key"><code class="docutils literal notranslate"><span class="pre">rekey</span> <span class="pre">OLD_KEY</span> <span class="pre">[NEW_KEY]</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#delete-key"><code class="docutils literal notranslate"><span class="pre">delete</span> <span class="pre">KEY...</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#set-type-key-type"><code class="docutils literal notranslate"><span class="pre">set_type</span> <span class="pre">KEY</span> <span class="pre">TYPE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#set-field-key-fieldname-value"><code class="docutils literal notranslate"><span class="pre">set_field</span> <span class="pre">KEY</span> <span class="pre">FIELDNAME</span> <span class="pre">VALUE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#delete-field-key-fieldname"><code class="docutils literal notranslate"><span class="pre">delete_field</span> <span class="pre">KEY</span> <span class="pre">FIELDNAME</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-entries">Adding entries</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#import-file"><code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">[FILE]</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#add-query"><code class="docutils literal notranslate"><span class="pre">add</span> <span class="pre">QUERY...</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#groups">Groups</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#add-to-group-name-key"><code class="docutils literal notranslate"><span class="pre">add_to_group</span> <span class="pre">NAME</span> <span class="pre">KEY...</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#remove-from-group-name-key"><code class="docutils literal notranslate"><span class="pre">remove_from_group</span> <span class="pre">NAME</span> <span class="pre">KEY...</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#set-group-name-key"><code class="docutils literal notranslate"><span class="pre">set_group</span> <span class="pre">NAME</span> <span class="pre">[KEY...]</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#delete-group-name"><code class="docutils literal notranslate"><span class="pre">delete_group</span> <span class="pre">NAME</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#keywords">Keywords</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#add-to-keyword-keyword-key"><code class="docutils literal notranslate"><span class="pre">add_to_keyword</span> <span class="pre">KEYWORD</span> <span class="pre">KEY...</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#remove-from-keyword-keyword-key"><code class="docutils literal notranslate"><span class="pre">remove_from_keyword</span> <span class="pre">KEYWORD</span> <span class="pre">KEY...</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#strings-macros">Strings (macros)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#set-string-name-value"><code class="docutils literal notranslate"><span class="pre">set_string</span> <span class="pre">NAME</span> <span class="pre">VALUE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#delete-string-name"><code class="docutils literal notranslate"><span class="pre">delete_string</span> <span class="pre">NAME</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rename-string-old-new"><code class="docutils literal notranslate"><span class="pre">rename_string</span> <span class="pre">OLD</span> <span class="pre">NEW</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#files">Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#add-file-key-filename"><code class="docutils literal notranslate"><span class="pre">add_file</span> <span class="pre">KEY</span> <span class="pre">FILENAME</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#replace-file-key-old-new"><code class="docutils literal notranslate"><span class="pre">replace_file</span> <span class="pre">KEY</span> <span class="pre">OLD</span> <span class="pre">NEW</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unlink-file-key-filename"><code class="docutils literal notranslate"><span class="pre">unlink_file</span> <span class="pre">KEY</span> <span class="pre">FILENAME</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rename-file-key-old-new"><code class="docutils literal notranslate"><span class="pre">rename_file</span> <span class="pre">KEY</span> <span class="pre">OLD</span> <span class="pre">[NEW]</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#urls">URLs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#add-url-key-url"><code class="docutils literal notranslate"><span class="pre">add_url</span> <span class="pre">KEY</span> <span class="pre">URL</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#replace-url-key-old-new"><code class="docutils literal notranslate"><span class="pre">replace_url</span> <span class="pre">KEY</span> <span class="pre">OLD</span> <span class="pre">NEW</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#remove-url-key-url"><code class="docutils literal notranslate"><span class="pre">remove_url</span> <span class="pre">KEY</span> <span class="pre">URL</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#free-form-editing">Free-form editing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#edit-key"><code class="docutils literal notranslate"><span class="pre">edit</span> <span class="pre">KEY...</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#edit-strings"><code class="docutils literal notranslate"><span class="pre">edit_strings</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BibDeskParser</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Command Line Interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="command-line-interface">
+<span id="cli"></span><h1>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> command-line tool exposes the public
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library" title="bibdeskparser.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a> API as subcommands, so that a BibDesk
+<code class="docutils literal notranslate"><span class="pre">.bib</span></code> database can be inspected and modified from the shell without
+writing Python code. The <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> script is installed together
+with the package (e.g. via <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">bibdeskparser</span></code>); to install
+just the command-line tool on your <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, without adding the package
+to a Python environment, use
+<a class="reference external" href="https://docs.astral.sh/uv/guides/tools/"><code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">tool</span> <span class="pre">install</span> <span class="pre">bibdeskparser</span></code></a>.</p>
+<p>The command-line tool is also the project’s intended integration
+surface for AI coding agents: an agent that can run shell commands can
+work with a BibDesk library through one-shot <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code>
+invocations, guided by the <code class="docutils literal notranslate"><span class="pre">--help</span></code> output alone (see
+<a class="reference internal" href="howto.html#howto-ai"><span class="std std-ref">How to give an AI coding agent access to your library</span></a>).</p>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>&lt;command&gt;<span class="w"> </span><span class="o">[</span>BIBFILE<span class="o">]</span><span class="w"> </span>&lt;args&gt;<span class="w"> </span>&lt;options&gt;
+</pre></div>
+</div>
+<p>Run <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span> <span class="pre">--help</span></code> for the list of commands,
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span> <span class="pre">&lt;command&gt;</span> <span class="pre">--help</span></code> for the arguments and options of a
+specific command, and <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span> <span class="pre">--version</span></code> for the installed
+version.</p>
+<p>Every command operates on a single <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file, given as the first
+argument after the command name. An argument counts as the <code class="docutils literal notranslate"><span class="pre">BIBFILE</span></code>
+exactly if it does not start with <code class="docutils literal notranslate"><span class="pre">-</span></code> and ends in <code class="docutils literal notranslate"><span class="pre">.bib</span></code>
+(case-insensitive). When the <code class="docutils literal notranslate"><span class="pre">BIBFILE</span></code> is omitted, the file named by
+the <code class="docutils literal notranslate"><span class="pre">default_bib_file</span></code> option of a discovered <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> is
+used instead; the configuration file is discovered relative to the
+current working directory, falling back to the XDG location (see
+<a class="reference internal" href="config.html#configuration"><span class="std std-ref">Configuration</span></a>). With neither a <code class="docutils literal notranslate"><span class="pre">BIBFILE</span></code> argument nor
+a configured <code class="docutils literal notranslate"><span class="pre">default_bib_file</span></code>, the command fails with a usage error.</p>
+<p>The commands are named after the corresponding
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library" title="bibdeskparser.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a> methods and properties (<code class="docutils literal notranslate"><span class="pre">import</span></code>
+corresponds to <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.import_bibtex" title="bibdeskparser.Library.import_bibtex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">import_bibtex()</span></code></a>, since
+<code class="docutils literal notranslate"><span class="pre">import</span></code> is a Python keyword). Operations that
+the Python API expresses through <code class="docutils literal notranslate"><span class="pre">dict</span></code>-like access map to commands as
+follows: <code class="docutils literal notranslate"><span class="pre">set_group</span></code>/<code class="docutils literal notranslate"><span class="pre">delete_group</span></code> assign to and delete from
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.groups" title="bibdeskparser.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>, <code class="docutils literal notranslate"><span class="pre">set_string</span></code>/<code class="docutils literal notranslate"><span class="pre">delete_string</span></code>
+assign to and delete from <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.strings" title="bibdeskparser.Library.strings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strings</span></code></a>,
+<code class="docutils literal notranslate"><span class="pre">show</span></code>/<code class="docutils literal notranslate"><span class="pre">keys</span></code>/<code class="docutils literal notranslate"><span class="pre">delete</span></code> correspond to indexing, iterating over, and
+<code class="docutils literal notranslate"><span class="pre">del</span></code> on the library itself, and
+<code class="docutils literal notranslate"><span class="pre">fields</span></code>/<code class="docutils literal notranslate"><span class="pre">get_field</span></code>/<code class="docutils literal notranslate"><span class="pre">set_field</span></code>/<code class="docutils literal notranslate"><span class="pre">delete_field</span></code> correspond to
+iterating over, indexing, assigning to, and <code class="docutils literal notranslate"><span class="pre">del</span></code> on a single
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a> (its fields). Commands that read one
+entry’s derived data – <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">groups</span> <span class="pre">KEY</span></code>,
+<code class="docutils literal notranslate"><span class="pre">keywords</span> <span class="pre">KEY</span></code> – correspond to the same-named
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a> properties, and <code class="docutils literal notranslate"><span class="pre">set_type</span></code> assigns
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.entry_type" title="bibdeskparser.Entry.entry_type"><code class="xref py py-attr docutils literal notranslate"><span class="pre">entry_type</span></code></a>.</p>
+<p>Read-only commands print their result to stdout. Mutating commands
+load the library, apply the change, save the file back in place, and
+print nothing on success – except <a class="reference internal" href="#cli-rekey"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">rekey</span></code></span></a> without
+<code class="docutils literal notranslate"><span class="pre">NEW_KEY</span></code> and <a class="reference internal" href="#cli-rename-file"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">rename_file</span></code></span></a> without <code class="docutils literal notranslate"><span class="pre">NEW</span></code>, which
+print the generated key or file path, as does
+<a class="reference internal" href="#cli-add-file"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">add_file</span></code></span></a> when it auto-files, and
+<a class="reference internal" href="#cli-import"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">import</span></code></span></a>/<a class="reference internal" href="#cli-add"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">add</span></code></span></a>, which print the citation
+keys of the added entries (<code class="docutils literal notranslate"><span class="pre">add</span> <span class="pre">--dry-run</span></code> only prints the fetched
+entry, without modifying the file).</p>
+</section>
+<section id="json-output">
+<h2>JSON output<a class="headerlink" href="#json-output" title="Link to this heading"></a></h2>
+<p>Every command that prints structured data (all read-only commands
+except <code class="docutils literal notranslate"><span class="pre">render</span></code> and <code class="docutils literal notranslate"><span class="pre">export</span></code>) accepts a <code class="docutils literal notranslate"><span class="pre">--json</span></code> flag to print the
+data as JSON instead of human-readable text, for consumption by other
+tools:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>groups<span class="w"> </span>library.bib<span class="w"> </span>--json
+<span class="go">{</span>
+<span class="go">  &quot;quantum computing&quot;: [</span>
+<span class="go">    &quot;NielsenChuangBook&quot;,</span>
+<span class="go">    &quot;Preskill2018&quot;</span>
+<span class="go">  ]</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+</section>
+<section id="errors-and-exit-codes">
+<h2>Errors and exit codes<a class="headerlink" href="#errors-and-exit-codes" title="Link to this heading"></a></h2>
+<p>A successful command exits with code 0. Invalid command-line usage
+(unknown command, missing argument, no <code class="docutils literal notranslate"><span class="pre">BIBFILE</span></code> and no
+<code class="docutils literal notranslate"><span class="pre">default_bib_file</span></code>) exits with code 2. Any error reported by the
+underlying library – an unknown citation key or group name, an
+invalid value, a missing file, or a
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.StaleFileError" title="bibdeskparser.StaleFileError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">StaleFileError</span></code></a> when the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file changed on
+disk while being edited – prints a one-line <code class="docutils literal notranslate"><span class="pre">Error:</span> <span class="pre">&lt;message&gt;</span></code> on
+stderr and exits with code 1, without a traceback.</p>
+</section>
+<section id="inspecting">
+<h2>Inspecting<a class="headerlink" href="#inspecting" title="Link to this heading"></a></h2>
+<section id="keys">
+<h3><code class="docutils literal notranslate"><span class="pre">keys</span></code><a class="headerlink" href="#keys" title="Link to this heading"></a></h3>
+<p>List citation keys, one per line. Corresponds to iterating over a
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library" title="bibdeskparser.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a>. With <code class="docutils literal notranslate"><span class="pre">--json</span></code>: an array of strings.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>library.bib
+<span class="go">NielsenChuangBook</span>
+<span class="go">Preskill2018</span>
+</pre></div>
+</div>
+<p>Without options, every entry is listed. Filter options narrow the
+list: an entry is listed if it matches one of the (repeatable)
+<code class="docutils literal notranslate"><span class="pre">--type</span> <span class="pre">TYPE</span></code> values (if any are given) and satisfies every
+<code class="docutils literal notranslate"><span class="pre">--has</span> <span class="pre">FIELD</span></code>, <code class="docutils literal notranslate"><span class="pre">--missing</span> <span class="pre">FIELD</span></code>, and <code class="docutils literal notranslate"><span class="pre">--empty</span> <span class="pre">FIELD</span></code> filter. For any
+field, exactly one of the three field predicates holds: <code class="docutils literal notranslate"><span class="pre">--has</span></code>
+requires the field to be defined with a non-empty value, <code class="docutils literal notranslate"><span class="pre">--missing</span></code>
+requires it to not be defined at all, and <code class="docutils literal notranslate"><span class="pre">--empty</span></code> requires it to be
+defined, but with an empty value – a defined-but-empty field is
+neither “missing” nor “has”. Types and field names are matched
+case-insensitively.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>library.bib<span class="w"> </span>--type<span class="w"> </span>article<span class="w"> </span>--missing<span class="w"> </span>doi
+<span class="go">Preskill2018</span>
+</pre></div>
+</div>
+</section>
+<section id="duplicate-keys">
+<h3><code class="docutils literal notranslate"><span class="pre">duplicate_keys</span></code><a class="headerlink" href="#duplicate-keys" title="Link to this heading"></a></h3>
+<p>List citation keys that occur more than once, one per line. See
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.duplicate_keys" title="bibdeskparser.Library.duplicate_keys"><code class="xref py py-attr docutils literal notranslate"><span class="pre">duplicate_keys</span></code></a>. With <code class="docutils literal notranslate"><span class="pre">--json</span></code>: an
+array of strings.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>duplicate_keys<span class="w"> </span>library.bib
+</pre></div>
+</div>
+</section>
+<section id="show-key">
+<span id="cli-show"></span><h3><code class="docutils literal notranslate"><span class="pre">show</span> <span class="pre">[KEY...]</span></code><a class="headerlink" href="#show-key" title="Link to this heading"></a></h3>
+<p>Show the data of one or more entries: a <code class="docutils literal notranslate"><span class="pre">KEY</span> <span class="pre">(entry_type)</span></code> heading,
+the raw fields, and derived data (groups, keywords, files, URLs, and
+dates). Corresponds to indexing the library, <code class="docutils literal notranslate"><span class="pre">lib[key]</span></code>. With
+<code class="docutils literal notranslate"><span class="pre">--json</span></code>: an object mapping each key to an object with <code class="docutils literal notranslate"><span class="pre">entry_type</span></code>,
+<code class="docutils literal notranslate"><span class="pre">key</span></code>, <code class="docutils literal notranslate"><span class="pre">fields</span></code>, <code class="docutils literal notranslate"><span class="pre">groups</span></code>, <code class="docutils literal notranslate"><span class="pre">keywords</span></code>, <code class="docutils literal notranslate"><span class="pre">files</span></code>, <code class="docutils literal notranslate"><span class="pre">urls</span></code>, <code class="docutils literal notranslate"><span class="pre">date_added</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">date_modified</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">--field</span> <span class="pre">FIELD</span></code> narrows the output to the named fields (repeatable and
+comma-separated, case-insensitive), dropping the derived data; a field
+not defined on an entry is silently omitted. With <code class="docutils literal notranslate"><span class="pre">--json</span></code>, this
+yields a flat <code class="docutils literal notranslate"><span class="pre">{key:</span> <span class="pre">{field:</span> <span class="pre">value}}</span></code> map – convenient for
+backfilling missing metadata.</p>
+<p>Keys come from the <code class="docutils literal notranslate"><span class="pre">KEY</span></code> arguments and/or <code class="docutils literal notranslate"><span class="pre">--keys-from</span> <span class="pre">FILE</span></code> (one key
+per line; <code class="docutils literal notranslate"><span class="pre">-</span></code> reads standard input), so the output of another command
+can be piped straight in. By default an unknown key aborts the command
+with an error and no output; <code class="docutils literal notranslate"><span class="pre">--skip-missing</span></code> instead reports each miss
+on stderr and shows the remaining entries.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>show<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018
+<span class="go">Preskill2018 (article)</span>
+<span class="go">    author:  Preskill, John</span>
+<span class="go">    title:   Quantum Computing in the NISQ era and beyond</span>
+<span class="go">    journal: Quantum</span>
+<span class="go">    year:    2018</span>
+<span class="go">  groups:   quantum computing</span>
+<span class="go">  keywords: NISQ</span>
+</pre></div>
+</div>
+<p>For example, to inspect the DOI and title of every entry that is
+missing an <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field, in one pipeline:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>--missing<span class="w"> </span>eprint<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>show<span class="w"> </span>--field<span class="w"> </span>doi,title<span class="w"> </span>--json<span class="w"> </span>--keys-from<span class="w"> </span>-
+</pre></div>
+</div>
+</section>
+<section id="fields-key">
+<span id="cli-fields"></span><h3><code class="docutils literal notranslate"><span class="pre">fields</span> <span class="pre">KEY</span></code><a class="headerlink" href="#fields-key" title="Link to this heading"></a></h3>
+<p>List the names of the fields defined on an entry, one per line.
+Corresponds to iterating over an <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a>. This
+covers the normal BibTeX fields, including <code class="docutils literal notranslate"><span class="pre">keywords</span></code>, but not the
+internal date and <code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields; use <a class="reference internal" href="#cli-show"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">show</span></code></span></a> for a
+complete view of an entry. With <code class="docutils literal notranslate"><span class="pre">--json</span></code>: an array of strings.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>fields<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018
+<span class="go">author</span>
+<span class="go">title</span>
+<span class="go">journal</span>
+<span class="go">year</span>
+</pre></div>
+</div>
+</section>
+<section id="get-field-key-fieldname">
+<h3><code class="docutils literal notranslate"><span class="pre">get_field</span> <span class="pre">KEY</span> <span class="pre">FIELDNAME</span></code><a class="headerlink" href="#get-field-key-fieldname" title="Link to this heading"></a></h3>
+<p>Print the value of one field of an entry. Corresponds to indexing an
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a>, <code class="docutils literal notranslate"><span class="pre">lib[key][fieldname]</span></code>; field names are
+case-insensitive. A field whose value is a reference to an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code>
+macro prints as the bare macro name (see <a class="reference internal" href="#cli-strings"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">strings</span></code></span></a> for
+the definitions). Fails for a field not defined on the entry (see
+<a class="reference internal" href="#cli-fields"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">fields</span></code></span></a>). With <code class="docutils literal notranslate"><span class="pre">--json</span></code>: a string.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>get_field<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>title
+<span class="go">Quantum Computing in the NISQ era and beyond</span>
+</pre></div>
+</div>
+</section>
+<section id="author-key-editor-key">
+<h3><code class="docutils literal notranslate"><span class="pre">author</span> <span class="pre">KEY</span></code>, <code class="docutils literal notranslate"><span class="pre">editor</span> <span class="pre">KEY</span></code><a class="headerlink" href="#author-key-editor-key" title="Link to this heading"></a></h3>
+<p>Show the authors (editors) of an entry as structured names, one per
+line, in last-name-first form (<code class="docutils literal notranslate"><span class="pre">von</span> <span class="pre">Last,</span> <span class="pre">Jr,</span> <span class="pre">First</span></code>). See
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.author" title="bibdeskparser.Entry.author"><code class="xref py py-attr docutils literal notranslate"><span class="pre">author</span></code></a> and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.editor" title="bibdeskparser.Entry.editor"><code class="xref py py-attr docutils literal notranslate"><span class="pre">editor</span></code></a>. An entry without the
+corresponding field prints nothing. With <code class="docutils literal notranslate"><span class="pre">--json</span></code>: an array of
+objects with <code class="docutils literal notranslate"><span class="pre">first</span></code>, <code class="docutils literal notranslate"><span class="pre">von</span></code>, <code class="docutils literal notranslate"><span class="pre">last</span></code>, and <code class="docutils literal notranslate"><span class="pre">jr</span></code> keys, each an array of
+name words.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>author<span class="w"> </span>library.bib<span class="w"> </span>NielsenChuangBook
+<span class="go">Nielsen, Michael A.</span>
+<span class="go">Chuang, Isaac L.</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>author<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>--json
+<span class="go">[</span>
+<span class="go">  {</span>
+<span class="go">    &quot;first&quot;: [</span>
+<span class="go">      &quot;John&quot;</span>
+<span class="go">    ],</span>
+<span class="go">    &quot;von&quot;: [],</span>
+<span class="go">    &quot;last&quot;: [</span>
+<span class="go">      &quot;Preskill&quot;</span>
+<span class="go">    ],</span>
+<span class="go">    &quot;jr&quot;: []</span>
+<span class="go">  }</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+</section>
+<section id="search-query">
+<h3><code class="docutils literal notranslate"><span class="pre">search</span> <span class="pre">QUERY</span></code><a class="headerlink" href="#search-query" title="Link to this heading"></a></h3>
+<p>List the keys of the entries matching <code class="docutils literal notranslate"><span class="pre">QUERY</span></code>, best match first, one
+per line. See <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.search" title="bibdeskparser.Library.search"><code class="xref py py-meth docutils literal notranslate"><span class="pre">search()</span></code></a>. With <code class="docutils literal notranslate"><span class="pre">--json</span></code>:
+an array of keys.</p>
+<p>The query is matched against the stored field values (bare <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code>
+macro names intact), the decoded Unicode values, and macro expansions.
+<code class="docutils literal notranslate"><span class="pre">--field</span> <span class="pre">FIELD</span></code> (repeatable) limits the search to the given fields; the
+special name <code class="docutils literal notranslate"><span class="pre">key</span></code> matches against the citation key. <code class="docutils literal notranslate"><span class="pre">--match</span></code> sets the
+match strictness (the levels up to <code class="docutils literal notranslate"><span class="pre">fuzzy</span></code> match everything from the
+previous level and are case-insensitive; <code class="docutils literal notranslate"><span class="pre">regex</span></code> follows standard
+<a class="reference external" href="https://docs.python.org/3/library/re.html#module-re" title="(in Python v3.14)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">re</span></code></a> semantics):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">exact</span></code>: the query occurs verbatim as a substring.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">folded</span></code>: additionally ignores accents (<code class="docutils literal notranslate"><span class="pre">Schrodinger</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Schroedinger</span></code> both find <code class="docutils literal notranslate"><span class="pre">Schrödinger</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">words</span></code> (the default): additionally matches when most of the query’s
+words occur in a field, in any order.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fuzzy</span></code>: additionally tolerates small typos in individual words.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">regex</span></code>: the query is a regular expression (case-sensitive unless the
+pattern says <code class="docutils literal notranslate"><span class="pre">(?i)</span></code>).</p></li>
+</ul>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>search<span class="w"> </span>library.bib<span class="w"> </span><span class="s2">&quot;Schroedinger&quot;</span><span class="w"> </span>--field<span class="w"> </span>author
+<span class="go">Schroedinger1926</span>
+</pre></div>
+</div>
+</section>
+<section id="groups-key">
+<h3><code class="docutils literal notranslate"><span class="pre">groups</span> <span class="pre">[KEY]</span></code><a class="headerlink" href="#groups-key" title="Link to this heading"></a></h3>
+<p>Without <code class="docutils literal notranslate"><span class="pre">KEY</span></code>, list all static groups and the keys they contain. See
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.groups" title="bibdeskparser.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>. With <code class="docutils literal notranslate"><span class="pre">--json</span></code>: an object
+mapping each group name to an array of keys.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>groups<span class="w"> </span>library.bib
+<span class="go">quantum computing: NielsenChuangBook, Preskill2018</span>
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">KEY</span></code>, list the names of the groups that entry belongs to, one
+per line (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.groups" title="bibdeskparser.Entry.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>; with <code class="docutils literal notranslate"><span class="pre">--json</span></code>: an
+array of strings):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>groups<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018
+<span class="go">quantum computing</span>
+</pre></div>
+</div>
+</section>
+<section id="keywords-key">
+<h3><code class="docutils literal notranslate"><span class="pre">keywords</span> <span class="pre">[KEY]</span></code><a class="headerlink" href="#keywords-key" title="Link to this heading"></a></h3>
+<p>Without <code class="docutils literal notranslate"><span class="pre">KEY</span></code>, list all keywords and the keys of the entries using
+them. See <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.keywords" title="bibdeskparser.Library.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a>. With <code class="docutils literal notranslate"><span class="pre">--json</span></code>:
+an object mapping each keyword to an array of keys.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>keywords<span class="w"> </span>library.bib
+<span class="go">NISQ: Preskill2018</span>
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">KEY</span></code>, list the keywords of that entry, one per line
+(<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.keywords" title="bibdeskparser.Entry.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a>; with <code class="docutils literal notranslate"><span class="pre">--json</span></code>: an array of
+strings):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>keywords<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018
+<span class="go">NISQ</span>
+</pre></div>
+</div>
+</section>
+<section id="strings">
+<span id="cli-strings"></span><h3><code class="docutils literal notranslate"><span class="pre">strings</span></code><a class="headerlink" href="#strings" title="Link to this heading"></a></h3>
+<p>List all <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro definitions. See
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.strings" title="bibdeskparser.Library.strings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strings</span></code></a>. With <code class="docutils literal notranslate"><span class="pre">--json</span></code>: an object
+mapping each macro name to its value. With <code class="docutils literal notranslate"><span class="pre">--bib</span></code> (mutually exclusive
+with <code class="docutils literal notranslate"><span class="pre">--json</span></code>): re-parseable <code class="docutils literal notranslate"><span class="pre">&#64;string{name</span> <span class="pre">=</span> <span class="pre">{value}}</span></code> lines, sorted
+by name – exactly the text that <a class="reference internal" href="#cli-edit-strings"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">edit_strings</span></code></span></a>
+presents in the editor, and thus the baseline for a non-interactive
+<code class="docutils literal notranslate"><span class="pre">edit_strings</span> <span class="pre">--stdin</span></code> round trip.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>strings<span class="w"> </span>library.bib
+<span class="go">prl = Phys. Rev. Lett.</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>strings<span class="w"> </span>library.bib<span class="w"> </span>--bib
+<span class="go">@string{prl = {Phys. Rev. Lett.}}</span>
+</pre></div>
+</div>
+</section>
+<section id="timestamp">
+<h3><code class="docutils literal notranslate"><span class="pre">timestamp</span></code><a class="headerlink" href="#timestamp" title="Link to this heading"></a></h3>
+<p>Print the save timestamp from the file header, in ISO 8601 format (or
+nothing, if the header has no timestamp). See
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.timestamp" title="bibdeskparser.Library.timestamp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">timestamp</span></code></a>. With <code class="docutils literal notranslate"><span class="pre">--json</span></code>: a string
+or <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>timestamp<span class="w"> </span>library.bib
+<span class="go">2026-07-07T12:30:05-04:00</span>
+</pre></div>
+</div>
+</section>
+<section id="eval-format-spec-key-format">
+<span id="cli-eval-format-spec"></span><h3><code class="docutils literal notranslate"><span class="pre">eval_format_spec</span> <span class="pre">KEY</span> <span class="pre">[FORMAT]</span></code><a class="headerlink" href="#eval-format-spec-key-format" title="Link to this heading"></a></h3>
+<p>Print the citation key that a format in the
+<a class="reference internal" href="specifiers.html#format-specifiers"><span class="std std-ref">format-specifier language</span></a> yields for the entry
+at <code class="docutils literal notranslate"><span class="pre">KEY</span></code>, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.eval_format_spec" title="bibdeskparser.Library.eval_format_spec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">eval_format_spec()</span></code></a> – without
+renaming anything (unlike <a class="reference internal" href="#cli-rekey"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">rekey</span></code></span></a>). <code class="docutils literal notranslate"><span class="pre">FORMAT</span></code> defaults to
+the <code class="docutils literal notranslate"><span class="pre">format_spec</span></code> configured in the <code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> table of
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> (which may map a format per entry type). With
+<code class="docutils literal notranslate"><span class="pre">--json</span></code>: a string.</p>
+<p>A key that already matches the format evaluates to itself, so any
+output other than <code class="docutils literal notranslate"><span class="pre">KEY</span></code> itself flags a nonconforming key:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>eval_format_spec<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span><span class="s1">&#39;%a1%c{journal}0%Y%u0&#39;</span>
+<span class="go">PreskillQ2018</span>
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">--filename</span> <span class="pre">FILE</span></code>, the format is evaluated as a <em>file name</em>
+instead, in the <a class="reference internal" href="specifiers.html#specifiers-files"><span class="std std-ref">file-name dialect</span></a>; nothing is
+renamed or moved. <code class="docutils literal notranslate"><span class="pre">FILE</span></code> only supplies the original-name specifiers
+<code class="docutils literal notranslate"><span class="pre">%l</span></code>/<code class="docutils literal notranslate"><span class="pre">%L</span></code>/<code class="docutils literal notranslate"><span class="pre">%e</span></code>/<code class="docutils literal notranslate"><span class="pre">%E</span></code> (e.g. its extension); it need not exist or be
+attached to <code class="docutils literal notranslate"><span class="pre">KEY</span></code>, and an empty string selects the dialect when
+<code class="docutils literal notranslate"><span class="pre">FORMAT</span></code> uses none of those specifiers. <code class="docutils literal notranslate"><span class="pre">FORMAT</span></code> then defaults to the
+<code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> format. A preview shows the base name; on-disk
+collision suffixes are added only by actual filing (<code class="docutils literal notranslate"><span class="pre">rename_file</span></code> /
+<code class="docutils literal notranslate"><span class="pre">add_file</span></code>). If <code class="docutils literal notranslate"><span class="pre">FILE</span></code> is an attachment’s current path and already
+matches the format, it prints unchanged:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>eval_format_spec<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>--filename<span class="w"> </span>preskill.pdf
+<span class="go">Preskill2018.pdf</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="rendering-and-exporting">
+<h2>Rendering and exporting<a class="headerlink" href="#rendering-and-exporting" title="Link to this heading"></a></h2>
+<section id="render-key">
+<h3><code class="docutils literal notranslate"><span class="pre">render</span> <span class="pre">KEY...</span></code><a class="headerlink" href="#render-key" title="Link to this heading"></a></h3>
+<p>Render a formatted citation for one or more entries, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.render" title="bibdeskparser.Library.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">render()</span></code></a>. The <code class="docutils literal notranslate"><span class="pre">--format</span></code> option
+selects the output format (<code class="docutils literal notranslate"><span class="pre">markdown</span></code>, the default, <code class="docutils literal notranslate"><span class="pre">tex</span></code>, or <code class="docutils literal notranslate"><span class="pre">html</span></code>);
+<code class="docutils literal notranslate"><span class="pre">--style</span></code> selects the layout of multiple citations relative to one
+another (<code class="docutils literal notranslate"><span class="pre">default</span></code>, <code class="docutils literal notranslate"><span class="pre">paragraphs</span></code>, <code class="docutils literal notranslate"><span class="pre">numbered</span> <span class="pre">list</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">itemized</span> <span class="pre">list</span></code>).</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>render<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>--format<span class="w"> </span>tex
+</pre></div>
+</div>
+</section>
+<section id="export-key">
+<span id="cli-export"></span><h3><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">KEY...</span></code><a class="headerlink" href="#export-key" title="Link to this heading"></a></h3>
+<p>Export one or more entries as self-contained BibTeX text (including
+any <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macros they reference), via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a>. The <code class="docutils literal notranslate"><span class="pre">--format</span></code> option
+selects the export format (<code class="docutils literal notranslate"><span class="pre">default</span></code>, <code class="docutils literal notranslate"><span class="pre">raw</span></code>, or <code class="docutils literal notranslate"><span class="pre">minimal</span></code>);
+<code class="docutils literal notranslate"><span class="pre">--outfile</span> <span class="pre">PATH</span></code> writes to a file instead of printing to stdout.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>--format<span class="w"> </span>minimal<span class="w"> </span>--outfile<span class="w"> </span>out.bib
+</pre></div>
+</div>
+</section>
+</section>
+<section id="entries">
+<h2>Entries<a class="headerlink" href="#entries" title="Link to this heading"></a></h2>
+<section id="rekey-old-key-new-key">
+<span id="cli-rekey"></span><h3><code class="docutils literal notranslate"><span class="pre">rekey</span> <span class="pre">OLD_KEY</span> <span class="pre">[NEW_KEY]</span></code><a class="headerlink" href="#rekey-old-key-new-key" title="Link to this heading"></a></h3>
+<p>Change the citation key of an entry, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rekey" title="bibdeskparser.Library.rekey"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rekey()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>rekey<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>Preskill2018NISQ
+</pre></div>
+</div>
+<p>Without <code class="docutils literal notranslate"><span class="pre">NEW_KEY</span></code>, the key is <strong>generated</strong> from an auto-key format in
+the <a class="reference internal" href="specifiers.html#format-specifiers"><span class="std std-ref">format-specifier language</span></a> – the
+<code class="docutils literal notranslate"><span class="pre">--format-spec</span> <span class="pre">PATTERN</span></code> option if given, or else the <code class="docutils literal notranslate"><span class="pre">format_spec</span></code>
+configured in the <code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> table of <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> (which may
+map a format per entry type; see the <a class="reference internal" href="config.html#configuration"><span class="std std-ref">configuration</span></a>) –
+and printed to stdout:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>rekey<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018NISQ
+<span class="go">Preskill2018</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>rekey<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>--format-spec<span class="w"> </span><span class="s1">&#39;%a1%c{journal}0%Y%u0&#39;</span>
+<span class="go">PreskillQ2018</span>
+</pre></div>
+</div>
+<p>A key that already matches the format is kept unchanged, and a
+<code class="docutils literal notranslate"><span class="pre">%u</span></code>/<code class="docutils literal notranslate"><span class="pre">%U</span></code>/<code class="docutils literal notranslate"><span class="pre">%n</span></code> specifier in the format resolves collisions with the
+other entries in the library. To preview the generated key without
+renaming, use <a class="reference internal" href="#cli-eval-format-spec"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">eval_format_spec</span></code></span></a>.</p>
+</section>
+<section id="delete-key">
+<h3><code class="docutils literal notranslate"><span class="pre">delete</span> <span class="pre">KEY...</span></code><a class="headerlink" href="#delete-key" title="Link to this heading"></a></h3>
+<p>Delete one or more entries from the library. Corresponds to
+<code class="docutils literal notranslate"><span class="pre">del</span> <span class="pre">lib[key]</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>delete<span class="w"> </span>library.bib<span class="w"> </span>StaleEntry2001
+</pre></div>
+</div>
+</section>
+<section id="set-type-key-type">
+<h3><code class="docutils literal notranslate"><span class="pre">set_type</span> <span class="pre">KEY</span> <span class="pre">TYPE</span></code><a class="headerlink" href="#set-type-key-type" title="Link to this heading"></a></h3>
+<p>Change the entry type of an entry, e.g. to <code class="docutils literal notranslate"><span class="pre">article</span></code>
+(case-insensitive). Corresponds to assigning
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.entry_type" title="bibdeskparser.Entry.entry_type"><code class="xref py py-attr docutils literal notranslate"><span class="pre">entry_type</span></code></a>. An unrecognized <code class="docutils literal notranslate"><span class="pre">TYPE</span></code> is
+rejected; custom entry types can be defined in the <code class="docutils literal notranslate"><span class="pre">types</span></code> table of
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> (see the <a class="reference internal" href="config.html#configuration"><span class="std std-ref">configuration</span></a>).</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_type<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>misc
+</pre></div>
+</div>
+</section>
+<section id="set-field-key-fieldname-value">
+<h3><code class="docutils literal notranslate"><span class="pre">set_field</span> <span class="pre">KEY</span> <span class="pre">FIELDNAME</span> <span class="pre">VALUE</span></code><a class="headerlink" href="#set-field-key-fieldname-value" title="Link to this heading"></a></h3>
+<p>Set one field of an entry, adding the field if it does not exist.
+Corresponds to assigning to an <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a>,
+<code class="docutils literal notranslate"><span class="pre">lib[key][fieldname]</span> <span class="pre">=</span> <span class="pre">value</span></code>; field names are case-insensitive.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_field<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>doi<span class="w"> </span><span class="m">10</span>.22331/q-2018-08-06-79
+</pre></div>
+</div>
+<p>Like BibDesk, a <code class="docutils literal notranslate"><span class="pre">VALUE</span></code> that is a valid <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro name is
+stored as a bare macro reference rather than as literal text;
+<code class="docutils literal notranslate"><span class="pre">--literal</span></code> forces literal text instead
+(<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.ValueString" title="bibdeskparser.ValueString"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueString</span></code></a>), and <code class="docutils literal notranslate"><span class="pre">--macro</span></code> forces a macro
+reference (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.MacroString" title="bibdeskparser.MacroString"><code class="xref py py-class docutils literal notranslate"><span class="pre">MacroString</span></code></a>), failing for a
+<code class="docutils literal notranslate"><span class="pre">VALUE</span></code> that is not a valid macro name. The <code class="docutils literal notranslate"><span class="pre">keywords</span></code>, date, and
+<code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields cannot be set this way (use
+<a class="reference internal" href="#cli-add-to-keyword"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">add_to_keyword</span></code></span></a>, <a class="reference internal" href="#cli-add-file"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">add_file</span></code></span></a>,
+<code class="docutils literal notranslate"><span class="pre">add_url</span></code>, etc.); an <code class="docutils literal notranslate"><span class="pre">author</span></code>/<code class="docutils literal notranslate"><span class="pre">editor</span></code> <code class="docutils literal notranslate"><span class="pre">VALUE</span></code> must be parseable as
+names. A warning is printed on stderr for a field that is not
+appropriate for the entry type.</p>
+</section>
+<section id="delete-field-key-fieldname">
+<h3><code class="docutils literal notranslate"><span class="pre">delete_field</span> <span class="pre">KEY</span> <span class="pre">FIELDNAME</span></code><a class="headerlink" href="#delete-field-key-fieldname" title="Link to this heading"></a></h3>
+<p>Delete one field from an entry. Corresponds to
+<code class="docutils literal notranslate"><span class="pre">del</span> <span class="pre">lib[key][fieldname]</span></code>; field names are case-insensitive. Fails
+for a field not defined on the entry (see <a class="reference internal" href="#cli-fields"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">fields</span></code></span></a>),
+and for the <code class="docutils literal notranslate"><span class="pre">keywords</span></code>, date, and <code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields (use
+<code class="docutils literal notranslate"><span class="pre">remove_from_keyword</span></code>, <code class="docutils literal notranslate"><span class="pre">unlink_file</span></code>, <code class="docutils literal notranslate"><span class="pre">remove_url</span></code>, etc. instead).</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>delete_field<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>note
+</pre></div>
+</div>
+</section>
+</section>
+<section id="adding-entries">
+<h2>Adding entries<a class="headerlink" href="#adding-entries" title="Link to this heading"></a></h2>
+<section id="import-file">
+<span id="cli-import"></span><h3><code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">[FILE]</span></code><a class="headerlink" href="#import-file" title="Link to this heading"></a></h3>
+<p>Import the entries of a BibTeX snippet – read from <code class="docutils literal notranslate"><span class="pre">FILE</span></code>, from
+standard input (<code class="docutils literal notranslate"><span class="pre">--stdin</span></code>), or downloaded from a URL (<code class="docutils literal notranslate"><span class="pre">--url</span> <span class="pre">URL</span></code>);
+exactly one of the three – into the library, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.import_bibtex" title="bibdeskparser.Library.import_bibtex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">import_bibtex()</span></code></a>, and print their
+citation keys. The snippet may be anything from a single
+publisher-provided entry to a complete <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file (including
+<code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions, e.g. the output of <a class="reference internal" href="#cli-export"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">export</span></code></span></a>).</p>
+<p>Every entry is sanitized and normalized on its way in (see
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.import_bibtex" title="bibdeskparser.Library.import_bibtex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">import_bibtex()</span></code></a> for the full list):
+the journal becomes an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference – resolved against
+the library’s macros and the
+<a class="reference internal" href="config.html#config-journal-macros"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[journal_macros]</span></code> configuration</span></a>, or newly
+created, with a warning, from the journal’s lowercased initials
+(literal <code class="docutils literal notranslate"><span class="pre">arXiv:...</span></code> pseudo-journals excepted); proper nouns in
+sentence-case titles and all configured <code class="docutils literal notranslate"><span class="pre">protected_words</span></code> are
+brace-protected; DOIs are normalized; for articles, page ranges
+collapse to the first page and non-essential fields are dropped.
+Citation keys are regenerated from the
+<a class="reference internal" href="config.html#config-auto-key"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> format</span></a> if configured, else as e.g.
+<code class="docutils literal notranslate"><span class="pre">GoerzPRA2014</span></code> (articles) or <code class="docutils literal notranslate"><span class="pre">Goerz2205.15044</span></code> (arXiv preprints);
+<code class="docutils literal notranslate"><span class="pre">--keep-keys</span></code> keeps the incoming keys instead. <code class="docutils literal notranslate"><span class="pre">--fix-uppercase</span></code>
+repairs all-uppercase names/titles found in some publisher data.</p>
+<p>An entry whose DOI or eprint is already in the library is rejected,
+and any validation problem in the snippet rejects the whole import,
+reporting all problems at once, with the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file untouched.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>library.bib<span class="w"> </span>entries.bib
+<span class="go">BaumgratzPRL2014</span>
+<span class="gp">$ </span>pbpaste<span class="w"> </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>library.bib<span class="w"> </span>--stdin
+<span class="go">GrapeJMR2005</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>library.bib<span class="w"> </span>--url<span class="w"> </span>https://example.com/refs.bib
+<span class="go">KochEPJQT2022</span>
+</pre></div>
+</div>
+<p>Note that the <em>first</em> argument ending in <code class="docutils literal notranslate"><span class="pre">.bib</span></code> names the library, so
+importing from a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file requires naming the library explicitly
+(<code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">library.bib</span> <span class="pre">entries.bib</span></code>), even with a configured
+<code class="docutils literal notranslate"><span class="pre">default_bib_file</span></code>.</p>
+</section>
+<section id="add-query">
+<span id="cli-add"></span><h3><code class="docutils literal notranslate"><span class="pre">add</span> <span class="pre">QUERY...</span></code><a class="headerlink" href="#add-query" title="Link to this heading"></a></h3>
+<p>Fetch bibliographic data for <code class="docutils literal notranslate"><span class="pre">QUERY</span></code> from the appropriate online
+source and add it to the library as a new, sanitized entry, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add" title="bibdeskparser.Library.add"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add()</span></code></a>, printing its citation key. All
+<code class="docutils literal notranslate"><span class="pre">QUERY</span></code> arguments are joined into a single query:</p>
+<ul class="simple">
+<li><p>an <strong>arXiv identifier</strong> (<code class="docutils literal notranslate"><span class="pre">2205.15044</span></code>, <code class="docutils literal notranslate"><span class="pre">quant-ph/0106057</span></code>), or any
+string containing one (e.g. an <code class="docutils literal notranslate"><span class="pre">arxiv.org</span></code> URL), is fetched from
+the arXiv API and added as an <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code> preprint with a literal
+<code class="docutils literal notranslate"><span class="pre">journal</span> <span class="pre">=</span> <span class="pre">{arXiv:...}</span></code>, <code class="docutils literal notranslate"><span class="pre">eprint</span></code>, and <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>;</p></li>
+<li><p>a <strong>DOI</strong>, or a URL containing one (e.g. most publisher article
+pages), is fetched from <a class="reference external" href="https://www.crossref.org">Crossref</a>;</p></li>
+<li><p>anything else (free text with spaces) is a <strong>Crossref
+bibliographic search</strong>, adding the best match – verify the
+result!</p></li>
+</ul>
+<p>An arXiv identifier wins over a DOI when the query contains both.
+The fetched data passes through exactly the same sanitization as
+<a class="reference internal" href="#cli-import"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">import</span></code></span></a> (journal macros, title protection, key
+generation, duplicate rejection). Crossref works of a type with no
+BibTeX equivalent (e.g. datasets) are retrieved as publisher BibTeX
+via DOI content negotiation and imported as-is. Requires network
+access; the arXiv API’s rate limits are respected automatically.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add<span class="w"> </span>library.bib<span class="w"> </span><span class="m">10</span>.1103/PhysRevA.89.032334
+<span class="go">MuellerPRA2014</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>add<span class="w"> </span>library.bib<span class="w"> </span>https://arxiv.org/abs/2205.15044
+<span class="go">Goerz2205.15044</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>add<span class="w"> </span>library.bib<span class="w"> </span>pulser<span class="w"> </span>open-source<span class="w"> </span>pulse<span class="w"> </span>sequences
+<span class="go">SilverioQ2022</span>
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">--dry-run</span></code>, the sanitized entry is printed (as re-parseable
+BibTeX, like <code class="docutils literal notranslate"><span class="pre">export</span></code>) and the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file is not modified – useful
+to check what a free-text query matched. <code class="docutils literal notranslate"><span class="pre">--fix-uppercase</span></code> repairs
+all-uppercase names/titles in the fetched metadata.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add<span class="w"> </span>library.bib<span class="w"> </span>--dry-run<span class="w"> </span><span class="m">10</span>.22331/q-2022-01-24-629
+<span class="go">@string{quant = {Quantum}}</span>
+
+<span class="go">@article{SilverioQ2022,</span>
+<span class="go">...</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="groups">
+<h2>Groups<a class="headerlink" href="#groups" title="Link to this heading"></a></h2>
+<section id="add-to-group-name-key">
+<h3><code class="docutils literal notranslate"><span class="pre">add_to_group</span> <span class="pre">NAME</span> <span class="pre">KEY...</span></code><a class="headerlink" href="#add-to-group-name-key" title="Link to this heading"></a></h3>
+<p>Add entries to the static group <code class="docutils literal notranslate"><span class="pre">NAME</span></code>, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_to_group" title="bibdeskparser.Library.add_to_group"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_to_group()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_to_group<span class="w"> </span>library.bib<span class="w"> </span><span class="s2">&quot;quantum computing&quot;</span><span class="w"> </span>Preskill2018
+</pre></div>
+</div>
+</section>
+<section id="remove-from-group-name-key">
+<h3><code class="docutils literal notranslate"><span class="pre">remove_from_group</span> <span class="pre">NAME</span> <span class="pre">KEY...</span></code><a class="headerlink" href="#remove-from-group-name-key" title="Link to this heading"></a></h3>
+<p>Remove entries from the group <code class="docutils literal notranslate"><span class="pre">NAME</span></code>, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.remove_from_group" title="bibdeskparser.Library.remove_from_group"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_from_group()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>remove_from_group<span class="w"> </span>library.bib<span class="w"> </span><span class="s2">&quot;quantum computing&quot;</span><span class="w"> </span>Preskill2018
+</pre></div>
+</div>
+</section>
+<section id="set-group-name-key">
+<h3><code class="docutils literal notranslate"><span class="pre">set_group</span> <span class="pre">NAME</span> <span class="pre">[KEY...]</span></code><a class="headerlink" href="#set-group-name-key" title="Link to this heading"></a></h3>
+<p>Create the static group <code class="docutils literal notranslate"><span class="pre">NAME</span></code> with exactly the given entries, or
+replace its membership if it already exists. With zero keys, the group
+is created (or emptied) with no members. Corresponds to
+<code class="docutils literal notranslate"><span class="pre">lib.groups[name]</span> <span class="pre">=</span> <span class="pre">keys</span></code> (see
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.groups" title="bibdeskparser.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>).</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_group<span class="w"> </span>library.bib<span class="w"> </span><span class="s2">&quot;to read&quot;</span><span class="w"> </span>Preskill2018<span class="w"> </span>NielsenChuangBook
+</pre></div>
+</div>
+</section>
+<section id="delete-group-name">
+<h3><code class="docutils literal notranslate"><span class="pre">delete_group</span> <span class="pre">NAME</span></code><a class="headerlink" href="#delete-group-name" title="Link to this heading"></a></h3>
+<p>Delete the static group <code class="docutils literal notranslate"><span class="pre">NAME</span></code>; the entries themselves are not
+affected. Corresponds to <code class="docutils literal notranslate"><span class="pre">del</span> <span class="pre">lib.groups[name]</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>delete_group<span class="w"> </span>library.bib<span class="w"> </span><span class="s2">&quot;to read&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="keywords">
+<h2>Keywords<a class="headerlink" href="#keywords" title="Link to this heading"></a></h2>
+<section id="add-to-keyword-keyword-key">
+<span id="cli-add-to-keyword"></span><h3><code class="docutils literal notranslate"><span class="pre">add_to_keyword</span> <span class="pre">KEYWORD</span> <span class="pre">KEY...</span></code><a class="headerlink" href="#add-to-keyword-keyword-key" title="Link to this heading"></a></h3>
+<p>Add <code class="docutils literal notranslate"><span class="pre">KEYWORD</span></code> to the given entries, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_to_keyword" title="bibdeskparser.Library.add_to_keyword"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_to_keyword()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_to_keyword<span class="w"> </span>library.bib<span class="w"> </span>NISQ<span class="w"> </span>Preskill2018
+</pre></div>
+</div>
+</section>
+<section id="remove-from-keyword-keyword-key">
+<h3><code class="docutils literal notranslate"><span class="pre">remove_from_keyword</span> <span class="pre">KEYWORD</span> <span class="pre">KEY...</span></code><a class="headerlink" href="#remove-from-keyword-keyword-key" title="Link to this heading"></a></h3>
+<p>Remove <code class="docutils literal notranslate"><span class="pre">KEYWORD</span></code> from the given entries, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.remove_from_keyword" title="bibdeskparser.Library.remove_from_keyword"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_from_keyword()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>remove_from_keyword<span class="w"> </span>library.bib<span class="w"> </span>NISQ<span class="w"> </span>Preskill2018
+</pre></div>
+</div>
+</section>
+</section>
+<section id="strings-macros">
+<h2>Strings (macros)<a class="headerlink" href="#strings-macros" title="Link to this heading"></a></h2>
+<section id="set-string-name-value">
+<h3><code class="docutils literal notranslate"><span class="pre">set_string</span> <span class="pre">NAME</span> <span class="pre">VALUE</span></code><a class="headerlink" href="#set-string-name-value" title="Link to this heading"></a></h3>
+<p>Define or redefine the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro <code class="docutils literal notranslate"><span class="pre">NAME</span></code>. Corresponds to
+<code class="docutils literal notranslate"><span class="pre">lib.strings[name]</span> <span class="pre">=</span> <span class="pre">value</span></code> (see
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.strings" title="bibdeskparser.Library.strings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strings</span></code></a>).</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_string<span class="w"> </span>library.bib<span class="w"> </span>prl<span class="w"> </span><span class="s2">&quot;Phys. Rev. Lett.&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="delete-string-name">
+<h3><code class="docutils literal notranslate"><span class="pre">delete_string</span> <span class="pre">NAME</span></code><a class="headerlink" href="#delete-string-name" title="Link to this heading"></a></h3>
+<p>Delete the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro <code class="docutils literal notranslate"><span class="pre">NAME</span></code> (which must not be referenced by any
+entry). Corresponds to <code class="docutils literal notranslate"><span class="pre">del</span> <span class="pre">lib.strings[name]</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>delete_string<span class="w"> </span>library.bib<span class="w"> </span>prl
+</pre></div>
+</div>
+</section>
+<section id="rename-string-old-new">
+<h3><code class="docutils literal notranslate"><span class="pre">rename_string</span> <span class="pre">OLD</span> <span class="pre">NEW</span></code><a class="headerlink" href="#rename-string-old-new" title="Link to this heading"></a></h3>
+<p>Rename the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro <code class="docutils literal notranslate"><span class="pre">OLD</span></code> to <code class="docutils literal notranslate"><span class="pre">NEW</span></code>, updating every entry that
+references it, via <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_string" title="bibdeskparser.Library.rename_string"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_string()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>rename_string<span class="w"> </span>library.bib<span class="w"> </span>prl<span class="w"> </span>PRL
+</pre></div>
+</div>
+</section>
+</section>
+<section id="files">
+<h2>Files<a class="headerlink" href="#files" title="Link to this heading"></a></h2>
+<section id="add-file-key-filename">
+<span id="cli-add-file"></span><h3><code class="docutils literal notranslate"><span class="pre">add_file</span> <span class="pre">KEY</span> <span class="pre">FILENAME</span></code><a class="headerlink" href="#add-file-key-filename" title="Link to this heading"></a></h3>
+<p>Attach the file <code class="docutils literal notranslate"><span class="pre">FILENAME</span></code> to the entry <code class="docutils literal notranslate"><span class="pre">KEY</span></code>, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_file" title="bibdeskparser.Library.add_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_file()</span></code></a>. By default, <code class="docutils literal notranslate"><span class="pre">FILENAME</span></code>
+must exist on disk; pass <code class="docutils literal notranslate"><span class="pre">--no-check-exists</span></code> to skip that check.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_file<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>papers/Preskill2018.pdf
+</pre></div>
+</div>
+<p>When <strong>auto-filing</strong> is in effect, the file is not attached under its
+original name: it is <em>moved</em> into the auto-file location, renamed
+according to a file-name format in the
+<a class="reference internal" href="specifiers.html#format-specifiers"><span class="std std-ref">format-specifier language</span></a>, and the stored path
+(relative to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file) is printed to stdout. Auto-filing is in
+effect when <code class="docutils literal notranslate"><span class="pre">--location</span> <span class="pre">DIR</span></code> or <code class="docutils literal notranslate"><span class="pre">--format-spec</span> <span class="pre">PATTERN</span></code> is given
+(each defaulting the other to the <code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> configuration; see
+the <a class="reference internal" href="config.html#configuration"><span class="std std-ref">configuration</span></a>), or when the configuration sets
+<code class="docutils literal notranslate"><span class="pre">file_automatically</span> <span class="pre">=</span> <span class="pre">true</span></code>; pass <code class="docutils literal notranslate"><span class="pre">--no-auto-file</span></code> to force a plain
+attach regardless of the configuration:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_file<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>~/Downloads/1801.00862.pdf<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--format-spec<span class="w"> </span><span class="s1">&#39;%f{Cite Key}%u0%e&#39;</span><span class="w"> </span>--location<span class="w"> </span>Papers
+<span class="go">Papers/Preskill2018.pdf</span>
+</pre></div>
+</div>
+</section>
+<section id="replace-file-key-old-new">
+<h3><code class="docutils literal notranslate"><span class="pre">replace_file</span> <span class="pre">KEY</span> <span class="pre">OLD</span> <span class="pre">NEW</span></code><a class="headerlink" href="#replace-file-key-old-new" title="Link to this heading"></a></h3>
+<p>Replace the entry’s attached file <code class="docutils literal notranslate"><span class="pre">OLD</span></code> with <code class="docutils literal notranslate"><span class="pre">NEW</span></code>, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.replace_file" title="bibdeskparser.Library.replace_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_file()</span></code></a>. Pass <code class="docutils literal notranslate"><span class="pre">--remove</span></code> to
+also delete the old file from the filesystem, and <code class="docutils literal notranslate"><span class="pre">--no-check-exists</span></code>
+to not require <code class="docutils literal notranslate"><span class="pre">NEW</span></code> to exist on disk.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>replace_file<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>draft.pdf<span class="w"> </span>final.pdf<span class="w"> </span>--remove
+</pre></div>
+</div>
+</section>
+<section id="unlink-file-key-filename">
+<h3><code class="docutils literal notranslate"><span class="pre">unlink_file</span> <span class="pre">KEY</span> <span class="pre">FILENAME</span></code><a class="headerlink" href="#unlink-file-key-filename" title="Link to this heading"></a></h3>
+<p>Remove <code class="docutils literal notranslate"><span class="pre">FILENAME</span></code> from the entry’s attachments, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.unlink_file" title="bibdeskparser.Library.unlink_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unlink_file()</span></code></a>. Pass <code class="docutils literal notranslate"><span class="pre">--remove</span></code> to also
+delete the file from the filesystem.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>unlink_file<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>notes.pdf
+</pre></div>
+</div>
+</section>
+<section id="rename-file-key-old-new">
+<span id="cli-rename-file"></span><h3><code class="docutils literal notranslate"><span class="pre">rename_file</span> <span class="pre">KEY</span> <span class="pre">OLD</span> <span class="pre">[NEW]</span></code><a class="headerlink" href="#rename-file-key-old-new" title="Link to this heading"></a></h3>
+<p>Rename (or move) the entry’s attached file <code class="docutils literal notranslate"><span class="pre">OLD</span></code> to <code class="docutils literal notranslate"><span class="pre">NEW</span></code> on the
+filesystem, updating every entry that links it, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>rename_file<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>preskill.pdf<span class="w"> </span>Preskill2018.pdf
+</pre></div>
+</div>
+<p>Without <code class="docutils literal notranslate"><span class="pre">NEW</span></code>, the target is generated by <strong>auto-filing</strong>: the file
+is moved into the auto-file location and renamed according to a
+file-name format in the
+<a class="reference internal" href="specifiers.html#format-specifiers"><span class="std std-ref">format-specifier language</span></a> – the
+<code class="docutils literal notranslate"><span class="pre">--format-spec</span> <span class="pre">PATTERN</span></code> and <code class="docutils literal notranslate"><span class="pre">--location</span> <span class="pre">DIR</span></code> options if given, or
+else the <code class="docutils literal notranslate"><span class="pre">format_spec</span></code> and <code class="docutils literal notranslate"><span class="pre">location</span></code> keys of the <code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> table
+of <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> (see the <a class="reference internal" href="config.html#configuration"><span class="std std-ref">configuration</span></a>) –
+and the new path (relative to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file) is printed to stdout:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>rename_file<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>preskill.pdf
+<span class="go">Preskill2018.pdf</span>
+</pre></div>
+</div>
+<p>A file whose name already matches the format is left in place
+(re-filing is idempotent), and the format’s <code class="docutils literal notranslate"><span class="pre">%u</span></code>/<code class="docutils literal notranslate"><span class="pre">%U</span></code>/<code class="docutils literal notranslate"><span class="pre">%n</span></code> specifier
+resolves collisions with existing files. To preview the generated
+path without moving anything, use
+<a class="reference internal" href="#cli-eval-format-spec"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">eval_format_spec</span> <span class="pre">--filename</span></code></span></a>.</p>
+</section>
+</section>
+<section id="urls">
+<h2>URLs<a class="headerlink" href="#urls" title="Link to this heading"></a></h2>
+<section id="add-url-key-url">
+<h3><code class="docutils literal notranslate"><span class="pre">add_url</span> <span class="pre">KEY</span> <span class="pre">URL</span></code><a class="headerlink" href="#add-url-key-url" title="Link to this heading"></a></h3>
+<p>Add <code class="docutils literal notranslate"><span class="pre">URL</span></code> to the entry <code class="docutils literal notranslate"><span class="pre">KEY</span></code>, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_url" title="bibdeskparser.Library.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_url<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>https://arxiv.org/abs/1801.00862
+</pre></div>
+</div>
+</section>
+<section id="replace-url-key-old-new">
+<h3><code class="docutils literal notranslate"><span class="pre">replace_url</span> <span class="pre">KEY</span> <span class="pre">OLD</span> <span class="pre">NEW</span></code><a class="headerlink" href="#replace-url-key-old-new" title="Link to this heading"></a></h3>
+<p>Replace the entry’s URL <code class="docutils literal notranslate"><span class="pre">OLD</span></code> with <code class="docutils literal notranslate"><span class="pre">NEW</span></code>, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.replace_url" title="bibdeskparser.Library.replace_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_url()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>replace_url<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>http://example.org<span class="w"> </span>https://example.org
+</pre></div>
+</div>
+</section>
+<section id="remove-url-key-url">
+<h3><code class="docutils literal notranslate"><span class="pre">remove_url</span> <span class="pre">KEY</span> <span class="pre">URL</span></code><a class="headerlink" href="#remove-url-key-url" title="Link to this heading"></a></h3>
+<p>Remove <code class="docutils literal notranslate"><span class="pre">URL</span></code> from the entry <code class="docutils literal notranslate"><span class="pre">KEY</span></code>, via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.remove_url" title="bibdeskparser.Library.remove_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_url()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>remove_url<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>https://arxiv.org/abs/1801.00862
+</pre></div>
+</div>
+</section>
+</section>
+<section id="free-form-editing">
+<h2>Free-form editing<a class="headerlink" href="#free-form-editing" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">edit</span></code> and <code class="docutils literal notranslate"><span class="pre">edit_strings</span></code> commands accept arbitrary edits as
+BibTeX text – interactively through <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>, or non-interactively
+by piping the edited text to <code class="docutils literal notranslate"><span class="pre">--stdin</span></code>. Neither command ever blocks
+without a terminal: invoked with no TTY on stdin and with neither
+<code class="docutils literal notranslate"><span class="pre">--stdin</span></code> nor an explicit <code class="docutils literal notranslate"><span class="pre">--editor</span></code>, they fail immediately with a
+usage error rather than hanging on <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>.</p>
+<section id="edit-key">
+<h3><code class="docutils literal notranslate"><span class="pre">edit</span> <span class="pre">KEY...</span></code><a class="headerlink" href="#edit-key" title="Link to this heading"></a></h3>
+<p>Edit one or more entries (as BibTeX text) and merge the changes back
+into the library, via <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.edit" title="bibdeskparser.Library.edit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">edit()</span></code></a>. The
+<code class="docutils literal notranslate"><span class="pre">--format</span></code> option (<code class="docutils literal notranslate"><span class="pre">default</span></code>, <code class="docutils literal notranslate"><span class="pre">raw</span></code>, or <code class="docutils literal notranslate"><span class="pre">minimal</span></code>) controls how the
+entries are presented; <code class="docutils literal notranslate"><span class="pre">--editor</span> <span class="pre">CMD</span></code> overrides the editor command
+(which defaults to <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>).</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>edit<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>--editor<span class="w"> </span>vim
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">--stdin</span></code> (mutually exclusive with <code class="docutils literal notranslate"><span class="pre">--editor</span></code>), the full edited
+text is read from standard input instead of opening an editor. The
+text to edit is exactly what <a class="reference internal" href="#cli-export"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">export</span></code></span></a> prints for the
+same keys, so any pipeline that transforms the exported text works;
+piping it back unchanged is a no-op:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/NISQ era/noisy intermediate-scale quantum era/&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>edit<span class="w"> </span>library.bib<span class="w"> </span>Preskill2018<span class="w"> </span>--stdin
+</pre></div>
+</div>
+<p>Empty input to <code class="docutils literal notranslate"><span class="pre">--stdin</span></code> is a usage error (so an accidental
+<code class="docutils literal notranslate"><span class="pre">&lt;</span> <span class="pre">/dev/null</span></code> cannot silently apply a no-op edit), and text that fails
+validation – an unparseable block, or a reference to an undefined
+<code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro – exits with code 1 and the list of problems on
+stderr, leaving the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file untouched.</p>
+</section>
+<section id="edit-strings">
+<span id="cli-edit-strings"></span><h3><code class="docutils literal notranslate"><span class="pre">edit_strings</span></code><a class="headerlink" href="#edit-strings" title="Link to this heading"></a></h3>
+<p>Edit the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro definitions and merge the changes back into
+the library, via <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.edit_strings" title="bibdeskparser.Library.edit_strings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">edit_strings()</span></code></a>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>edit_strings<span class="w"> </span>library.bib
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">--stdin</span></code>, the edited definitions are read from standard input;
+the baseline text comes from <a class="reference internal" href="#cli-strings"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">strings</span> <span class="pre">--bib</span></code></span></a>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>strings<span class="w"> </span>library.bib<span class="w"> </span>--bib<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/Phys. Rev. Lett./Physical Review Letters/&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>edit_strings<span class="w"> </span>library.bib<span class="w"> </span>--stdin
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="specifiers.html" class="btn btn-neutral float-left" title="Format Specifiers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apidocs/bibdeskparser/bibdeskparser.html" class="btn btn-neutral float-right" title="Package API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Michael Goerz.
+      <span class="lastupdated">Last updated on Jul 14, 2026.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

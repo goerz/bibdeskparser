@@ -1,0 +1,533 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bib Entry Types &mdash; BibDeskParser 0.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=37f418d5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/docs-versions-menu.js?v=2187e224"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Configuration" href="config.html" />
+    <link rel="prev" title="BibDesk’s .bib Format" href="bibdesk_format.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+  <a href="index.html" class="icon icon-home">
+    BibDeskParser
+  </a>
+
+  <div class="version">
+    v0.2.1
+  </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#development">Development</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="howto.html">How-to Guides</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Bib Entry Types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#article">article</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#book">book</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#booklet">booklet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#commented">commented</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#conference">conference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#electronic">electronic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#glossdef">glossdef</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inbook">inbook</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#incollection">incollection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inproceedings">inproceedings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#jurthesis">jurthesis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#manual">manual</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mastersthesis">mastersthesis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#misc">misc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#periodical">periodical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#phdthesis">phdthesis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#proceedings">proceedings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#techreport">techreport</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unpublished">unpublished</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#url">url</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#webpage">webpage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fields-common-to-all-entry-types">Fields common to all entry types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#field-glossary">Field glossary</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BibDeskParser</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Bib Entry Types</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="bib-entry-types">
+<span id="id1"></span><h1>Bib Entry Types<a class="headerlink" href="#bib-entry-types" title="Link to this heading"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> recognizes the entry types that
+<a class="reference external" href="https://bibdesk.sourceforge.io">BibDesk</a> itself defines. These are the
+types BibDesk templates in its editor, declared in its <code class="docutils literal notranslate"><span class="pre">TypeInfo.plist</span></code>
+source file (the <code class="docutils literal notranslate"><span class="pre">FieldsForTypes</span></code> dictionary), which is the authority
+for the per-type field lists reproduced below.</p>
+<p>Every entry type is validated when an entry is <em>constructed or
+modified</em> in Python – <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a> construction or an
+<code class="docutils literal notranslate"><span class="pre">entry_type</span></code> assignment. An unrecognized entry type raises a
+<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a>. <strong>Loading a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file never validates</strong>, so a file
+using an unusual entry type still loads and round-trips unchanged.</p>
+<p>Assigning a field that is not appropriate for the entry type emits a
+<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#UserWarning" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">UserWarning</span></code></a> (the value is still stored). A field is appropriate
+if it is one of the type’s mandatory or optional fields listed below, or
+one of the <a class="reference internal" href="#common-fields">fields common to all entry types</a>.</p>
+<p>The extended biblatex entry types and fields are also recognized
+(accepted without error), though only the types below are given field
+templates.</p>
+<p>The recognized types and fields, and the two validation behaviors
+described above, can be customized or disabled through a configuration
+file; see <a class="reference internal" href="config.html#configuration"><span class="std std-ref">Configuration</span></a>.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-article"><code class="docutils literal notranslate"><span class="pre">article</span></code></a></p></td>
+<td><p>An article in a journal or other periodical.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#type-book"><code class="docutils literal notranslate"><span class="pre">book</span></code></a></p></td>
+<td><p>A book with a named publisher.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-booklet"><code class="docutils literal notranslate"><span class="pre">booklet</span></code></a></p></td>
+<td><p>A printed work without a named publisher.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#type-commented"><code class="docutils literal notranslate"><span class="pre">commented</span></code></a></p></td>
+<td><p>A commented edition of a work.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-conference"><code class="docutils literal notranslate"><span class="pre">conference</span></code></a></p></td>
+<td><p>An article in conference proceedings (classic BibTeX).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#type-electronic"><code class="docutils literal notranslate"><span class="pre">electronic</span></code></a></p></td>
+<td><p>An electronic or online resource.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-glossdef"><code class="docutils literal notranslate"><span class="pre">glossdef</span></code></a></p></td>
+<td><p>A glossary definition.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#type-inbook"><code class="docutils literal notranslate"><span class="pre">inbook</span></code></a></p></td>
+<td><p>A part of a book with its own identity.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-incollection"><code class="docutils literal notranslate"><span class="pre">incollection</span></code></a></p></td>
+<td><p>A titled contribution to a book.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#type-inproceedings"><code class="docutils literal notranslate"><span class="pre">inproceedings</span></code></a></p></td>
+<td><p>An article in conference proceedings.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-jurthesis"><code class="docutils literal notranslate"><span class="pre">jurthesis</span></code></a></p></td>
+<td><p>A juridical thesis.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#type-manual"><code class="docutils literal notranslate"><span class="pre">manual</span></code></a></p></td>
+<td><p>Technical documentation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-mastersthesis"><code class="docutils literal notranslate"><span class="pre">mastersthesis</span></code></a></p></td>
+<td><p>A master’s thesis.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#type-misc"><code class="docutils literal notranslate"><span class="pre">misc</span></code></a></p></td>
+<td><p>A fallback type for anything that fits no other type.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-periodical"><code class="docutils literal notranslate"><span class="pre">periodical</span></code></a></p></td>
+<td><p>A whole issue or run of a periodical.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#type-phdthesis"><code class="docutils literal notranslate"><span class="pre">phdthesis</span></code></a></p></td>
+<td><p>A PhD thesis.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-proceedings"><code class="docutils literal notranslate"><span class="pre">proceedings</span></code></a></p></td>
+<td><p>The proceedings of a conference.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#type-techreport"><code class="docutils literal notranslate"><span class="pre">techreport</span></code></a></p></td>
+<td><p>A report issued by an institution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-unpublished"><code class="docutils literal notranslate"><span class="pre">unpublished</span></code></a></p></td>
+<td><p>A work with an author and title, not formally published.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#type-url"><code class="docutils literal notranslate"><span class="pre">url</span></code></a></p></td>
+<td><p>A URL resource.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#type-webpage"><code class="docutils literal notranslate"><span class="pre">webpage</span></code></a></p></td>
+<td><p>A web page.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="article">
+<span id="type-article"></span><h2>article<a class="headerlink" href="#article" title="Link to this heading"></a></h2>
+<p>An article in a journal, magazine, or other periodical.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">journal</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+</section>
+<section id="book">
+<span id="type-book"></span><h2>book<a class="headerlink" href="#book" title="Link to this heading"></a></h2>
+<p>A book with a named publisher.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">series</span></code>,
+<code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+</section>
+<section id="booklet">
+<span id="type-booklet"></span><h2>booklet<a class="headerlink" href="#booklet" title="Link to this heading"></a></h2>
+<p>A printed work without a named publisher or sponsoring institution.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">title</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">howpublished</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+</section>
+<section id="commented">
+<span id="type-commented"></span><h2>commented<a class="headerlink" href="#commented" title="Link to this heading"></a></h2>
+<p>A commented edition of a work.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">volumetitle</span></code>, <code class="docutils literal notranslate"><span class="pre">editor</span></code></p>
+</section>
+<section id="conference">
+<span id="type-conference"></span><h2>conference<a class="headerlink" href="#conference" title="Link to this heading"></a></h2>
+<p>An article in conference proceedings (the classic BibTeX type;
+equivalent to <a class="reference internal" href="#type-inproceedings"><code class="docutils literal notranslate"><span class="pre">inproceedings</span></code></a>).</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">booktitle</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>,
+<code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+</section>
+<section id="electronic">
+<span id="type-electronic"></span><h2>electronic<a class="headerlink" href="#electronic" title="Link to this heading"></a></h2>
+<p>An electronic or online resource.</p>
+<p><strong>Mandatory:</strong> <em>(none)</em></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">urldate</span></code>, <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code></p>
+</section>
+<section id="glossdef">
+<span id="type-glossdef"></span><h2>glossdef<a class="headerlink" href="#glossdef" title="Link to this heading"></a></h2>
+<p>A glossary definition (a term and its meaning).</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">word</span></code>, <code class="docutils literal notranslate"><span class="pre">definition</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">sort-word</span></code>, <code class="docutils literal notranslate"><span class="pre">short</span></code>, <code class="docutils literal notranslate"><span class="pre">group</span></code></p>
+</section>
+<section id="inbook">
+<span id="type-inbook"></span><h2>inbook<a class="headerlink" href="#inbook" title="Link to this heading"></a></h2>
+<p>A part of a book (a chapter or a range of pages) with its own identity.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">chapter</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>,
+<code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code></p>
+</section>
+<section id="incollection">
+<span id="type-incollection"></span><h2>incollection<a class="headerlink" href="#incollection" title="Link to this heading"></a></h2>
+<p>A titled contribution to a book (a collection with its own editor).</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">booktitle</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">chapter</span></code>,
+<code class="docutils literal notranslate"><span class="pre">pages</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+</section>
+<section id="inproceedings">
+<span id="type-inproceedings"></span><h2>inproceedings<a class="headerlink" href="#inproceedings" title="Link to this heading"></a></h2>
+<p>An article in conference proceedings.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">booktitle</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>,
+<code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+</section>
+<section id="jurthesis">
+<span id="type-jurthesis"></span><h2>jurthesis<a class="headerlink" href="#jurthesis" title="Link to this heading"></a></h2>
+<p>A juridical thesis.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">school</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code></p>
+</section>
+<section id="manual">
+<span id="type-manual"></span><h2>manual<a class="headerlink" href="#manual" title="Link to this heading"></a></h2>
+<p>Technical or other documentation, not necessarily in book form.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">title</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>,
+<code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+</section>
+<section id="mastersthesis">
+<span id="type-mastersthesis"></span><h2>mastersthesis<a class="headerlink" href="#mastersthesis" title="Link to this heading"></a></h2>
+<p>A master’s thesis.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">school</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code></p>
+</section>
+<section id="misc">
+<span id="type-misc"></span><h2>misc<a class="headerlink" href="#misc" title="Link to this heading"></a></h2>
+<p>A fallback type for anything that does not fit another type.</p>
+<p><strong>Mandatory:</strong> <em>(none)</em></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">howpublished</span></code>, <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+</section>
+<section id="periodical">
+<span id="type-periodical"></span><h2>periodical<a class="headerlink" href="#periodical" title="Link to this heading"></a></h2>
+<p>A whole issue or run of a journal, magazine, or newspaper.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">journal</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">year</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code></p>
+</section>
+<section id="phdthesis">
+<span id="type-phdthesis"></span><h2>phdthesis<a class="headerlink" href="#phdthesis" title="Link to this heading"></a></h2>
+<p>A PhD thesis.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">school</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code></p>
+</section>
+<section id="proceedings">
+<span id="type-proceedings"></span><h2>proceedings<a class="headerlink" href="#proceedings" title="Link to this heading"></a></h2>
+<p>The published proceedings of a conference.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>,
+<code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code></p>
+</section>
+<section id="techreport">
+<span id="type-techreport"></span><h2>techreport<a class="headerlink" href="#techreport" title="Link to this heading"></a></h2>
+<p>A report published by a school or other institution.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">institution</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+</section>
+<section id="unpublished">
+<span id="type-unpublished"></span><h2>unpublished<a class="headerlink" href="#unpublished" title="Link to this heading"></a></h2>
+<p>A work with an author and title that has not been formally published.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">note</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+</section>
+<section id="url">
+<span id="type-url"></span><h2>url<a class="headerlink" href="#url" title="Link to this heading"></a></h2>
+<p>A URL resource.</p>
+<p><strong>Mandatory:</strong> <em>(none)</em></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">urldate</span></code>, <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">lastchecked</span></code></p>
+</section>
+<section id="webpage">
+<span id="type-webpage"></span><h2>webpage<a class="headerlink" href="#webpage" title="Link to this heading"></a></h2>
+<p>A web page.</p>
+<p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">url</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">lastchecked</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+</section>
+<section id="fields-common-to-all-entry-types">
+<span id="common-fields"></span><h2>Fields common to all entry types<a class="headerlink" href="#fields-common-to-all-entry-types" title="Link to this heading"></a></h2>
+<p>Beyond the per-type fields above, <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> accepts a set of
+administrative and cross-type fields on <em>any</em> entry type, without a
+warning. These are the fields BibDesk (and BibTeX in general) may attach
+to an entry regardless of its type:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">keywords</span></code> – the comma-separated tag list, exposed as the
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.keywords" title="bibdeskparser.Entry.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a> tuple.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">abstract</span></code>, <code class="docutils literal notranslate"><span class="pre">annote</span></code>, <code class="docutils literal notranslate"><span class="pre">annotation</span></code>, <code class="docutils literal notranslate"><span class="pre">note</span></code> – free-form descriptive
+and note fields.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">date-added</span></code>, <code class="docutils literal notranslate"><span class="pre">date-modified</span></code> – timestamps; the latter two
+are exposed as the read-only <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_added" title="bibdeskparser.Entry.date_added"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_added</span></code></a>
+and <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_modified" title="bibdeskparser.Entry.date_modified"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_modified</span></code></a> properties.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">doi</span></code>, <code class="docutils literal notranslate"><span class="pre">url</span></code>, <code class="docutils literal notranslate"><span class="pre">isbn</span></code>, <code class="docutils literal notranslate"><span class="pre">issn</span></code> – stable identifiers and links.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">eprint</span></code>, <code class="docutils literal notranslate"><span class="pre">eprinttype</span></code>, <code class="docutils literal notranslate"><span class="pre">eprintclass</span></code>, <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>,
+<code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> – the arXiv/eprint fields.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">crossref</span></code>, <code class="docutils literal notranslate"><span class="pre">ids</span></code> – cross-referencing and alias keys.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">language</span></code>, <code class="docutils literal notranslate"><span class="pre">rating</span></code>, <code class="docutils literal notranslate"><span class="pre">read</span></code>, <code class="docutils literal notranslate"><span class="pre">rss-description</span></code>, <code class="docutils literal notranslate"><span class="pre">local-url</span></code> –
+further BibDesk bookkeeping fields.</p></li>
+</ul>
+<p>Some of these are surfaced through dedicated <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> API rather
+than the plain <code class="docutils literal notranslate"><span class="pre">dict</span></code> interface:</p>
+<ul class="simple">
+<li><p><strong>File attachments</strong> (<code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code>) are managed through
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_file" title="bibdeskparser.Library.add_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_file()</span></code></a>,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.replace_file" title="bibdeskparser.Library.replace_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_file()</span></code></a>,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.unlink_file" title="bibdeskparser.Library.unlink_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unlink_file()</span></code></a>, and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a>.</p></li>
+<li><p><strong>Linked URLs</strong> (<code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code>) are managed through
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_url" title="bibdeskparser.Entry.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a>,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.replace_url" title="bibdeskparser.Entry.replace_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_url()</span></code></a>, and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.remove_url" title="bibdeskparser.Entry.remove_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_url()</span></code></a>.</p></li>
+<li><p><strong>Timestamps</strong> are read through
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_added" title="bibdeskparser.Entry.date_added"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_added</span></code></a> and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_modified" title="bibdeskparser.Entry.date_modified"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_modified</span></code></a>.</p></li>
+<li><p><strong>Keywords</strong> are read through
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.keywords" title="bibdeskparser.Entry.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a>.</p></li>
+</ul>
+<p>For how these fields are encoded on disk, see the Explanation page
+<a class="reference internal" href="bibdesk_format.html"><span class="doc std std-doc">BibDesk’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code> Format</span></a>.</p>
+</section>
+<section id="field-glossary">
+<h2>Field glossary<a class="headerlink" href="#field-glossary" title="Link to this heading"></a></h2>
+<p>A brief gloss of the field names used above:</p>
+<p><code class="docutils literal notranslate"><span class="pre">author</span></code>
+: The author(s) of the work, an <code class="docutils literal notranslate"><span class="pre">and</span></code>-separated name list.</p>
+<p><code class="docutils literal notranslate"><span class="pre">editor</span></code>
+: The editor(s) of the work, an <code class="docutils literal notranslate"><span class="pre">and</span></code>-separated name list.</p>
+<p><code class="docutils literal notranslate"><span class="pre">title</span></code>
+: The title of the work.</p>
+<p><code class="docutils literal notranslate"><span class="pre">booktitle</span></code>
+: The title of the book or proceedings a work appears in.</p>
+<p><code class="docutils literal notranslate"><span class="pre">journal</span></code>
+: The name of the journal or periodical.</p>
+<p><code class="docutils literal notranslate"><span class="pre">publisher</span></code>
+: The name of the publisher.</p>
+<p><code class="docutils literal notranslate"><span class="pre">school</span></code>
+: The university or institution awarding a thesis.</p>
+<p><code class="docutils literal notranslate"><span class="pre">institution</span></code>
+: The institution issuing a report.</p>
+<p><code class="docutils literal notranslate"><span class="pre">organization</span></code>
+: The organization sponsoring a conference or manual.</p>
+<p><code class="docutils literal notranslate"><span class="pre">volume</span></code>
+: The volume of a journal or a multi-volume book.</p>
+<p><code class="docutils literal notranslate"><span class="pre">number</span></code>
+: The issue number of a journal, or the number in a series or report.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pages</span></code>
+: A page number or range of pages.</p>
+<p><code class="docutils literal notranslate"><span class="pre">series</span></code>
+: The name of a series the work appears in.</p>
+<p><code class="docutils literal notranslate"><span class="pre">edition</span></code>
+: The edition of a book.</p>
+<p><code class="docutils literal notranslate"><span class="pre">chapter</span></code>
+: A chapter or section number.</p>
+<p><code class="docutils literal notranslate"><span class="pre">address</span></code>
+: The address of the publisher or institution.</p>
+<p><code class="docutils literal notranslate"><span class="pre">month</span></code>
+: The month of publication.</p>
+<p><code class="docutils literal notranslate"><span class="pre">year</span></code>
+: The year of publication.</p>
+<p><code class="docutils literal notranslate"><span class="pre">type</span></code>
+: An override for the type label of a thesis or report (e.g.
+<code class="docutils literal notranslate"><span class="pre">PhD</span> <span class="pre">diss.</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">howpublished</span></code>
+: How an unusual work was published.</p>
+<p><code class="docutils literal notranslate"><span class="pre">note</span></code>
+: Free-form additional information.</p>
+<p><code class="docutils literal notranslate"><span class="pre">urldate</span></code>, <code class="docutils literal notranslate"><span class="pre">lastchecked</span></code>
+: The date on which a URL was last accessed.</p>
+<p><code class="docutils literal notranslate"><span class="pre">word</span></code>, <code class="docutils literal notranslate"><span class="pre">definition</span></code>
+: For <a class="reference internal" href="#type-glossdef"><code class="docutils literal notranslate"><span class="pre">glossdef</span></code></a>: the term and its meaning.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sort-word</span></code>
+: For <a class="reference internal" href="#type-glossdef"><code class="docutils literal notranslate"><span class="pre">glossdef</span></code></a>: the string the entry sorts under.</p>
+<p><code class="docutils literal notranslate"><span class="pre">short</span></code>
+: For <a class="reference internal" href="#type-glossdef"><code class="docutils literal notranslate"><span class="pre">glossdef</span></code></a>: an abbreviated form of the term.</p>
+<p><code class="docutils literal notranslate"><span class="pre">group</span></code>
+: For <a class="reference internal" href="#type-glossdef"><code class="docutils literal notranslate"><span class="pre">glossdef</span></code></a>: a grouping label.</p>
+<p><code class="docutils literal notranslate"><span class="pre">volumetitle</span></code>
+: For <a class="reference internal" href="#type-commented"><code class="docutils literal notranslate"><span class="pre">commented</span></code></a>: the title of a specific volume.
+</content>
+</invoke></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="bibdesk_format.html" class="btn btn-neutral float-left" title="BibDesk’s .bib Format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="config.html" class="btn btn-neutral float-right" title="Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Michael Goerz.
+      <span class="lastupdated">Last updated on Jul 14, 2026.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
