@@ -39,7 +39,9 @@ current working directory, falling back to the XDG location (see
 a configured `default_bib_file`, the command fails with a usage error.
 
 The commands are named after the corresponding
-{class}`~bibdeskparser.Library` methods and properties. Operations that
+{class}`~bibdeskparser.Library` methods and properties (`import`
+corresponds to {py:meth}`~bibdeskparser.Library.import_bibtex`, since
+`import` is a Python keyword). Operations that
 the Python API expresses through `dict`-like access map to commands as
 follows: `set_group`/`delete_group` assign to and delete from
 {py:attr}`~bibdeskparser.Library.groups`, `set_string`/`delete_string`
@@ -59,7 +61,10 @@ load the library, apply the change, save the file back in place, and
 print nothing on success -- except [`rekey`](cli-rekey) without
 `NEW_KEY` and [`rename_file`](cli-rename-file) without `NEW`, which
 print the generated key or file path, as does
-[`add_file`](cli-add-file) when it auto-files.
+[`add_file`](cli-add-file) when it auto-files, and
+[`import`](cli-import)/[`add`](cli-add), which print the citation
+keys of the added entries (`add --dry-run` only prints the fetched
+entry, without modifying the file).
 
 ## JSON output
 
@@ -130,14 +135,26 @@ $ bibdeskparser duplicate_keys library.bib
 
 (cli-show)=
 
-### `show KEY...`
+### `show [KEY...]`
 
-Show the full data of one or more entries: a `KEY (entry_type)`
-heading, the raw fields, and derived data (groups, keywords, files,
-URLs, and dates). Corresponds to indexing the library, `lib[key]`.
-With `--json`: an object mapping each key to an object with
-`entry_type`, `key`, `fields`, `groups`, `keywords`, `files`, `urls`,
-`date_added`, and `date_modified`.
+Show the data of one or more entries: a `KEY (entry_type)` heading,
+the raw fields, and derived data (groups, keywords, files, URLs, and
+dates). Corresponds to indexing the library, `lib[key]`. With
+`--json`: an object mapping each key to an object with `entry_type`,
+`key`, `fields`, `groups`, `keywords`, `files`, `urls`, `date_added`,
+and `date_modified`.
+
+`--field FIELD` narrows the output to the named fields (repeatable and
+comma-separated, case-insensitive), dropping the derived data; a field
+not defined on an entry is silently omitted. With `--json`, this
+yields a flat `{key: {field: value}}` map -- convenient for
+backfilling missing metadata.
+
+Keys come from the `KEY` arguments and/or `--keys-from FILE` (one key
+per line; `-` reads standard input), so the output of another command
+can be piped straight in. By default an unknown key aborts the command
+with an error and no output; `--skip-missing` instead reports each miss
+on stderr and shows the remaining entries.
 
 ```console
 $ bibdeskparser show library.bib Preskill2018
@@ -148,6 +165,14 @@ Preskill2018 (article)
     year:    2018
   groups:   quantum computing
   keywords: NISQ
+```
+
+For example, to inspect the DOI and title of every entry that is
+missing an `eprint` field, in one pipeline:
+
+```console
+$ bibdeskparser keys --missing eprint \
+    | bibdeskparser show --field doi,title --json --keys-from -
 ```
 
 (cli-fields)=
@@ -461,6 +486,103 @@ and for the `keywords`, date, and `bdsk-*` fields (use
 
 ```console
 $ bibdeskparser delete_field library.bib Preskill2018 note
+```
+
+## Adding entries
+
+(cli-import)=
+
+### `import [FILE]`
+
+Import the entries of a BibTeX snippet -- read from `FILE`, from
+standard input (`--stdin`), or downloaded from a URL (`--url URL`);
+exactly one of the three -- into the library, via
+{py:meth}`~bibdeskparser.Library.import_bibtex`, and print their
+citation keys. The snippet may be anything from a single
+publisher-provided entry to a complete `.bib` file (including
+`@string` definitions, e.g. the output of [`export`](cli-export)).
+
+Every entry is sanitized and normalized on its way in (see
+{py:meth}`~bibdeskparser.Library.import_bibtex` for the full list):
+the journal becomes an `@string` macro reference -- resolved against
+the library's macros and the
+[`[journal_macros]` configuration](config-journal-macros), or newly
+created, with a warning, from the journal's lowercased initials
+(literal `arXiv:...` pseudo-journals excepted); proper nouns in
+sentence-case titles and all configured `protected_words` are
+brace-protected; DOIs are normalized; for articles, page ranges
+collapse to the first page and non-essential fields are dropped.
+Citation keys are regenerated from the
+[`[auto_key]` format](config-auto-key) if configured, else as e.g.
+`GoerzPRA2014` (articles) or `Goerz2205.15044` (arXiv preprints);
+`--keep-keys` keeps the incoming keys instead. `--fix-uppercase`
+repairs all-uppercase names/titles found in some publisher data.
+
+An entry whose DOI or eprint is already in the library is rejected,
+and any validation problem in the snippet rejects the whole import,
+reporting all problems at once, with the `.bib` file untouched.
+
+```console
+$ bibdeskparser import library.bib entries.bib
+BaumgratzPRL2014
+$ pbpaste | bibdeskparser import library.bib --stdin
+GrapeJMR2005
+$ bibdeskparser import library.bib --url https://example.com/refs.bib
+KochEPJQT2022
+```
+
+Note that the *first* argument ending in `.bib` names the library, so
+importing from a `.bib` file requires naming the library explicitly
+(`import library.bib entries.bib`), even with a configured
+`default_bib_file`.
+
+(cli-add)=
+
+### `add QUERY...`
+
+Fetch bibliographic data for `QUERY` from the appropriate online
+source and add it to the library as a new, sanitized entry, via
+{py:meth}`~bibdeskparser.Library.add`, printing its citation key. All
+`QUERY` arguments are joined into a single query:
+
+* an **arXiv identifier** (`2205.15044`, `quant-ph/0106057`), or any
+  string containing one (e.g. an `arxiv.org` URL), is fetched from
+  the arXiv API and added as an `@article` preprint with a literal
+  `journal = {arXiv:...}`, `eprint`, and `archiveprefix`;
+* a **DOI**, or a URL containing one (e.g. most publisher article
+  pages), is fetched from [Crossref](https://www.crossref.org);
+* anything else (free text with spaces) is a **Crossref
+  bibliographic search**, adding the best match -- verify the
+  result!
+
+An arXiv identifier wins over a DOI when the query contains both.
+The fetched data passes through exactly the same sanitization as
+[`import`](cli-import) (journal macros, title protection, key
+generation, duplicate rejection). Crossref works of a type with no
+BibTeX equivalent (e.g. datasets) are retrieved as publisher BibTeX
+via DOI content negotiation and imported as-is. Requires network
+access; the arXiv API's rate limits are respected automatically.
+
+```console
+$ bibdeskparser add library.bib 10.1103/PhysRevA.89.032334
+MuellerPRA2014
+$ bibdeskparser add library.bib https://arxiv.org/abs/2205.15044
+Goerz2205.15044
+$ bibdeskparser add library.bib pulser open-source pulse sequences
+SilverioQ2022
+```
+
+With `--dry-run`, the sanitized entry is printed (as re-parseable
+BibTeX, like `export`) and the `.bib` file is not modified -- useful
+to check what a free-text query matched. `--fix-uppercase` repairs
+all-uppercase names/titles in the fetched metadata.
+
+```console
+$ bibdeskparser add library.bib --dry-run 10.22331/q-2022-01-24-629
+@string{quant = {Quantum}}
+
+@article{SilverioQ2022,
+...
 ```
 
 ## Groups

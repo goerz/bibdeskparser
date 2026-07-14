@@ -26,6 +26,7 @@ import warnings
 from pathlib import Path
 
 from . import entrytypes, specifiers
+from .macros import is_valid_macro_name, normalize_macro_name
 
 try:
     import tomllib  # Python 3.11+
@@ -65,6 +66,8 @@ _KNOWN_TOP_LEVEL_KEYS = frozenset(
         "auto_key",
         "auto_file",
         "initials",
+        "journal_macros",
+        "protected_words",
     )
 )
 
@@ -532,6 +535,62 @@ def _parse_initials(raw):
     return initials
 
 
+def _parse_journal_macros(raw):
+    """Read the optional `[journal_macros]` table from `raw`.
+
+    The table maps an `@string` macro name to the full journal name it
+    stands for, or to a list of names (the first being the canonical
+    value of the macro, the rest aliases that resolve to the same
+    macro on import). Returns a `dict` mapping the normalized
+    (lowercased) macro name to a tuple of names."""
+    table = raw.get("journal_macros", {})
+    if not isinstance(table, dict):
+        raise ValueError("[journal_macros] must be a table")
+    journal_macros = {}
+    for name, value in table.items():
+        if not is_valid_macro_name(name, normalized=False):
+            raise ValueError(
+                f"[journal_macros] contains an invalid macro name: {name!r}"
+            )
+        names = [value] if isinstance(value, str) else value
+        if (
+            not isinstance(names, list)
+            or not names
+            or not all(
+                isinstance(journal, str) and journal.strip()
+                for journal in names
+            )
+        ):
+            raise ValueError(
+                f"[journal_macros] {name} must be a journal name or a "
+                "non-empty list of journal names"
+            )
+        normalized = normalize_macro_name(name)
+        if normalized in journal_macros:
+            raise ValueError(
+                f"[journal_macros] defines macro {normalized!r} more "
+                "than once"
+            )
+        journal_macros[normalized] = tuple(
+            journal.strip() for journal in names
+        )
+    return journal_macros
+
+
+def _parse_protected_words(raw):
+    """Read the optional `protected_words` key from `raw`.
+
+    Returns a list of words (or phrases) that
+    {meth}`~bibdeskparser.Library.import_bibtex` always wraps in
+    braces inside a `title` to protect their capitalization."""
+    value = raw.get("protected_words", [])
+    if not isinstance(value, list) or not all(
+        isinstance(word, str) and word.strip() for word in value
+    ):
+        raise ValueError("protected_words must be a list of non-empty strings")
+    return [word.strip() for word in value]
+
+
 # -- the active configuration ----------------------------------------- #
 
 
@@ -570,6 +629,15 @@ class Config:
       `auto_file.file_automatically`.
     * `initials` (default `{}`): per-field acronym exceptions for the
       `%c` format specifier.
+    * `journal_macros` (default `{}`): journal-name-to-macro mappings
+      used by {meth}`~bibdeskparser.Library.import_bibtex` (and thus
+      {meth}`~bibdeskparser.Library.add`) to resolve a journal name to
+      an `@string` macro -- a `dict` mapping a macro name to a tuple
+      of journal names (the first being the canonical value of the
+      macro, the rest aliases).
+    * `protected_words` (default `[]`): words (or phrases) that
+      {meth}`~bibdeskparser.Library.import_bibtex` always wraps in
+      braces inside a `title` to protect their capitalization.
 
     The remaining attributes hold the effective entry-type/field data
     model -- the built-in tables from `bibdeskparser.entrytypes`,
@@ -602,6 +670,8 @@ class Config:
         self.auto_key = AutoKey()
         self.auto_file = AutoFile()
         self.initials = {}
+        self.journal_macros = {}
+        self.protected_words = []
         self.documented_types = {
             entry_type: {
                 "required": tuple(spec["required"]),
@@ -647,6 +717,8 @@ class Config:
         auto_key = _parse_auto_key(raw)
         auto_file = _parse_auto_file(raw)
         initials = _parse_initials(raw)
+        journal_macros = _parse_journal_macros(raw)
+        protected_words = _parse_protected_words(raw)
         tables = _build(raw)
         self.verify_types = tables["verify_types"]
         self.verify_fields = tables["verify_fields"]
@@ -659,6 +731,8 @@ class Config:
         self.auto_key = auto_key
         self.auto_file = auto_file
         self.initials = initials
+        self.journal_macros = journal_macros
+        self.protected_words = protected_words
         return path
 
     # -- validation against the active data model --------------------- #

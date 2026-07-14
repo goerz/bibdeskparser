@@ -209,6 +209,120 @@ def test_show_json(runner, bibfile):
     assert entry["date_added"] == lib["GoerzJPB2011"].date_added.isoformat()
 
 
+def test_show_field(runner, bibfile):
+    """`--field` restricts the human-readable output to named fields."""
+    result = _run(
+        runner, "show", bibfile, "GoerzJPB2011", "--field", "doi,title"
+    )
+    assert result.output.startswith("GoerzJPB2011 (article)")
+    assert "doi:" in result.output
+    assert "title:" in result.output
+    # other fields and the derived data are omitted
+    assert "journal:" not in result.output
+    assert "groups:" not in result.output
+
+
+def test_show_field_json(runner, bibfile):
+    """`--field --json` yields a flat map of just the named fields."""
+    result = _run(
+        runner,
+        "show",
+        bibfile,
+        "GoerzJPB2011",
+        "--field",
+        "doi",
+        "--field",
+        "title",
+        "--json",
+    )
+    data = json.loads(result.output)
+    assert set(data) == {"GoerzJPB2011"}
+    assert set(data["GoerzJPB2011"]) == {"doi", "title"}
+    assert data["GoerzJPB2011"]["doi"] == "10.1088/0953-4075/44/15/154011"
+
+
+def test_show_field_case_insensitive_and_missing_omitted(runner, bibfile):
+    """Field names match case-insensitively; absent fields are dropped."""
+    result = _run(
+        runner,
+        "show",
+        bibfile,
+        "GoerzJPB2011",
+        "--field",
+        "DOI,nosuchfield",
+        "--json",
+    )
+    data = json.loads(result.output)
+    # canonical (stored) name, and the undefined field simply omitted
+    assert set(data["GoerzJPB2011"]) == {"doi"}
+
+
+def test_show_unknown_key_aborts(runner, bibfile):
+    """Without --skip-missing, an unknown key aborts with a clean
+    message and no partial output."""
+    result = runner.invoke(
+        main, ["show", str(bibfile), "GoerzJPB2011", "NoSuchKey"]
+    )
+    assert result.exit_code == 1
+    assert "Error: unknown citation key 'NoSuchKey'" in result.stderr
+    # no entry was shown before the abort
+    assert "GoerzJPB2011 (article)" not in result.output
+
+
+def test_show_skip_missing(runner, bibfile):
+    """`--skip-missing` reports misses on stderr and shows the rest."""
+    result = _run(
+        runner,
+        "show",
+        bibfile,
+        "GoerzJPB2011",
+        "NoSuchKey",
+        "--skip-missing",
+    )
+    assert "GoerzJPB2011 (article)" in result.output
+    # the miss is a warning, not shown as an entry heading
+    assert "NoSuchKey (" not in result.output
+    assert "Warning: unknown citation key 'NoSuchKey'" in result.stderr
+
+
+def test_show_keys_from_stdin(runner, bibfile):
+    """`--keys-from -` reads citation keys from standard input."""
+    result = runner.invoke(
+        main,
+        ["show", str(bibfile), "--field", "title", "--keys-from", "-"],
+        input="GoerzJPB2011\nGoerzNJP2014\n",
+    )
+    assert result.exit_code == 0, result.stderr
+    assert "GoerzJPB2011 (article)" in result.output
+    assert "GoerzNJP2014 (article)" in result.output
+
+
+def test_show_keys_from_file(runner, bibfile, tmp_path):
+    """`--keys-from FILE` reads keys from a file, combined with args."""
+    keyfile = tmp_path / "keys.txt"
+    keyfile.write_text("GoerzNJP2014\n\nGoerzPRA2014\n", encoding="utf-8")
+    result = _run(
+        runner,
+        "show",
+        bibfile,
+        "GoerzJPB2011",
+        "--field",
+        "year",
+        "--keys-from",
+        keyfile,
+    )
+    assert "GoerzJPB2011 (article)" in result.output
+    assert "GoerzNJP2014 (article)" in result.output
+    assert "GoerzPRA2014 (article)" in result.output
+
+
+def test_show_requires_keys(runner, bibfile):
+    """`show` with neither KEY nor --keys-from is a usage error."""
+    result = runner.invoke(main, ["show", str(bibfile)])
+    assert result.exit_code == 2
+    assert "no citation keys given" in result.stderr
+
+
 def test_fields(runner, bibfile):
     result = _run(runner, "fields", bibfile, "GoerzJPB2011")
     lines = result.output.splitlines()
@@ -357,6 +471,17 @@ def test_search_bad_regex(runner, bibfile):
     )
     assert result.exit_code != 0
     assert "invalid regular expression" in result.stderr
+
+
+def test_search_help_documents_match_levels(runner):
+    """`search --help` describes each match level (fuzzy in
+    particular), so an agent can choose one without external docs."""
+    result = runner.invoke(main, ["search", "--help"])
+    assert result.exit_code == 0
+    for level in ("exact", "folded", "words", "fuzzy", "regex"):
+        assert level in result.output
+    # the fuzzy caveat is spelled out
+    assert "verify" in result.output
 
 
 def test_groups(runner, bibfile):
@@ -1358,8 +1483,7 @@ def test_rekey_unknown_key(runner, bibfile):
         main, ["rekey", str(bibfile), "NoSuchKey", "NewKey"]
     )
     assert result.exit_code == 1
-    assert "NoSuchKey" in result.stderr
-    assert "'NoSuchKey'" not in result.stderr  # KeyError quotes stripped
+    assert "Error: unknown citation key 'NoSuchKey'" in result.stderr
     assert "Traceback" not in result.stderr
     assert "Traceback" not in result.output
     # the message is a single line
@@ -1376,8 +1500,44 @@ def test_add_to_group_unknown_group(runner, bibfile):
         main, ["add_to_group", str(bibfile), "No Such Group", "GoerzJPB2011"]
     )
     assert result.exit_code == 1
-    assert "No Such Group" in result.stderr
+    assert "Error: unknown static group 'No Such Group'" in result.stderr
     assert "Traceback" not in result.stderr
+
+
+def test_add_to_group_unknown_key_message(runner, bibfile):
+    """Adding an unknown citation key to a real group names the key."""
+    result = runner.invoke(
+        main, ["add_to_group", str(bibfile), "My Papers", "NoSuchKey"]
+    )
+    assert result.exit_code == 1
+    assert "Error: unknown citation key 'NoSuchKey'" in result.stderr
+
+
+def test_delete_group_unknown_message(runner, bibfile):
+    result = runner.invoke(main, ["delete_group", str(bibfile), "Nope"])
+    assert result.exit_code == 1
+    assert "Error: unknown static group 'Nope'" in result.stderr
+
+
+def test_delete_unknown_keys_message(runner, bibfile):
+    """Several unknown keys are reported together."""
+    result = runner.invoke(
+        main, ["delete", str(bibfile), "NoSuchKey", "AlsoMissing"]
+    )
+    assert result.exit_code == 1
+    assert "unknown citation keys:" in result.stderr
+    assert "'NoSuchKey'" in result.stderr
+    assert "'AlsoMissing'" in result.stderr
+    # nothing was deleted
+    assert "GoerzJPB2011" in _load(bibfile)
+
+
+def test_delete_string_unknown_message(runner, bibfile):
+    result = runner.invoke(
+        main, ["delete_string", str(bibfile), "nosuchmacro"]
+    )
+    assert result.exit_code == 1
+    assert "Error: unknown @string macro 'nosuchmacro'" in result.stderr
 
 
 def test_delete_string_in_use_fails(runner, bibfile):
@@ -1420,3 +1580,187 @@ def test_add_file_help(runner):
     assert "--no-auto-file" in result.output
     assert "--format-spec" in result.output
     assert "--location" in result.output
+
+
+# -- import / add ------------------------------------------------------- #
+
+
+IMPORT_SNIPPET = """\
+@article{PhysRevLett.113.140401,
+    Author = {Baumgratz, T. and Cramer, M. and Plenio, M. B.},
+    Title = {Quantifying Coherence},
+    Journal = {Phys. Rev. Lett.},
+    Year = {2014},
+    Doi = {10.1103/PhysRevLett.113.140401},
+    Pages = {140401},
+    Volume = {113},
+}
+"""
+
+
+def test_import_from_file(runner, bibfile, tmp_path):
+    snippet = tmp_path / "entries.bib"
+    snippet.write_text(IMPORT_SNIPPET, encoding="utf-8")
+    result = _run(runner, "import", bibfile, snippet)
+    assert result.stdout == "BaumgratzPRL2014\n"
+    assert "created new @string macro" in result.stderr
+    lib = _load(bibfile)
+    assert lib["BaumgratzPRL2014"]["journal"] == "prl"
+    assert lib.strings["prl"] == "Phys. Rev. Lett."
+
+
+def test_import_stdin(runner, bibfile):
+    result = runner.invoke(
+        main, ["import", str(bibfile), "--stdin"], input=IMPORT_SNIPPET
+    )
+    assert result.exit_code == 0, result.output + result.stderr
+    assert result.stdout == "BaumgratzPRL2014\n"
+    assert "BaumgratzPRL2014" in _load(bibfile)
+
+
+def test_import_url(runner, bibfile, monkeypatch):
+    urls = []
+
+    def fetch_text(url):
+        urls.append(url)
+        return IMPORT_SNIPPET
+
+    monkeypatch.setattr("bibdeskparser.fetch.fetch_text", fetch_text)
+    result = _run(
+        runner, "import", bibfile, "--url", "https://example.com/x.bib"
+    )
+    assert urls == ["https://example.com/x.bib"]
+    assert result.stdout == "BaumgratzPRL2014\n"
+
+
+def test_import_requires_exactly_one_source(runner, bibfile, tmp_path):
+    result = runner.invoke(main, ["import", str(bibfile)])
+    assert result.exit_code == 2
+    assert "exactly one of FILE, --stdin, or --url" in result.stderr
+    snippet = tmp_path / "entries.bib"
+    snippet.write_text(IMPORT_SNIPPET, encoding="utf-8")
+    result = runner.invoke(
+        main,
+        ["import", str(bibfile), str(snippet), "--stdin"],
+        input=IMPORT_SNIPPET,
+    )
+    assert result.exit_code == 2
+    assert "exactly one of FILE, --stdin, or --url" in result.stderr
+
+
+def test_import_empty_stdin(runner, bibfile):
+    result = runner.invoke(main, ["import", str(bibfile), "--stdin"], input="")
+    assert result.exit_code == 2
+    assert "standard input is empty" in result.stderr
+
+
+def test_import_keep_keys(runner, bibfile):
+    result = runner.invoke(
+        main,
+        ["import", str(bibfile), "--stdin", "--keep-keys"],
+        input=IMPORT_SNIPPET,
+    )
+    assert result.exit_code == 0, result.output + result.stderr
+    assert result.stdout == "PhysRevLett.113.140401\n"
+
+
+def test_import_unique_suffix(runner, bibfile):
+    """A key collision with the library gets a unique suffix."""
+    text = IMPORT_SNIPPET.replace(
+        "{Baumgratz, T. and Cramer, M. and Plenio, M. B.}",
+        "{Goerz, Michael H.}",
+    ).replace("{Phys. Rev. Lett.}", "{Phys. Rev. A}")
+    result = runner.invoke(
+        main, ["import", str(bibfile), "--stdin"], input=text
+    )
+    assert result.exit_code == 0, result.output + result.stderr
+    assert result.stdout == "GoerzPRA2014a\n"  # GoerzPRA2014 exists
+
+
+def test_import_validation_error(runner, bibfile):
+    text = IMPORT_SNIPPET.replace(
+        "{Baumgratz, T. and Cramer, M. and Plenio, M. B.}",
+        "{Baumgratz, T., Jr, X, Y}",
+    )
+    before = bibfile.read_text(encoding="utf-8")
+    result = runner.invoke(
+        main, ["import", str(bibfile), "--stdin"], input=text
+    )
+    assert result.exit_code == 1
+    assert "Error:" in result.stderr
+    assert "invalid author field" in result.stderr
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_import_duplicate_doi(runner, bibfile):
+    text = IMPORT_SNIPPET.replace(
+        "{10.1103/PhysRevLett.113.140401}", "{10.1103/PhysRevA.90.032329}"
+    )
+    result = runner.invoke(
+        main, ["import", str(bibfile), "--stdin"], input=text
+    )
+    assert result.exit_code == 1
+    assert "already in the library as entry 'GoerzPRA2014'" in result.stderr
+
+
+def test_import_default_bibfile_gotcha(runner, bibfile, monkeypatch):
+    """With a configured default_bib_file, a `.bib` FILE argument is
+    still consumed as the library (the documented limitation): the
+    command then fails for lack of an import source."""
+    monkeypatch.chdir(bibfile.parent)
+    Path("bibdeskparser.toml").write_text(
+        f'default_bib_file = "{bibfile.name}"\n', encoding="utf-8"
+    )
+    snippet = bibfile.parent / "entries.bib"
+    snippet.write_text(IMPORT_SNIPPET, encoding="utf-8")
+    result = runner.invoke(main, ["import", "entries.bib"])
+    assert result.exit_code == 2
+    assert "exactly one of FILE, --stdin, or --url" in result.stderr
+
+
+def test_add(runner, bibfile, monkeypatch):
+    queries = []
+
+    def fetch_bibtex(query):
+        queries.append(query)
+        return IMPORT_SNIPPET.replace("PhysRevLett.113.140401,", "Fetched,")
+
+    monkeypatch.setattr("bibdeskparser.fetch.fetch_bibtex", fetch_bibtex)
+    result = _run(runner, "add", bibfile, "10.1103/PhysRevLett.113.140401")
+    assert queries == ["10.1103/PhysRevLett.113.140401"]
+    assert result.stdout == "BaumgratzPRL2014\n"
+    lib = _load(bibfile)
+    assert lib["BaumgratzPRL2014"]["journal"] == "prl"
+
+
+def test_add_joins_query_args(runner, bibfile, monkeypatch):
+    queries = []
+
+    def fetch_bibtex(query):
+        queries.append(query)
+        return IMPORT_SNIPPET
+
+    monkeypatch.setattr("bibdeskparser.fetch.fetch_bibtex", fetch_bibtex)
+    _run(runner, "add", bibfile, "quantifying", "coherence")
+    assert queries == ["quantifying coherence"]
+
+
+def test_add_dry_run(runner, bibfile, monkeypatch):
+    monkeypatch.setattr(
+        "bibdeskparser.fetch.fetch_bibtex", lambda query: IMPORT_SNIPPET
+    )
+    before = bibfile.read_text(encoding="utf-8")
+    result = _run(runner, "add", bibfile, "--dry-run", "10.1103/xyz")
+    assert "@article{BaumgratzPRL2014," in result.stdout
+    assert "@string{prl = {Phys. Rev. Lett.}}" in result.stdout
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_add_fetch_failure(runner, bibfile, monkeypatch):
+    def fetch_bibtex(query):
+        raise ValueError(f"could not fetch bibliographic data for {query!r}")
+
+    monkeypatch.setattr("bibdeskparser.fetch.fetch_bibtex", fetch_bibtex)
+    result = runner.invoke(main, ["add", str(bibfile), "10.1103/xyz"])
+    assert result.exit_code == 1
+    assert "Error: could not fetch bibliographic data" in result.stderr

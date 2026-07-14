@@ -37,6 +37,7 @@ __private__ = [
     "get_field",
     "author",
     "editor",
+    "search",
     "groups",
     "keywords",
     "strings",
@@ -68,6 +69,8 @@ __private__ = [
     "remove_url",
     "edit",
     "edit_strings",
+    "import_bibtex",
+    "add",
 ]
 
 # Exceptions raised by the `Library` API for invalid user input; the
@@ -93,6 +96,40 @@ def _error_message(exc):
     if isinstance(exc, KeyError) and exc.args:
         return str(exc.args[0])
     return str(exc)
+
+
+def _fail_unknown_keys(keys):
+    """Fail cleanly, naming the unknown citation `keys` (a list)."""
+    if len(keys) == 1:
+        raise click.ClickException(f"unknown citation key {keys[0]!r}")
+    listed = ", ".join(repr(key) for key in keys)
+    raise click.ClickException(f"unknown citation keys: {listed}")
+
+
+def _check_keys(lib, keys):
+    """Fail cleanly for any of `keys` not a citation key in `lib`."""
+    unknown = [key for key in keys if key not in lib]
+    if unknown:
+        _fail_unknown_keys(unknown)
+
+
+def _entry(lib, key):
+    """`lib[key]`, failing cleanly if `key` is not in `lib`."""
+    if key not in lib:
+        _fail_unknown_keys([key])
+    return lib[key]
+
+
+def _check_group(lib, name):
+    """Fail cleanly if no static group `name` exists in `lib`."""
+    if name not in lib.groups:
+        raise click.ClickException(f"unknown static group {name!r}")
+
+
+def _check_string(lib, name):
+    """Fail cleanly if no `@string` macro `name` is defined in `lib`."""
+    if name not in lib.strings:
+        raise click.ClickException(f"unknown @string macro {name!r}")
 
 
 def _default_bibfile(ctx):
@@ -183,24 +220,33 @@ def _examples(*lines):
 
     Each element of `lines` is one example (embedded newlines allowed,
     for shell line continuations). The leading `\\b` marker (ASCII
-    backspace) keeps `click` from re-wrapping the block.
+    backspace) keeps `click` from re-wrapping the block. A note about
+    the `default_bib_file` assumption of the examples is appended.
     """
     text = "\n".join(lines).replace("\n", "\n  ")
-    return f"\b\nExamples:\n  {text}"
+    return (
+        f"\b\nExamples:\n  {text}\n\n"
+        "The examples assume that a discovered `bibdeskparser.toml` "
+        "sets `default_bib_file`. Without that, every command takes "
+        "the path to the `.bib` file as its first argument, e.g. "
+        "`bibdeskparser keys library.bib`."
+    )
 
 
 @click.group(
     epilog=_examples(
-        "bibdeskparser keys library.bib     # list all citation keys",
-        "bibdeskparser keys library.bib --type article --missing doi",
-        'bibdeskparser search library.bib "quantum computing"',
-        "bibdeskparser show library.bib Preskill2018 --json",
-        "bibdeskparser get_field library.bib Preskill2018 title",
-        "bibdeskparser set_field library.bib Preskill2018 doi 10.1234/xyz",
-        "bibdeskparser add_to_keyword library.bib NISQ Preskill2018",
-        "bibdeskparser add_file library.bib Preskill2018 papers/nisq.pdf",
-        "bibdeskparser export library.bib Preskill2018  # entry as BibTeX",
-        "bibdeskparser render library.bib Preskill2018  # formatted citation",
+        "bibdeskparser keys     # list all citation keys",
+        "bibdeskparser keys --type article --missing doi",
+        'bibdeskparser search "quantum computing"',
+        "bibdeskparser show Preskill2018 --json",
+        "bibdeskparser get_field Preskill2018 title",
+        "bibdeskparser set_field Preskill2018 doi 10.1234/xyz",
+        "bibdeskparser add_to_keyword NISQ Preskill2018",
+        "bibdeskparser add_file Preskill2018 papers/nisq.pdf",
+        "bibdeskparser export Preskill2018  # entry as BibTeX",
+        "bibdeskparser render Preskill2018  # formatted citation",
+        "bibdeskparser add 10.1103/PhysRevA.89.032334  # by DOI",
+        "pbpaste | bibdeskparser import --stdin",
     )
 )
 @click.version_option(version=__version__)
@@ -219,7 +265,10 @@ def main():
     `export` are read-only as well. The other commands modify the
     `.bib` file in place and print nothing on success (except `rekey`
     without NEW_KEY and `rename_file` without NEW, which print the
-    generated key or file path, as does `add_file` when it auto-files).
+    generated key or file path, as does `add_file` when it auto-files;
+    `import` and `add` print the citation keys of the added entries,
+    and `add --dry-run` only prints the fetched entry, without
+    modifying the file).
     On any error they print `Error: <message>` to stderr and exit
     non-zero (2 for bad usage, 1 for a library error such as an unknown
     key or a `.bib` file changed on disk since it was read). Run
@@ -249,10 +298,10 @@ def _field_state(entry, name):
     cls=_BibCommand,
     short_help="List citation keys, optionally filtered.",
     epilog=_examples(
-        "bibdeskparser keys library.bib",
-        "bibdeskparser keys library.bib --type article --type book",
-        "bibdeskparser keys library.bib --missing doi --json",
-        "bibdeskparser keys library.bib --has eprint --empty abstract",
+        "bibdeskparser keys",
+        "bibdeskparser keys --type article --type book",
+        "bibdeskparser keys --missing doi --json",
+        "bibdeskparser keys --has eprint --empty abstract",
     ),
 )
 @click.option(
@@ -327,8 +376,36 @@ def keys(bibfile, types, has_fields, missing_fields, empty_fields, as_json):
     _emit(data, as_json, "\n".join(data))
 
 
-def _entry_data(entry):
-    """The JSON-ready data for `entry` (a dict)."""
+def _selected_field_values(entry, names):
+    """`{canonical_name: value}` for the `names` present on `entry`.
+
+    Field names match case-insensitively; the result keeps the order
+    in which `names` were requested, dropping any not defined on the
+    entry.
+    """
+    lookup = {name.lower(): name for name in dict(entry)}
+    result = {}
+    for name in names:
+        canonical = lookup.get(name.lower())
+        if canonical is not None:
+            result[canonical] = entry[canonical]
+    return result
+
+
+def _entry_data(entry, only_fields=None):
+    """The JSON-ready data for `entry` (a dict).
+
+    With `only_fields` (a list of field names), the result is just a
+    map of those fields (that are defined) to their values; otherwise
+    it is the full record (type, key, fields, and derived data).
+    """
+    if only_fields is not None:
+        return {
+            name: str(value)
+            for name, value in _selected_field_values(
+                entry, only_fields
+            ).items()
+        }
     return {
         "entry_type": entry.entry_type,
         "key": entry.key,
@@ -342,13 +419,22 @@ def _entry_data(entry):
     }
 
 
-def _entry_block(entry):
-    """A human-readable multi-line block describing `entry`."""
+def _entry_block(entry, only_fields=None):
+    """A human-readable multi-line block describing `entry`.
+
+    With `only_fields`, only the `KEY (type)` heading and the named
+    fields (that are defined) are shown, without the derived data.
+    """
     lines = [f"{entry.key} ({entry.entry_type})"]
-    field_values = dict(entry)
+    if only_fields is not None:
+        field_values = _selected_field_values(entry, only_fields)
+    else:
+        field_values = dict(entry)
     width = max((len(name) for name in field_values), default=0)
     for name, value in field_values.items():
         lines.append(f"    {(name + ':').ljust(width + 1)} {value}")
+    if only_fields is not None:
+        return "\n".join(lines)
     derived = [
         ("groups", ", ".join(entry.groups)),
         ("keywords", ", ".join(entry.keywords)),
@@ -364,24 +450,107 @@ def _entry_block(entry):
     return "\n".join(lines)
 
 
+def _read_key_lines(source):
+    """Citation keys read from `source`, one per line (blanks skipped).
+
+    `source` is a file path, or `-` to read from standard input.
+    """
+    if source == "-":
+        text = sys.stdin.read()
+    else:
+        text = Path(source).read_text(encoding="utf-8")
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def _split_field_names(field_args):
+    """The field names from a repeatable, comma-separated `--field`.
+
+    Returns an order-preserving, de-duplicated list, or `None` if no
+    `--field` was given (i.e. show every field).
+    """
+    if not field_args:
+        return None
+    names = []
+    for item in field_args:
+        names += [part.strip() for part in item.split(",") if part.strip()]
+    return list(dict.fromkeys(names))
+
+
 @main.command(
     name="show",
     cls=_BibCommand,
     short_help="Show the full data of the given entries.",
     epilog=_examples(
-        "bibdeskparser show library.bib Preskill2018",
-        "bibdeskparser show library.bib Preskill2018 --json",
+        "bibdeskparser show Preskill2018",
+        "bibdeskparser show Preskill2018 --json",
+        "bibdeskparser show Key1 Key2 --field doi,title --json",
+        "bibdeskparser keys --missing eprint \\\n"
+        "    | bibdeskparser show --field doi --skip-missing --keys-from -",
     ),
 )
-@click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
+@click.argument("citekeys", metavar="[KEY...]", nargs=-1)
+@click.option(
+    "--field",
+    "field_args",
+    multiple=True,
+    metavar="FIELD",
+    help=(
+        "Show only these fields (case-insensitive) instead of the "
+        "full record; repeatable and comma-separated (e.g. "
+        "--field doi,title). A field not defined on an entry is "
+        "silently omitted for that entry."
+    ),
+)
+@click.option(
+    "--skip-missing",
+    is_flag=True,
+    help=(
+        "Report unknown citation keys on stderr and show the rest, "
+        "instead of aborting the whole command on the first one."
+    ),
+)
+@click.option(
+    "--keys-from",
+    "keys_from",
+    metavar="FILE",
+    default=None,
+    help=(
+        "Read additional citation keys from FILE (one per line; '-' "
+        "for standard input), appended to any KEY arguments."
+    ),
+)
 @_json_option
 @click.pass_obj
-def show(bibfile, citekeys, as_json):
-    """Show the full data of the entries with the given keys."""
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def show(bibfile, citekeys, field_args, skip_missing, keys_from, as_json):
+    """Show the data of the entries with the given keys.
+
+    Keys come from the KEY arguments and/or --keys-from; at least one
+    is required. By default every field and the derived data (groups,
+    keywords, files, URLs, dates) are shown; --field narrows this to
+    the named fields. An unknown key aborts the command unless
+    --skip-missing is given, in which case it is reported on stderr
+    and the remaining entries are still shown.
+    """
     lib = Library(bibfile)
-    entries = [lib[key] for key in citekeys]
-    data = {entry.key: _entry_data(entry) for entry in entries}
-    text = "\n\n".join(_entry_block(entry) for entry in entries)
+    keys = list(citekeys)
+    if keys_from is not None:
+        keys += _read_key_lines(keys_from)
+    keys = list(dict.fromkeys(keys))
+    if not keys:
+        raise click.UsageError(
+            "no citation keys given; pass KEY... and/or --keys-from"
+        )
+    only_fields = _split_field_names(field_args)
+    entries = [lib[key] for key in keys if key in lib]
+    missing = [key for key in keys if key not in lib]
+    if missing and not skip_missing:
+        _fail_unknown_keys(missing)
+    for key in missing:
+        click.echo(f"Warning: unknown citation key {key!r}", err=True)
+    data = {entry.key: _entry_data(entry, only_fields) for entry in entries}
+    text = "\n\n".join(_entry_block(entry, only_fields) for entry in entries)
     _emit(data, as_json, text)
 
 
@@ -390,8 +559,8 @@ def show(bibfile, citekeys, as_json):
     cls=_BibCommand,
     short_help="List the fields defined on an entry.",
     epilog=_examples(
-        "bibdeskparser fields library.bib Preskill2018",
-        "bibdeskparser fields library.bib Preskill2018 --json",
+        "bibdeskparser fields Preskill2018",
+        "bibdeskparser fields Preskill2018 --json",
     ),
 )
 @click.argument("citekey", metavar="KEY")
@@ -404,7 +573,7 @@ def fields(bibfile, citekey, as_json):
     This covers the normal BibTeX fields, including 'keywords', but
     not the internal date and 'bdsk-*' fields; use `show` for a
     complete view of an entry."""
-    data = list(Library(bibfile)[citekey])
+    data = list(_entry(Library(bibfile), citekey))
     _emit(data, as_json, "\n".join(data))
 
 
@@ -413,8 +582,8 @@ def fields(bibfile, citekey, as_json):
     cls=_BibCommand,
     short_help="Print the value of one field of an entry.",
     epilog=_examples(
-        "bibdeskparser get_field library.bib Preskill2018 title",
-        "bibdeskparser get_field library.bib Preskill2018 journal",
+        "bibdeskparser get_field Preskill2018 title",
+        "bibdeskparser get_field Preskill2018 journal",
     ),
 )
 @click.argument("citekey", metavar="KEY")
@@ -428,7 +597,7 @@ def get_field(bibfile, citekey, fieldname, as_json):
     A field whose value is a reference to an `@string` macro prints
     as the bare macro name (see `strings` for the definitions). Fails
     for a field not defined on the entry (see `fields`)."""
-    entry = Library(bibfile)[citekey]
+    entry = _entry(Library(bibfile), citekey)
     if fieldname not in entry:
         raise KeyError(f"entry {citekey!r} has no field {fieldname!r}")
     data = str(entry[fieldname])
@@ -458,8 +627,8 @@ def _names_text(names):
     cls=_BibCommand,
     short_help="Show an entry's authors as structured names.",
     epilog=_examples(
-        "bibdeskparser author library.bib NielsenChuangBook",
-        "bibdeskparser author library.bib NielsenChuangBook --json",
+        "bibdeskparser author NielsenChuangBook",
+        "bibdeskparser author NielsenChuangBook --json",
     ),
 )
 @click.argument("citekey", metavar="KEY")
@@ -472,7 +641,7 @@ def author(bibfile, citekey, as_json):
     "last", and "jr" keys, each a list of name words. Prints nothing
     (an empty array, with --json) for an entry without an 'author'
     field."""
-    names = Library(bibfile)[citekey].author
+    names = _entry(Library(bibfile), citekey).author
     _emit(_names_data(names), as_json, _names_text(names))
 
 
@@ -481,8 +650,8 @@ def author(bibfile, citekey, as_json):
     cls=_BibCommand,
     short_help="Show an entry's editors as structured names.",
     epilog=_examples(
-        "bibdeskparser editor library.bib NielsenChuangBook",
-        "bibdeskparser editor library.bib NielsenChuangBook --json",
+        "bibdeskparser editor NielsenChuangBook",
+        "bibdeskparser editor NielsenChuangBook --json",
     ),
 )
 @click.argument("citekey", metavar="KEY")
@@ -495,7 +664,7 @@ def editor(bibfile, citekey, as_json):
     "last", and "jr" keys, each a list of name words. Prints nothing
     (an empty array, with --json) for an entry without an 'editor'
     field."""
-    names = Library(bibfile)[citekey].editor
+    names = _entry(Library(bibfile), citekey).editor
     _emit(_names_data(names), as_json, _names_text(names))
 
 
@@ -504,10 +673,9 @@ def editor(bibfile, citekey, as_json):
     cls=_BibCommand,
     short_help="List the keys of entries matching QUERY.",
     epilog=_examples(
-        'bibdeskparser search library.bib "quantum computing"',
-        "bibdeskparser search library.bib Schroedinger --field author",
-        "bibdeskparser search library.bib '^10\\.1103/' "
-        "--field doi --match regex",
+        'bibdeskparser search "quantum computing"',
+        "bibdeskparser search Schroedinger --field author",
+        "bibdeskparser search '^10\\.1103/' " "--field doi --match regex",
     ),
 )
 @click.argument("query")
@@ -527,13 +695,38 @@ def editor(bibfile, citekey, as_json):
     type=click.Choice(["exact", "folded", "words", "fuzzy", "regex"]),
     default="words",
     show_default=True,
-    help="The match strictness.",
+    help="The match strictness (see the command's help for details).",
 )
 @_json_option
 @click.pass_obj
 def search(bibfile, query, field_names, match_, as_json):
     """List the keys of the entries matching QUERY, best match first,
-    one per line."""
+    one per line.
+
+    The query is matched against the raw field values (bare `@string`
+    macro names intact), their decoded Unicode form, and macro
+    expansions. --field limits the search to specific fields.
+
+    --match sets the strictness. The first four levels form a ladder
+    -- each matches everything looser levels do, plus more -- and are
+    case-insensitive:
+
+    \b
+    - exact:  the query occurs verbatim (up to case) as a substring.
+    - folded: additionally ignores accents ("Schrodinger" and
+              "Schroedinger" both match "Schrödinger").
+    - words:  (the default) additionally matches when most of the
+              query's words occur in a field, in any order -- good for
+              a half-remembered title.
+    - fuzzy:  additionally tolerates small typos: two words match when
+              ~80% of their letters agree, and >=70% of the query's
+              words must match. It casts the widest net and can return
+              surprising hits, so treat its results as candidates to
+              verify, not exact answers.
+    - regex:  the query is a regular expression (standard `re`
+              semantics, case-sensitive unless it starts with "(?i)");
+              an invalid pattern is an error. Not part of the ladder.
+    """
     lib = Library(bibfile)
     entries = lib.search(query, fields=field_names or None, match=match_)
     data = [entry.key for entry in entries]
@@ -545,8 +738,8 @@ def search(bibfile, query, field_names, match_, as_json):
     cls=_BibCommand,
     short_help="List all static groups, or the groups of entry KEY.",
     epilog=_examples(
-        "bibdeskparser groups library.bib   # all groups and members",
-        "bibdeskparser groups library.bib Preskill2018  # entry's groups",
+        "bibdeskparser groups   # all groups and members",
+        "bibdeskparser groups Preskill2018  # entry's groups",
     ),
 )
 @click.argument("citekey", metavar="[KEY]", required=False)
@@ -558,7 +751,7 @@ def groups(bibfile, citekey, as_json):
     belongs to, one per line."""
     lib = Library(bibfile)
     if citekey is not None:
-        data = list(lib[citekey].groups)
+        data = list(_entry(lib, citekey).groups)
         _emit(data, as_json, "\n".join(data))
         return
     data = {name: list(group_keys) for name, group_keys in lib.groups.items()}
@@ -573,8 +766,8 @@ def groups(bibfile, citekey, as_json):
     cls=_BibCommand,
     short_help="List all keywords, or the keywords of entry KEY.",
     epilog=_examples(
-        "bibdeskparser keywords library.bib   # all keywords and users",
-        "bibdeskparser keywords library.bib Preskill2018",
+        "bibdeskparser keywords   # all keywords and users",
+        "bibdeskparser keywords Preskill2018",
     ),
 )
 @click.argument("citekey", metavar="[KEY]", required=False)
@@ -586,7 +779,7 @@ def keywords(bibfile, citekey, as_json):
     key, one per line."""
     lib = Library(bibfile)
     if citekey is not None:
-        data = list(lib[citekey].keywords)
+        data = list(_entry(lib, citekey).keywords)
         _emit(data, as_json, "\n".join(data))
         return
     data = {
@@ -602,8 +795,8 @@ def keywords(bibfile, citekey, as_json):
     name="strings",
     cls=_BibCommand,
     epilog=_examples(
-        "bibdeskparser strings library.bib",
-        "bibdeskparser strings library.bib --bib  # @string{...} lines",
+        "bibdeskparser strings",
+        "bibdeskparser strings --bib  # @string{...} lines",
     ),
 )
 @click.option(
@@ -636,7 +829,10 @@ def strings(bibfile, as_bib, as_json):
     name="duplicate_keys",
     cls=_BibCommand,
     short_help="List citation keys that occur more than once.",
-    epilog=_examples("bibdeskparser duplicate_keys library.bib"),
+    epilog=_examples(
+        "bibdeskparser duplicate_keys",
+        "bibdeskparser duplicate_keys --json",
+    ),
 )
 @_json_option
 @click.pass_obj
@@ -650,7 +846,10 @@ def duplicate_keys(bibfile, as_json):
     name="timestamp",
     cls=_BibCommand,
     short_help="Print the modification timestamp from the header.",
-    epilog=_examples("bibdeskparser timestamp library.bib"),
+    epilog=_examples(
+        "bibdeskparser timestamp",
+        "bibdeskparser timestamp --json",
+    ),
 )
 @_json_option
 @click.pass_obj
@@ -665,8 +864,8 @@ def timestamp(bibfile, as_json):
     cls=_BibCommand,
     short_help="Render a citation for the given entries.",
     epilog=_examples(
-        "bibdeskparser render library.bib Preskill2018",
-        "bibdeskparser render library.bib Key1 Key2 --format html",
+        "bibdeskparser render Preskill2018",
+        "bibdeskparser render Key1 Key2 --format html",
     ),
 )
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
@@ -691,6 +890,7 @@ def timestamp(bibfile, as_json):
 def render(bibfile, citekeys, format_, style):
     """Render a citation for the entries with the given keys."""
     lib = Library(bibfile)
+    _check_keys(lib, citekeys)
     _echo_block(lib.render(*citekeys, format=format_, style=style))
 
 
@@ -699,8 +899,8 @@ def render(bibfile, citekeys, format_, style):
     cls=_BibCommand,
     short_help="Export the given entries as bibtex text.",
     epilog=_examples(
-        "bibdeskparser export library.bib Preskill2018",
-        "bibdeskparser export library.bib Key1 Key2 --outfile out.bib",
+        "bibdeskparser export Preskill2018",
+        "bibdeskparser export Key1 Key2 --outfile out.bib",
     ),
 )
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
@@ -722,6 +922,7 @@ def render(bibfile, citekeys, format_, style):
 def export(bibfile, citekeys, format_, outfile):
     """Export the entries with the given keys as bibtex text."""
     lib = Library(bibfile)
+    _check_keys(lib, citekeys)
     text = lib.export(*citekeys, format=format_, outfile=outfile)
     if text is not None:
         _echo_block(text)
@@ -732,9 +933,8 @@ def export(bibfile, citekeys, format_, outfile):
     cls=_BibCommand,
     short_help="Show the key or file name a format yields.",
     epilog=_examples(
-        "bibdeskparser eval_format_spec library.bib Preskill2018 "
-        "'%a1%Y%u0'",
-        "bibdeskparser eval_format_spec library.bib Preskill2018 \\\n"
+        "bibdeskparser eval_format_spec Preskill2018 " "'%a1%Y%u0'",
+        "bibdeskparser eval_format_spec Preskill2018 \\\n"
         "    --filename paper.pdf '%f{Cite Key}%e'",
     ),
 )
@@ -770,9 +970,9 @@ def eval_format_spec(bibfile, citekey, format_spec, filename, as_json):
     evaluates to itself, so printing anything else means it does not
     follow the format.
     """
-    data = Library(bibfile).eval_format_spec(
-        citekey, format_spec, filename=filename
-    )
+    lib = Library(bibfile)
+    _check_keys(lib, [citekey])
+    data = lib.eval_format_spec(citekey, format_spec, filename=filename)
     _emit(data, as_json, data)
 
 
@@ -784,9 +984,8 @@ def eval_format_spec(bibfile, citekey, format_spec, filename, as_json):
     cls=_BibCommand,
     short_help="Change an entry's citation key.",
     epilog=_examples(
-        "bibdeskparser rekey library.bib Preskill2018 Preskill2018NISQ",
-        "bibdeskparser rekey library.bib Preskill2018 "
-        "--format-spec '%a1%Y%u0'",
+        "bibdeskparser rekey Preskill2018 Preskill2018NISQ",
+        "bibdeskparser rekey Preskill2018 " "--format-spec '%a1%Y%u0'",
     ),
 )
 @click.argument("old_key")
@@ -815,6 +1014,7 @@ def rekey(bibfile, old_key, new_key, format_spec):
     the format resolves collisions with other entries.
     """
     lib = Library(bibfile)
+    _check_keys(lib, [old_key])
     result = lib.rekey(old_key, new_key, format_spec=format_spec)
     lib.save()
     if new_key is None:
@@ -825,13 +1025,14 @@ def rekey(bibfile, old_key, new_key, format_spec):
     name="delete",
     cls=_BibCommand,
     short_help="Delete the given entries from the library.",
-    epilog=_examples("bibdeskparser delete library.bib StaleEntry2001"),
+    epilog=_examples("bibdeskparser delete StaleEntry2001"),
 )
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.pass_obj
 def delete(bibfile, citekeys):
     """Delete the entries with the given keys from the library."""
     lib = Library(bibfile)
+    _check_keys(lib, citekeys)
     for key in citekeys:
         del lib[key]
     lib.save()
@@ -841,7 +1042,7 @@ def delete(bibfile, citekeys):
     name="set_type",
     cls=_BibCommand,
     short_help="Change the entry type of entry KEY.",
-    epilog=_examples("bibdeskparser set_type library.bib Preskill2018 misc"),
+    epilog=_examples("bibdeskparser set_type Preskill2018 misc"),
 )
 @click.argument("citekey", metavar="KEY")
 @click.argument("entry_type", metavar="TYPE")
@@ -852,7 +1053,7 @@ def set_type(bibfile, citekey, entry_type):
     rejected; see the 'types' configuration in bibdeskparser.toml to
     define custom entry types."""
     lib = Library(bibfile)
-    lib[citekey].entry_type = entry_type
+    _entry(lib, citekey).entry_type = entry_type
     lib.save()
 
 
@@ -861,10 +1062,9 @@ def set_type(bibfile, citekey, entry_type):
     cls=_BibCommand,
     short_help="Set one field of an entry to VALUE.",
     epilog=_examples(
-        "bibdeskparser set_field library.bib Preskill2018 volume 2",
-        "bibdeskparser set_field library.bib Preskill2018 journal prl",
-        "bibdeskparser set_field library.bib Preskill2018 title prl "
-        "--literal",
+        "bibdeskparser set_field Preskill2018 volume 2",
+        "bibdeskparser set_field Preskill2018 journal prl",
+        "bibdeskparser set_field Preskill2018 title prl " "--literal",
     ),
 )
 @click.argument("citekey", metavar="KEY")
@@ -908,9 +1108,10 @@ def set_field(bibfile, citekey, fieldname, value, literal, macro):
     elif macro:
         value = MacroString(value)
     lib = Library(bibfile)
+    entry = _entry(lib, citekey)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        lib[citekey][fieldname] = value
+        entry[fieldname] = value
     for warning in caught:
         click.echo(f"Warning: {warning.message}", err=True)
     lib.save()
@@ -920,9 +1121,7 @@ def set_field(bibfile, citekey, fieldname, value, literal, macro):
     name="delete_field",
     cls=_BibCommand,
     short_help="Delete one field of an entry.",
-    epilog=_examples(
-        "bibdeskparser delete_field library.bib Preskill2018 note"
-    ),
+    epilog=_examples("bibdeskparser delete_field Preskill2018 note"),
 )
 @click.argument("citekey", metavar="KEY")
 @click.argument("fieldname")
@@ -935,7 +1134,7 @@ def delete_field(bibfile, citekey, fieldname):
     for the 'keywords', date, and 'bdsk-*' fields (use
     remove_from_keyword, unlink_file, remove_url, etc. instead)."""
     lib = Library(bibfile)
-    entry = lib[citekey]
+    entry = _entry(lib, citekey)
     if fieldname not in entry:
         raise KeyError(f"entry {citekey!r} has no field {fieldname!r}")
     del entry[fieldname]
@@ -947,8 +1146,7 @@ def delete_field(bibfile, citekey, fieldname):
     cls=_BibCommand,
     short_help="Add entries to the static group NAME.",
     epilog=_examples(
-        'bibdeskparser add_to_group library.bib "quantum computing" '
-        "Preskill2018",
+        'bibdeskparser add_to_group "quantum computing" ' "Preskill2018",
     ),
 )
 @click.argument("name")
@@ -957,6 +1155,8 @@ def delete_field(bibfile, citekey, fieldname):
 def add_to_group(bibfile, name, citekeys):
     """Add the entries with the given keys to the static group NAME."""
     lib = Library(bibfile)
+    _check_group(lib, name)
+    _check_keys(lib, citekeys)
     lib.add_to_group(name, *citekeys)
     lib.save()
 
@@ -966,7 +1166,7 @@ def add_to_group(bibfile, name, citekeys):
     cls=_BibCommand,
     short_help="Remove entries from the group NAME.",
     epilog=_examples(
-        "bibdeskparser remove_from_group library.bib Preprints Key2020",
+        "bibdeskparser remove_from_group Preprints Key2020",
     ),
 )
 @click.argument("name")
@@ -975,6 +1175,7 @@ def add_to_group(bibfile, name, citekeys):
 def remove_from_group(bibfile, name, citekeys):
     """Remove the entries with the given keys from the group NAME."""
     lib = Library(bibfile)
+    _check_group(lib, name)
     lib.remove_from_group(name, *citekeys)
     lib.save()
 
@@ -984,8 +1185,8 @@ def remove_from_group(bibfile, name, citekeys):
     cls=_BibCommand,
     short_help="Create or replace the static group NAME.",
     epilog=_examples(
-        "bibdeskparser set_group library.bib Theses Key2010 Key2015",
-        "bibdeskparser set_group library.bib Theses   # empty the group",
+        "bibdeskparser set_group Theses Key2010 Key2015",
+        "bibdeskparser set_group Theses   # empty the group",
     ),
 )
 @click.argument("name")
@@ -1002,13 +1203,14 @@ def set_group(bibfile, name, citekeys):
     name="delete_group",
     cls=_BibCommand,
     short_help="Delete the static group NAME.",
-    epilog=_examples("bibdeskparser delete_group library.bib Theses"),
+    epilog=_examples("bibdeskparser delete_group Theses"),
 )
 @click.argument("name")
 @click.pass_obj
 def delete_group(bibfile, name):
     """Delete the static group NAME (entries are not affected)."""
     lib = Library(bibfile)
+    _check_group(lib, name)
     del lib.groups[name]
     lib.save()
 
@@ -1018,7 +1220,7 @@ def delete_group(bibfile, name):
     cls=_BibCommand,
     short_help="Define or redefine the @string macro NAME.",
     epilog=_examples(
-        'bibdeskparser set_string library.bib prl "Phys. Rev. Lett."',
+        'bibdeskparser set_string prl "Phys. Rev. Lett."',
     ),
 )
 @click.argument("name")
@@ -1035,13 +1237,14 @@ def set_string(bibfile, name, value):
     name="delete_string",
     cls=_BibCommand,
     short_help="Delete the @string macro NAME (must be unused).",
-    epilog=_examples("bibdeskparser delete_string library.bib prl"),
+    epilog=_examples("bibdeskparser delete_string prl"),
 )
 @click.argument("name")
 @click.pass_obj
 def delete_string(bibfile, name):
     """Delete the @string macro NAME (must be unused)."""
     lib = Library(bibfile)
+    _check_string(lib, name)
     del lib.strings[name]
     lib.save()
 
@@ -1050,9 +1253,7 @@ def delete_string(bibfile, name):
     name="rename_string",
     cls=_BibCommand,
     short_help="Rename a @string macro, updating references.",
-    epilog=_examples(
-        "bibdeskparser rename_string library.bib prl PhysRevLett"
-    ),
+    epilog=_examples("bibdeskparser rename_string prl PhysRevLett"),
 )
 @click.argument("old_name")
 @click.argument("new_name")
@@ -1061,6 +1262,7 @@ def rename_string(bibfile, old_name, new_name):
     """Rename the @string macro OLD_NAME to NEW_NAME, updating all
     entries that reference it."""
     lib = Library(bibfile)
+    _check_string(lib, old_name)
     lib.rename_string(old_name, new_name)
     lib.save()
 
@@ -1070,8 +1272,8 @@ def rename_string(bibfile, old_name, new_name):
     cls=_BibCommand,
     short_help="Add KEYWORD to the given entries.",
     epilog=_examples(
-        "bibdeskparser add_to_keyword library.bib NISQ Preskill2018",
-        'bibdeskparser add_to_keyword library.bib "open systems" Key1 Key2',
+        "bibdeskparser add_to_keyword NISQ Preskill2018",
+        'bibdeskparser add_to_keyword "open systems" Key1 Key2',
     ),
 )
 @click.argument("keyword")
@@ -1080,6 +1282,7 @@ def rename_string(bibfile, old_name, new_name):
 def add_to_keyword(bibfile, keyword, citekeys):
     """Add KEYWORD to the entries with the given keys."""
     lib = Library(bibfile)
+    _check_keys(lib, citekeys)
     lib.add_to_keyword(keyword, *citekeys)
     lib.save()
 
@@ -1089,7 +1292,7 @@ def add_to_keyword(bibfile, keyword, citekeys):
     cls=_BibCommand,
     short_help="Remove KEYWORD from the given entries.",
     epilog=_examples(
-        "bibdeskparser remove_from_keyword library.bib NISQ Preskill2018",
+        "bibdeskparser remove_from_keyword NISQ Preskill2018",
     ),
 )
 @click.argument("keyword")
@@ -1098,6 +1301,7 @@ def add_to_keyword(bibfile, keyword, citekeys):
 def remove_from_keyword(bibfile, keyword, citekeys):
     """Remove KEYWORD from the entries with the given keys."""
     lib = Library(bibfile)
+    _check_keys(lib, citekeys)
     lib.remove_from_keyword(keyword, *citekeys)
     lib.save()
 
@@ -1106,9 +1310,8 @@ def remove_from_keyword(bibfile, keyword, citekeys):
     name="add_file",
     cls=_BibCommand,
     epilog=_examples(
-        "bibdeskparser add_file library.bib Preskill2018 papers/nisq.pdf",
-        "bibdeskparser add_file library.bib Preskill2018 new.pdf "
-        "--location papers",
+        "bibdeskparser add_file Preskill2018 papers/nisq.pdf",
+        "bibdeskparser add_file Preskill2018 new.pdf " "--location papers",
     ),
 )
 @click.argument("key")
@@ -1177,6 +1380,7 @@ def add_file(
             "--location"
         )
     lib = Library(bibfile)
+    _check_keys(lib, [key])
     auto_file_location = "" if no_auto_file else location
     result = lib.add_file(
         key,
@@ -1201,8 +1405,7 @@ def add_file(
     cls=_BibCommand,
     short_help="Replace an entry's attached file OLD with NEW.",
     epilog=_examples(
-        "bibdeskparser replace_file library.bib Key2020 old.pdf new.pdf "
-        "--remove",
+        "bibdeskparser replace_file Key2020 old.pdf new.pdf " "--remove",
     ),
 )
 @click.argument("key")
@@ -1226,6 +1429,7 @@ def replace_file(
 ):
     """Replace entry KEY's attached file OLD with NEW."""
     lib = Library(bibfile)
+    _check_keys(lib, [key])
     lib.replace_file(
         key,
         old_filename,
@@ -1241,8 +1445,8 @@ def replace_file(
     cls=_BibCommand,
     short_help="Remove a file from an entry's attachments.",
     epilog=_examples(
-        "bibdeskparser unlink_file library.bib Key2020 paper.pdf",
-        "bibdeskparser unlink_file library.bib Key2020 paper.pdf --remove",
+        "bibdeskparser unlink_file Key2020 paper.pdf",
+        "bibdeskparser unlink_file Key2020 paper.pdf --remove",
     ),
 )
 @click.argument("key")
@@ -1256,6 +1460,7 @@ def replace_file(
 def unlink_file(bibfile, key, filename, remove):
     """Remove the file FILENAME from entry KEY's attachments."""
     lib = Library(bibfile)
+    _check_keys(lib, [key])
     lib.unlink_file(key, filename, remove=remove)
     lib.save()
 
@@ -1265,8 +1470,8 @@ def unlink_file(bibfile, key, filename, remove):
     cls=_BibCommand,
     short_help="Rename or move an entry's attached file.",
     epilog=_examples(
-        "bibdeskparser rename_file library.bib Key2020 old.pdf new.pdf",
-        "bibdeskparser rename_file library.bib Key2020 old.pdf  # auto-file",
+        "bibdeskparser rename_file Key2020 old.pdf new.pdf",
+        "bibdeskparser rename_file Key2020 old.pdf  # auto-file",
     ),
 )
 @click.argument("key")
@@ -1313,6 +1518,7 @@ def rename_file(
     collisions with existing files.
     """
     lib = Library(bibfile)
+    _check_keys(lib, [key])
     result = lib.rename_file(
         key,
         old_filename,
@@ -1329,7 +1535,7 @@ def rename_file(
     name="add_url",
     cls=_BibCommand,
     epilog=_examples(
-        "bibdeskparser add_url library.bib Key2020 https://example.org/x",
+        "bibdeskparser add_url Key2020 https://example.org/x",
     ),
 )
 @click.argument("key")
@@ -1338,6 +1544,7 @@ def rename_file(
 def add_url(bibfile, key, url):
     """Add URL to the entry KEY."""
     lib = Library(bibfile)
+    _check_keys(lib, [key])
     lib.add_url(key, url)
     lib.save()
 
@@ -1346,8 +1553,7 @@ def add_url(bibfile, key, url):
     name="replace_url",
     cls=_BibCommand,
     epilog=_examples(
-        "bibdeskparser replace_url library.bib Key2020 http://x.org "
-        "https://x.org",
+        "bibdeskparser replace_url Key2020 http://x.org " "https://x.org",
     ),
 )
 @click.argument("key")
@@ -1357,6 +1563,7 @@ def add_url(bibfile, key, url):
 def replace_url(bibfile, key, old_url, new_url):
     """Replace entry KEY's URL OLD with NEW."""
     lib = Library(bibfile)
+    _check_keys(lib, [key])
     lib.replace_url(key, old_url, new_url)
     lib.save()
 
@@ -1365,7 +1572,7 @@ def replace_url(bibfile, key, old_url, new_url):
     name="remove_url",
     cls=_BibCommand,
     epilog=_examples(
-        "bibdeskparser remove_url library.bib Key2020 http://x.org",
+        "bibdeskparser remove_url Key2020 http://x.org",
     ),
 )
 @click.argument("key")
@@ -1374,6 +1581,7 @@ def replace_url(bibfile, key, old_url, new_url):
 def remove_url(bibfile, key, url):
     """Remove URL from the entry KEY."""
     lib = Library(bibfile)
+    _check_keys(lib, [key])
     lib.remove_url(key, url)
     lib.save()
 
@@ -1425,9 +1633,9 @@ def _resolve_editor(editor_cmd, use_stdin, allow_empty=False):
     cls=_BibCommand,
     short_help="Edit the given entries in $EDITOR.",
     epilog=_examples(
-        "bibdeskparser edit library.bib Preskill2018",
-        "bibdeskparser export library.bib Key1 | sed s/2018/2019/ \\\n"
-        "    | bibdeskparser edit library.bib Key1 --stdin",
+        "bibdeskparser edit Preskill2018",
+        "bibdeskparser export Key1 | sed s/2018/2019/ \\\n"
+        "    | bibdeskparser edit Key1 --stdin",
     ),
 )
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
@@ -1457,8 +1665,9 @@ def edit(bibfile, citekeys, format_, editor_cmd, use_stdin):
     edit KEY... --stdin` is a no-op). Without a terminal, `--stdin`,
     or `--editor`, the command fails immediately instead of
     blocking."""
-    editor_cmd = _resolve_editor(editor_cmd, use_stdin)
     lib = Library(bibfile)
+    _check_keys(lib, citekeys)
+    editor_cmd = _resolve_editor(editor_cmd, use_stdin)
     lib.edit(*citekeys, format=format_, editor=editor_cmd)
     lib.save()
 
@@ -1468,9 +1677,9 @@ def edit(bibfile, citekeys, format_, editor_cmd, use_stdin):
     cls=_BibCommand,
     short_help="Edit the @string macro definitions in $EDITOR.",
     epilog=_examples(
-        "bibdeskparser edit_strings library.bib",
-        "bibdeskparser strings library.bib --bib | sed s/Phys/PHYS/ \\\n"
-        "    | bibdeskparser edit_strings library.bib --stdin",
+        "bibdeskparser edit_strings",
+        "bibdeskparser strings --bib | sed s/Phys/PHYS/ \\\n"
+        "    | bibdeskparser edit_strings --stdin",
     ),
 )
 @click.option(
@@ -1499,3 +1708,161 @@ def edit_strings(bibfile, editor_cmd, use_stdin):
     )
     lib.edit_strings(editor=editor_cmd)
     lib.save()
+
+
+# -- importing / adding entries ---------------------------------------- #
+
+
+def _fix_uppercase_option(help_suffix):
+    return click.option(
+        "--fix-uppercase",
+        is_flag=True,
+        help=(
+            "Fix all-uppercase author/editor names and titles (as "
+            f"found in some {help_suffix}); the result may need manual "
+            "correction."
+        ),
+    )
+
+
+@main.command(
+    name="import",
+    cls=_BibCommand,
+    short_help="Import entries from a BibTeX snippet.",
+    epilog=_examples(
+        "bibdeskparser import library.bib entries.bib",
+        "pbpaste | bibdeskparser import --stdin",
+        "bibdeskparser import --url " "https://example.com/refs.bib",
+        "bibdeskparser export Key1 \\\n"
+        "    | bibdeskparser import other.bib --stdin",
+    ),
+)
+@click.argument(
+    "source",
+    metavar="[FILE]",
+    required=False,
+    type=click.Path(exists=True, dir_okay=False),
+)
+@_stdin_option
+@click.option(
+    "--url",
+    default=None,
+    help="Download the BibTeX text from URL.",
+)
+@click.option(
+    "--keep-keys",
+    is_flag=True,
+    help=(
+        "Keep the incoming citation keys instead of generating new " "ones."
+    ),
+)
+@_fix_uppercase_option("publisher data")
+@click.pass_obj
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def import_bibtex(bibfile, source, use_stdin, url, keep_keys, fix_uppercase):
+    """Import the entries of a BibTeX snippet -- read from FILE, from
+    standard input (--stdin), or from a URL (--url); exactly one of
+    the three -- into the library, and print their citation keys
+    (modifies the `.bib` file in place).
+
+    Every entry is sanitized: the journal becomes an `@string` macro
+    reference (an existing macro matched by value, one configured in
+    `[journal_macros]`, or a newly created one -- with a warning on
+    stderr -- named by the journal's lowercased initials; a literal
+    `arXiv:...` journal marks a preprint and stays literal, deriving
+    `eprint`/`archiveprefix`), proper nouns in a sentence-case title
+    (and all configured `protected_words`) are brace-protected, the
+    DOI is normalized to its bare lowercase form, and, for articles,
+    a page range collapses to its first page and non-essential fields
+    (`month`, `publisher`, `numpages`, `issn`, a `url` shadowed by
+    the DOI, ...) are dropped. Citation keys are regenerated (see
+    --keep-keys) from the configured `[auto_key]` format, else as
+    e.g. `GoerzPRA2014` (articles) or `Goerz2205.15044` (arXiv
+    preprints). An entry whose DOI or eprint is already in the
+    library is rejected. If anything about the snippet is not
+    acceptable, all problems are reported and nothing is imported.
+
+    Note that the library itself is always the *first* argument
+    ending in `.bib`: importing from a `.bib` file requires naming
+    the library explicitly (`import library.bib entries.bib`), even
+    with a configured `default_bib_file`.
+    """
+    if (source is not None) + use_stdin + (url is not None) != 1:
+        raise click.UsageError("give exactly one of FILE, --stdin, or --url")
+    if use_stdin:
+        text = sys.stdin.read()
+        if not text.strip():
+            raise click.UsageError(
+                "--stdin was given, but standard input is empty"
+            )
+    elif url is not None:
+        # Imported lazily: fetch pulls in the network dependencies.
+        # pylint: disable-next=import-outside-toplevel
+        from . import fetch
+
+        text = fetch.fetch_text(url)
+    else:
+        text = Path(source).read_text(encoding="utf-8")
+    lib = Library(bibfile)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        citekeys = lib.import_bibtex(
+            text, keep_keys=keep_keys, fix_uppercase=fix_uppercase
+        )
+    for warning in caught:
+        click.echo(f"Warning: {warning.message}", err=True)
+    lib.save()
+    for citekey in citekeys:
+        click.echo(citekey)
+
+
+@main.command(
+    name="add",
+    cls=_BibCommand,
+    short_help="Fetch an entry by DOI/arXiv ID/query and add it.",
+    epilog=_examples(
+        "bibdeskparser add 10.1103/PhysRevA.89.032334",
+        "bibdeskparser add https://arxiv.org/abs/2205.15044",
+        "bibdeskparser add "
+        "https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.113.140401",
+        "bibdeskparser add --dry-run pulser open-source " "pulse sequences",
+    ),
+)
+@click.argument("query", metavar="QUERY...", nargs=-1, required=True)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help=(
+        "Print the entry that would be added (as BibTeX) instead of "
+        "modifying the .bib file."
+    ),
+)
+@_fix_uppercase_option("publisher metadata")
+@click.pass_obj
+def add(bibfile, query, dry_run, fix_uppercase):
+    """Fetch bibliographic data for QUERY from the appropriate online
+    source, add it to the library as a new, sanitized entry (exactly
+    as with `import`), and print its citation key (modifies the
+    `.bib` file in place; with --dry-run, prints the entry and
+    modifies nothing).
+
+    All QUERY arguments are joined into a single query: an arXiv
+    identifier (or a string containing one, e.g. an arxiv.org URL) is
+    fetched from the arXiv API and added as a preprint; a DOI (or a
+    URL containing one, e.g. most publisher article pages) is fetched
+    from Crossref; anything else (i.e., free text with spaces) is a
+    Crossref bibliographic search, adding the best match -- verify
+    the result! Requires network access.
+    """
+    lib = Library(bibfile)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        citekey = lib.add(" ".join(query), fix_uppercase=fix_uppercase)
+    for warning in caught:
+        click.echo(f"Warning: {warning.message}", err=True)
+    if dry_run:
+        _echo_block(lib.export(citekey))
+    else:
+        lib.save()
+        click.echo(citekey)
