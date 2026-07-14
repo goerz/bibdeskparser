@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.2.1] - 2026-07-14
 
 * Added: `Library.import_bibtex` and a corresponding `import` CLI command (reading from a file, `--stdin`, or `--url`), importing the entries of a BibTeX snippet -- anything from a single publisher-provided entry to a complete `.bib` file -- after thorough sanitization: journals are stored as `@string` macro references (resolved against the library's macros and the new `journal_macros` configuration table, or newly created from the journal's lowercased initials, honoring the `initials.journal` exceptions; literal `arXiv:...` pseudo-journals stay literal and derive `eprint`/`archiveprefix`), proper nouns in sentence-case titles and all configured `protected_words` are brace-protected, DOIs are normalized to their bare lowercase form, article page ranges collapse to the first page, non-essential article fields (`month`, `publisher`, `numpages`, `issn`, a `url` shadowed by the DOI, ...) are dropped, and citation keys are regenerated (`keep_keys`/`--keep-keys` to opt out) from the configured `auto_key` format or built-in defaults (e.g. `GoerzPRA2014`, or `Goerz2205.15044` for arXiv preprints). An entry whose DOI or eprint is already in the library is rejected; any validation problem rejects the whole import (reporting all problems at once) and leaves the library untouched. [[#14]]
 * Added: `Library.add` and a corresponding `add` CLI command, fetching bibliographic data by DOI, arXiv identifier, URL, or free-text search -- from Crossref (with DOI content negotiation as the fallback for work types with no BibTeX equivalent) or the arXiv API (respecting its rate limits) -- and adding it as a new entry via the same sanitization as `import_bibtex`. The CLI command accepts `--dry-run` (print the entry instead of saving) and `--fix-uppercase` (repair all-uppercase publisher metadata, also available on `import`). This subsumes the functionality of the [getbibtex](https://github.com/goerz/getbibtex) script. New dependencies: `habanero`, `arxiv`, and `httpx`. [[#14]]
@@ -57,7 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial release.
 
-[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.2.0..HEAD
+[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.2.1..HEAD
+[v0.2.1]: https://github.com/goerz/bibdeskparser/releases/tag/v0.2.1
 [v0.2.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.2.0
 [v0.1.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.1.0
 [#4]: https://github.com/goerz/bibdeskparser/pull/4
