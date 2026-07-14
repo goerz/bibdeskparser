@@ -34,7 +34,7 @@ __all__ = []
 __private__ = ["fetch_bibtex", "fetch_text"]
 
 
-_RX_DOI = re.compile(r"10.\d{4,9}/[-._;()/:A-Z0-9]+", re.IGNORECASE)
+_RX_DOI = re.compile(r"10\.\d{4,9}/[-._;()/:A-Z0-9]+", re.IGNORECASE)
 
 _RX_ARXIV_NEW = re.compile(r"arxiv.*?(\d{4}\.\d{4,}(?:v\d+)?)", re.IGNORECASE)
 

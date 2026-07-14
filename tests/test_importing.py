@@ -1,5 +1,7 @@
 """Tests for `Library.import_bibtex` (the `importing` module)."""
 
+from datetime import datetime
+
 import pytest
 
 import bibdeskparser.config as config
@@ -381,6 +383,20 @@ def test_fix_uppercase():
     assert entry["title"] == "Optimal control theory for a quantum gate"
 
 
+def test_fix_uppercase_preserves_mixed_case():
+    # `fix_uppercase` must only down-case truly all-uppercase values;
+    # correctly-cased names/titles must be left untouched.
+    bib = _library_with_pra()
+    text = ARTICLE.replace(
+        "{Goerz, Michael and Reich, Daniel M.}",
+        "{van der Waals, Johannes and McDonald, Ronald}",
+    )
+    (key,) = bib.import_bibtex(text, fix_uppercase=True)
+    entry = bib[key]
+    assert entry["author"] == "van der Waals, Johannes and McDonald, Ronald"
+    assert entry["title"] == "Optimal control theory for a quantum gate"
+
+
 # -- duplicate detection ------------------------------------------------ #
 
 
@@ -554,10 +570,11 @@ def test_date_added_preserved():
         "Volume = {89},",
         "Volume = {89},\n    Date-Added = {2014-03-25 10:00:00 +0000},",
     )
+    this_year = datetime.now().year
     (key,) = bib.import_bibtex(text)
     entry = bib[key]
     assert entry.date_added.year == 2014
-    assert entry.date_modified.year >= 2026
+    assert entry.date_modified.year >= this_year
 
 
 def test_invalid_date_added_dropped():
@@ -566,9 +583,10 @@ def test_invalid_date_added_dropped():
         "Volume = {89},",
         "Volume = {89},\n    Date-Added = {last Tuesday},",
     )
+    this_year = datetime.now().year
     with pytest.warns(UserWarning, match="unparseable date-added"):
         (key,) = bib.import_bibtex(text)
-    assert bib[key].date_added.year >= 2026
+    assert bib[key].date_added.year >= this_year
 
 
 def test_bdsk_file_attached(tmp_path):

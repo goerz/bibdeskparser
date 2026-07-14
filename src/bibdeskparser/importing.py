@@ -143,11 +143,19 @@ def _normalize_pages(value, entry_type):
     return match.group(1) + "--" + match.group(2)
 
 
+def _is_all_uppercase(value):
+    """Whether `value` contains letters, none of them lowercase."""
+    return value != value.lower() and value == value.upper()
+
+
 def _fix_name_case(value):
-    """Title-case every name in an all-uppercase `author`/`editor`
-    value (the result is not guaranteed to be perfect, e.g. for
-    `McDonald`-style names)."""
-    return " and ".join(part.title() for part in value.split(" and "))
+    """Title-case any all-uppercase name in an `author`/`editor` value,
+    leaving correctly-cased names untouched (the result is not
+    guaranteed to be perfect, e.g. for `McDonald`-style names)."""
+    return " and ".join(
+        part.title() if _is_all_uppercase(part) else part
+        for part in value.split(" and ")
+    )
 
 
 def _rx_word(word):
@@ -436,7 +444,7 @@ def _stage_entry(
             if isinstance(value, ValueString):
                 fields[lkey] = ValueString(_fix_name_case(str(value)))
         title = fields.get("title")
-        if isinstance(title, ValueString):
+        if isinstance(title, ValueString) and _is_all_uppercase(str(title)):
             fields["title"] = ValueString(str(title).capitalize())
     title = fields.get("title")
     if isinstance(title, ValueString):
