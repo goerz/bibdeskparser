@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Added: CLI commands for working with the fields of a single entry: `fields KEY` lists the defined field names, `get_field KEY FIELDNAME` prints one field value, `set_field KEY FIELDNAME VALUE` sets a field (with `--literal`/`--macro` to force the value to be stored as literal text or as a bare `@string` macro reference), and `delete_field KEY FIELDNAME` removes a field. These correspond to the `dict` interface of `Entry` (iteration, indexing, assignment, and `del`). [[#13]]
+* Added: an `author KEY` and an `editor KEY` CLI command, printing an entry's authors/editors as structured names (last-name-first; with `--json`, as objects with `first`/`von`/`last`/`jr` name parts), corresponding to the `Entry.author` and `Entry.editor` properties. [[#13]]
+* Added: a `set_type KEY TYPE` CLI command, changing an entry's type (corresponding to assigning `Entry.entry_type`). [[#13]]
+* Added: the `groups` and `keywords` CLI commands accept an optional entry `KEY`, listing the groups/keywords of that single entry (corresponding to the `Entry.groups` and `Entry.keywords` properties) instead of the library-wide mapping. [[#13]]
+* Added: filter options on the `keys` CLI command: `--type TYPE` keeps only entries of the given type(s), and `--has FIELD`/`--missing FIELD`/`--empty FIELD` keep only entries where `FIELD` is defined with a non-empty value, not defined at all, or defined but empty, respectively (all repeatable). [[#13]]
+* Fixed: assigning a `MacroString` (e.g. via `set_field --macro`) now normalizes the macro name to BibDesk's canonical lowercase form, matching how `@string` definitions are stored; previously a non-canonical name such as `PRA` was stored verbatim and then read back as a literal `ValueString` instead of a `MacroString`. [[#13]]
 * Fixed: the CLI's top-level `--help` now shows a complete, un-truncated one-line summary for every subcommand (previously long summaries were cut off with `...`). [[#11]]
 * Fixed: `Library.render` (and the `render` CLI command) now expands `@string` macros in the rendered citation, so a field like `journal = pra` shows its defined value (e.g. `Phys. Rev. A`) rather than the bare macro name. [[#12]]
 * Changed: bump the PyPI `Development Status` classifier from `2 - Pre-Alpha` to `3 - Alpha`.
@@ -59,3 +65,4 @@ Initial release.
 [#10]: https://github.com/goerz/bibdeskparser/pull/10
 [#11]: https://github.com/goerz/bibdeskparser/pull/11
 [#12]: https://github.com/goerz/bibdeskparser/pull/12
+[#13]: https://github.com/goerz/bibdeskparser/pull/13

@@ -76,6 +76,20 @@ def _script_editor(tmp_path, name, code):
     return f"{sys.executable} {script}"
 
 
+def test_help_examples(runner):
+    """Every `--help` output ends with an "Examples:" block that
+    mentions the command itself (so that the CLI is discoverable from
+    `--help` alone, without a bibfile or external documentation)."""
+    result = runner.invoke(main, ["--help"])
+    assert result.exit_code == 0
+    assert "Examples:" in result.output
+    for name in main.commands:
+        result = runner.invoke(main, [name, "--help"])
+        assert result.exit_code == 0, name
+        assert "Examples:" in result.output, name
+        assert f"bibdeskparser {name} " in result.output, name
+
+
 # -- read-only commands ------------------------------------------------ #
 
 
@@ -90,6 +104,67 @@ def test_keys_json(runner, bibfile):
     result = _run(runner, "keys", bibfile, "--json")
     data = json.loads(result.output)
     assert data == list(_load(bibfile))
+
+
+def test_keys_filter_type(runner, bibfile):
+    result = _run(runner, "keys", bibfile, "--type", "phdthesis")
+    assert result.output.splitlines() == ["GoerzPhd2015"]
+    result = _run(
+        runner,
+        "keys",
+        bibfile,
+        "--type",
+        "PhdThesis",  # types are matched case-insensitively
+        "--type",
+        "mastersthesis",
+    )
+    assert result.output.splitlines() == ["GoerzDiploma2010", "GoerzPhd2015"]
+
+
+def test_keys_filter_has_missing_empty(runner, bibfile):
+    all_keys = set(_load(bibfile))
+    result = _run(runner, "keys", bibfile, "--has", "abstract")
+    has_abstract = result.output.splitlines()
+    result = _run(runner, "keys", bibfile, "--missing", "abstract")
+    missing_abstract = result.output.splitlines()
+    result = _run(runner, "keys", bibfile, "--empty", "abstract")
+    assert result.output == ""  # no empty fields in the pristine file
+    assert set(has_abstract) | set(missing_abstract) == all_keys
+    assert set(has_abstract) & set(missing_abstract) == set()
+    assert "GoerzJPB2011" in has_abstract
+    assert "GoerzPhd2015" in missing_abstract
+    # A defined-but-empty field is neither "missing" nor "has":
+    _run(runner, "set_field", bibfile, "GoerzJPB2011", "abstract", "")
+    result = _run(runner, "keys", bibfile, "--empty", "abstract")
+    assert result.output.splitlines() == ["GoerzJPB2011"]
+    result = _run(runner, "keys", bibfile, "--has", "abstract")
+    assert "GoerzJPB2011" not in result.output.splitlines()
+    result = _run(runner, "keys", bibfile, "--missing", "abstract")
+    assert "GoerzJPB2011" not in result.output.splitlines()
+
+
+def test_keys_filter_combined(runner, bibfile):
+    result = _run(
+        runner,
+        "keys",
+        bibfile,
+        "--type",
+        "article",
+        "--has",
+        "eprint",
+        "--missing",
+        "note",
+        "--json",
+    )
+    data = json.loads(result.output)
+    assert "GoerzJPB2011" in data
+    assert "GoerzSPIEO2021" not in data  # inproceedings
+    lib = _load(bibfile)
+    for key in data:
+        entry = lib[key]
+        assert entry.entry_type == "article"
+        assert str(entry["eprint"]).strip()
+        assert "note" not in entry
 
 
 def test_show(runner, bibfile):
@@ -132,6 +207,97 @@ def test_show_json(runner, bibfile):
     assert isinstance(entry["urls"], list)
     lib = _load(bibfile)
     assert entry["date_added"] == lib["GoerzJPB2011"].date_added.isoformat()
+
+
+def test_fields(runner, bibfile):
+    result = _run(runner, "fields", bibfile, "GoerzJPB2011")
+    lines = result.output.splitlines()
+    assert lines == list(_load(bibfile)["GoerzJPB2011"])
+    assert "author" in lines
+    assert "journal" in lines
+    assert "keywords" in lines
+    assert "date-added" not in lines
+    assert not any(name.startswith("bdsk-") for name in lines)
+
+
+def test_fields_json(runner, bibfile):
+    result = _run(runner, "fields", bibfile, "GoerzJPB2011", "--json")
+    data = json.loads(result.output)
+    assert data == list(_load(bibfile)["GoerzJPB2011"])
+
+
+def test_get_field(runner, bibfile):
+    result = _run(runner, "get_field", bibfile, "GoerzJPB2011", "eprint")
+    assert result.output.splitlines() == ["1103.6050"]
+    # field names are case-insensitive
+    result = _run(runner, "get_field", bibfile, "GoerzJPB2011", "EPRINT")
+    assert result.output.splitlines() == ["1103.6050"]
+    # a macro reference prints as the bare macro name
+    result = _run(runner, "get_field", bibfile, "GoerzJPB2011", "journal")
+    assert result.output.splitlines() == ["jpb"]
+
+
+def test_get_field_json(runner, bibfile):
+    result = _run(
+        runner, "get_field", bibfile, "GoerzJPB2011", "title", "--json"
+    )
+    data = json.loads(result.output)
+    assert data == str(_load(bibfile)["GoerzJPB2011"]["title"])
+
+
+def test_get_field_undefined(runner, bibfile):
+    result = runner.invoke(
+        main, ["get_field", str(bibfile), "GoerzJPB2011", "note"]
+    )
+    assert result.exit_code == 1
+    assert "has no field 'note'" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_author(runner, bibfile):
+    result = _run(runner, "author", bibfile, "GoerzJPB2011")
+    assert result.output.splitlines() == [
+        "Goerz, Michael H",
+        "Calarco, Tommaso",
+        "Koch, Christiane P",
+    ]
+
+
+def test_author_json(runner, bibfile):
+    result = _run(runner, "author", bibfile, "GoerzJPB2011", "--json")
+    data = json.loads(result.output)
+    assert data[0] == {
+        "first": ["Michael", "H"],
+        "von": [],
+        "last": ["Goerz"],
+        "jr": [],
+    }
+    assert [name["last"] for name in data] == [
+        ["Goerz"],
+        ["Calarco"],
+        ["Koch"],
+    ]
+
+
+def test_editor(runner, bibfile):
+    # no entry in refs.bib has an editor field
+    result = _run(runner, "editor", bibfile, "GoerzJPB2011")
+    assert result.output == ""
+    result = _run(runner, "editor", bibfile, "GoerzJPB2011", "--json")
+    assert json.loads(result.output) == []
+    _run(
+        runner,
+        "set_field",
+        bibfile,
+        "GoerzJPB2011",
+        "editor",
+        "van der Berg, Anne and Smith, John",
+    )
+    result = _run(runner, "editor", bibfile, "GoerzJPB2011")
+    assert result.output.splitlines() == [
+        "van der Berg, Anne",
+        "Smith, John",
+    ]
 
 
 def test_search(runner, bibfile):
@@ -209,6 +375,13 @@ def test_groups_json(runner, bibfile):
     assert "GoerzJPB2011" in data["My Papers"]
 
 
+def test_groups_of_entry(runner, bibfile):
+    result = _run(runner, "groups", bibfile, "GoerzJPB2011")
+    assert result.output.splitlines() == ["My Papers"]
+    result = _run(runner, "groups", bibfile, "GoerzJPB2011", "--json")
+    assert json.loads(result.output) == ["My Papers"]
+
+
 def test_keywords(runner, bibfile):
     result = _run(runner, "keywords", bibfile)
     assert "optimal control: GoerzDiploma2010" in result.output
@@ -218,6 +391,14 @@ def test_keywords_json(runner, bibfile):
     result = _run(runner, "keywords", bibfile, "--json")
     data = json.loads(result.output)
     assert data["optimal control"] == ["GoerzDiploma2010"]
+
+
+def test_keywords_of_entry(runner, bibfile):
+    result = _run(runner, "keywords", bibfile, "GoerzDiploma2010")
+    assert "optimal control" in result.output.splitlines()
+    result = _run(runner, "keywords", bibfile, "GoerzDiploma2010", "--json")
+    data = json.loads(result.output)
+    assert data == list(_load(bibfile)["GoerzDiploma2010"].keywords)
 
 
 def test_strings(runner, bibfile):
@@ -452,6 +633,142 @@ def test_delete(runner, bibfile):
     lib = _load(bibfile)
     assert "GoerzDiploma2010" not in lib
     assert "GoerzPhd2015" not in lib
+
+
+def test_set_type(runner, bibfile):
+    _run(runner, "set_type", bibfile, "GoerzJPB2011", "Misc")
+    assert _load(bibfile)["GoerzJPB2011"].entry_type == "misc"
+
+
+def test_set_type_invalid(runner, bibfile):
+    result = runner.invoke(
+        main, ["set_type", str(bibfile), "GoerzJPB2011", "bogus"]
+    )
+    assert result.exit_code == 1
+    assert "invalid entry type: 'bogus'" in result.stderr
+
+
+def test_set_field(runner, bibfile):
+    _run(runner, "set_field", bibfile, "GoerzJPB2011", "note", "A note")
+    entry = _load(bibfile)["GoerzJPB2011"]
+    assert entry["note"] == "A note"
+    assert isinstance(entry["note"], bibdeskparser.ValueString)
+    # updating an existing field, with non-ASCII text
+    _run(runner, "set_field", bibfile, "GoerzJPB2011", "note", "Universität")
+    assert _load(bibfile)["GoerzJPB2011"]["note"] == "Universität"
+
+
+def test_set_field_macro(runner, bibfile):
+    # a plain VALUE that is a valid macro name becomes a macro reference
+    _run(runner, "set_field", bibfile, "GoerzJPB2011", "journal", "pra")
+    entry = _load(bibfile)["GoerzJPB2011"]
+    assert entry["journal"] == "pra"
+    assert isinstance(entry["journal"], bibdeskparser.MacroString)
+    # --literal forces literal text
+    _run(
+        runner,
+        "set_field",
+        bibfile,
+        "GoerzJPB2011",
+        "journal",
+        "pra",
+        "--literal",
+    )
+    entry = _load(bibfile)["GoerzJPB2011"]
+    assert isinstance(entry["journal"], bibdeskparser.ValueString)
+    # --macro forces a macro reference, and validates the name
+    _run(
+        runner,
+        "set_field",
+        bibfile,
+        "GoerzJPB2011",
+        "journal",
+        "pra",
+        "--macro",
+    )
+    entry = _load(bibfile)["GoerzJPB2011"]
+    assert isinstance(entry["journal"], bibdeskparser.MacroString)
+    result = runner.invoke(
+        main,
+        [
+            "set_field",
+            str(bibfile),
+            "GoerzJPB2011",
+            "journal",
+            "J. Phys. B",
+            "--macro",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "invalid BibDesk macro name" in result.stderr
+
+
+def test_set_field_literal_and_macro_conflict(runner, bibfile):
+    result = runner.invoke(
+        main,
+        [
+            "set_field",
+            str(bibfile),
+            "GoerzJPB2011",
+            "note",
+            "x",
+            "--literal",
+            "--macro",
+        ],
+    )
+    assert result.exit_code == 2
+    assert "mutually exclusive" in result.stderr
+
+
+def test_set_field_inappropriate_warns(runner, bibfile):
+    result = _run(
+        runner, "set_field", bibfile, "GoerzJPB2011", "school", "Uni"
+    )
+    assert (
+        "Warning: field 'school' is not appropriate for entry type "
+        "'article'" in result.stderr
+    )
+    assert _load(bibfile)["GoerzJPB2011"]["school"] == "Uni"
+
+
+def test_set_field_invalid_author(runner, bibfile):
+    result = runner.invoke(
+        main,
+        ["set_field", str(bibfile), "GoerzJPB2011", "author", "A, B, C, D"],
+    )
+    assert result.exit_code == 1
+    assert "invalid author field" in result.stderr
+
+
+def test_set_field_protected(runner, bibfile):
+    for fieldname in ("keywords", "date-added", "bdsk-file-1"):
+        result = runner.invoke(
+            main,
+            ["set_field", str(bibfile), "GoerzJPB2011", fieldname, "x"],
+        )
+        assert result.exit_code == 1, fieldname
+        assert "Traceback" not in result.stderr
+
+
+def test_delete_field(runner, bibfile):
+    _run(runner, "delete_field", bibfile, "GoerzJPB2011", "abstract")
+    assert "abstract" not in _load(bibfile)["GoerzJPB2011"]
+
+
+def test_delete_field_undefined(runner, bibfile):
+    result = runner.invoke(
+        main, ["delete_field", str(bibfile), "GoerzJPB2011", "note"]
+    )
+    assert result.exit_code == 1
+    assert "has no field 'note'" in result.stderr
+
+
+def test_delete_field_protected(runner, bibfile):
+    result = runner.invoke(
+        main, ["delete_field", str(bibfile), "GoerzJPB2011", "keywords"]
+    )
+    assert result.exit_code == 1
+    assert "add_to_keyword" in result.stderr
 
 
 def test_add_to_group(runner, bibfile):

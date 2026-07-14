@@ -44,8 +44,15 @@ the Python API expresses through `dict`-like access map to commands as
 follows: `set_group`/`delete_group` assign to and delete from
 {py:attr}`~bibdeskparser.Library.groups`, `set_string`/`delete_string`
 assign to and delete from {py:attr}`~bibdeskparser.Library.strings`,
-and `show`/`keys`/`delete` correspond to indexing, iterating over, and
-`del` on the library itself.
+`show`/`keys`/`delete` correspond to indexing, iterating over, and
+`del` on the library itself, and
+`fields`/`get_field`/`set_field`/`delete_field` correspond to
+iterating over, indexing, assigning to, and `del` on a single
+{class}`~bibdeskparser.Entry` (its fields). Commands that read one
+entry's derived data -- `author`, `editor`, `groups KEY`,
+`keywords KEY` -- correspond to the same-named
+{class}`~bibdeskparser.Entry` properties, and `set_type` assigns
+{py:attr}`~bibdeskparser.Entry.entry_type`.
 
 Read-only commands print their result to stdout. Mutating commands
 load the library, apply the change, save the file back in place, and
@@ -86,12 +93,28 @@ stderr and exits with code 1, without a traceback.
 
 ### `keys`
 
-List all citation keys, one per line. Corresponds to iterating over a
+List citation keys, one per line. Corresponds to iterating over a
 {class}`~bibdeskparser.Library`. With `--json`: an array of strings.
 
 ```console
 $ bibdeskparser keys library.bib
 NielsenChuangBook
+Preskill2018
+```
+
+Without options, every entry is listed. Filter options narrow the
+list: an entry is listed if it matches one of the (repeatable)
+`--type TYPE` values (if any are given) and satisfies every
+`--has FIELD`, `--missing FIELD`, and `--empty FIELD` filter. For any
+field, exactly one of the three field predicates holds: `--has`
+requires the field to be defined with a non-empty value, `--missing`
+requires it to not be defined at all, and `--empty` requires it to be
+defined, but with an empty value -- a defined-but-empty field is
+neither "missing" nor "has". Types and field names are matched
+case-insensitively.
+
+```console
+$ bibdeskparser keys library.bib --type article --missing doi
 Preskill2018
 ```
 
@@ -104,6 +127,8 @@ array of strings.
 ```console
 $ bibdeskparser duplicate_keys library.bib
 ```
+
+(cli-show)=
 
 ### `show KEY...`
 
@@ -123,6 +148,67 @@ Preskill2018 (article)
     year:    2018
   groups:   quantum computing
   keywords: NISQ
+```
+
+(cli-fields)=
+
+### `fields KEY`
+
+List the names of the fields defined on an entry, one per line.
+Corresponds to iterating over an {class}`~bibdeskparser.Entry`. This
+covers the normal BibTeX fields, including `keywords`, but not the
+internal date and `bdsk-*` fields; use [`show`](cli-show) for a
+complete view of an entry. With `--json`: an array of strings.
+
+```console
+$ bibdeskparser fields library.bib Preskill2018
+author
+title
+journal
+year
+```
+
+### `get_field KEY FIELDNAME`
+
+Print the value of one field of an entry. Corresponds to indexing an
+{class}`~bibdeskparser.Entry`, `lib[key][fieldname]`; field names are
+case-insensitive. A field whose value is a reference to an `@string`
+macro prints as the bare macro name (see [`strings`](cli-strings) for
+the definitions). Fails for a field not defined on the entry (see
+[`fields`](cli-fields)). With `--json`: a string.
+
+```console
+$ bibdeskparser get_field library.bib Preskill2018 title
+Quantum Computing in the NISQ era and beyond
+```
+
+### `author KEY`, `editor KEY`
+
+Show the authors (editors) of an entry as structured names, one per
+line, in last-name-first form (`von Last, Jr, First`). See
+{py:attr}`~bibdeskparser.Entry.author` and
+{py:attr}`~bibdeskparser.Entry.editor`. An entry without the
+corresponding field prints nothing. With `--json`: an array of
+objects with `first`, `von`, `last`, and `jr` keys, each an array of
+name words.
+
+```console
+$ bibdeskparser author library.bib NielsenChuangBook
+Nielsen, Michael A.
+Chuang, Isaac L.
+$ bibdeskparser author library.bib Preskill2018 --json
+[
+  {
+    "first": [
+      "John"
+    ],
+    "von": [],
+    "last": [
+      "Preskill"
+    ],
+    "jr": []
+  }
+]
 ```
 
 ### `search QUERY`
@@ -153,9 +239,9 @@ $ bibdeskparser search library.bib "Schroedinger" --field author
 Schroedinger1926
 ```
 
-### `groups`
+### `groups [KEY]`
 
-List all static groups and the keys they contain. See
+Without `KEY`, list all static groups and the keys they contain. See
 {py:attr}`~bibdeskparser.Library.groups`. With `--json`: an object
 mapping each group name to an array of keys.
 
@@ -164,15 +250,33 @@ $ bibdeskparser groups library.bib
 quantum computing: NielsenChuangBook, Preskill2018
 ```
 
-### `keywords`
+With `KEY`, list the names of the groups that entry belongs to, one
+per line ({py:attr}`~bibdeskparser.Entry.groups`; with `--json`: an
+array of strings):
 
-List all keywords and the keys of the entries using them. See
-{py:attr}`~bibdeskparser.Library.keywords`. With `--json`: an object
-mapping each keyword to an array of keys.
+```console
+$ bibdeskparser groups library.bib Preskill2018
+quantum computing
+```
+
+### `keywords [KEY]`
+
+Without `KEY`, list all keywords and the keys of the entries using
+them. See {py:attr}`~bibdeskparser.Library.keywords`. With `--json`:
+an object mapping each keyword to an array of keys.
 
 ```console
 $ bibdeskparser keywords library.bib
 NISQ: Preskill2018
+```
+
+With `KEY`, list the keywords of that entry, one per line
+({py:attr}`~bibdeskparser.Entry.keywords`; with `--json`: an array of
+strings):
+
+```console
+$ bibdeskparser keywords library.bib Preskill2018
+NISQ
 ```
 
 (cli-strings)=
@@ -313,6 +417,52 @@ Delete one or more entries from the library. Corresponds to
 $ bibdeskparser delete library.bib StaleEntry2001
 ```
 
+### `set_type KEY TYPE`
+
+Change the entry type of an entry, e.g. to `article`
+(case-insensitive). Corresponds to assigning
+{py:attr}`~bibdeskparser.Entry.entry_type`. An unrecognized `TYPE` is
+rejected; custom entry types can be defined in the `types` table of
+`bibdeskparser.toml` (see the [configuration](configuration)).
+
+```console
+$ bibdeskparser set_type library.bib Preskill2018 misc
+```
+
+### `set_field KEY FIELDNAME VALUE`
+
+Set one field of an entry, adding the field if it does not exist.
+Corresponds to assigning to an {class}`~bibdeskparser.Entry`,
+`lib[key][fieldname] = value`; field names are case-insensitive.
+
+```console
+$ bibdeskparser set_field library.bib Preskill2018 doi 10.22331/q-2018-08-06-79
+```
+
+Like BibDesk, a `VALUE` that is a valid `@string` macro name is
+stored as a bare macro reference rather than as literal text;
+`--literal` forces literal text instead
+({class}`~bibdeskparser.ValueString`), and `--macro` forces a macro
+reference ({class}`~bibdeskparser.MacroString`), failing for a
+`VALUE` that is not a valid macro name. The `keywords`, date, and
+`bdsk-*` fields cannot be set this way (use
+[`add_to_keyword`](cli-add-to-keyword), [`add_file`](cli-add-file),
+`add_url`, etc.); an `author`/`editor` `VALUE` must be parseable as
+names. A warning is printed on stderr for a field that is not
+appropriate for the entry type.
+
+### `delete_field KEY FIELDNAME`
+
+Delete one field from an entry. Corresponds to
+`del lib[key][fieldname]`; field names are case-insensitive. Fails
+for a field not defined on the entry (see [`fields`](cli-fields)),
+and for the `keywords`, date, and `bdsk-*` fields (use
+`remove_from_keyword`, `unlink_file`, `remove_url`, etc. instead).
+
+```console
+$ bibdeskparser delete_field library.bib Preskill2018 note
+```
+
 ## Groups
 
 ### `add_to_group NAME KEY...`
@@ -355,6 +505,8 @@ $ bibdeskparser delete_group library.bib "to read"
 ```
 
 ## Keywords
+
+(cli-add-to-keyword)=
 
 ### `add_to_keyword KEYWORD KEY...`
 
