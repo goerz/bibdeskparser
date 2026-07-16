@@ -1,5 +1,6 @@
 """Tests for `Library.import_bibtex` (the `importing` module)."""
 
+import warnings
 from datetime import datetime
 
 import pytest
@@ -50,6 +51,20 @@ def test_journal_from_library_strings():
     (key,) = bib.import_bibtex(ARTICLE)
     assert key == "GoerzPRA2014"
     assert bib[key]["journal"] == MacroString("pra")
+
+
+def test_journal_from_refs_bib_strings():
+    """A journal name matching the value of an `@string` macro in a
+    library loaded from a `.bib` file resolves to that macro, without
+    any `[journal_macros]` configuration."""
+    bib = Library("tests/Refs/refs.bib")
+    text = ARTICLE.replace("{Phys. Rev. A}", "{New J. Phys.}")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        (key,) = bib.import_bibtex(text)
+    assert key == "GoerzNJP2014a"  # "GoerzNJP2014" is taken
+    assert bib[key]["journal"] == MacroString("njp")
+    assert bib.strings["njp"] == "New J. Phys."
 
 
 def test_journal_from_config_macro():
