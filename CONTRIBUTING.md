@@ -93,6 +93,8 @@ make test-lowest   # run against the lowest supported Python and dependencies
 
 Tests live in the `tests` subfolder, in `test_*.py` files with `test_*` functions. In addition, [doctests](https://docs.python.org/3/library/doctest.html) are collected from every docstring and from documentation files (`*.rst` and `*.md`, including `README.md`). Write doctests inside fenced ` ```python ` blocks.
 
+Two `conftest.py` files configure the suite via [pytest fixtures](https://docs.pytest.org/en/stable/how-to/doctest.html#the-doctest-namespace-fixture). The one at the repository root isolates every test from a developer's personal configuration, and `src/conftest.py` injects the `bibdeskparser` package into the [doctest namespace](https://docs.pytest.org/en/stable/how-to/doctest.html) so doctests can use it without an explicit import. Extend the latter's autouse fixture to make more names available to every doctest.
+
 Code Style
 ----------
 

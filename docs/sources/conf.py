@@ -132,6 +132,12 @@ autodoc2_hidden_objects = ["inherited", "private", "dunder"]
 autodoc2_class_docstring = "both"
 # Parse docstrings as MyST markdown (the same format as the rest of the docs).
 autodoc2_docstring_parser_regexes = [(r".*", "myst")]
+# Sort members alphabetically instead of by source order, so that the
+# rendered API page is a predictable reference. The class docstrings of
+# `Library` and `Entry` present their members in logical order instead
+# (enforced by `tests/test_docstrings.py`: every public member must be
+# cross-referenced in its class docstring).
+autodoc2_sort_names = True
 
 
 html_last_updated_fmt = "%b %d, %Y"

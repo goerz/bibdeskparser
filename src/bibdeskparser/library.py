@@ -524,10 +524,13 @@ class Library(MutableMapping):
 
     - `Library` is itself a `dict`-like mapping of citation key to
       {class}`Entry`; see {attr}`entries`.
+    - {attr}`path`: the `.bib` file the library was loaded from or last
+      saved to (read-only; `None` for an unsaved from-scratch library).
     - {attr}`timestamp`: the save time from the header comment, updated
       by {meth}`save`.
     - {attr}`strings`: a read-write view of the `@string` macro
-      definitions.
+      definitions. {meth}`rename_string` renames a macro, rewriting
+      every entry field that references it.
     - {attr}`groups`: a read-write `dict`-like view of the "BibDesk
       Static Groups", mapping each group name to a tuple of citation
       keys. Assigning a tuple of keys creates or replaces a group
@@ -545,6 +548,15 @@ class Library(MutableMapping):
       fields.
     - {attr}`duplicate_keys`: citation keys that could not be loaded
       because they duplicate an earlier entry (read-only).
+    - {meth}`search`: full-text search over the entries, returning the
+      matches best first.
+    - {meth}`rekey`: rename an entry ({attr}`Entry.key` itself is
+      read-only), either to an explicitly given key or to one generated
+      from an auto-key format in BibDesk's
+      [format-specifier language](format-specifiers).
+      {meth}`eval_format_spec` evaluates such a format -- as a citation
+      key or as an attachment file name -- without renaming or moving
+      anything.
     - {meth}`save`: writes the library back to disk. Entries that were
       not modified since load are re-rendered verbatim (byte-exact
       round-trip); modified or newly added entries are written in
@@ -568,6 +580,10 @@ class Library(MutableMapping):
     - {meth}`render`, {meth}`export`, {meth}`edit`, {meth}`edit_strings`:
       render a bibliography, export to bibtex text, or edit in
       `$EDITOR`, for one or more selected citation keys at once.
+    - {meth}`import_bibtex`: import the entries of a BibTeX snippet,
+      sanitized and normalized. {meth}`add` fetches bibliographic data
+      for an arXiv identifier, DOI, or free-form query from the
+      appropriate online source and imports it as a new entry.
 
     The process-global configuration (see the
     [configuration](configuration) reference page) is exposed as the

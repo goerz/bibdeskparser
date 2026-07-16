@@ -87,7 +87,9 @@ class Entry(MutableMapping):
     {class}`ValueString`, or {class}`MacroString`. The `fields` mapping
     is applied field by field, the same way as `entry[field_key] =
     value`. The `entry_type` is validated and lowercased (see
-    {attr}`entry_type`).
+    {attr}`entry_type`). The citation key is available as the
+    {attr}`key` property, which is read-only: an entry that is already
+    in a {class}`Library` is renamed via {meth}`Library.rekey`.
 
     An `Entry` acts as a read-write dictionary for the fields in the
     entry. The keys (field names) are case insensitive, normalized to
@@ -145,6 +147,9 @@ class Entry(MutableMapping):
     {attr}`groups`, the main difference being that `groups` are stored
     at the {class}`Library` level only: entries that are not part of a
     `Library` cannot have `groups`.
+
+    {meth}`copy` returns an independent copy of the entry: a faithful
+    snapshot of its current fields, but not a member of any `Library`.
     """
 
     def __init__(self, entry_type, key, fields=None):
