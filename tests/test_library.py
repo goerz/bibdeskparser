@@ -838,6 +838,58 @@ def test_dict_interface_basic(bib):
     assert all(isinstance(e, Entry) for e in bib.entries)
 
 
+def test_keys_no_filter(bib):
+    """`keys()` returns all citation keys as a tuple, in library
+    order."""
+    keys = bib.keys()
+    assert isinstance(keys, tuple)
+    assert keys == tuple(bib)
+    assert "GoerzJPB2011" in keys
+
+
+def test_keys_filter_types(bib):
+    """`types` keeps only entries of the given type(s), matched
+    case-insensitively; a single name may be given as a string."""
+    assert bib.keys(types="phdthesis") == ("GoerzPhd2015",)
+    assert bib.keys(types=["PhdThesis", "mastersthesis"]) == (
+        "GoerzDiploma2010",
+        "GoerzPhd2015",
+    )
+    assert bib.keys(types="nosuchtype") == ()
+
+
+def test_keys_filter_has_missing_empty(bib):
+    """For any field, exactly one of `has`, `missing`, and `empty`
+    holds; a defined-but-empty field is neither "missing" nor
+    "has"."""
+    has_abstract = bib.keys(has="abstract")
+    missing_abstract = bib.keys(missing="abstract")
+    assert bib.keys(empty="abstract") == ()
+    assert set(has_abstract) | set(missing_abstract) == set(bib)
+    assert set(has_abstract) & set(missing_abstract) == set()
+    assert "GoerzJPB2011" in has_abstract
+    assert "GoerzPhd2015" in missing_abstract
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        bib["GoerzJPB2011"]["abstract"] = ""
+    assert bib.keys(empty="abstract") == ("GoerzJPB2011",)
+    assert "GoerzJPB2011" not in bib.keys(has="abstract")
+    assert "GoerzJPB2011" not in bib.keys(missing="abstract")
+
+
+def test_keys_filter_combined(bib):
+    """All filters must be satisfied simultaneously."""
+    keys = bib.keys(types="article", has="eprint", missing="note")
+    assert set(keys) == {
+        key
+        for key in bib.keys(types="article", has="eprint")
+        if "note" not in bib[key]
+    }
+    assert keys == bib.keys(
+        types=("article",), has=("eprint",), missing=("note",)
+    )
+
+
 def test_add_new_entry(bib):
     """Adding a new entry sets `date-added` and wires up `.groups`."""
     entry = Entry("article", "NewKey2026", fields={"title": "T"})
