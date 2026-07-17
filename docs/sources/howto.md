@@ -15,14 +15,14 @@ feature). See [How to auto-file attachments](howto-auto-file) below.
 
 Linked files are stored with paths relative to the library's `.bib`
 file, so attaching, replacing, unlinking, and renaming them are
-`Library` operations ({py:attr}`~bibdeskparser.entry.Entry.files`
+`Library` operations ({py:attr}`Entry.files <bibdeskparser.entry.Entry.files>`
 itself is a read-only list of the stored relative paths; see
 [BibDesk's `.bib` Format](bibdesk_format) for the background). This
 also means the library must have a `.bib`
 path: a from-scratch library must be saved before files can be
 attached.
 
-Attach a file with {py:meth}`~bibdeskparser.library.Library.add_file`.
+Attach a file with {py:meth}`Library.add_file <bibdeskparser.library.Library.add_file>`.
 The filename may be absolute, or relative to the library's directory
 or to the current working directory (a relative name that exists in
 both places is rejected as ambiguous; pass an absolute path instead):
@@ -59,8 +59,9 @@ that lives only on another machine -- pass
 relative to the library directory, and BibDesk fills in the bookmark
 on its next save, once the file appears.
 
-{py:meth}`~bibdeskparser.library.Library.rename_file` renames (or,
-given a path with a directory component, moves) the file on disk and
+{py:meth}`Library.rename_file <bibdeskparser.library.Library.rename_file>`
+renames (or, given a path with a directory component, moves) the file
+on disk and
 updates *every* entry that links it, each with a fresh bookmark; it
 returns the new stored path (relative to the library directory), as
 does `add_file`:
@@ -77,8 +78,9 @@ True
 
 ```
 
-{py:meth}`~bibdeskparser.library.Library.unlink_file` removes an
-attachment, and {py:meth}`~bibdeskparser.library.Library.replace_file`
+{py:meth}`Library.unlink_file <bibdeskparser.library.Library.unlink_file>`
+removes an attachment, and
+{py:meth}`Library.replace_file <bibdeskparser.library.Library.replace_file>`
 swaps one file for another in place. Both require an explicit
 `remove` keyword argument: whether to also delete the (old) file from
 the filesystem -- moved to the Trash on macOS (with the
@@ -116,10 +118,10 @@ location = "."                     # directory, relative to the .bib file
 `Library.config.auto_file.format_spec = "%f{Cite Key}%u0%e"`).
 
 With that in place,
-{py:meth}`~bibdeskparser.library.Library.rename_file` *without* a new
-filename files an existing attachment, and
-{py:meth}`~bibdeskparser.library.Library.eval_format_spec` with a
-`filename` previews the generated path without moving anything:
+{py:meth}`Library.rename_file <bibdeskparser.library.Library.rename_file>`
+*without* a new filename files an existing attachment, and
+{py:meth}`Library.eval_format_spec <bibdeskparser.library.Library.eval_format_spec>`
+with a `filename` previews the generated path without moving anything:
 
 ```python
 >>> tmpdir = tempfile.TemporaryDirectory()
@@ -175,10 +177,11 @@ here into a subdirectory next to the `.bib` file:
 
 ## How to define or rename a `@string` macro (journal abbreviation)
 
-Define a macro through {py:attr}`~bibdeskparser.library.Library.strings`,
+Define a macro through
+{py:attr}`Library.strings <bibdeskparser.library.Library.strings>`,
 then reference it in a field with a bare (unquoted) string; rename it
 everywhere it is used with
-{py:meth}`~bibdeskparser.library.Library.rename_string`.
+{py:meth}`Library.rename_string <bibdeskparser.library.Library.rename_string>`.
 
 ```python
 >>> bib = Library()
@@ -198,13 +201,14 @@ everywhere it is used with
 
 ## How to organize entries into groups
 
-{py:attr}`~bibdeskparser.library.Library.groups` is a `dict`-like
-mapping of each group name to the tuple of its members' citation keys.
-Create, replace, or delete whole groups through the mapping interface;
-add or remove individual keys with
-{py:meth}`~bibdeskparser.library.Library.add_to_group` /
-{py:meth}`~bibdeskparser.library.Library.remove_from_group`. Every
-affected entry's {py:attr}`~bibdeskparser.entry.Entry.groups` (a
+{py:attr}`Library.groups <bibdeskparser.library.Library.groups>` is a
+`dict`-like mapping of each group name to the tuple of its members'
+citation keys. Create, replace, or delete whole groups through the
+mapping interface; add or remove individual keys with
+{py:meth}`Library.add_to_group <bibdeskparser.library.Library.add_to_group>` /
+{py:meth}`Library.remove_from_group <bibdeskparser.library.Library.remove_from_group>`.
+Every affected entry's
+{py:attr}`Entry.groups <bibdeskparser.entry.Entry.groups>` (a
 read-only tuple) updates immediately.
 
 ```python
@@ -244,19 +248,21 @@ from every member entry's `.groups`:
 Group values are always tuples, so a group's membership can never be
 mutated in place; the mapping and every entry's `.groups` therefore
 stay consistent -- including when an entry is deleted from the library
-or renamed with {py:meth}`~bibdeskparser.library.Library.rekey`, which
+or renamed with
+{py:meth}`Library.rekey <bibdeskparser.library.Library.rekey>`, which
 update the group data as well. `add_to_group` requires the group to
 exist already (create it first, e.g. with an empty tuple), and all
 assigned keys must belong to entries in the library.
 
 ## How to tag entries with keywords
 
-{py:attr}`~bibdeskparser.library.Library.keywords` works just like
-`.groups`, mapping each keyword to the tuple of citation keys of the
-entries carrying it, with
-{py:meth}`~bibdeskparser.library.Library.add_to_keyword` /
-{py:meth}`~bibdeskparser.library.Library.remove_from_keyword` for
-per-key changes and {py:attr}`~bibdeskparser.entry.Entry.keywords` as
+{py:attr}`Library.keywords <bibdeskparser.library.Library.keywords>`
+works just like `.groups`, mapping each keyword to the tuple of
+citation keys of the entries carrying it, with
+{py:meth}`Library.add_to_keyword <bibdeskparser.library.Library.add_to_keyword>` /
+{py:meth}`Library.remove_from_keyword <bibdeskparser.library.Library.remove_from_keyword>`
+for per-key changes and
+{py:attr}`Entry.keywords <bibdeskparser.entry.Entry.keywords>` as
 the read-only per-entry tuple:
 
 ```python
@@ -289,8 +295,8 @@ it as modified since it was loaded.
 
 ## How to search a library
 
-{py:meth}`~bibdeskparser.library.Library.search` returns the entries
-matching a query, best match first:
+{py:meth}`Library.search <bibdeskparser.library.Library.search>`
+returns the entries matching a query, best match first:
 
 ```python
 >>> bib = Library()
@@ -402,8 +408,8 @@ $ bibdeskparser render library.bib $(bibdeskparser search library.bib "Schroedin
 
 A `.bib` file with two entries sharing a key still loads; the
 duplicated keys are reported via
-{py:attr}`~bibdeskparser.library.Library.duplicate_keys` (and a
-`UserWarning` at load time). Give the offending entry a new key
+{py:attr}`Library.duplicate_keys <bibdeskparser.library.Library.duplicate_keys>`
+(and a `UserWarning` at load time). Give the offending entry a new key
 directly in the `.bib` file, then reload:
 
 ```python
@@ -422,8 +428,8 @@ directly in the `.bib` file, then reload:
 Configure an auto-key format (in BibDesk's
 [format-specifier language](format-specifiers)) in your
 `bibdeskparser.toml`, then call
-{py:meth}`~bibdeskparser.library.Library.rekey` with just the old
-key:
+{py:meth}`Library.rekey <bibdeskparser.library.Library.rekey>` with
+just the old key:
 
 ```toml
 [auto_key]
@@ -458,9 +464,9 @@ idempotent and safe to run over a whole library:
 
 ```
 
-{py:meth}`~bibdeskparser.library.Library.eval_format_spec` evaluates
-a format for an entry and returns the resulting key *without renaming
-anything*. Since a key that already matches the format evaluates to
+{py:meth}`Library.eval_format_spec <bibdeskparser.library.Library.eval_format_spec>`
+evaluates a format for an entry and returns the resulting key *without
+renaming anything*. Since a key that already matches the format evaluates to
 itself, this finds all citation keys that do not follow a given
 format:
 
@@ -478,8 +484,8 @@ eval_format_spec BIBFILE KEY [FORMAT]`.
 
 ## How to add a reference from a DOI, arXiv ID, or search query
 
-{py:meth}`~bibdeskparser.library.Library.add` fetches the metadata
-from the appropriate online source (Crossref for a DOI or free-text
+{py:meth}`Library.add <bibdeskparser.library.Library.add>` fetches the
+metadata from the appropriate online source (Crossref for a DOI or free-text
 search, the arXiv API for an arXiv identifier), sanitizes it, and
 adds a new entry:
 
@@ -627,8 +633,8 @@ run.
 
 ## How to import BibTeX entries from a publisher or another library
 
-{py:meth}`~bibdeskparser.library.Library.import_bibtex` runs any
-BibTeX snippet -- a publisher's "export citation" download, or
+{py:meth}`Library.import_bibtex <bibdeskparser.library.Library.import_bibtex>`
+runs any BibTeX snippet -- a publisher's "export citation" download, or
 entries from another `.bib` file -- through the same sanitization and
 adds the entries:
 
@@ -663,8 +669,8 @@ untouched.
 
 ## How to edit an entry in your text editor
 
-{py:meth}`~bibdeskparser.library.Library.edit` opens one or more
-entries in `$EDITOR` as bibtex text and merges back whatever you save:
+{py:meth}`Library.edit <bibdeskparser.library.Library.edit>` opens one
+or more entries in `$EDITOR` as bibtex text and merges back whatever you save:
 
 ```python
 bib.edit("Smith2020")                      # a single entry
@@ -673,8 +679,8 @@ bib.edit("Smith2020", "Doe2021", editor="vim")  # several at once
 
 ## How to render a bibliography in a specific citation format
 
-{py:meth}`~bibdeskparser.library.Library.render` produces a formatted
-citation string for one or more citation keys; pass `format="markdown"`
+{py:meth}`Library.render <bibdeskparser.library.Library.render>`
+produces a formatted citation string for one or more citation keys; pass `format="markdown"`
 (default), `"tex"`, or `"html"`. When rendering several entries, `style`
 controls their layout: `"default"`, `"paragraphs"`, `"numbered list"`,
 or `"itemized list"`.
@@ -807,8 +813,8 @@ and the list of problems on stderr, leaving the `.bib` file untouched.
 
 ## How to export a minimal BibTeX file for LaTeX
 
-{py:meth}`~bibdeskparser.library.Library.export` writes selected
-entries as plain bibtex text, stripped of BibDesk-only fields; use
+{py:meth}`Library.export <bibdeskparser.library.Library.export>` writes
+selected entries as plain bibtex text, stripped of BibDesk-only fields; use
 `format="minimal"` to further restrict each entry to a small,
 per-entry-type whitelist of citation-relevant fields (dropping things
 like `abstract` and `annote`), and `outfile=` to write straight to a

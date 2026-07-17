@@ -77,7 +77,8 @@ uv tool install bibdeskparser
 ```
 
 > **Tip:** If you use the command-line tool frequently, consider creating a
-> shorter symlink for `bibdeskparser`, e.g. `bib`, so that you can write
+> shorter symlink for `bibdeskparser`, e.g. `bib`, and set up a config file,
+> with a `default_bib_file` so that you can write
 > `bib import 10.22331/q-2022-12-07-871`.
 
 

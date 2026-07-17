@@ -100,8 +100,9 @@ stderr and exits with code 1, without a traceback.
 
 ### `keys`
 
-List citation keys, one per line. Corresponds to iterating over a
-{class}`~bibdeskparser.Library`. With `--json`: an array of strings.
+List citation keys, one per line. See
+{py:meth}`~bibdeskparser.Library.keys`. With `--json`: an array of
+strings.
 
 ```console
 $ bibdeskparser keys library.bib
