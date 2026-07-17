@@ -484,8 +484,8 @@ def _split_field_names(field_args):
     ),
 )
 @click.option(
-    "--skip-missing",
-    is_flag=True,
+    "--skip-missing/--no-skip-missing",
+    default=False,
     help=(
         "Report unknown citation keys on stderr and show the rest, "
         "instead of aborting the whole command on the first one."
@@ -1299,11 +1299,11 @@ def remove_from_keyword(bibfile, keyword, citekeys):
 @click.argument("key")
 @click.argument("filename")
 @click.option(
-    "--no-check-exists",
-    is_flag=True,
+    "--check-exists/--no-check-exists",
+    default=True,
     help=(
-        "Do not require FILENAME to exist on disk (incompatible "
-        "with auto-filing)."
+        "Require FILENAME to exist on disk (the default; "
+        "--no-check-exists is incompatible with auto-filing)."
     ),
 )
 @click.option(
@@ -1328,11 +1328,15 @@ def remove_from_keyword(bibfile, keyword, citekeys):
     ),
 )
 @click.option(
-    "--no-auto-file",
-    is_flag=True,
+    "--auto-file/--no-auto-file",
+    "auto_file",
+    default=None,
     help=(
-        "Attach FILENAME under its original name, even if the "
-        "configuration sets 'file_automatically = true'."
+        "Auto-file into the configured location even if the "
+        "configuration does not set 'file_automatically = true' "
+        "(--auto-file), or attach FILENAME under its original name "
+        "even if it does (--no-auto-file). By default, the "
+        "configuration decides."
     ),
 )
 @click.pass_obj
@@ -1342,32 +1346,40 @@ def add_file(
     bibfile,
     key,
     filename,
-    no_check_exists,
+    check_exists,
     format_spec,
     location,
-    no_auto_file,
+    auto_file,
 ):
     """Attach the file FILENAME to the entry KEY.
 
-    When auto-filing is in effect -- --location or --format-spec
-    given, or 'file_automatically = true' in the [auto_file] table of
-    bibdeskparser.toml -- the file is not attached under its original
-    name: it is *moved* into the auto-file location, renamed according
-    to the file-name format, and the stored path (relative to the .bib
-    file) is printed to stdout. A plain attach prints nothing.
+    When auto-filing is in effect -- --auto-file, --location, or
+    --format-spec given, or 'file_automatically = true' in the
+    [auto_file] table of bibdeskparser.toml -- the file is not
+    attached under its original name: it is *moved* into the
+    auto-file location, renamed according to the file-name format,
+    and the stored path (relative to the .bib file) is printed to
+    stdout. A plain attach prints nothing.
     """
-    if no_auto_file and (format_spec is not None or location is not None):
+    if auto_file is False and (
+        format_spec is not None or location is not None
+    ):
         raise click.UsageError(
             "--no-auto-file cannot be combined with --format-spec or "
             "--location"
         )
     lib = Library(bibfile)
     _check_keys(lib, [key])
-    auto_file_location = "" if no_auto_file else location
+    if auto_file is False:
+        auto_file_location = ""
+    elif auto_file is True:
+        auto_file_location = location or lib.config.auto_file.location
+    else:
+        auto_file_location = location
     result = lib.add_file(
         key,
         filename,
-        check_that_file_exists=not no_check_exists,
+        check_that_file_exists=check_exists,
         format_spec=format_spec,
         auto_file_location=auto_file_location,
     )
@@ -1394,20 +1406,20 @@ def add_file(
 @click.argument("old_filename", metavar="OLD")
 @click.argument("new_filename", metavar="NEW")
 @click.option(
-    "--remove",
-    is_flag=True,
+    "--remove/--no-remove",
+    default=False,
     help="Also delete the old file from the filesystem.",
 )
 @click.option(
-    "--no-check-exists",
-    is_flag=True,
-    help="Do not require NEW to exist on disk.",
+    "--check-exists/--no-check-exists",
+    default=True,
+    help="Require NEW to exist on disk (the default).",
 )
 @click.pass_obj
 # click passes all parameters by keyword
 # pylint: disable-next=too-many-positional-arguments
 def replace_file(
-    bibfile, key, old_filename, new_filename, remove, no_check_exists
+    bibfile, key, old_filename, new_filename, remove, check_exists
 ):
     """Replace entry KEY's attached file OLD with NEW."""
     lib = Library(bibfile)
@@ -1417,7 +1429,7 @@ def replace_file(
         old_filename,
         new_filename,
         remove=remove,
-        check_that_file_exists=not no_check_exists,
+        check_that_file_exists=check_exists,
     )
     lib.save()
 
@@ -1434,8 +1446,8 @@ def replace_file(
 @click.argument("key")
 @click.argument("filename")
 @click.option(
-    "--remove",
-    is_flag=True,
+    "--remove/--no-remove",
+    default=False,
     help="Also delete the file from the filesystem.",
 )
 @click.pass_obj
@@ -1696,14 +1708,15 @@ def edit_strings(bibfile, editor_cmd, use_stdin):
 
 
 def _fix_uppercase_option(help_suffix):
+    help_text = (
+        "Fix all-uppercase author/editor names and titles (as "
+        f"found in some {help_suffix}); the result may need manual "
+        "correction."
+    )
     return click.option(
-        "--fix-uppercase",
-        is_flag=True,
-        help=(
-            "Fix all-uppercase author/editor names and titles (as "
-            f"found in some {help_suffix}); the result may need manual "
-            "correction."
-        ),
+        "--fix-uppercase/--no-fix-uppercase",
+        default=False,
+        help=help_text,
     )
 
 
@@ -1732,8 +1745,8 @@ def _fix_uppercase_option(help_suffix):
     help="Download the BibTeX text from URL.",
 )
 @click.option(
-    "--keep-keys",
-    is_flag=True,
+    "--keep-keys/--no-keep-keys",
+    default=False,
     help=(
         "Keep the incoming citation keys instead of generating new " "ones."
     ),
