@@ -210,6 +210,30 @@ def _expand_macros(entry, strings):
     return expanded
 
 
+def _field_state(entry, name):
+    """One of `"missing"`, `"empty"`, or `"has"` for field `name`.
+
+    A field is "missing" if not defined on the entry at all, "empty"
+    if defined with an empty (or whitespace-only) value, and "has"
+    otherwise.
+    """
+    try:
+        value = entry[name]
+    except KeyError:
+        return "missing"
+    return "has" if str(value).strip() else "empty"
+
+
+def _names(value):
+    """The argument `value` (`None`, a single string, or an iterable
+    of strings) as a list of strings."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return list(value)
+
+
 def _delete_file(path):
     """Remove `path` from the filesystem: move it to the Trash where
     possible (macOS, with pyobjc installed), else delete it
@@ -523,7 +547,9 @@ class Library(MutableMapping):
     A `Library` presents BibDesk's view of a `.bib` database:
 
     - `Library` is itself a `dict`-like mapping of citation key to
-      {class}`Entry`; see {attr}`entries`.
+      {class}`Entry`; see {attr}`entries`. {meth}`keys` returns the
+      citation keys as a `tuple`, optionally filtered by entry type
+      and by which fields are present, missing, or empty.
     - {attr}`path`: the `.bib` file the library was loaded from or last
       saved to (read-only; `None` for an unsaved from-scratch library).
     - {attr}`timestamp`: the save time from the header comment, updated
@@ -1108,6 +1134,62 @@ class Library(MutableMapping):
         """All entries in the library, as a `list` of
         {class}`Entry`."""
         return list(self._entries.values())
+
+    def keys(self, *, types=None, has=None, missing=None, empty=None):
+        """Citation keys of the entries, as a `tuple`, optionally
+        filtered.
+
+        ```python
+        keys = library.keys(
+            types=None, has=None, missing=None, empty=None
+        )
+        ```
+
+        Without arguments, all citation keys, in library order. The
+        keyword arguments narrow the result; each accepts a single
+        name or an iterable of names, matched case-insensitively:
+
+        * `types`: keep only entries whose {attr}`Entry.entry_type`
+          is one of the given types.
+        * `has`: keep only entries where every given field is defined
+          with a non-empty value.
+        * `missing`: keep only entries where none of the given fields
+          is defined.
+        * `empty`: keep only entries where every given field is
+          defined, but with an empty (or whitespace-only) value.
+
+        For any field, exactly one of the three field predicates
+        holds: a field that is defined but empty is neither "missing"
+        nor "has".
+
+        ```python
+        >>> from bibdeskparser import Entry, Library
+        >>> bib = Library()
+        >>> bib["Key2026"] = Entry(
+        ...     "article", "Key2026", fields={"title": "A Title"}
+        ... )
+        >>> bib.keys()
+        ('Key2026',)
+        >>> bib.keys(types="book")
+        ()
+        >>> bib.keys(has="title", missing="doi")
+        ('Key2026',)
+
+        ```
+        """
+        types = {t.lower() for t in _names(types)}
+        required = [("has", name) for name in _names(has)]
+        required += [("missing", name) for name in _names(missing)]
+        required += [("empty", name) for name in _names(empty)]
+        result = []
+        for key, entry in self._entries.items():
+            if types and entry.entry_type.lower() not in types:
+                continue
+            if all(
+                _field_state(entry, name) == state for state, name in required
+            ):
+                result.append(key)
+        return tuple(result)
 
     def __getitem__(self, key):
         return self._entries[key]

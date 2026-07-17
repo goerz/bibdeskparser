@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Changed: `Library.keys` now returns a `tuple` of citation keys (instead of the generic set-like view inherited from `collections.abc.MutableMapping`, which did not even display the keys in the REPL) and accepts optional `types`, `has`, `missing`, and `empty` filter arguments, matching the `--type`/`--has`/`--missing`/`--empty` options of the `keys` CLI command (which now delegates to it). To adapt: code that relied on the set operations of the previous view should wrap the result in `set()`; code that relied on a live view reflecting later mutations should call `keys()` again after mutating. [[#16]]
+
 ## [v0.2.1] - 2026-07-14
 
 * Added: `Library.import_bibtex` and a corresponding `import` CLI command (reading from a file, `--stdin`, or `--url`), importing the entries of a BibTeX snippet -- anything from a single publisher-provided entry to a complete `.bib` file -- after thorough sanitization: journals are stored as `@string` macro references (resolved against the library's macros and the new `journal_macros` configuration table, or newly created from the journal's lowercased initials, honoring the `initials.journal` exceptions; literal `arXiv:...` pseudo-journals stay literal and derive `eprint`/`archiveprefix`), proper nouns in sentence-case titles and all configured `protected_words` are brace-protected, DOIs are normalized to their bare lowercase form, article page ranges collapse to the first page, non-essential article fields (`month`, `publisher`, `numpages`, `issn`, a `url` shadowed by the DOI, ...) are dropped, and citation keys are regenerated (`keep_keys`/`--keep-keys` to opt out) from the configured `auto_key` format or built-in defaults (e.g. `GoerzPRA2014`, or `Goerz2205.15044` for arXiv preprints). An entry whose DOI or eprint is already in the library is rejected; any validation problem rejects the whole import (reporting all problems at once) and leaves the library untouched. [[#14]]
@@ -73,3 +75,4 @@ Initial release.
 [#12]: https://github.com/goerz/bibdeskparser/pull/12
 [#13]: https://github.com/goerz/bibdeskparser/pull/13
 [#14]: https://github.com/goerz/bibdeskparser/pull/14
+[#16]: https://github.com/goerz/bibdeskparser/pull/16

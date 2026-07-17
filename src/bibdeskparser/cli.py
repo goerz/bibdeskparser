@@ -279,20 +279,6 @@ def main():
 # -- read-only commands ------------------------------------------------ #
 
 
-def _field_state(entry, name):
-    """One of `"missing"`, `"empty"`, or `"has"` for field `name`.
-
-    A field is "missing" if not defined on the entry at all, "empty"
-    if defined with an empty (or whitespace-only) value, and "has"
-    otherwise.
-    """
-    try:
-        value = entry[name]
-    except KeyError:
-        return "missing"
-    return "has" if str(value).strip() else "empty"
-
-
 @main.command(
     name="keys",
     cls=_BibCommand,
@@ -361,18 +347,14 @@ def keys(bibfile, types, has_fields, missing_fields, empty_fields, as_json):
     empty is neither "missing" nor "has". Field names are
     case-insensitive.
     """
-    lib = Library(bibfile)
-    types = {t.lower() for t in types}
-    required = [("has", name) for name in has_fields]
-    required += [("missing", name) for name in missing_fields]
-    required += [("empty", name) for name in empty_fields]
-    data = []
-    for key in lib:
-        entry = lib[key]
-        if types and entry.entry_type.lower() not in types:
-            continue
-        if all(_field_state(entry, name) == state for state, name in required):
-            data.append(key)
+    data = list(
+        Library(bibfile).keys(
+            types=types,
+            has=has_fields,
+            missing=missing_fields,
+            empty=empty_fields,
+        )
+    )
     _emit(data, as_json, "\n".join(data))
 
 
