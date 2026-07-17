@@ -148,6 +148,13 @@ class Entry(MutableMapping):
     at the {class}`Library` level only: entries that are not part of a
     `Library` cannot have `groups`.
 
+    {meth}`add_abstract` enriches the entry from an online source,
+    filling the `abstract` field. It is mirrored by a like-named
+    {class}`Library` method; for an entry in a library, prefer
+    {meth}`Library.add_abstract`, which also locates the entry's
+    attached PDF as an additional abstract source (see
+    {meth}`add_abstract` on why the entry cannot do that itself).
+
     {meth}`copy` returns an independent copy of the entry: a faithful
     snapshot of its current fields, but not a member of any `Library`.
     """
@@ -578,6 +585,127 @@ class Entry(MutableMapping):
         if url not in urls:
             raise ValueError(f"{url!r} is not linked from this entry")
         self._set_urls(u for u in urls if u != url)
+
+    # -- online enrichment (abstracts, preprints) ----------------------- #
+
+    def add_abstract(
+        self,
+        *,
+        min_confidence=None,
+        overwrite=False,
+        mark_empty=None,
+        pdf_path=None,
+    ):
+        """Fetch the entry's abstract from the best available source
+        and store it in the `abstract` field.
+
+        Candidate abstracts are gathered from
+        [Crossref](https://www.crossref.org) (the publisher's
+        deposit, via the entry's `doi`), from the text of the PDF
+        given as `pdf_path` (extracted with the
+        [poppler](https://poppler.freedesktop.org) `pdftotext`
+        command-line tool, which must be on `PATH`; this source is
+        skipped otherwise), from the [arXiv
+        API](https://info.arxiv.org/help/api/) (via the entry's
+        `eprint`, or an arXiv identifier contained in the citation
+        key), and from [Semantic
+        Scholar](https://www.semanticscholar.org) as a last resort.
+        Every candidate is cleaned to plain-unicode prose (LaTeX/JATS
+        math markup to unicode, ligature and hyphenation repair,
+        publisher copyright trailers stripped) and validated with
+        heuristic garble checks. The candidates are then combined
+        into a single result with a *confidence* level:
+
+        * `"high"`: an online abstract identified by the entry's
+          `doi`/`eprint` (and agreeing with the PDF text, where both
+          exist -- the identifier guarantees the paper, the agreement
+          guards against a wrong or garbled deposit), or an
+          unambiguous PDF extraction;
+        * `"medium"`: a single unconfirmed source: only the PDF text,
+          or an online lookup via an arXiv identifier merely guessed
+          from the citation key;
+        * `"low"`: the PDF text and an online source *disagree*. The
+          PDF text is reported (it belongs to the given file), but
+          one of the two sources probably grabbed the wrong text --
+          review manually;
+        * `"none"`: no valid abstract found anywhere.
+
+        `pdf_path` is the resolved filesystem path of a PDF of the
+        paper (`None` to skip the PDF source). An `Entry` cannot
+        locate its own attached PDFs: the paths in {attr}`files` are
+        relative to the library's `.bib` file, which only the
+        {class}`Library` knows. For an entry in a library, call
+        {meth}`Library.add_abstract` instead, which finds the entry's
+        first attached PDF automatically and passes it here.
+
+        The fetched abstract is stored in the entry only if its
+        confidence is at least `min_confidence` (`"high"`,
+        `"medium"`, or `"low"`). With `mark_empty=True`, a `"none"`
+        result stores an *empty* `abstract` field instead of leaving
+        the field undefined, marking the entry as audited (`keys
+        --empty abstract` in the command line, as opposed to `keys
+        --missing abstract`). Both arguments default to the
+        `[add_abstract]` table of the
+        [configuration](configuration)
+        (`config.add_abstract.min_confidence`, `"high"` unless
+        configured, and `config.add_abstract.mark_empty`, `False`
+        unless configured).
+
+        If the entry already has a non-empty abstract, nothing is
+        fetched and the existing text is returned with source
+        `"existing"`, unless `overwrite=True`. An entry whose
+        `abstract` field is present but *empty* (the audited marker)
+        does not require `overwrite`.
+
+        Returns a named tuple `(abstract, source, confidence, note,
+        applied)`: the abstract text (`""` if none was found), the
+        source it came from (`"crossref"`, `"pdf"`, `"arxiv"`,
+        `"semanticscholar"`, `"none"`, or `"existing"`), the
+        confidence level, a short diagnostic trace of the source
+        selection (`note`), and whether the entry was modified
+        (`applied`).
+
+        Raises {exc}`ValueError` for an invalid `min_confidence`.
+        Network problems never raise: an unreachable source is
+        skipped (see `note`). Requires network access for the online
+        sources.
+        """
+        # Imported lazily: the abstracts module pulls in the network
+        # dependencies and pylatexenc, needed nowhere else.
+        from . import abstracts  # pylint: disable=import-outside-toplevel
+
+        if min_confidence is None:
+            min_confidence = active.add_abstract.min_confidence
+        if mark_empty is None:
+            mark_empty = active.add_abstract.mark_empty
+        if min_confidence not in ("high", "medium", "low"):
+            raise ValueError(
+                f"min_confidence must be 'high', 'medium', or 'low', "
+                f"not {min_confidence!r}"
+            )
+        existing = self.get("abstract")
+        if existing and not overwrite:
+            return abstracts.AbstractResult(
+                abstract=str(existing),
+                source="existing",
+                confidence="none",
+                note="entry already has an abstract (overwrite to refetch)",
+                applied=False,
+            )
+        result = abstracts.fetch_abstract(
+            doi=str(self.get("doi") or "") or None,
+            eprint=str(self.get("eprint") or "") or None,
+            key=self.key,
+            pdf_path=pdf_path,
+        )
+        rank = abstracts.CONFIDENCE_LEVELS.index
+        if result.abstract and rank(result.confidence) >= rank(min_confidence):
+            self["abstract"] = ValueString(result.abstract)
+            return result._replace(applied=True)
+        if not result.abstract and mark_empty:
+            self["abstract"] = ValueString("")
+            return result._replace(applied=True)
+        return result
 
     # -- structured names ---------------------------------------------- #
 

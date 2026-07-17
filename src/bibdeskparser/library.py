@@ -610,6 +610,12 @@ class Library(MutableMapping):
       sanitized and normalized. {meth}`add` fetches bibliographic data
       for an arXiv identifier, DOI, or free-form query from the
       appropriate online source and imports it as a new entry.
+      {meth}`add_abstract` fetches an entry's abstract from the best
+      available source and stores it in the `abstract` field; it
+      delegates to {meth}`Entry.add_abstract` but first locates the
+      entry's first attached PDF -- an additional abstract source
+      that requires the library's directory to resolve, and is
+      therefore only available through the `Library` method.
 
     The process-global configuration (see the
     [configuration](configuration) reference page) is exposed as the
@@ -2431,3 +2437,44 @@ class Library(MutableMapping):
         return self.import_bibtex(
             fetch.fetch_bibtex(query), fix_uppercase=fix_uppercase
         )[0]
+
+    def add_abstract(
+        self, key, *, min_confidence=None, overwrite=False, mark_empty=None
+    ):
+        """Fetch the abstract of entry `key` from the best available
+        source and store it in the entry's `abstract` field.
+
+        Delegates to {meth}`Entry.add_abstract` (see there for the
+        sources, the confidence levels, the `min_confidence`,
+        `overwrite`, and `mark_empty` arguments, and the returned
+        named tuple), after locating the entry's first attached PDF
+        and passing it as the `pdf_path`. Unlike {meth}`add_url`, this
+        is *more* than a convenience delegate: the PDF source is
+        available only through the `Library`, because the paths in
+        {attr}`Entry.files` are relative to the library's `.bib` file,
+        which the entry itself does not know. Always prefer this
+        method over calling {meth}`Entry.add_abstract` directly for an
+        entry that is in a library. Like any other modification, the
+        change only becomes permanent with {meth}`save`.
+
+        Raises {exc}`KeyError` if `key` is not in the library and
+        {exc}`ValueError` for an invalid `min_confidence`. Network
+        problems never raise: an unreachable source is skipped (see
+        the result's `note`). Requires network access for the online
+        sources.
+        """
+        entry = self._entries[key]
+        pdf_path = None
+        if self._path is not None:
+            base_dir = self._files_base_dir()
+            for rel_path in entry.files:
+                path = base_dir / rel_path
+                if path.suffix.lower() == ".pdf" and path.is_file():
+                    pdf_path = path
+                    break
+        return entry.add_abstract(
+            min_confidence=min_confidence,
+            overwrite=overwrite,
+            mark_empty=mark_empty,
+            pdf_path=pdf_path,
+        )

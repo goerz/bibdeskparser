@@ -69,6 +69,15 @@ def test_classify(query, expected):
 # -- Crossref ------------------------------------------------------------ #
 
 
+ABSTRACT = (
+    "We show that optimizing a quantum gate for an open quantum "
+    "system requires the time evolution of only three states. This "
+    "represents a significant reduction in computational resources "
+    "compared to the complete basis of Liouville space that is "
+    "commonly believed necessary for this task, and we illustrate "
+    "the reduction for a controlled phasegate with trapped atoms."
+)
+
 ARTICLE_RECORD = {
     "type": "journal-article",
     "DOI": "10.1103/physreva.89.032334",
@@ -115,6 +124,30 @@ def test_crossref_article(monkeypatch):
     assert "pages = {032334}," in text  # article-number preferred
     assert "number = {3}," in text
     assert "publisher" not in text
+
+
+def test_crossref_article_with_abstract(monkeypatch):
+    record = dict(ARTICLE_RECORD)
+    record["abstract"] = (
+        f"<jats:title>Abstract</jats:title><jats:p>{ABSTRACT}</jats:p>"
+    )
+    _mock_crossref(monkeypatch, {"status": "ok", "message": record})
+    text = fetch.fetch_bibtex("10.1103/PhysRevA.89.032334")
+    assert "abstract" not in text  # off by default
+    text = fetch.fetch_bibtex(
+        "10.1103/PhysRevA.89.032334", include_abstract=True
+    )
+    assert f"abstract = {{{ABSTRACT}}}," in text
+
+
+def test_crossref_invalid_abstract_omitted(monkeypatch):
+    record = dict(ARTICLE_RECORD)
+    record["abstract"] = "<jats:p>too short</jats:p>"
+    _mock_crossref(monkeypatch, {"status": "ok", "message": record})
+    text = fetch.fetch_bibtex(
+        "10.1103/PhysRevA.89.032334", include_abstract=True
+    )
+    assert "abstract" not in text
 
 
 def test_crossref_article_page_fallback(monkeypatch):
@@ -279,6 +312,7 @@ def _arxiv_result():
             SimpleNamespace(name="Sebastián C. Carrasco"),
         ],
         published=datetime.datetime(2022, 5, 30, tzinfo=datetime.timezone.utc),
+        summary=ABSTRACT,
     )
 
 
@@ -301,6 +335,15 @@ def test_arxiv_versioned_id(monkeypatch):
     assert "journal = {arXiv:2205.15044v2}," in text
     assert "eprint = {2205.15044}," in text
     assert "url = {https://doi.org/10.48550/arXiv.2205.15044}," in text
+
+
+def test_arxiv_with_abstract(monkeypatch):
+    _mock_arxiv(monkeypatch, [_arxiv_result()])
+    text = fetch.fetch_bibtex("arXiv:2205.15044")
+    assert "abstract" not in text  # off by default
+    _mock_arxiv(monkeypatch, [_arxiv_result()])
+    text = fetch.fetch_bibtex("arXiv:2205.15044", include_abstract=True)
+    assert f"abstract = {{{ABSTRACT}}}," in text
 
 
 def test_arxiv_no_result(monkeypatch):
@@ -364,3 +407,4 @@ def test_library_add_arxiv(monkeypatch):
     assert entry["journal"] == "arXiv:2205.15044"
     assert entry["eprint"] == "2205.15044"
     assert entry["author"] == ("Goerz, Michael H. and Carrasco, Sebastián C.")
+    assert "abstract" not in entry

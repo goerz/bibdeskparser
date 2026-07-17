@@ -43,6 +43,7 @@ __private__ = [
     "discover",
     "AutoKey",
     "AutoFile",
+    "AddAbstract",
     "Config",
     "active",
 ]
@@ -65,6 +66,7 @@ _KNOWN_TOP_LEVEL_KEYS = frozenset(
         "default_bib_file",
         "auto_key",
         "auto_file",
+        "add_abstract",
         "initials",
         "journal_macros",
         "protected_words",
@@ -512,6 +514,77 @@ def _parse_auto_file(raw):
     return auto_file
 
 
+class AddAbstract:
+    """The `[add_abstract]` settings -- the defaults for the keyword
+    arguments of {meth}`~bibdeskparser.Library.add_abstract` --
+    exposed as `Library.config.add_abstract`.
+
+    Attributes:
+
+    * `min_confidence` (default `"high"`): the default for the
+      `min_confidence` argument of `Library.add_abstract` (and the
+      `--min-confidence` option of the `add_abstract` CLI command) --
+      one of `"high"`, `"medium"`, or `"low"`.
+    * `mark_empty` (default `False`): the default for the `mark_empty`
+      argument (`--mark-empty/--no-mark-empty`).
+    """
+
+    def __init__(self):
+        self._min_confidence = "high"
+        self.mark_empty = False
+
+    @property
+    def min_confidence(self):
+        """The default confidence threshold (see the class
+        docstring)."""
+        return self._min_confidence
+
+    @min_confidence.setter
+    def min_confidence(self, value):
+        if value not in ("high", "medium", "low"):
+            raise ValueError(
+                "add_abstract min_confidence must be one of 'high', "
+                f"'medium', 'low', not {value!r}"
+            )
+        self._min_confidence = value
+
+    def __repr__(self):
+        return (
+            f"AddAbstract(min_confidence={self._min_confidence!r}, "
+            f"mark_empty={self.mark_empty!r})"
+        )
+
+
+def _parse_add_abstract(raw):
+    """Read the optional `[add_abstract]` table from `raw`.
+
+    Returns an {class}`AddAbstract` (holding the built-in defaults if
+    the table is absent). `min_confidence` is validated by
+    `AddAbstract`'s own setter."""
+    settings = AddAbstract()
+    table = raw.get("add_abstract", None)
+    if table is None:
+        return settings
+    if not isinstance(table, dict):
+        raise ValueError("[add_abstract] must be a table")
+    unknown = set(table) - {"min_confidence", "mark_empty"}
+    if unknown:
+        warnings.warn(
+            f"unknown key(s) in [add_abstract]: {sorted(unknown)}",
+            UserWarning,
+            stacklevel=5,
+        )
+    settings.min_confidence = table.get("min_confidence", "high")
+    mark_empty = table.get("mark_empty", False)
+    if not isinstance(mark_empty, bool):
+        raise ValueError(
+            "[add_abstract] mark_empty must be a boolean, "
+            f"not {type(mark_empty)!r}"
+        )
+    settings.mark_empty = mark_empty
+    return settings
+
+
 def _parse_initials(raw):
     """Read the optional `[initials]` table from `raw`.
 
@@ -627,6 +700,11 @@ class Config:
       `auto_file.format_spec`, `auto_file.location`,
       `auto_file.lowercase`, `auto_file.clean`, and
       `auto_file.file_automatically`.
+    * `add_abstract` (an {class}`AddAbstract`): the `[add_abstract]`
+      defaults for the keyword arguments of
+      {meth}`~bibdeskparser.Library.add_abstract` --
+      `add_abstract.min_confidence` (default `"high"`) and
+      `add_abstract.mark_empty` (default `False`).
     * `initials` (default `{}`): per-field acronym exceptions for the
       `%c` format specifier.
     * `journal_macros` (default `{}`): journal-name-to-macro mappings
@@ -669,6 +747,7 @@ class Config:
         self.default_bib_file = None
         self.auto_key = AutoKey()
         self.auto_file = AutoFile()
+        self.add_abstract = AddAbstract()
         self.initials = {}
         self.journal_macros = {}
         self.protected_words = []
@@ -716,6 +795,7 @@ class Config:
         default_bib_file = _parse_default_bib_file(raw)
         auto_key = _parse_auto_key(raw)
         auto_file = _parse_auto_file(raw)
+        add_abstract = _parse_add_abstract(raw)
         initials = _parse_initials(raw)
         journal_macros = _parse_journal_macros(raw)
         protected_words = _parse_protected_words(raw)
@@ -730,6 +810,7 @@ class Config:
         self.default_bib_file = default_bib_file
         self.auto_key = auto_key
         self.auto_file = auto_file
+        self.add_abstract = add_abstract
         self.initials = initials
         self.journal_macros = journal_macros
         self.protected_words = protected_words

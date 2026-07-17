@@ -71,6 +71,7 @@ __private__ = [
     "edit_strings",
     "import_bibtex",
     "add",
+    "add_abstract",
 ]
 
 # Exceptions raised by the `Library` API for invalid user input; the
@@ -258,17 +259,18 @@ def main():
     named by the `default_bib_file` key of a discovered
     `bibdeskparser.toml` is used instead.
 
-    Read-only commands (`keys`, `show`, `fields`, `get_field`,
-    `author`, `editor`, `search`, `groups`, `keywords`, `strings`,
-    `duplicate_keys`, `timestamp`, `eval_format_spec`) print to stdout
-    and accept `--json` for machine-readable output; `render` and
-    `export` are read-only as well. The other commands modify the
+    Read-only commands (`author`, `duplicate_keys`, `editor`,
+    `eval_format_spec`, `fields`, `get_field`, `groups`, `keys`,
+    `keywords`, `search`, `show`, `strings`, `timestamp`) print to
+    stdout and accept `--json` for machine-readable output; `render`
+    and `export` are read-only as well. The other commands modify the
     `.bib` file in place and print nothing on success (except `rekey`
     without NEW_KEY and `rename_file` without NEW, which print the
     generated key or file path, as does `add_file` when it auto-files;
     `import` and `add` print the citation keys of the added entries,
     and `add --dry-run` only prints the fetched entry, without
-    modifying the file).
+    modifying the file; `add_abstract` prints a per-key report of the
+    fetched abstracts, with `--dry-run` without modifying the file).
     On any error they print `Error: <message>` to stderr and exit
     non-zero (2 for bad usage, 1 for a library error such as an unknown
     key or a `.bib` file changed on disk since it was read). Run
@@ -1861,3 +1863,120 @@ def add(bibfile, query, dry_run, fix_uppercase):
     else:
         lib.save()
         click.echo(citekey)
+
+
+@main.command(
+    name="add_abstract",
+    cls=_BibCommand,
+    short_help="Fetch and store missing abstracts for entries.",
+    epilog=_examples(
+        "bibdeskparser add_abstract GoerzPRA2014",
+        "bibdeskparser add_abstract --json $(bibdeskparser keys "
+        "--type article --missing abstract)",
+        "bibdeskparser add_abstract --dry-run --min-confidence low Key2020",
+    ),
+)
+@click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
+@click.option(
+    "--min-confidence",
+    type=click.Choice(["high", "medium", "low"]),
+    default=None,
+    help=(
+        "Lowest confidence level that is stored automatically; a "
+        "candidate below it is only reported, for manual review. "
+        "Defaults to the [add_abstract] configuration (high)."
+    ),
+)
+@click.option(
+    "--overwrite/--no-overwrite",
+    default=False,
+    help=(
+        "Refetch and replace an existing non-empty abstract instead "
+        "of skipping the entry."
+    ),
+)
+@click.option(
+    "--mark-empty/--no-mark-empty",
+    default=None,
+    help=(
+        "When no valid abstract is found anywhere, store an *empty* "
+        "abstract field, marking the entry as audited (matched by "
+        "'keys --empty abstract' instead of 'keys --missing "
+        "abstract'). Defaults to the [add_abstract] configuration "
+        "(off)."
+    ),
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Print the per-key report without modifying the .bib file.",
+)
+@_json_option
+@click.pass_obj
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def add_abstract(
+    bibfile, citekeys, min_confidence, overwrite, mark_empty, dry_run, as_json
+):
+    """Fetch and store missing abstracts for the entries KEY...
+
+    For each KEY, gather candidate abstracts from Crossref (via the
+    entry's doi field), from the text of the entry's attached PDF
+    (requires the poppler 'pdftotext' tool on PATH), from the arXiv
+    API (via the eprint field), and from Semantic Scholar; clean each
+    candidate to plain-unicode prose; and store the best one in the
+    entry's abstract field if its confidence -- high (identified by
+    doi/eprint, or confirmed by two sources), medium (a single
+    unconfirmed source), or low (sources disagree) -- reaches
+    --min-confidence. Entries that already have a non-empty abstract
+    are skipped (see --overwrite).
+
+    Prints a per-key report; candidates that were *not* stored are
+    reported in full, so that they can be reviewed and applied
+    manually with `set_field KEY abstract "..."`. With --json, the
+    report maps each KEY to {abstract, source, confidence, note,
+    applied}. Modifies the .bib file in place (unless --dry-run is
+    given); requires network access.
+    """
+    lib = Library(bibfile)
+    _check_keys(lib, citekeys)
+    results = {}
+    for key in citekeys:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            result = lib.add_abstract(
+                key,
+                min_confidence=min_confidence,
+                overwrite=overwrite,
+                mark_empty=mark_empty,
+            )
+        for warning in caught:
+            click.echo(f"Warning: {warning.message}", err=True)
+        results[key] = result._asdict()
+        if not as_json:
+            _echo_abstract_result(key, result)
+    if as_json:
+        click.echo(json.dumps(results, indent=2, ensure_ascii=False))
+    if not dry_run and any(r["applied"] for r in results.values()):
+        lib.save()
+
+
+def _echo_abstract_result(key, result):
+    """One report line (plus the abstract text, where it needs
+    review) for an `add_abstract` result."""
+    if result.source == "existing":
+        click.echo(
+            f"{key}: skipped (already has an abstract; --overwrite to "
+            "refetch)"
+        )
+    elif not result.abstract:
+        stored = " (stored empty marker)" if result.applied else ""
+        click.echo(f"{key}: no abstract found{stored} [{result.note}]")
+    elif result.applied:
+        click.echo(f"{key}: stored ({result.source}, {result.confidence})")
+    else:
+        click.echo(
+            f"{key}: needs review ({result.source}, {result.confidence}) "
+            f"[{result.note}]"
+        )
+        click.echo(f"    {result.abstract}")

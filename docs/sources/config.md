@@ -347,6 +347,30 @@ whatever the entry type. A `known` field is recognized for entry types
 that have no field template of their own, but is not automatically
 appropriate for a templated type.
 
+(config-add)=
+
+## The `[add_abstract]` table: abstract-fetching defaults
+
+Defaults for {py:meth}`~bibdeskparser.Library.add_abstract` (and the
+{ref}`add_abstract CLI command <cli-add-abstract>`):
+
+```toml
+[add_abstract]
+min_confidence = "high"   # "high", "medium", or "low"
+mark_empty = false        # mark entries with no abstract found
+```
+
+* `min_confidence` (default `"high"`): the lowest confidence at which
+  a fetched abstract is stored, backing the `--min-confidence` option;
+  see the [`add_abstract` command](cli-add-abstract) for what each
+  level means.
+* `mark_empty` (default `false`): when true, an entry for which no
+  valid abstract is found gets an *empty* `abstract` field marking it
+  as audited, backing the `--mark-empty` flag.
+
+Both are exposed as `Library.config.add_abstract.min_confidence` and
+`Library.config.add_abstract.mark_empty`.
+
 ## A complete example
 
 ```toml
@@ -408,6 +432,10 @@ universal = ["mytag"]
 [journal_macros]             # journal spellings not matching the library
 jcp = ["J. Chem. Phys.", "The Journal of Chemical Physics"]
 jpb = ["J. Phys. B", "J. Phys. B: At. Mol. Opt. Phys."]
+
+[add_abstract]               # defaults for the add_abstract command
+min_confidence = "high"
+mark_empty = false
 ```
 
 With this configuration, the command-line tool operates on

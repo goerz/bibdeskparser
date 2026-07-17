@@ -1788,3 +1788,146 @@ def test_add_fetch_failure(runner, bibfile, monkeypatch):
     result = runner.invoke(main, ["add", str(bibfile), "10.1103/xyz"])
     assert result.exit_code == 1
     assert "Error: could not fetch bibliographic data" in result.stderr
+
+
+ABSTRACT = (
+    "We show that optimizing a quantum gate for an open quantum "
+    "system requires the time evolution of only three states. This "
+    "represents a significant reduction in computational resources "
+    "compared to the complete basis of Liouville space that is "
+    "commonly believed necessary for this task, and we illustrate "
+    "the reduction for a controlled phasegate with trapped atoms."
+)
+
+
+def _mock_fetch_abstract(monkeypatch, results):
+    """Mock `abstracts.fetch_abstract` to pop per-call results from
+    the `results` list; records the call kwargs."""
+    from bibdeskparser.abstracts import AbstractResult
+
+    calls = []
+
+    def fetch_abstract(**kwargs):
+        calls.append(kwargs)
+        return AbstractResult(*results.pop(0), applied=False)
+
+    monkeypatch.setattr(
+        "bibdeskparser.abstracts.fetch_abstract", fetch_abstract
+    )
+    return calls
+
+
+def test_add_abstract_stores(runner, bibfile, monkeypatch):
+    calls = _mock_fetch_abstract(
+        monkeypatch, [(ABSTRACT, "crossref", "high", "ok")]
+    )
+    result = _run(runner, "add_abstract", bibfile, "GoerzPhd2015")
+    assert result.stdout == "GoerzPhd2015: stored (crossref, high)\n"
+    assert calls[0]["key"] == "GoerzPhd2015"
+    lib = _load(bibfile)
+    assert lib["GoerzPhd2015"]["abstract"] == ABSTRACT
+
+
+def test_add_abstract_needs_review(runner, bibfile, monkeypatch):
+    _mock_fetch_abstract(monkeypatch, [(ABSTRACT, "pdf", "medium", "no-doi")])
+    result = _run(runner, "add_abstract", bibfile, "GoerzPhd2015")
+    assert "GoerzPhd2015: needs review (pdf, medium) [no-doi]" in result.stdout
+    assert ABSTRACT in result.stdout  # reported in full, for review
+    lib = _load(bibfile)
+    assert "abstract" not in lib["GoerzPhd2015"]
+
+
+def test_add_abstract_min_confidence(runner, bibfile, monkeypatch):
+    _mock_fetch_abstract(monkeypatch, [(ABSTRACT, "pdf", "medium", "no-doi")])
+    result = _run(
+        runner,
+        "add_abstract",
+        bibfile,
+        "--min-confidence",
+        "medium",
+        "GoerzPhd2015",
+    )
+    assert "GoerzPhd2015: stored (pdf, medium)" in result.stdout
+    lib = _load(bibfile)
+    assert lib["GoerzPhd2015"]["abstract"] == ABSTRACT
+
+
+def test_add_abstract_skips_existing(runner, bibfile, monkeypatch):
+    def fetch_abstract(**kwargs):  # pragma: no cover
+        raise AssertionError("must not fetch")
+
+    monkeypatch.setattr(
+        "bibdeskparser.abstracts.fetch_abstract", fetch_abstract
+    )
+    result = _run(runner, "add_abstract", bibfile, "GoerzNJP2014")
+    assert "GoerzNJP2014: skipped (already has an abstract" in result.stdout
+
+
+def test_add_abstract_overwrite(runner, bibfile, monkeypatch):
+    _mock_fetch_abstract(monkeypatch, [(ABSTRACT, "crossref", "high", "ok")])
+    _run(runner, "add_abstract", bibfile, "--overwrite", "GoerzNJP2014")
+    lib = _load(bibfile)
+    assert lib["GoerzNJP2014"]["abstract"] == ABSTRACT
+
+
+def test_add_abstract_not_found_and_mark_empty(runner, bibfile, monkeypatch):
+    _mock_fetch_abstract(
+        monkeypatch,
+        [("", "none", "none", "cr-miss"), ("", "none", "none", "cr-miss")],
+    )
+    result = _run(runner, "add_abstract", bibfile, "GoerzPhd2015")
+    assert "GoerzPhd2015: no abstract found [cr-miss]" in result.stdout
+    lib = _load(bibfile)
+    assert "abstract" not in lib["GoerzPhd2015"]
+    result = _run(
+        runner, "add_abstract", bibfile, "--mark-empty", "GoerzPhd2015"
+    )
+    assert (
+        "GoerzPhd2015: no abstract found (stored empty marker) [cr-miss]"
+        in result.stdout
+    )
+    lib = _load(bibfile)
+    assert lib["GoerzPhd2015"]["abstract"] == ""
+
+
+def test_add_abstract_json(runner, bibfile, monkeypatch):
+    _mock_fetch_abstract(
+        monkeypatch,
+        [
+            (ABSTRACT, "crossref", "high", "ok"),
+            ("", "none", "none", "cr-miss"),
+        ],
+    )
+    result = _run(
+        runner,
+        "add_abstract",
+        bibfile,
+        "--json",
+        "GoerzPhd2015",
+        "GoerzDiploma2010",
+    )
+    data = json.loads(result.stdout)
+    assert data["GoerzPhd2015"] == {
+        "abstract": ABSTRACT,
+        "source": "crossref",
+        "confidence": "high",
+        "note": "ok",
+        "applied": True,
+    }
+    assert data["GoerzDiploma2010"]["applied"] is False
+    lib = _load(bibfile)
+    assert lib["GoerzPhd2015"]["abstract"] == ABSTRACT
+
+
+def test_add_abstract_dry_run(runner, bibfile, monkeypatch):
+    _mock_fetch_abstract(monkeypatch, [(ABSTRACT, "crossref", "high", "ok")])
+    before = bibfile.read_text(encoding="utf-8")
+    result = _run(runner, "add_abstract", bibfile, "--dry-run", "GoerzPhd2015")
+    assert "GoerzPhd2015: stored (crossref, high)" in result.stdout
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_add_abstract_unknown_key(runner, bibfile):
+    result = runner.invoke(main, ["add_abstract", str(bibfile), "NoSuchKey"])
+    assert result.exit_code == 1
+    assert "unknown citation key 'NoSuchKey'" in result.stderr

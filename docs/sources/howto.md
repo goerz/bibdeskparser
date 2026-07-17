@@ -506,6 +506,54 @@ is brace-protected, and the citation key is generated (e.g.
 whose DOI or arXiv eprint is already in the library is rejected, so
 re-adding the same paper is safe.
 
+## How to fill in missing abstracts
+
+{py:meth}`Library.add_abstract <bibdeskparser.library.Library.add_abstract>`
+fetches the abstract of an existing entry -- from Crossref (via the entry's
+`doi`), the entry's attached PDF (requires the
+[poppler](https://poppler.freedesktop.org) `pdftotext` tool), the
+arXiv API (via `eprint`), or Semantic Scholar -- cleans it to
+plain-unicode prose, and stores it in the entry's `abstract` field:
+
+```python
+result = bib.add_abstract("MuellerPRA2014")
+bib.save()
+```
+
+Each result carries the source it came from and a *confidence* level;
+only a `high`-confidence abstract (identified by the entry's
+`doi`/`eprint`, or confirmed by two independent sources) is stored by
+default. On the command line, list the entries that need an abstract,
+fill them in bulk, and review what remains
+({ref}`CLI reference <cli-add-abstract>`):
+
+```console
+$ bibdeskparser keys library.bib --type article --missing abstract
+BaumgratzPRL2014
+Koch2016
+$ bibdeskparser add_abstract library.bib BaumgratzPRL2014 Koch2016
+BaumgratzPRL2014: stored (crossref, high)
+Koch2016: needs review (pdf, medium) [cr-miss; pdf-abstract-inline]
+    We review different aspects of quantum control ...
+```
+
+A lower-confidence candidate is reported in full instead of stored;
+after checking it (against the PDF or the publisher page), apply it
+with `set_field`, or store whatever the sources found by lowering the
+bar with `--min-confidence medium`:
+
+```console
+$ bibdeskparser set_field library.bib Koch2016 abstract \
+    "We review different aspects of quantum control ..."
+```
+
+For an entry whose abstract genuinely cannot be found, store an
+*empty* abstract as an "audited" marker -- either explicitly
+(`set_field KEY abstract ""`) or with `add_abstract --mark-empty`.
+The entry then no longer shows up in `keys --missing abstract` (it is
+matched by `keys --empty abstract` instead), so repeated fill-in
+passes stay fast and idempotent.
+
 ## How to import BibTeX entries from a publisher or another library
 
 {py:meth}`~bibdeskparser.library.Library.import_bibtex` runs any

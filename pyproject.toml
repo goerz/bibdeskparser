@@ -29,6 +29,7 @@ dependencies = [
     "click>=8",
     "habanero>=2.2",
     "httpx>=0.27.2",
+    "pylatexenc>=2.10",
     "tomli>=1.1.0; python_version < '3.11'",
 ]
 
