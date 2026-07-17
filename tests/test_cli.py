@@ -1031,6 +1031,30 @@ def test_add_file_no_auto_file(runner, bibfile, tmp_path):
     assert (tmp_path / "extra.pdf").exists()
 
 
+def test_add_file_auto_file_forced(runner, bibfile, tmp_path):
+    """`--auto-file` forces auto-filing despite `file_automatically =
+    false` in the config."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        "[auto_file]\n"
+        'format_spec = "%f{Cite Key}%u0%e"\n'
+        "file_automatically = false\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "extra.pdf").write_bytes(b"%PDF-1.4 fake")
+    result = _run(
+        runner,
+        "add_file",
+        bibfile,
+        "GoerzDiploma2010",
+        "extra.pdf",
+        "--auto-file",
+    )
+    assert result.output.strip() == "GoerzDiploma2010.pdf"
+    assert _load(bibfile)["GoerzDiploma2010"].files == ["GoerzDiploma2010.pdf"]
+    assert (tmp_path / "GoerzDiploma2010.pdf").exists()
+    assert not (tmp_path / "extra.pdf").exists()
+
+
 def test_add_file_no_auto_file_with_location_fails(runner, bibfile, tmp_path):
     (tmp_path / "extra.pdf").write_bytes(b"%PDF-1.4 fake")
     result = runner.invoke(

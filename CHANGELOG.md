@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 * Changed: `Library.keys` now returns a `tuple` of citation keys (instead of the generic set-like view inherited from `collections.abc.MutableMapping`, which did not even display the keys in the REPL) and accepts optional `types`, `has`, `missing`, and `empty` filter arguments, matching the `--type`/`--has`/`--missing`/`--empty` options of the `keys` CLI command (which now delegates to it). To adapt: code that relied on the set operations of the previous view should wrap the result in `set()`; code that relied on a live view reflecting later mutations should call `keys()` again after mutating. [[#16]]
+* Added: every boolean CLI option that toggles behavior now has an explicit negative form, so that a default can later change without breaking existing invocations: `--fix-uppercase/--no-fix-uppercase` (`import`, `add`), `--keep-keys/--no-keep-keys` (`import`), `--skip-missing/--no-skip-missing` (`show`), `--remove/--no-remove` (`replace_file`, `unlink_file`), `--check-exists/--no-check-exists` (`add_file`, `replace_file`), and `--auto-file/--no-auto-file` (`add_file`) (subsuming the previous `--no-check-exists` and `--no-auto-file` flags, which keep working; the new `--auto-file` positive form forces auto-filing even without `file_automatically = true` in the configuration). [[#17]]
 
 ## [v0.2.1] - 2026-07-14
 
@@ -76,3 +77,4 @@ Initial release.
 [#13]: https://github.com/goerz/bibdeskparser/pull/13
 [#14]: https://github.com/goerz/bibdeskparser/pull/14
 [#16]: https://github.com/goerz/bibdeskparser/pull/16
+[#17]: https://github.com/goerz/bibdeskparser/pull/17
