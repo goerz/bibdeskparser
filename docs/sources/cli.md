@@ -579,7 +579,19 @@ SilverioQ2022
 With `--dry-run`, the sanitized entry is printed (as re-parseable
 BibTeX, like `export`) and the `.bib` file is not modified -- useful
 to check what a free-text query matched. `--fix-uppercase` repairs
-all-uppercase names/titles in the fetched metadata.
+all-uppercase names/titles in the fetched metadata. With
+`--add-abstract`, the abstract returned alongside the metadata (the
+publisher's Crossref deposit, or the arXiv summary) is stored in the
+new entry's `abstract` field, cleaned to plain-unicode prose; see
+[`add_abstract`](cli-add-abstract) for filling the field afterwards,
+with more sources. With `--add-preprint`, arXiv is searched for a
+preprint matching the new entry, exactly as with
+[`add_preprint`](cli-add-preprint), whose report goes to stderr here
+(stdout stays the citation key); the search is skipped when the
+entry already has an `eprint`, as one fetched from an arXiv query
+does. All three options default to the
+[`[add]` configuration table](config-add), and each has a negative
+form (`--no-add-abstract`, ...) to override a configured `true`.
 
 ```console
 $ bibdeskparser add library.bib --dry-run 10.22331/q-2022-01-24-629

@@ -1,6 +1,7 @@
 """Tests for the `preprints` module and `Library.add_preprint` (all
 network clients mocked)."""
 
+import warnings
 from types import SimpleNamespace
 
 import pytest
@@ -506,3 +507,84 @@ def test_entry_add_preprint_explicit_detached(monkeypatch):
     result = entry.add_preprint("arXiv:2205.15044v2")
     assert result.applied is True
     assert entry["eprint"] == "2205.15044"
+
+
+# -- Library.add(add_preprint=...) ------------------------------------------ #
+
+_FETCHED_BIBTEX = """
+@article{Fetched,
+    author = {Goerz, Michael H. and Reich, Daniel M.},
+    title = {Optimal control theory for a quantum gate},
+    journal = {Phys. Rev. A},
+    year = {2014},
+    doi = {10.1103/PhysRevA.89.032334},
+    pages = {032334},
+    volume = {89},
+}
+"""
+
+_FETCHED_ARXIV_BIBTEX = """
+@article{Fetched,
+    author = {Goerz, Michael H.},
+    title = {Quantum optimal control via semi-automatic differentiation},
+    journal = {arXiv:2205.15044},
+    eprint = {2205.15044},
+    archiveprefix = {arXiv},
+    year = {2022},
+}
+"""
+
+
+def _mock_fetch(monkeypatch, bibtex):
+    import bibdeskparser.fetch as fetch
+
+    monkeypatch.setattr(
+        fetch, "fetch_bibtex", lambda query, include_abstract=False: bibtex
+    )
+
+
+def test_add_with_add_preprint(monkeypatch):
+    _mock_fetch(monkeypatch, _FETCHED_BIBTEX)
+    calls = []
+    _mock_find(
+        monkeypatch, PreprintResult("1401.1858", "doi", 1.0, "", False), calls
+    )
+    lib = Library()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # new journal macro
+        key = lib.add("10.1103/PhysRevA.89.032334", add_preprint=True)
+    assert lib[key]["eprint"] == "1401.1858"
+    assert lib[key]["archiveprefix"] == "arXiv"
+    assert len(calls) == 1
+
+
+def test_add_without_add_preprint(monkeypatch):
+    _mock_fetch(monkeypatch, _FETCHED_BIBTEX)
+    _forbid_find(monkeypatch)
+    lib = Library()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # new journal macro
+        key = lib.add("10.1103/PhysRevA.89.032334")
+    assert "eprint" not in lib[key]
+
+
+def test_add_add_preprint_config_default(monkeypatch):
+    """`add_preprint` defaults to the `[add]` configuration."""
+    _mock_fetch(monkeypatch, _FETCHED_BIBTEX)
+    _mock_find(monkeypatch, PreprintResult("1401.1858", "doi", 1.0, "", False))
+    lib = Library()
+    monkeypatch.setattr(config.active.add, "add_preprint", True)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # new journal macro
+        key = lib.add("10.1103/PhysRevA.89.032334")
+    assert lib[key]["eprint"] == "1401.1858"
+
+
+def test_add_add_preprint_skips_arxiv_entry(monkeypatch):
+    """An entry fetched from an arXiv query already has an eprint; the
+    preprint search must not run for it."""
+    _mock_fetch(monkeypatch, _FETCHED_ARXIV_BIBTEX)
+    _forbid_find(monkeypatch)
+    lib = Library()
+    key = lib.add("2205.15044", add_preprint=True)
+    assert lib[key]["eprint"] == "2205.15044"

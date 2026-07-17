@@ -2400,7 +2400,14 @@ class Library(MutableMapping):
             self, text, keep_keys=keep_keys, fix_uppercase=fix_uppercase
         )
 
-    def add(self, query, *, fix_uppercase=False):
+    def add(
+        self,
+        query,
+        *,
+        fix_uppercase=None,
+        add_abstract=None,
+        add_preprint=None,
+    ):
         """Fetch bibliographic data for `query` from the appropriate
         online source and add it to the library as a new, sanitized
         entry (via {meth}`import_bibtex`, see there for the
@@ -2426,6 +2433,34 @@ class Library(MutableMapping):
         retrieved as publisher BibTeX via DOI content negotiation and
         imported as-is (still sanitized).
 
+        The keyword arguments default to the `[add]` table of the
+        [configuration](configuration) (`config.add.fix_uppercase`,
+        `config.add.add_abstract`, `config.add.add_preprint`; all
+        `False` unless configured); passing an explicit boolean
+        overrides the configured default.
+
+        With `add_abstract=True`, the abstract that the source
+        returns alongside the metadata (the publisher's Crossref
+        deposit, or the arXiv summary) is included as the new entry's
+        `abstract` field, cleaned to plain-unicode prose (math markup
+        converted to unicode, copyright trailers stripped) and
+        validated. Because it arrives with the metadata from the same
+        source, identified by the same DOI or arXiv identifier, it is
+        high-confidence by construction -- the `min_confidence`
+        threshold of {meth}`add_abstract` does not apply here. An
+        abstract that fails validation -- or a source that provides
+        none -- is silently omitted (never stored as an empty
+        "audited" marker: only {meth}`add_abstract`, which consults
+        more sources, completes an audit), so the new entry remains
+        matched by `keys --missing abstract` for a later
+        {meth}`add_abstract` pass.
+
+        With `add_preprint=True`, {meth}`add_preprint` is called for
+        the new entry (with its configured defaults, see there),
+        searching arXiv for a matching preprint and recording it in
+        the entry's `eprint` field -- unless the entry already has an
+        `eprint` (an entry fetched from an arXiv query always does).
+
         Returns the citation key of the added entry. Raises
         {exc}`ValueError` if the data cannot be fetched (network
         errors, no match for the query) or fails import validation
@@ -2438,9 +2473,19 @@ class Library(MutableMapping):
         # the package needs.
         from . import fetch  # pylint: disable=import-outside-toplevel
 
-        return self.import_bibtex(
-            fetch.fetch_bibtex(query), fix_uppercase=fix_uppercase
+        if fix_uppercase is None:
+            fix_uppercase = active.add.fix_uppercase
+        if add_abstract is None:
+            add_abstract = active.add.add_abstract
+        if add_preprint is None:
+            add_preprint = active.add.add_preprint
+        key = self.import_bibtex(
+            fetch.fetch_bibtex(query, include_abstract=add_abstract),
+            fix_uppercase=fix_uppercase,
         )[0]
+        if add_preprint and not str(self._entries[key].get("eprint") or ""):
+            self.add_preprint(key)
+        return key
 
     def add_abstract(
         self, key, *, min_confidence=None, overwrite=False, mark_empty=None
