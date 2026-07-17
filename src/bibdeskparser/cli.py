@@ -72,6 +72,7 @@ __private__ = [
     "import_bibtex",
     "add",
     "add_abstract",
+    "add_preprint",
 ]
 
 # Exceptions raised by the `Library` API for invalid user input; the
@@ -269,8 +270,9 @@ def main():
     generated key or file path, as does `add_file` when it auto-files;
     `import` and `add` print the citation keys of the added entries,
     and `add --dry-run` only prints the fetched entry, without
-    modifying the file; `add_abstract` prints a per-key report of the
-    fetched abstracts, with `--dry-run` without modifying the file).
+    modifying the file; `add_abstract` and `add_preprint` print a
+    per-key report of the fetched abstracts/arXiv identifiers, with
+    `--dry-run` without modifying the file).
     On any error they print `Error: <message>` to stderr and exit
     non-zero (2 for bad usage, 1 for a library error such as an unknown
     key or a `.bib` file changed on disk since it was read). Run
@@ -1980,3 +1982,128 @@ def _echo_abstract_result(key, result):
             f"[{result.note}]"
         )
         click.echo(f"    {result.abstract}")
+
+
+@main.command(
+    name="add_preprint",
+    cls=_BibCommand,
+    short_help="Find and store arXiv identifiers (eprint) for entries.",
+    epilog=_examples(
+        "bibdeskparser add_preprint GoerzPRA2014",
+        "bibdeskparser add_preprint --mark-empty $(bibdeskparser keys "
+        "--type article --missing eprint)",
+        "bibdeskparser add_preprint $(bibdeskparser keys --empty eprint)",
+        "bibdeskparser add_preprint Key2020 --eprint arXiv:2205.15044v1",
+    ),
+)
+@click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
+@click.option(
+    "--eprint",
+    metavar="ID",
+    default=None,
+    help=(
+        "Store this arXiv identifier explicitly instead of searching "
+        "(allowed with a single KEY only; no network access). A "
+        "leading 'arXiv:' prefix and a version suffix ('v2') are "
+        "stripped."
+    ),
+)
+@click.option(
+    "--overwrite/--no-overwrite",
+    default=False,
+    help=(
+        "Replace an existing non-empty eprint instead of skipping "
+        "the entry."
+    ),
+)
+@click.option(
+    "--mark-empty/--no-mark-empty",
+    default=None,
+    help=(
+        "When the search runs cleanly but finds no preprint, store "
+        "an *empty* eprint field, marking the entry as searched "
+        "(matched by 'keys --empty eprint' instead of 'keys "
+        "--missing eprint', so that future fill-in runs skip it). "
+        "Defaults to the [add_preprint] configuration (off)."
+    ),
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Print the per-key report without modifying the .bib file.",
+)
+@_json_option
+@click.pass_obj
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def add_preprint(
+    bibfile, citekeys, eprint, overwrite, mark_empty, dry_run, as_json
+):
+    """Find and store the matching arXiv preprint for the entries
+    KEY...
+
+    For each KEY, search the arXiv API for a preprint matching the
+    entry (by title and first author, precise queries first) and, on
+    a confident match -- the result's DOI equals the entry's doi
+    field, a near-exact title match, or a good title match
+    corroborated by the first author's last name -- store its
+    identifier in the entry's eprint field, along with
+    archiveprefix = arXiv. A title-based match that postdates the
+    entry's year is rejected unless the result's journal reference
+    corroborates the year; such a 'postdated-unverified' candidate is
+    reported for review and can be applied explicitly with --eprint.
+    Entries that already have a non-empty eprint are skipped (see
+    --overwrite); an entry whose eprint is present but *empty* (the
+    searched-no-preprint marker, see --mark-empty) is re-searched.
+
+    Prints a per-key report; with --json, the report maps each KEY to
+    {eprint, match, ratio, note, applied}. Modifies the .bib file in
+    place (unless --dry-run is given); requires network access
+    (except with --eprint) and respects the arXiv API's rate limit of
+    one request every three seconds, so large runs take time.
+    """
+    if eprint is not None and len(citekeys) > 1:
+        raise click.UsageError("--eprint requires a single KEY")
+    lib = Library(bibfile)
+    _check_keys(lib, citekeys)
+    results = {}
+    for key in citekeys:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            result = lib.add_preprint(
+                key, eprint, overwrite=overwrite, mark_empty=mark_empty
+            )
+        for warning in caught:
+            click.echo(f"Warning: {warning.message}", err=True)
+        results[key] = result._asdict()
+        if not as_json:
+            _echo_preprint_result(key, result)
+    if as_json:
+        click.echo(json.dumps(results, indent=2, ensure_ascii=False))
+    if not dry_run and any(r["applied"] for r in results.values()):
+        lib.save()
+
+
+def _echo_preprint_result(key, result, err=False):
+    """One report line for an `add_preprint` result."""
+    if result.match == "existing":
+        click.echo(
+            f"{key}: skipped (already has an eprint; --overwrite to "
+            "replace)",
+            err=err,
+        )
+    elif result.match == "explicit":
+        click.echo(f"{key}: stored eprint {result.eprint}", err=err)
+    elif result.eprint:
+        click.echo(
+            f"{key}: stored eprint {result.eprint} "
+            f"(match={result.match}, ratio={result.ratio:.2f})",
+            err=err,
+        )
+    elif result.match == "error":
+        click.echo(f"{key}: search failed [{result.note}]", err=err)
+    else:
+        stored = " (stored empty marker)" if result.applied else ""
+        click.echo(
+            f"{key}: no preprint found{stored} [{result.note}]", err=err
+        )

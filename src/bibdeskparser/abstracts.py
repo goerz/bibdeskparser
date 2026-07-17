@@ -24,6 +24,7 @@ import httpx
 from habanero import Crossref
 
 from .abstracttext import _clean_text, _jats_to_text, _overlap, _validate
+from .identifiers import _arxiv_id, _normalize_doi
 
 __all__ = []
 
@@ -45,46 +46,6 @@ AbstractResult = namedtuple(
 
 #: Confidence levels, in increasing order of trust.
 CONFIDENCE_LEVELS = ("none", "low", "medium", "high")
-
-
-# --------------------------------------------------------------------- #
-# Identifier handling
-# --------------------------------------------------------------------- #
-
-
-def _normalize_doi(doi):
-    """Strip a `doi:`/`https://doi.org/` prefix; `None` if empty."""
-    if not doi:
-        return None
-    doi = doi.strip()
-    doi = re.sub(r"(?i)^https?://(dx\.)?doi\.org/", "", doi)
-    doi = re.sub(r"(?i)^doi:\s*", "", doi)
-    doi = doi.strip()
-    return doi or None
-
-
-_RX_ARXIV_ID = re.compile(
-    r"^(\d{4}\.\d{4,5}|[a-z-]+(\.[A-Za-z-]+)?/\d{7})(v\d+)?$"
-)
-
-_RX_KEY_ARXIV = re.compile(r"(\d{4}\.\d{4,5})")
-
-
-def _arxiv_id(eprint, key):
-    """The arXiv identifier for an entry, as `(id, certain)`.
-
-    An `eprint` field value that looks like an arXiv identifier (new
-    or old style) is authoritative (`certain=True`); otherwise, a
-    new-style identifier embedded in the citation `key` (e.g.
-    `Karch2501.16995`) is a guess (`certain=False`). Returns
-    `(None, False)` if neither yields an identifier.
-    """
-    if eprint and _RX_ARXIV_ID.match(eprint.strip()):
-        return eprint.strip(), True
-    match = _RX_KEY_ARXIV.search(key or "")
-    if match:
-        return match.group(1), False
-    return None, False
 
 
 # --------------------------------------------------------------------- #

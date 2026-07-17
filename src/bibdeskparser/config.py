@@ -44,6 +44,7 @@ __private__ = [
     "AutoKey",
     "AutoFile",
     "AddAbstract",
+    "AddPreprint",
     "Config",
     "active",
 ]
@@ -67,6 +68,7 @@ _KNOWN_TOP_LEVEL_KEYS = frozenset(
         "auto_key",
         "auto_file",
         "add_abstract",
+        "add_preprint",
         "initials",
         "journal_macros",
         "protected_words",
@@ -585,6 +587,61 @@ def _parse_add_abstract(raw):
     return settings
 
 
+def _parse_bool_table(raw, name, settings, defaults):
+    """Read the optional boolean-valued table `name` from `raw` into
+    the freshly constructed `settings` object, whose recognized keys
+    (and their built-in defaults) are given by `defaults`. Returns
+    `settings`."""
+    table = raw.get(name, None)
+    if table is None:
+        return settings
+    if not isinstance(table, dict):
+        raise ValueError(f"[{name}] must be a table")
+    unknown = set(table) - set(defaults)
+    if unknown:
+        warnings.warn(
+            f"unknown key(s) in [{name}]: {sorted(unknown)}",
+            UserWarning,
+            stacklevel=5,
+        )
+    for key, default in defaults.items():
+        value = table.get(key, default)
+        if not isinstance(value, bool):
+            raise ValueError(
+                f"[{name}] {key} must be a boolean, not {type(value)!r}"
+            )
+        setattr(settings, key, value)
+    return settings
+
+
+class AddPreprint:
+    """The `[add_preprint]` settings -- the defaults for the keyword
+    arguments of {meth}`~bibdeskparser.Library.add_preprint` --
+    exposed as `Library.config.add_preprint`.
+
+    Attributes: `mark_empty` (default `False`), the default for the
+    `mark_empty` argument of `Library.add_preprint` (and the
+    `--mark-empty/--no-mark-empty` option of the `add_preprint` CLI
+    command).
+    """
+
+    def __init__(self):
+        self.mark_empty = False
+
+    def __repr__(self):
+        return f"AddPreprint(mark_empty={self.mark_empty!r})"
+
+
+def _parse_add_preprint(raw):
+    """Read the optional `[add_preprint]` table from `raw`.
+
+    Returns an {class}`AddPreprint` (holding the built-in defaults if
+    the table is absent)."""
+    return _parse_bool_table(
+        raw, "add_preprint", AddPreprint(), {"mark_empty": False}
+    )
+
+
 def _parse_initials(raw):
     """Read the optional `[initials]` table from `raw`.
 
@@ -705,6 +762,10 @@ class Config:
       {meth}`~bibdeskparser.Library.add_abstract` --
       `add_abstract.min_confidence` (default `"high"`) and
       `add_abstract.mark_empty` (default `False`).
+    * `add_preprint` (an {class}`AddPreprint`): the `[add_preprint]`
+      defaults for the keyword arguments of
+      {meth}`~bibdeskparser.Library.add_preprint` --
+      `add_preprint.mark_empty` (default `False`).
     * `initials` (default `{}`): per-field acronym exceptions for the
       `%c` format specifier.
     * `journal_macros` (default `{}`): journal-name-to-macro mappings
@@ -748,6 +809,7 @@ class Config:
         self.auto_key = AutoKey()
         self.auto_file = AutoFile()
         self.add_abstract = AddAbstract()
+        self.add_preprint = AddPreprint()
         self.initials = {}
         self.journal_macros = {}
         self.protected_words = []
@@ -796,6 +858,7 @@ class Config:
         auto_key = _parse_auto_key(raw)
         auto_file = _parse_auto_file(raw)
         add_abstract = _parse_add_abstract(raw)
+        add_preprint = _parse_add_preprint(raw)
         initials = _parse_initials(raw)
         journal_macros = _parse_journal_macros(raw)
         protected_words = _parse_protected_words(raw)
@@ -811,6 +874,7 @@ class Config:
         self.auto_key = auto_key
         self.auto_file = auto_file
         self.add_abstract = add_abstract
+        self.add_preprint = add_preprint
         self.initials = initials
         self.journal_macros = journal_macros
         self.protected_words = protected_words

@@ -611,8 +611,12 @@ class Library(MutableMapping):
       for an arXiv identifier, DOI, or free-form query from the
       appropriate online source and imports it as a new entry.
       {meth}`add_abstract` fetches an entry's abstract from the best
-      available source and stores it in the `abstract` field; it
-      delegates to {meth}`Entry.add_abstract` but first locates the
+      available source and stores it in the `abstract` field, and
+      {meth}`add_preprint` records an entry's matching arXiv preprint
+      (given explicitly, or found by searching arXiv) in the `eprint`
+      field. Both delegate to the corresponding {class}`Entry`
+      methods; `add_preprint` (like the URL methods) is a pure
+      convenience delegate, while `add_abstract` first locates the
       entry's first attached PDF -- an additional abstract source
       that requires the library's directory to resolve, and is
       therefore only available through the `Library` method.
@@ -2448,9 +2452,10 @@ class Library(MutableMapping):
         sources, the confidence levels, the `min_confidence`,
         `overwrite`, and `mark_empty` arguments, and the returned
         named tuple), after locating the entry's first attached PDF
-        and passing it as the `pdf_path`. Unlike {meth}`add_url`, this
-        is *more* than a convenience delegate: the PDF source is
-        available only through the `Library`, because the paths in
+        and passing it as the `pdf_path`. Unlike {meth}`add_url` and
+        {meth}`add_preprint`, this is *more* than a convenience
+        delegate: the PDF source is available only through the
+        `Library`, because the paths in
         {attr}`Entry.files` are relative to the library's `.bib` file,
         which the entry itself does not know. Always prefer this
         method over calling {meth}`Entry.add_abstract` directly for an
@@ -2477,4 +2482,28 @@ class Library(MutableMapping):
             overwrite=overwrite,
             mark_empty=mark_empty,
             pdf_path=pdf_path,
+        )
+
+    def add_preprint(
+        self, key, eprint=None, *, overwrite=False, mark_empty=None
+    ):
+        """Record the arXiv preprint of entry `key` in its `eprint`
+        field -- an explicitly given identifier, or one found by
+        searching arXiv.
+
+        Delegates to {meth}`Entry.add_preprint` (see there for the
+        matching rules, the `eprint`, `overwrite`, and `mark_empty`
+        arguments, the audit-state semantics of the `eprint` field,
+        and the returned named tuple). The search uses only the
+        entry's own fields, so -- like {meth}`add_url`, and unlike
+        {meth}`add_abstract` -- this is a pure convenience delegate.
+        Like any other modification, the change only becomes
+        permanent with {meth}`save`.
+
+        Raises {exc}`KeyError` if `key` is not in the library and
+        {exc}`ValueError` if an explicitly given `eprint` is not a
+        valid arXiv identifier. Network problems never raise.
+        """
+        return self._entries[key].add_preprint(
+            eprint, overwrite=overwrite, mark_empty=mark_empty
         )

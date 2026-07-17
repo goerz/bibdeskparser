@@ -148,12 +148,14 @@ class Entry(MutableMapping):
     at the {class}`Library` level only: entries that are not part of a
     `Library` cannot have `groups`.
 
-    {meth}`add_abstract` enriches the entry from an online source,
-    filling the `abstract` field. It is mirrored by a like-named
-    {class}`Library` method; for an entry in a library, prefer
-    {meth}`Library.add_abstract`, which also locates the entry's
-    attached PDF as an additional abstract source (see
-    {meth}`add_abstract` on why the entry cannot do that itself).
+    {meth}`add_abstract` and {meth}`add_preprint` enrich the entry
+    from online sources, filling the `abstract` field and the
+    `eprint` field (the matching arXiv preprint), respectively. Both
+    are mirrored by like-named {class}`Library` methods; for an entry
+    in a library, prefer {meth}`Library.add_abstract`, which also
+    locates the entry's attached PDF as an additional abstract
+    source (see {meth}`add_abstract` on why the entry cannot do that
+    itself).
 
     {meth}`copy` returns an independent copy of the entry: a faithful
     snapshot of its current fields, but not a member of any `Library`.
@@ -706,6 +708,128 @@ class Entry(MutableMapping):
             self["abstract"] = ValueString("")
             return result._replace(applied=True)
         return result
+
+    def add_preprint(self, eprint=None, *, overwrite=False, mark_empty=None):
+        """Record the entry's arXiv preprint in its `eprint` field --
+        an explicitly given identifier, or one found by searching
+        arXiv (the only supported preprint server).
+
+        With `eprint` given (e.g. `"2205.15044"`,
+        `"quant-ph/0106057"`, or `"arXiv:2205.15044"`), the identifier
+        is validated and normalized (prefix and version suffix
+        stripped) and stored without any network access -- the caller
+        asserts the match, e.g. after manually reviewing a candidate
+        the search rejected.
+
+        With `eprint=None`, the [arXiv
+        API](https://info.arxiv.org/help/api/) is searched for the
+        entry, by title and first author, precise queries first. A
+        result is accepted only when it confidently matches the
+        entry: its arXiv DOI equals the entry's `doi`, its title is a
+        near-exact match, or a good title match is corroborated by
+        the first author's last name. A title-based match whose arXiv
+        submission postdates the entry's `year` by more than a year
+        is rejected unless its journal reference names that year
+        (guarding against unrelated papers sharing a generic title);
+        such a rejected candidate is reported in the result's `note`
+        as `postdated-unverified(...)` and can, after review, be
+        applied by passing its identifier as `eprint`. The search
+        uses only the entry's own fields, so it works the same for an
+        entry that is not (yet) in a {class}`Library`.
+
+        Whenever a non-empty `eprint` is stored, an
+        `archiveprefix = arXiv` field is added alongside it (unless
+        the entry already has an `archiveprefix`).
+
+        The `eprint` field encodes the entry's audit state, mirroring
+        how {meth}`add_abstract` treats the `abstract` field: a field
+        that is *absent* means the preprint status is unknown
+        (`keys --missing eprint` in the command line); an *empty*
+        field means a search ran cleanly and found no preprint
+        (`keys --empty eprint`); a non-empty field holds the known
+        identifier. With `mark_empty=True` (defaulting to the
+        `[add_preprint]` table of the
+        [configuration](configuration),
+        `config.add_preprint.mark_empty`, `False` unless configured),
+        a clean no-match stores that empty marker, so that repeated
+        fill-in runs -- selecting entries with
+        `keys --missing eprint` -- do not re-query arXiv for entries
+        already searched. A no-match is not proof that no preprint
+        exists (matching can fail), so re-audit the empty markers
+        occasionally by passing the `keys --empty eprint` entries. If
+        the entry already has a *non-empty* `eprint`, nothing is
+        searched and the existing identifier is returned with match
+        `"existing"`, unless `overwrite=True`; the empty marker does
+        not require `overwrite`.
+
+        Returns a named tuple `(eprint, match, ratio, note,
+        applied)`: the stored (or existing) arXiv identifier (`""` if
+        none), how it was matched (`"doi"`, `"title"`, or
+        `"title+author"` for a search match, in decreasing order of
+        strength; `"explicit"` for a given identifier; `"none"` for a
+        clean no-match; `"error"` when the search could not run;
+        `"existing"` when the entry was skipped), the title-similarity
+        ratio of the best search result (`None` when no search ran),
+        a short diagnostic trace (`note`), and whether the entry was
+        modified (`applied`). On a `"error"` result (network/API
+        failure, or an entry without a title) the entry is never
+        modified -- in particular, no empty marker is stored -- so a
+        re-run picks it up.
+
+        Raises {exc}`ValueError` if an explicitly given `eprint` is
+        not a valid arXiv identifier. Network problems never raise.
+        The search respects the arXiv API's rate limit (one request
+        every three seconds, shared across all searches in the
+        process), so budget time accordingly for large batch runs.
+        """
+        # Imported lazily: the preprints module pulls in the network
+        # dependencies, needed nowhere else.
+        from . import preprints  # pylint: disable=import-outside-toplevel
+
+        if mark_empty is None:
+            mark_empty = active.add_preprint.mark_empty
+        existing = str(self.get("eprint") or "")
+        if eprint is not None:
+            value = preprints.normalize_eprint(eprint)
+            if existing and not overwrite:
+                return preprints.PreprintResult(
+                    eprint=existing,
+                    match="existing",
+                    ratio=None,
+                    note="entry already has an eprint (overwrite to replace)",
+                    applied=False,
+                )
+            self._store_eprint(value)
+            return preprints.PreprintResult(value, "explicit", None, "", True)
+        if existing and not overwrite:
+            return preprints.PreprintResult(
+                eprint=existing,
+                match="existing",
+                ratio=None,
+                note="entry already has an eprint (overwrite to replace)",
+                applied=False,
+            )
+        result = preprints.find_preprint(
+            title=str(self.get("title") or "") or None,
+            author=str(self.get("author") or "") or None,
+            doi=str(self.get("doi") or "") or None,
+            year=str(self.get("year") or "") or None,
+        )
+        if result.eprint:
+            self._store_eprint(result.eprint)
+            return result._replace(applied=True)
+        if result.match == "none" and mark_empty:
+            self["eprint"] = ValueString("")
+            return result._replace(applied=True)
+        return result
+
+    def _store_eprint(self, value):
+        """Store the non-empty arXiv identifier `value`, maintaining
+        the invariant that a non-empty `eprint` is accompanied by an
+        `archiveprefix`."""
+        self["eprint"] = ValueString(value)
+        if not str(self.get("archiveprefix") or ""):
+            self["archiveprefix"] = ValueString("arXiv")
 
     # -- structured names ---------------------------------------------- #
 

@@ -1931,3 +1931,200 @@ def test_add_abstract_unknown_key(runner, bibfile):
     result = runner.invoke(main, ["add_abstract", str(bibfile), "NoSuchKey"])
     assert result.exit_code == 1
     assert "unknown citation key 'NoSuchKey'" in result.stderr
+
+
+def _mock_find_preprint(monkeypatch, results):
+    """Mock `preprints.find_preprint` to pop per-call results from the
+    `results` list; records the call kwargs."""
+    from bibdeskparser.preprints import PreprintResult
+
+    calls = []
+
+    def find_preprint(**kwargs):
+        calls.append(kwargs)
+        return PreprintResult(*results.pop(0), applied=False)
+
+    monkeypatch.setattr("bibdeskparser.preprints.find_preprint", find_preprint)
+    return calls
+
+
+def _forbid_find_preprint(monkeypatch):
+    def find_preprint(**kwargs):  # pragma: no cover
+        raise AssertionError("must not search")
+
+    monkeypatch.setattr("bibdeskparser.preprints.find_preprint", find_preprint)
+
+
+def test_add_preprint_stores(runner, bibfile, monkeypatch):
+    calls = _mock_find_preprint(monkeypatch, [("2510.12345", "doi", 1.0, "")])
+    result = _run(runner, "add_preprint", bibfile, "GoerzJOSS2025")
+    assert result.stdout == (
+        "GoerzJOSS2025: stored eprint 2510.12345 (match=doi, ratio=1.00)\n"
+    )
+    assert calls[0]["doi"] == "10.21105/joss.08813"
+    lib = _load(bibfile)
+    assert lib["GoerzJOSS2025"]["eprint"] == "2510.12345"
+    assert lib["GoerzJOSS2025"]["archiveprefix"] == "arXiv"
+
+
+def test_add_preprint_skips_existing(runner, bibfile, monkeypatch):
+    _forbid_find_preprint(monkeypatch)
+    result = _run(runner, "add_preprint", bibfile, "GoerzNJP2014")
+    assert "GoerzNJP2014: skipped (already has an eprint" in result.stdout
+    lib = _load(bibfile)
+    assert lib["GoerzNJP2014"]["eprint"] == "1312.0111"
+
+
+def test_add_preprint_overwrite(runner, bibfile, monkeypatch):
+    _mock_find_preprint(monkeypatch, [("2510.12345", "title", 0.99, "")])
+    _run(runner, "add_preprint", bibfile, "--overwrite", "GoerzNJP2014")
+    lib = _load(bibfile)
+    assert lib["GoerzNJP2014"]["eprint"] == "2510.12345"
+
+
+def test_add_preprint_not_found_and_mark_empty(runner, bibfile, monkeypatch):
+    _mock_find_preprint(
+        monkeypatch,
+        [
+            ("", "none", 0.55, "best-ratio=0.55"),
+            ("", "none", 0.55, "best-ratio=0.55"),
+        ],
+    )
+    result = _run(runner, "add_preprint", bibfile, "GoerzJOSS2025")
+    assert (
+        "GoerzJOSS2025: no preprint found [best-ratio=0.55]" in result.stdout
+    )
+    lib = _load(bibfile)
+    assert "eprint" not in lib["GoerzJOSS2025"]
+    result = _run(
+        runner, "add_preprint", bibfile, "--mark-empty", "GoerzJOSS2025"
+    )
+    assert (
+        "GoerzJOSS2025: no preprint found (stored empty marker) "
+        "[best-ratio=0.55]" in result.stdout
+    )
+    lib = _load(bibfile)
+    assert lib["GoerzJOSS2025"]["eprint"] == ""
+    assert "archiveprefix" not in lib["GoerzJOSS2025"]
+
+
+def test_add_preprint_mark_empty_config(runner, bibfile, monkeypatch):
+    """Without `--mark-empty`, the `[add_preprint]` configuration next
+    to the `.bib` file supplies the default."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        "[add_preprint]\nmark_empty = true\n", encoding="utf-8"
+    )
+    _mock_find_preprint(monkeypatch, [("", "none", 0.55, "best-ratio=0.55")])
+    result = _run(runner, "add_preprint", bibfile, "GoerzJOSS2025")
+    assert "stored empty marker" in result.stdout
+    lib = _load(bibfile)
+    assert lib["GoerzJOSS2025"]["eprint"] == ""
+
+
+def test_add_preprint_error(runner, bibfile, monkeypatch):
+    """A failed search is reported and stores nothing, even with
+    --mark-empty."""
+    _mock_find_preprint(
+        monkeypatch, [("", "error", 0.0, "arxiv-error(HTTPError: 500)")]
+    )
+    before = bibfile.read_text(encoding="utf-8")
+    result = _run(
+        runner, "add_preprint", bibfile, "--mark-empty", "GoerzJOSS2025"
+    )
+    assert (
+        "GoerzJOSS2025: search failed [arxiv-error(HTTPError: 500)]"
+        in result.stdout
+    )
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_add_preprint_explicit(runner, bibfile, monkeypatch):
+    _forbid_find_preprint(monkeypatch)
+    result = _run(
+        runner,
+        "add_preprint",
+        bibfile,
+        "--eprint",
+        "arXiv:2510.12345v2",
+        "GoerzJOSS2025",
+    )
+    assert result.stdout == "GoerzJOSS2025: stored eprint 2510.12345\n"
+    lib = _load(bibfile)
+    assert lib["GoerzJOSS2025"]["eprint"] == "2510.12345"
+    assert lib["GoerzJOSS2025"]["archiveprefix"] == "arXiv"
+
+
+def test_add_preprint_explicit_invalid(runner, bibfile):
+    result = runner.invoke(
+        main,
+        [
+            "add_preprint",
+            str(bibfile),
+            "--eprint",
+            "10.1103/x",
+            "GoerzJOSS2025",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "Error: not a valid arXiv identifier" in result.stderr
+
+
+def test_add_preprint_explicit_single_key_only(runner, bibfile):
+    result = runner.invoke(
+        main,
+        [
+            "add_preprint",
+            str(bibfile),
+            "--eprint",
+            "2510.12345",
+            "GoerzJOSS2025",
+            "GoerzPhd2015",
+        ],
+    )
+    assert result.exit_code == 2
+    assert "--eprint requires a single KEY" in result.stderr
+
+
+def test_add_preprint_json(runner, bibfile, monkeypatch):
+    _mock_find_preprint(
+        monkeypatch,
+        [
+            ("2510.12345", "title+author", 0.95, ""),
+            ("", "none", 0.4, "best-ratio=0.40"),
+        ],
+    )
+    result = _run(
+        runner,
+        "add_preprint",
+        bibfile,
+        "--json",
+        "GoerzJOSS2025",
+        "GoerzPhd2015",
+    )
+    data = json.loads(result.stdout)
+    assert data["GoerzJOSS2025"] == {
+        "eprint": "2510.12345",
+        "match": "title+author",
+        "ratio": 0.95,
+        "note": "",
+        "applied": True,
+    }
+    assert data["GoerzPhd2015"]["applied"] is False
+    lib = _load(bibfile)
+    assert lib["GoerzJOSS2025"]["eprint"] == "2510.12345"
+
+
+def test_add_preprint_dry_run(runner, bibfile, monkeypatch):
+    _mock_find_preprint(monkeypatch, [("2510.12345", "doi", 1.0, "")])
+    before = bibfile.read_text(encoding="utf-8")
+    result = _run(
+        runner, "add_preprint", bibfile, "--dry-run", "GoerzJOSS2025"
+    )
+    assert "GoerzJOSS2025: stored eprint 2510.12345" in result.stdout
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_add_preprint_unknown_key(runner, bibfile):
+    result = runner.invoke(main, ["add_preprint", str(bibfile), "NoSuchKey"])
+    assert result.exit_code == 1
+    assert "unknown citation key 'NoSuchKey'" in result.stderr
