@@ -669,8 +669,24 @@ class Library(MutableMapping):
     in-process overrides. With no config file present, the defaults
     above apply.
 
+    Loading an existing library (here, the example database shipped
+    in the `bibdeskparser` repository as `tests/Refs/refs.bib`):
+
     ```python
     >>> from bibdeskparser import Entry, Library
+    >>> bib = Library("tests/Refs/refs.bib")
+    >>> len(bib)
+    61
+    >>> bib["GoerzQ2022"]["title"]
+    'Quantum Optimal Control via Semi-Automatic Differentiation'
+    >>> [e.key for e in bib.search("tractor atom interferometry")]
+    ['RaithelQST2022']
+
+    ```
+
+    A library can also be built from scratch, in memory:
+
+    ```python
     >>> bib = Library()  # a fresh, empty, in-memory library
     >>> bib.strings["jpb"] = "J. Phys. B"
     >>> bib.strings["jpb"]

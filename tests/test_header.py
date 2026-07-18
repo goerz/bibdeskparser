@@ -19,9 +19,9 @@ REFS = Path(__file__).parent / "Refs" / "refs.bib"
 REFS_TIMESTAMP = datetime.datetime(
     2026,
     7,
-    11,
-    13,
-    35,
+    18,
+    16,
+    2,
     0,
     tzinfo=datetime.timezone(datetime.timedelta(hours=-4)),
 )
@@ -64,12 +64,12 @@ def test_update_header(header_text):
     )
     updated = update_header(header_text, new_timestamp)
     assert updated == header_text.replace(
-        "2026-07-11 13:35:00 -0400", "2027-01-02 03:04:05 +0000"
+        "2026-07-18 16:02:00 -0400", "2027-01-02 03:04:05 +0000"
     )
     # Everything else is byte-identical (incl. trailing spaces):
     assert (
         updated.replace(
-            "2027-01-02 03:04:05 +0000", "2026-07-11 13:35:00 -0400"
+            "2027-01-02 03:04:05 +0000", "2026-07-18 16:02:00 -0400"
         )
         == header_text
     )

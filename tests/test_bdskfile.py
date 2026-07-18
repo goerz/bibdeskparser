@@ -25,7 +25,7 @@ def _refs_field_values():
 def test_refs_bib_roundtrip():
     """Every `bdsk-file-N` field in refs.bib round-trips byte-exactly."""
     values = _refs_field_values()
-    assert len(values) == 11
+    assert len(values) == 30
     for inner in values:
         value = "{" + inner + "}"
         bdsk_file = BibDeskFile.from_field_value(value)

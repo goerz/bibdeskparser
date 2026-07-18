@@ -173,7 +173,7 @@ def test_bibdesk_field_order_refs(refs_library):
         "eprint",
         "journal",
         "keywords",
-        "number",
+        "note",
         "pages",
         "title",
         "volume",

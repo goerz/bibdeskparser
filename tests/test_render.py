@@ -341,30 +341,28 @@ def test_render_mastersthesis(refs, fmt):
 def test_render_phdthesis(refs, fmt):
     """A `phdthesis` with no `type` override: default "Ph.D. thesis"
     label, no title link (no URL, no DOI)."""
-    entry = refs["GoerzPhd2015"]
+    entry = refs["BrionPhd2004"]
     assert entry.urls == ()
     assert entry.get("doi") is None
     rendered = render_entry(entry, format=fmt)
-    assert "M. Goerz" in rendered
+    assert "E. Brion" in rendered
     assert "Ph.D. thesis" in rendered
     assert "Universit" in rendered
-    assert "2015" in rendered
+    assert "2014" in rendered
 
 
 @pytest.mark.parametrize("fmt", ["markdown", "tex", "html"])
 def test_render_inproceedings(refs, fmt):
     """An `inproceedings` entry: booktitle italicized, DOI links the
     title (no `bdsk-url-N` field present)."""
-    entry = refs["GoerzSPIEO2021"]
+    entry = refs["SuominenSGS2014"]
     assert entry.urls == ()
     rendered = render_entry(entry, format=fmt)
-    assert "Goerz" in rendered
-    assert "Kasevich" in rendered
-    assert "Malinovsky" in rendered
+    assert "Suominen" in rendered
     assert "In:" in rendered
-    assert "Proc. SPIE" in rendered
-    assert "https://doi.org/10.1117/12.2587002" in rendered
-    assert "2021" in rendered
+    assert "Quantum Information and Coherence" in rendered
+    assert "https://doi.org/10.1007/978-3-319-04063-9_10" in rendered
+    assert "2014" in rendered
 
 
 def test_render_title_strips_protection_braces(refs):
@@ -377,6 +375,37 @@ def test_render_title_strips_protection_braces(refs):
     assert "circuit QED design landscape" in rendered
     assert "{" not in rendered
     assert "}" not in rendered
+
+
+@pytest.mark.parametrize(
+    "key, snippets",
+    [
+        (
+            "Shapiro2012",
+            ["M. Shapiro and P. Brumer", "Wiley and Sons", "(2012)"],
+        ),
+        (
+            "Giles2008",
+            ["In: *Advances in Automatic Differentiation*", "Springer"],
+        ),
+        (
+            "Giles2008b",
+            ["Technical Report", "Oxford University Computing Laboratory"],
+        ),
+        ("MATLAB:2014", ["The MathWorks Inc.", "Natick, Massachusetts"]),
+        ("TedRyd", ["T. Corcovilos and D. S. Weiss", "Private communication"]),
+        ("WP_Schroedinger", ["Schrödinger equation", "wikipedia.org"]),
+    ],
+)
+def test_render_more_entry_types(refs, key, snippets):
+    """A book, incollection, techreport, manual, unpublished (without
+    a year), and misc entry from the example database each render with
+    their type-specific content."""
+    rendered = render_entry(refs[key])
+    for snippet in snippets:
+        assert snippet in rendered
+    # a missing year must not leave empty parentheses behind
+    assert "()" not in rendered
 
 
 def test_render_entries_numbers_and_wraps(refs):

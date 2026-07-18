@@ -3,6 +3,8 @@
 These short, task-oriented recipes assume you are already familiar with the
 basics of `bibdeskparser` (see the [introduction](readme)); for background on
 *why* things work this way, see [BibDesk's `.bib` Format](bibdesk_format).
+All examples operate on the example database shipped in the repository at
+`tests/Refs/refs.bib`; substitute the path to your own library.
 
 ## How to manage file attachments
 
@@ -25,28 +27,24 @@ attached.
 Attach a file with {py:meth}`Library.add_file <bibdeskparser.library.Library.add_file>`.
 The filename may be absolute, or relative to the library's directory
 or to the current working directory (a relative name that exists in
-both places is rejected as ambiguous; pass an absolute path instead):
+both places is rejected as ambiguous; pass an absolute path instead).
+Here, a PDF that was saved next to the `.bib` file is attached to the
+entry for the book it belongs to:
 
 ```python
->>> import tempfile
 >>> import warnings
 >>> from pathlib import Path
->>> from bibdeskparser import Entry, Library
->>> tmpdir = tempfile.TemporaryDirectory()
->>> libdir = Path(tmpdir.name)
->>> _ = (libdir / "Smith2020.pdf").write_bytes(b"%PDF-1.4 fake")
->>> _ = (libdir / "notes.pdf").write_bytes(b"%PDF-1.4 fake notes")
->>> bib = Library()
->>> bib["Smith2020"] = Entry(
-...     "article", "Smith2020", fields={"title": "A Title"}
-... )
->>> bib.save(libdir / "library.bib")
+>>> from bibdeskparser import Library
+>>> bib = Library("tests/Refs/refs.bib")
+>>> bib["Shapiro2012"].files  # no attachment yet
+[]
+>>> pdf = Path("tests/Refs/shapiro-brumer-2012.pdf")
+>>> _ = pdf.write_bytes(b"%PDF-1.4 fake")
 >>> with warnings.catch_warnings():
 ...     warnings.simplefilter("ignore")  # no macOS bookmark support here
-...     _ = bib.add_file("Smith2020", libdir / "Smith2020.pdf")
-...     _ = bib.add_file("Smith2020", "notes.pdf")  # library-relative
->>> bib["Smith2020"].files
-['Smith2020.pdf', 'notes.pdf']
+...     _ = bib.add_file("Shapiro2012", "shapiro-brumer-2012.pdf")
+>>> bib["Shapiro2012"].files
+['shapiro-brumer-2012.pdf']
 
 ```
 
@@ -69,11 +67,13 @@ does `add_file`:
 ```python
 >>> with warnings.catch_warnings():
 ...     warnings.simplefilter("ignore")  # no macOS bookmark support here
-...     bib.rename_file("Smith2020", "notes.pdf", "Smith2020-notes.pdf")
-'Smith2020-notes.pdf'
->>> bib["Smith2020"].files
-['Smith2020.pdf', 'Smith2020-notes.pdf']
->>> (libdir / "Smith2020-notes.pdf").exists()
+...     bib.rename_file(
+...         "Shapiro2012", "shapiro-brumer-2012.pdf", "Shapiro2012.pdf"
+...     )
+'Shapiro2012.pdf'
+>>> bib["Shapiro2012"].files
+['Shapiro2012.pdf']
+>>> Path("tests/Refs/Shapiro2012.pdf").exists()
 True
 
 ```
@@ -88,13 +88,12 @@ the filesystem -- moved to the Trash on macOS (with the
 never deleted while another entry still links it:
 
 ```python
->>> bib.unlink_file("Smith2020", "Smith2020-notes.pdf", remove=False)
->>> bib["Smith2020"].files
-['Smith2020.pdf']
->>> (libdir / "Smith2020-notes.pdf").exists()  # remove=False
+>>> bib.unlink_file("Shapiro2012", "Shapiro2012.pdf", remove=False)
+>>> bib["Shapiro2012"].files
+[]
+>>> Path("tests/Refs/Shapiro2012.pdf").exists()  # remove=False
 True
 >>> bib.save()
->>> tmpdir.cleanup()
 
 ```
 
@@ -124,28 +123,23 @@ With that in place,
 with a `filename` previews the generated path without moving anything:
 
 ```python
->>> tmpdir = tempfile.TemporaryDirectory()
->>> libdir = Path(tmpdir.name)
->>> _ = (libdir / "1512.02079v2.pdf").write_bytes(b"%PDF-1.4 fake")
->>> bib = Library()
->>> bib["Smith2020"] = Entry(
-...     "article", "Smith2020", fields={"title": "A Title"}
+>>> _ = Path("tests/Refs/2018_AAMOP_sola.pdf").write_bytes(
+...     b"%PDF-1.4 fake"
 ... )
->>> bib.save(libdir / "library.bib")
 >>> bib.config.auto_file.format_spec = "%f{Cite Key}%u0%e"
 >>> with warnings.catch_warnings():
 ...     warnings.simplefilter("ignore")  # no macOS bookmark support here
-...     rel = bib.add_file("Smith2020", libdir / "1512.02079v2.pdf")
+...     rel = bib.add_file("SolaAAMOP2018", "2018_AAMOP_sola.pdf")
 >>> rel  # attached under its original name
-'1512.02079v2.pdf'
->>> bib.eval_format_spec("Smith2020", filename=rel)  # preview only
-'Smith2020.pdf'
+'2018_AAMOP_sola.pdf'
+>>> bib.eval_format_spec("SolaAAMOP2018", filename=rel)  # preview only
+'SolaAAMOP2018.pdf'
 >>> with warnings.catch_warnings():
 ...     warnings.simplefilter("ignore")  # no macOS bookmark support here
-...     bib.rename_file("Smith2020", rel)  # move and rename the file
-'Smith2020.pdf'
->>> bib["Smith2020"].files
-['Smith2020.pdf']
+...     bib.rename_file("SolaAAMOP2018", rel)  # move and rename the file
+'SolaAAMOP2018.pdf'
+>>> bib["SolaAAMOP2018"].files
+['SolaAAMOP2018.pdf']
 
 ```
 
@@ -161,14 +155,19 @@ auto-file every new attachment immediately. Per call, an explicit
 here into a subdirectory next to the `.bib` file:
 
 ```python
->>> _ = (libdir / "notes.pdf").write_bytes(b"%PDF-1.4 fake notes")
+>>> _ = Path("tests/Refs/simpson_chapter.pdf").write_bytes(
+...     b"%PDF-1.4 fake"
+... )
 >>> with warnings.catch_warnings():
 ...     warnings.simplefilter("ignore")  # no macOS bookmark support here
-...     bib.add_file("Smith2020", "notes.pdf", auto_file_location="Papers")
-'Papers/Smith2020.pdf'
+...     bib.add_file(
+...         "JuhlARNMRS2020",
+...         "simpson_chapter.pdf",
+...         auto_file_location="Papers",
+...     )
+'Papers/JuhlARNMRS2020.pdf'
 >>> bib.config.auto_file.format_spec = None  # restore the default
 >>> bib.save()
->>> tmpdir.cleanup()
 
 ```
 
@@ -182,20 +181,21 @@ Define a macro through
 then reference it in a field with a bare (unquoted) string; rename it
 everywhere it is used with
 {py:meth}`Library.rename_string <bibdeskparser.library.Library.rename_string>`.
+Here, a long book series title is turned into a macro:
 
 ```python
->>> bib = Library()
->>> entry = Entry("article", "Smith2020", fields={"title": "A Title"})
->>> bib["Smith2020"] = entry
->>> bib.strings["prl"] = "Phys. Rev. Lett."
->>> entry["journal"] = "prl"  # macro-shaped str, stored as a bare reference
->>> entry["journal"]
-'prl'
->>> bib.rename_string("prl", "prl2")  # updates every referencing entry
->>> entry["journal"]
-'prl2'
->>> bib.strings["prl2"]
-'Phys. Rev. Lett.'
+>>> bib.strings["aamop"] = (
+...     "Advances In Atomic, Molecular, and Optical Physics"
+... )
+>>> entry = bib["SolaAAMOP2018"]
+>>> entry["booktitle"] = "aamop"  # macro-shaped str: a bare reference
+>>> entry["booktitle"]
+'aamop'
+>>> bib.rename_string("aamop", "adv_amop")  # updates referencing entries
+>>> entry["booktitle"]
+'adv_amop'
+>>> bib.strings["adv_amop"]
+'Advances In Atomic, Molecular, and Optical Physics'
 
 ```
 
@@ -212,22 +212,15 @@ Every affected entry's
 read-only tuple) updates immediately.
 
 ```python
->>> bib = Library()
->>> bib["Smith2020"] = Entry(
-...     "article", "Smith2020", fields={"title": "A Title"}
-... )
->>> bib["Doe2021"] = Entry(
-...     "article", "Doe2021", fields={"title": "Another Title"}
-... )
->>> bib.groups["Favorites"] = ()  # create an empty group
->>> bib.add_to_group("Favorites", "Smith2020", "Doe2021")
->>> bib.groups
-{'Favorites': ('Smith2020', 'Doe2021')}
->>> bib["Smith2020"].groups
-('Favorites',)
->>> bib.remove_from_group("Favorites", "Doe2021")
->>> bib.groups["Favorites"]
-('Smith2020',)
+>>> bib.groups["To Read"] = ()  # create an empty group
+>>> bib.add_to_group("To Read", "BrifNJP2010", "KochEPJQT2022")
+>>> bib.groups["To Read"]
+('BrifNJP2010', 'KochEPJQT2022')
+>>> bib["BrifNJP2010"].groups
+('To Read',)
+>>> bib.remove_from_group("To Read", "KochEPJQT2022")
+>>> bib.groups["To Read"]
+('BrifNJP2010',)
 
 ```
 
@@ -236,11 +229,11 @@ the group if needed), and `del` removes the group entirely, dropping it
 from every member entry's `.groups`:
 
 ```python
->>> bib.groups["Reading List"] = ("Doe2021", "Smith2020")
->>> bib["Doe2021"].groups
-('Reading List',)
->>> del bib.groups["Reading List"]
->>> bib["Doe2021"].groups
+>>> bib.groups["To Read"] = ("KochJPCM2016", "KochEPJQT2022")
+>>> bib["KochJPCM2016"].groups
+('To Read',)
+>>> del bib.groups["To Read"]
+>>> bib["KochJPCM2016"].groups
 ()
 
 ```
@@ -266,17 +259,17 @@ for per-key changes and
 the read-only per-entry tuple:
 
 ```python
->>> bib.add_to_keyword("methods", "Smith2020", "Doe2021")
->>> bib.keywords
-{'methods': ('Smith2020', 'Doe2021')}
->>> bib["Smith2020"].keywords
-('methods',)
->>> bib.remove_from_keyword("methods", "Doe2021")
->>> bib.keywords["methods"]
-('Smith2020',)
->>> del bib.keywords["methods"]
->>> bib["Smith2020"].keywords
-()
+>>> bib.add_to_keyword("Review", "BrifNJP2010", "KochEPJQT2022")
+>>> bib.keywords["Review"]
+('BrifNJP2010', 'KochEPJQT2022')
+>>> bib["BrifNJP2010"].keywords
+('OCT', 'Coherent Control', 'Review')
+>>> bib.remove_from_keyword("Review", "KochEPJQT2022")
+>>> bib.keywords["Review"]
+('BrifNJP2010',)
+>>> del bib.keywords["Review"]
+>>> bib["BrifNJP2010"].keywords
+('OCT', 'Coherent Control')
 
 ```
 
@@ -299,30 +292,9 @@ it as modified since it was loaded.
 returns the entries matching a query, best match first:
 
 ```python
->>> bib = Library()
->>> bib.strings["adp"] = "Ann. Phys."
->>> bib["Schroedinger1926"] = Entry(
-...     "article",
-...     "Schroedinger1926",
-...     fields={
-...         "author": "Schrödinger, Erwin",
-...         "title": "Quantisierung als Eigenwertproblem",
-...         "journal": "adp",
-...         "year": "1926",
-...     },
-... )
->>> bib["Einstein1905"] = Entry(
-...     "article",
-...     "Einstein1905",
-...     fields={
-...         "author": "Einstein, Albert",
-...         "title": "Zur Elektrodynamik bewegter Körper",
-...         "journal": "adp",
-...         "year": "1905",
-...     },
-... )
->>> [e.key for e in bib.search("quantisierung eigenwertproblem")]
-['Schroedinger1926']
+>>> bib = Library("tests/Refs/refs.bib")
+>>> [e.key for e in bib.search("krotov monotonic convergence")]
+['GoerzSPP2019']
 
 ```
 
@@ -331,10 +303,10 @@ transliterated spellings alike:
 
 ```python
 >>> for query in ("Schrödinger", "Schrodinger", "Schroedinger"):
-...     print([e.key for e in bib.search(query, fields=["author"])])
-['Schroedinger1926']
-['Schroedinger1926']
-['Schroedinger1926']
+...     print([e.key for e in bib.search(query, fields=["title"])])
+['WP_Schroedinger']
+['WP_Schroedinger']
+['WP_Schroedinger']
 
 ```
 
@@ -343,12 +315,12 @@ by its expansion (and `fields` limits the search, with the pseudo-field
 `"key"` selecting the citation key):
 
 ```python
->>> [e.key for e in bib.search("adp", fields=["journal"], match="exact")]
-['Schroedinger1926', 'Einstein1905']
->>> [e.key for e in bib.search("Ann. Phys.", match="exact")]
-['Schroedinger1926', 'Einstein1905']
->>> [e.key for e in bib.search("einstein", fields=["key"])]
-['Einstein1905']
+>>> [e.key for e in bib.search("epjd", fields=["journal"], match="exact")]
+['Luc-KoenigEPJD2004']
+>>> [e.key for e in bib.search("Eur. Phys. J. D", match="exact")]
+['Luc-KoenigEPJD2004']
+>>> [e.key for e in bib.search("tannor", fields=["key"])]
+['Tannor2007', 'TannorBookChapter1991']
 
 ```
 
@@ -359,14 +331,19 @@ order) to `"fuzzy"` (tolerates small typos); `match="regex"` instead
 treats the query as a regular expression:
 
 ```python
->>> bib.search("Schrodinger", match="exact")
+>>> bib.search("Universitat Kassel", match="exact")
 []
->>> [e.key for e in bib.search("Schrodinger", match="folded")]
-['Schroedinger1926']
->>> [e.key for e in bib.search("Eigenwertproblm", match="fuzzy")]
-['Schroedinger1926']
->>> [e.key for e in bib.search(r"^Zur ", fields=["title"], match="regex")]
-['Einstein1905']
+>>> [e.key for e in bib.search("Universitat Kassel", match="folded")]
+['GoerzPhd2015']
+>>> bib.search("quantom speed limit", match="fuzzy")[0].key
+'GoerzJPB2011'
+>>> [
+...     e.key
+...     for e in bib.search(
+...         r"^The quantum speed limit", fields=["title"], match="regex"
+...     )
+... ]
+['GoerzJPB2011']
 
 ```
 
@@ -401,7 +378,8 @@ On the command line, the `search` subcommand prints the matching keys
 one per line, which composes with the other subcommands:
 
 ```console
-$ bibdeskparser render library.bib $(bibdeskparser search library.bib "Schroedinger")
+$ bibdeskparser render tests/Refs/refs.bib \
+    $(bibdeskparser search tests/Refs/refs.bib "tractor atom")
 ```
 
 ## How to find and resolve duplicate citation keys
@@ -415,9 +393,9 @@ directly in the `.bib` file, then reload:
 ```python
 >>> with warnings.catch_warnings():
 ...     warnings.simplefilter("ignore")  # the duplicate-key warning itself
-...     bib = Library("tests/Refs/refs.bib")
->>> bib.duplicate_keys
-('GoerzJOSS2025',)
+...     dup_bib = Library("tests/Refs/with_duplicates.bib")
+>>> dup_bib.duplicate_keys
+('GoerzSPP2019',)
 
 ```
 
@@ -446,18 +424,21 @@ table of the configuration handles venues whose initials should not be
 the plain acronym (see [Venue initials](specifiers-initials)).
 
 ```python
+>>> bib = Library("tests/Refs/refs.bib")
 >>> bib.rekey("GoerzPRA2014")               # doctest: +SKIP
 'GoerzPRA2014'
 ```
 
 The `format_spec` argument overrides the configured format ad hoc; keys
 that already match the format are kept unchanged, so regenerating is
-idempotent and safe to run over a whole library:
+idempotent and safe to re-run over many entries (here, one group;
+entries lacking a field the format requires, such as `author`, are
+reported with a `ValueError`):
 
 ```python
 >>> bib.rekey("GoerzPRA2014", format_spec="%a1%c{journal}0%Y%u0")
 'GoerzPRA2014'
->>> for key in list(bib):
+>>> for key in bib.groups["My Papers"]:
 ...     _ = bib.rekey(key, format_spec="%a1:%Y%u0")
 >>> bib.rekey("Goerz:2014", format_spec="%a1%c{journal}0%Y%u0")
 'GoerzNJP2014'
@@ -472,7 +453,11 @@ format:
 
 ```python
 >>> fmt = "%a1:%Y%u0"
->>> [key for key in bib if bib.eval_format_spec(key, fmt) != key]
+>>> [
+...     key
+...     for key in bib.groups["My Papers"]
+...     if bib.eval_format_spec(key, fmt) != key
+... ]
 ['GoerzNJP2014']
 
 ```
@@ -499,9 +484,9 @@ bib.save()
 On the command line ({ref}`CLI reference <cli-add>`):
 
 ```console
-$ bibdeskparser add library.bib 10.1103/PhysRevA.89.032334
+$ bibdeskparser add tests/Refs/refs.bib 10.1103/PhysRevA.89.032334
 MuellerPRA2014
-$ bibdeskparser add library.bib --dry-run some paper title  # no write
+$ bibdeskparser add tests/Refs/refs.bib --dry-run some paper title  # no write
 ```
 
 The new entry follows the library's conventions automatically: the
@@ -536,7 +521,7 @@ arXiv API (via `eprint`), or Semantic Scholar -- cleans it to
 plain-unicode prose, and stores it in the entry's `abstract` field:
 
 ```python
-result = bib.add_abstract("MuellerPRA2014")
+result = bib.add_abstract("SauvagePRXQ2020")
 bib.save()
 ```
 
@@ -548,13 +533,16 @@ fill them in bulk, and review what remains
 ({ref}`CLI reference <cli-add-abstract>`):
 
 ```console
-$ bibdeskparser keys library.bib --type article --missing abstract
-BaumgratzPRL2014
-Koch2016
-$ bibdeskparser add_abstract library.bib BaumgratzPRL2014 Koch2016
-BaumgratzPRL2014: stored (crossref, high)
-Koch2016: needs review (pdf, medium) [cr-miss; pdf-abstract-inline]
-    We review different aspects of quantum control ...
+$ bibdeskparser keys tests/Refs/refs.bib --type article --missing abstract
+TuriniciHAL00640217
+SauvagePRXQ2020
+Vecheck2022.09.09.507322
+KatrukhaNC2017
+$ bibdeskparser add_abstract tests/Refs/refs.bib \
+    SauvagePRXQ2020 Vecheck2022.09.09.507322
+SauvagePRXQ2020: stored (crossref, high)
+Vecheck2022.09.09.507322: needs review (semanticscholar, medium) [cr-miss]
+    Quantum biology examines quantum effects in living cells ...
 ```
 
 A lower-confidence candidate is reported in full instead of stored;
@@ -563,8 +551,8 @@ with `set_field`, or store whatever the sources found by lowering the
 bar with `--min-confidence medium`:
 
 ```console
-$ bibdeskparser set_field library.bib Koch2016 abstract \
-    "We review different aspects of quantum control ..."
+$ bibdeskparser set_field tests/Refs/refs.bib Vecheck2022.09.09.507322 \
+    abstract "Quantum biology examines quantum effects in living cells ..."
 ```
 
 For an entry whose abstract genuinely cannot be found, store an
@@ -583,7 +571,7 @@ searches arXiv for the preprint of an existing entry and records its identifier 
 the entry's `eprint` field (along with `archiveprefix = arXiv`):
 
 ```python
-result = bib.add_preprint("MuellerPRA2014")
+result = bib.add_preprint("WinckelIP2008")
 bib.save()
 ```
 
@@ -594,13 +582,14 @@ entries whose preprint status is unknown and fill them in bulk
 ({ref}`CLI reference <cli-add-preprint>`):
 
 ```console
-$ bibdeskparser keys library.bib --type article --missing eprint
-BaumgratzPRL2014
-Feynman1982
-$ bibdeskparser add_preprint library.bib --mark-empty \
-    BaumgratzPRL2014 Feynman1982
-BaumgratzPRL2014: stored eprint 1311.0275 (match=doi, ratio=1.00)
-Feynman1982: no preprint found (stored empty marker) [best-ratio=0.31]
+$ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
+WinckelIP2008
+TuriniciHAL00640217
+Vecheck2022.09.09.507322
+$ bibdeskparser add_preprint tests/Refs/refs.bib --mark-empty \
+    WinckelIP2008 Vecheck2022.09.09.507322
+WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]
+Vecheck2022.09.09.507322: no preprint found (stored empty marker) [best-ratio=0.31]
 ```
 
 With `--mark-empty` (or `mark_empty = true` in the
@@ -613,8 +602,8 @@ arXiv for it. Since a non-match can also be a matching failure,
 re-audit those markers occasionally:
 
 ```console
-$ bibdeskparser add_preprint library.bib $(bibdeskparser keys \
-    library.bib --empty eprint)
+$ bibdeskparser add_preprint tests/Refs/refs.bib $(bibdeskparser keys \
+    tests/Refs/refs.bib --empty eprint)
 ```
 
 A match that the search rejects as `postdated-unverified` (an arXiv
@@ -624,7 +613,8 @@ shows it really is the paper's preprint (authors do post old papers
 late), record it explicitly, which needs no network access:
 
 ```console
-$ bibdeskparser add_preprint library.bib Greiner2002 --eprint 2505.01234
+$ bibdeskparser add_preprint tests/Refs/refs.bib WinckelIP2008 \
+    --eprint 2505.01234
 ```
 
 The search respects the arXiv API's rate limit of one request every
@@ -647,9 +637,9 @@ On the command line, `import` reads from a file, stdin, or a URL
 ({ref}`CLI reference <cli-import>`):
 
 ```console
-$ bibdeskparser import library.bib entries.bib
-$ pbpaste | bibdeskparser import library.bib --stdin
-$ bibdeskparser import library.bib --url https://example.com/refs.bib
+$ bibdeskparser import tests/Refs/refs.bib entries.bib
+$ pbpaste | bibdeskparser import tests/Refs/refs.bib --stdin
+$ bibdeskparser import tests/Refs/refs.bib --url https://example.com/refs.bib
 ```
 
 Since [`export`](cli-export) writes exactly the kind of snippet that
@@ -657,7 +647,7 @@ Since [`export`](cli-export) writes exactly the kind of snippet that
 moves entries between libraries:
 
 ```console
-$ bibdeskparser export library.bib GoerzPRA2014 \
+$ bibdeskparser export tests/Refs/refs.bib GoerzPRA2014 \
     | bibdeskparser import other.bib --stdin
 GoerzPRA2014
 ```
@@ -673,8 +663,8 @@ untouched.
 or more entries in `$EDITOR` as bibtex text and merges back whatever you save:
 
 ```python
-bib.edit("Smith2020")                      # a single entry
-bib.edit("Smith2020", "Doe2021", editor="vim")  # several at once
+bib.edit("GoerzQ2022")                          # a single entry
+bib.edit("GrondPRA2009a", "GrondPRA2009b", editor="vim")  # several
 ```
 
 ## How to render a bibliography in a specific citation format
@@ -686,38 +676,18 @@ controls their layout: `"default"`, `"paragraphs"`, `"numbered list"`,
 or `"itemized list"`.
 
 ```python
->>> bib = Library()
->>> smith = Entry(
-...     "article",
-...     "Smith2020",
-...     fields={
-...         "title": "A Title",
-...         "author": "Smith, John",
-...         "journal": "J. Test",
-...         "year": "2020",
-...     },
+>>> bib = Library("tests/Refs/refs.bib")
+>>> print(bib.render("Evans1983", format="html"))
+L. C. Evans. <a href="https://math.berkeley.edu/~evans/control.course.pdf"><i>An Introduction to Mathematical Optimal Control Theory</i></a> (1983). Lecture Notes, University of California, Berkeley.
+>>> print(bib.render("Tannor2007", format="tex"))
+D. J. Tannor. \href{https://uscibooks.aip.org/books/introduction-to-quantum-mechanics-a-time-dependent-perspective/}{\textit{Introduction to Quantum Mechanics: A Time-Dependent Perspective}}. University Science Books, Sausalito, California (2007).
+>>> print(
+...     bib.render(
+...         "GrondPRA2009a", "GrondPRA2009b", style="numbered list"
+...     )
 ... )
->>> doe = Entry(
-...     "article",
-...     "Doe2021",
-...     fields={
-...         "title": "Another Title",
-...         "author": "Doe, Jane",
-...         "journal": "J. Test",
-...         "year": "2021",
-...     },
-... )
->>> bib["Smith2020"] = smith
->>> bib["Doe2021"] = doe
->>> print(bib.render("Smith2020", format="html"))
-J. Smith. <i>A Title</i>. J. Test (2020).
->>> print(bib.render("Smith2020", "Doe2021", format="tex"))
-J. Smith. \textit{A Title}. J. Test (2020).
-<BLANKLINE>
-J. Doe. \textit{Another Title}. J. Test (2021).
->>> print(bib.render("Smith2020", "Doe2021", style="numbered list"))
-1. J. Smith. *A Title*. J. Test (2020).
-2. J. Doe. *Another Title*. J. Test (2021).
+1. J. Grond, J. Schmiedmayer and U. Hohenester. [*Optimizing number squeezing when splitting a mesoscopic condensate*](https://link.aps.org/doi/10.1103/PhysRevA.79.021603). [Phys. Rev. A **79**, p. 021603](https://doi.org/10.1103/physreva.79.021603) (2009), [arXiv:0806.3877](https://arxiv.org/abs/0806.3877).
+2. J. Grond, G. von Winckel, J. Schmiedmayer and U. Hohenester. [*Optimal control of number squeezing in trapped Bose-Einstein condensates*](https://link.aps.org/doi/10.1103/PhysRevA.80.053625). [Phys. Rev. A **80**, p. 053625](https://doi.org/10.1103/physreva.80.053625) (2009), [arXiv:0908.1634](https://arxiv.org/abs/0908.1634).
 
 ```
 
@@ -801,9 +771,9 @@ and piping it back applies the change, and piping it back unchanged is
 a no-op.
 
 ```console
-$ bibdeskparser export Preskill2018 \
-    | sed 's/NISQ era/noisy intermediate-scale quantum era/' \
-    | bibdeskparser edit Preskill2018 --stdin
+$ bibdeskparser export GoerzQ2022 \
+    | sed 's/Semi-Automatic/Semiautomatic/' \
+    | bibdeskparser edit GoerzQ2022 --stdin
 ```
 
 The `@string` macro definitions round-trip the same way, from
@@ -820,26 +790,28 @@ per-entry-type whitelist of citation-relevant fields (dropping things
 like `abstract` and `annote`), and `outfile=` to write straight to a
 file:
 
+Note how the entries' `abstract` and `keywords`, and the `article`
+entry's linked file, are all dropped:
+
 ```python
->>> smith["abstract"] = "Some abstract text, dropped by minimal export."
->>> with tempfile.TemporaryDirectory() as outdir:
-...     outfile = Path(outdir) / "paper.bib"
-...     bib.export(
-...         "Smith2020", "Doe2021", format="minimal", outfile=str(outfile)
-...     )
-...     print(outfile.read_text())
-@article{Smith2020,
-    Author = {Smith, John},
-    Title = {A Title},
-    Journal = {J. Test},
-    Year = {2020},
+>>> bib.export(
+...     "GrondPRA2009a", "Evans1983", format="minimal", outfile="paper.bib"
+... )
+>>> print(Path("paper.bib").read_text())
+@article{GrondPRA2009a,
+    Author = {Grond, Julian and Schmiedmayer, J\"org and Hohenester, Ulrich},
+    Title = {Optimizing number squeezing when splitting a mesoscopic condensate},
+    Journal = pra,
+    Year = {2009},
+    Doi = {10.1103/physreva.79.021603},
+    Pages = {021603},
+    Volume = {79},
 }
 <BLANKLINE>
-@article{Doe2021,
-    Author = {Doe, Jane},
-    Title = {Another Title},
-    Journal = {J. Test},
-    Year = {2021},
+@unpublished{Evans1983,
+    Author = {Evans, Lawrence C.},
+    Title = {An Introduction to Mathematical Optimal Control Theory},
+    Year = {1983},
 }
 <BLANKLINE>
 

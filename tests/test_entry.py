@@ -701,7 +701,7 @@ def test_real_entry_title_unicode_no_braces(jpb_entry):
 
 def test_real_entry_files(jpb_entry):
     """`.files` gives the one attached file's relative path."""
-    assert jpb_entry.files == ["GoerzJPB11.pdf"]
+    assert jpb_entry.files == ["GoerzJPB2011.pdf"]
 
 
 def test_real_entry_urls(jpb_entry):

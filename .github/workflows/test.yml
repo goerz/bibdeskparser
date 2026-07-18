@@ -29,6 +29,9 @@ jobs:
           - title: MacOS (Tests)
             os: macos-latest
             coverage: true
+          - title: MacOS (Lowest Versions)
+            os: macos-latest
+            lowest: true
     steps:
       - uses: actions/checkout@v7
 
@@ -40,7 +43,12 @@ jobs:
         run: make black-check isort-check check-changelog
 
       - name: Run tests
+        if: matrix.lowest != true
         run: make test
+
+      - name: Run tests (lowest versions)
+        if: matrix.lowest == true
+        run: make test-lowest
 
       - name: Convert coverage data to xml
         if: matrix.coverage == true

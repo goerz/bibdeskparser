@@ -44,7 +44,7 @@ Homepage = "https://github.com/goerz/bibdeskparser"
 
 [dependency-groups]
 dev = [
-    "pytest>=7",
+    "pytest>=7.2",
     "pytest-cov>=4",
     "pytest-xdist>=3",
     "packaging>=21",
@@ -75,7 +75,7 @@ release = [
     "click>=8",
     "gitpython>=3",
     "packaging>=21",
-    "pytest>=7",
+    "pytest>=7.2",
 ]
 
 [tool.black]
