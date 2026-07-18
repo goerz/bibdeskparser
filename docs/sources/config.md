@@ -214,6 +214,42 @@ The table is exposed as `Library.config.auto_file` (see
 `lowercase`, `clean`, and `file_automatically` attributes; assigning
 `format_spec` or `location` validates the value.
 
+(config-add)=
+
+## The `[add]`, `[add_abstract]`, and `[add_preprint]` tables: fetching defaults
+
+These three tables configure the default behavior of the fetching
+methods {py:meth}`~bibdeskparser.Library.add`,
+{py:meth}`~bibdeskparser.Library.add_abstract`, and
+{py:meth}`~bibdeskparser.Library.add_preprint` (and the like-named
+{ref}`CLI commands <cli-add>`). Each key is the default for the
+like-named keyword argument (or command-line option); passing an
+explicit value -- e.g. `--no-add-abstract` to override a configured
+`add_abstract = true` -- always wins:
+
+```toml
+[add]                     # defaults for `add`
+fix_uppercase = false     # repair all-uppercase publisher metadata
+add_abstract = false      # store the abstract the source returns
+add_preprint = false      # search arXiv for a matching preprint
+
+[add_abstract]            # defaults for `add_abstract`
+min_confidence = "high"   # lowest confidence stored: "high", "medium", "low"
+mark_empty = false        # store an empty abstract when none is found
+
+[add_preprint]            # defaults for `add_preprint`
+mark_empty = false        # store an empty eprint when no preprint is found
+```
+
+The `mark_empty` keys control whether a clean "searched, found
+nothing" outcome is recorded in the entry as an *empty* field -- the
+audited marker that `keys --empty <field>` matches, as opposed to
+`keys --missing <field>` (see the
+[how-to guide](howto-add-preprint)). The tables are exposed as
+`Library.config.add`, `Library.config.add_abstract`, and
+`Library.config.add_preprint` (see
+{class}`~bibdeskparser.Library`).
+
 ## The `[initials]` table: acronym exceptions
 
 The `[initials]` table defines, per field, exceptions to the acronym
@@ -347,30 +383,6 @@ whatever the entry type. A `known` field is recognized for entry types
 that have no field template of their own, but is not automatically
 appropriate for a templated type.
 
-(config-add)=
-
-## The `[add_abstract]` table: abstract-fetching defaults
-
-Defaults for {py:meth}`~bibdeskparser.Library.add_abstract` (and the
-{ref}`add_abstract CLI command <cli-add-abstract>`):
-
-```toml
-[add_abstract]
-min_confidence = "high"   # "high", "medium", or "low"
-mark_empty = false        # mark entries with no abstract found
-```
-
-* `min_confidence` (default `"high"`): the lowest confidence at which
-  a fetched abstract is stored, backing the `--min-confidence` option;
-  see the [`add_abstract` command](cli-add-abstract) for what each
-  level means.
-* `mark_empty` (default `false`): when true, an entry for which no
-  valid abstract is found gets an *empty* `abstract` field marking it
-  as audited, backing the `--mark-empty` flag.
-
-Both are exposed as `Library.config.add_abstract.min_confidence` and
-`Library.config.add_abstract.mark_empty`.
-
 ## A complete example
 
 ```toml
@@ -398,6 +410,13 @@ location = "~/Documents/Papers"  # directory files are moved into
 lowercase = false          # lowercase the whole generated name
 clean = "tex"              # TeX cleanup: "none", "braces", or "tex"
 file_automatically = true  # auto-file on add_file by default
+
+[add]                        # defaults for the `add` command
+add_abstract = true          # store the abstract the source returns
+add_preprint = true          # search arXiv for a matching preprint
+
+[add_preprint]               # defaults for the `add_preprint` command
+mark_empty = true            # record "searched, no preprint" markers
 
 [initials.journal]                   # acronym exceptions for %c{journal}
 "AIP Advances" = "AIPA"

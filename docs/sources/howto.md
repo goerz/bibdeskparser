@@ -506,6 +506,20 @@ is brace-protected, and the citation key is generated (e.g.
 whose DOI or arXiv eprint is already in the library is rejected, so
 re-adding the same paper is safe.
 
+To also store the paper's abstract in the new entry, pass
+`add_abstract=True` (`--add-abstract` on the command line); to also
+search arXiv for a matching preprint and record it in the `eprint`
+field, pass `add_preprint=True` (`--add-preprint`). See the next two
+recipes for filling in abstracts and arXiv identifiers after the
+fact. To make either behavior the default, set it once in the
+[`[add]` configuration table](config-add):
+
+```toml
+[add]
+add_abstract = true
+add_preprint = true
+```
+
 ## How to fill in missing abstracts
 
 {py:meth}`Library.add_abstract <bibdeskparser.library.Library.add_abstract>`

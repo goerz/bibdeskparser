@@ -684,3 +684,57 @@ def test_add_preprint_option_validation(tmp_path, monkeypatch):
         UserWarning, match=r"unknown key\(s\) in \[add_preprint\]"
     ):
         config.active.load(bib_dir=tmp_path)
+
+
+def test_add_defaults(tmp_path, monkeypatch):
+    """Without `[add]`/`[add_abstract]`/`[add_preprint]` tables, the
+    built-in defaults apply."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "verify_types = false\n")
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.add.fix_uppercase is False
+    assert config.active.add.add_abstract is False
+    assert config.active.add.add_preprint is False
+    assert config.active.add_abstract.min_confidence == "high"
+    assert config.active.add_abstract.mark_empty is False
+    assert config.active.add_preprint.mark_empty is False
+
+
+def test_add_settings(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(
+        tmp_path,
+        "[add]\n"
+        "fix_uppercase = true\n"
+        "add_abstract = true\n"
+        "add_preprint = true\n"
+        "[add_abstract]\n"
+        'min_confidence = "medium"\n'
+        "mark_empty = true\n"
+        "[add_preprint]\n"
+        "mark_empty = true\n",
+    )
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.add.fix_uppercase is True
+    assert config.active.add.add_abstract is True
+    assert config.active.add.add_preprint is True
+    assert config.active.add_abstract.min_confidence == "medium"
+    assert config.active.add_abstract.mark_empty is True
+    assert config.active.add_preprint.mark_empty is True
+    config.active.reset()
+    assert config.active.add.add_preprint is False
+    assert config.active.add_abstract.min_confidence == "high"
+    assert config.active.add_preprint.mark_empty is False
+
+
+def test_add_option_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "add = 1\n")
+    with pytest.raises(ValueError, match=r"\[add\] must be a table"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[add]\nadd_abstract = "yes"\n')
+    with pytest.raises(ValueError, match="add_abstract must be a boolean"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[add]\nnonsense = 1\n")
+    with pytest.warns(UserWarning, match=r"unknown key\(s\) in \[add\]"):
+        config.active.load(bib_dir=tmp_path)

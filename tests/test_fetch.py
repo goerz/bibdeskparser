@@ -408,3 +408,12 @@ def test_library_add_arxiv(monkeypatch):
     assert entry["eprint"] == "2205.15044"
     assert entry["author"] == ("Goerz, Michael H. and Carrasco, Sebastián C.")
     assert "abstract" not in entry
+
+
+def test_library_add_with_abstract(monkeypatch):
+    bib = Library()
+    record = dict(ARTICLE_RECORD)
+    record["abstract"] = f"<jats:p>{ABSTRACT}</jats:p>"
+    _mock_crossref(monkeypatch, {"status": "ok", "message": record})
+    key = bib.add("10.1103/PhysRevA.89.032334", add_abstract=True)
+    assert bib[key]["abstract"] == ABSTRACT

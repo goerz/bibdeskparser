@@ -1711,7 +1711,7 @@ def edit_strings(bibfile, editor_cmd, use_stdin):
 # -- importing / adding entries ---------------------------------------- #
 
 
-def _fix_uppercase_option(help_suffix):
+def _fix_uppercase_option(help_suffix, default=False):
     help_text = (
         "Fix all-uppercase author/editor names and titles (as "
         f"found in some {help_suffix}); the result may need manual "
@@ -1719,7 +1719,7 @@ def _fix_uppercase_option(help_suffix):
     )
     return click.option(
         "--fix-uppercase/--no-fix-uppercase",
-        default=False,
+        default=default,
         help=help_text,
     )
 
@@ -1837,9 +1837,34 @@ def import_bibtex(bibfile, source, use_stdin, url, keep_keys, fix_uppercase):
         "modifying the .bib file."
     ),
 )
-@_fix_uppercase_option("publisher metadata")
+@_fix_uppercase_option("publisher metadata", default=None)
+@click.option(
+    "--add-abstract/--no-add-abstract",
+    default=None,
+    help=(
+        "Also store the abstract returned alongside the metadata "
+        "(the publisher's Crossref deposit, or the arXiv summary) in "
+        "the new entry's abstract field, cleaned to plain-unicode "
+        "prose. Defaults to the [add] configuration (off)."
+    ),
+)
+@click.option(
+    "--add-preprint/--no-add-preprint",
+    default=None,
+    help=(
+        "Also search arXiv for a preprint matching the new entry and "
+        "record it in the eprint field (exactly as with the "
+        "add_preprint command, which reports its result to stderr "
+        "here; skipped when the entry already has an eprint). "
+        "Defaults to the [add] configuration (off)."
+    ),
+)
 @click.pass_obj
-def add(bibfile, query, dry_run, fix_uppercase):
+# click passes all parameters by keyword; the add_abstract parameter
+# shadows the `add_abstract` command on purpose: click derives it
+# from the `--add-abstract` option name (same for add_preprint)
+# pylint: disable-next=redefined-outer-name,too-many-positional-arguments
+def add(bibfile, query, dry_run, fix_uppercase, add_abstract, add_preprint):
     """Fetch bibliographic data for QUERY from the appropriate online
     source, add it to the library as a new, sanitized entry (exactly
     as with `import`), and print its citation key (modifies the
@@ -1855,11 +1880,24 @@ def add(bibfile, query, dry_run, fix_uppercase):
     the result! Requires network access.
     """
     lib = Library(bibfile)
+    if add_preprint is None:
+        add_preprint = config.active.add.add_preprint
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        citekey = lib.add(" ".join(query), fix_uppercase=fix_uppercase)
+        citekey = lib.add(
+            " ".join(query),
+            fix_uppercase=fix_uppercase,
+            add_abstract=add_abstract,
+            add_preprint=False,  # done below, to report the result
+        )
+        preprint_result = None
+        if add_preprint and not str(lib[citekey].get("eprint") or ""):
+            preprint_result = lib.add_preprint(citekey)
     for warning in caught:
         click.echo(f"Warning: {warning.message}", err=True)
+    if preprint_result is not None:
+        # to stderr: stdout stays the citation key / dry-run entry
+        _echo_preprint_result(citekey, preprint_result, err=True)
     if dry_run:
         _echo_block(lib.export(citekey))
     else:

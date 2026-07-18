@@ -1745,7 +1745,7 @@ def test_import_default_bibfile_gotcha(runner, bibfile, monkeypatch):
 def test_add(runner, bibfile, monkeypatch):
     queries = []
 
-    def fetch_bibtex(query):
+    def fetch_bibtex(query, *, include_abstract=False):
         queries.append(query)
         return IMPORT_SNIPPET.replace("PhysRevLett.113.140401,", "Fetched,")
 
@@ -1760,7 +1760,7 @@ def test_add(runner, bibfile, monkeypatch):
 def test_add_joins_query_args(runner, bibfile, monkeypatch):
     queries = []
 
-    def fetch_bibtex(query):
+    def fetch_bibtex(query, *, include_abstract=False):
         queries.append(query)
         return IMPORT_SNIPPET
 
@@ -1771,7 +1771,8 @@ def test_add_joins_query_args(runner, bibfile, monkeypatch):
 
 def test_add_dry_run(runner, bibfile, monkeypatch):
     monkeypatch.setattr(
-        "bibdeskparser.fetch.fetch_bibtex", lambda query: IMPORT_SNIPPET
+        "bibdeskparser.fetch.fetch_bibtex",
+        lambda query, *, include_abstract=False: IMPORT_SNIPPET,
     )
     before = bibfile.read_text(encoding="utf-8")
     result = _run(runner, "add", bibfile, "--dry-run", "10.1103/xyz")
@@ -1781,7 +1782,7 @@ def test_add_dry_run(runner, bibfile, monkeypatch):
 
 
 def test_add_fetch_failure(runner, bibfile, monkeypatch):
-    def fetch_bibtex(query):
+    def fetch_bibtex(query, *, include_abstract=False):
         raise ValueError(f"could not fetch bibliographic data for {query!r}")
 
     monkeypatch.setattr("bibdeskparser.fetch.fetch_bibtex", fetch_bibtex)
@@ -2128,3 +2129,94 @@ def test_add_preprint_unknown_key(runner, bibfile):
     result = runner.invoke(main, ["add_preprint", str(bibfile), "NoSuchKey"])
     assert result.exit_code == 1
     assert "unknown citation key 'NoSuchKey'" in result.stderr
+
+
+def test_add_passes_add_abstract(runner, bibfile, monkeypatch):
+    flags = []
+
+    def fetch_bibtex(query, *, include_abstract=False):
+        flags.append(include_abstract)
+        return IMPORT_SNIPPET
+
+    monkeypatch.setattr("bibdeskparser.fetch.fetch_bibtex", fetch_bibtex)
+    _run(runner, "add", bibfile, "--dry-run", "--add-abstract", "10.1103/x")
+    _run(runner, "add", bibfile, "--dry-run", "--no-add-abstract", "10.1103/x")
+    assert flags == [True, False]
+
+
+def test_add_with_add_preprint(runner, bibfile, monkeypatch):
+    """`add --add-preprint` searches for the new entry's preprint and
+    reports the result on stderr (stdout stays the citation key)."""
+    monkeypatch.setattr(
+        "bibdeskparser.fetch.fetch_bibtex",
+        lambda query, *, include_abstract=False: IMPORT_SNIPPET.replace(
+            "PhysRevLett.113.140401,", "Fetched,"
+        ),
+    )
+    _mock_find_preprint(monkeypatch, [("1311.0275", "doi", 1.0, "")])
+    result = _run(
+        runner, "add", bibfile, "--add-preprint", "10.1103/PhysRevLett.x"
+    )
+    assert result.stdout == "BaumgratzPRL2014\n"
+    assert (
+        "BaumgratzPRL2014: stored eprint 1311.0275 (match=doi, ratio=1.00)"
+        in result.stderr
+    )
+    lib = _load(bibfile)
+    assert lib["BaumgratzPRL2014"]["eprint"] == "1311.0275"
+
+
+def test_add_add_preprint_config_default(runner, bibfile, monkeypatch):
+    """Without `--add-preprint`, the `[add]` configuration next to the
+    `.bib` file supplies the default; `--no-add-preprint` overrides
+    it."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        "[add]\nadd_preprint = true\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        "bibdeskparser.fetch.fetch_bibtex",
+        lambda query, *, include_abstract=False: IMPORT_SNIPPET.replace(
+            "PhysRevLett.113.140401,", "Fetched,"
+        ),
+    )
+    _mock_find_preprint(monkeypatch, [("1311.0275", "doi", 1.0, "")])
+    _run(runner, "add", bibfile, "10.1103/PhysRevLett.x")
+    lib = _load(bibfile)
+    assert lib["BaumgratzPRL2014"]["eprint"] == "1311.0275"
+
+
+def test_add_no_add_preprint_overrides_config(runner, bibfile, monkeypatch):
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        "[add]\nadd_preprint = true\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        "bibdeskparser.fetch.fetch_bibtex",
+        lambda query, *, include_abstract=False: IMPORT_SNIPPET.replace(
+            "PhysRevLett.113.140401,", "Fetched,"
+        ),
+    )
+    _forbid_find_preprint(monkeypatch)
+    _run(runner, "add", bibfile, "--no-add-preprint", "10.1103/PhysRevLett.x")
+    lib = _load(bibfile)
+    assert "eprint" not in lib["BaumgratzPRL2014"]
+
+
+def test_negative_flag_forms_accepted(runner, bibfile, monkeypatch):
+    """Every boolean behavior option has an explicit negative form
+    (so that defaults can change without breaking compatibility)."""
+    monkeypatch.setattr(
+        "bibdeskparser.fetch.fetch_bibtex",
+        lambda query, *, include_abstract=False: IMPORT_SNIPPET,
+    )
+    _run(
+        runner,
+        "add",
+        bibfile,
+        "--dry-run",
+        "--no-fix-uppercase",
+        "--no-add-abstract",
+        "--no-add-preprint",
+        "10.1103/xyz",
+    )
+    result = _run(runner, "show", bibfile, "GoerzNJP2014", "--no-skip-missing")
+    assert "GoerzNJP2014" in result.stdout
