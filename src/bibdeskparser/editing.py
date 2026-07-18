@@ -86,7 +86,7 @@ import bibtexparser
 
 from .bdskfile import BibDeskFile
 from .exporting import export_entries
-from .macros import is_valid_macro_name, normalize_macro_name
+from .macros import STANDARD_MACROS, is_valid_macro_name, normalize_macro_name
 
 __all__ = []
 
@@ -241,12 +241,12 @@ def _validate_parsed_entries(parsed, library):
 
     * Every entry must have a non-empty `entry_type` and `key`.
     * If `library` is given, every bare field value shaped like a
-      macro name must resolve to a name already in `library.strings`
-      or newly defined by an `@string` block in the edited text
-      itself (so a rename/new-definition is not rejected just because
-      it is not yet in `library.strings`). The `keywords` field is
-      exempt: keywords are always literal text, never a macro
-      reference.
+      macro name must resolve to a name already in `library.strings`,
+      a standard month macro (`STANDARD_MACROS`), or a name newly
+      defined by an `@string` block in the edited text itself (so a
+      rename/new-definition is not rejected just because it is not
+      yet in `library.strings`). The `keywords` field is exempt:
+      keywords are always literal text, never a macro reference.
     """
     problems = list(_failed_block_problems(parsed))
     for entry in parsed.entries:
@@ -255,7 +255,7 @@ def _validate_parsed_entries(parsed, library):
         if not entry.key:
             problems.append("an entry is missing its citation key")
     if library is not None:
-        defined = set(dict(library.strings))
+        defined = set(dict(library.strings)) | set(STANDARD_MACROS)
         for string in parsed.strings:
             if is_valid_macro_name(string.key, normalized=False):
                 defined.add(normalize_macro_name(string.key))
