@@ -201,8 +201,19 @@ still references it), and use
 {py:meth}`~bibdeskparser.library.Library.rename_string` to rename a
 macro everywhere it is used in one step. Assigning an invalid name (one
 that doesn't follow BibDesk's own naming rules -- a subset of ASCII, no
-leading digit, case-insensitive) raises a `ValueError` right away, with
-a message explaining what's wrong.
+leading digit) raises a `ValueError` right away, with a message
+explaining what's wrong.
+
+Macro names are case-insensitive, matching BibDesk's macro table:
+`bibdeskparser` stores them in their canonical lowercase form
+(mixed-case names in a hand-edited file -- both `@string{JAN = ...}`
+definitions and bare `month = JAN` references -- are lowercased on
+load), and every operation ({py:attr}`~bibdeskparser.library.Library.strings`
+lookups, deletion, and
+{py:meth}`~bibdeskparser.library.Library.rename_string`) matches names
+case-insensitively. A hand-edited `@string{JAN = ...}` therefore
+overrides the built-in `jan` month macro, and a `month = JAN` field
+resolves against it, exactly as in BibDesk.
 
 When you *do* want to store literal text that happens to look like a
 macro name -- so that it round-trips as a quoted/braced string rather
@@ -491,7 +502,10 @@ Taken together, these behaviors add up to one guarantee: loading a
 BibDesk-authored `.bib` file with
 {py:class}`~bibdeskparser.library.Library` and saving it again without
 touching anything reproduces the original file byte-for-byte,
-including the header, comments, blank lines, and field ordering. Once
+including the header, comments, blank lines, and field ordering. The
+one exception: hand-edited mixed-case macro names (a `@string{JAN =
+...}` definition, or a bare `month = JAN` reference) are normalized to
+their canonical lowercase form on load and written back that way. Once
 you do make changes,
 {py:meth}`~bibdeskparser.library.Library.save` rewrites only the
 entries that were actually modified or newly added (in BibDesk's

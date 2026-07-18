@@ -213,7 +213,17 @@ def test_strings_set_lowercases_name(bib):
     matching BibDesk's case-insensitive macro table."""
     bib.strings["FOO"] = "Bar Baz"
     assert bib.strings["foo"] == "Bar Baz"
-    assert "FOO" not in bib.strings
+    assert "FOO" not in set(bib.strings)  # iteration yields lowercase
+
+
+def test_strings_lookup_case_insensitive(bib):
+    """Reading, membership testing, and deleting match macro names
+    case-insensitively, like BibDesk's macro table."""
+    bib.strings["FOO"] = "Bar Baz"
+    assert bib.strings["FOO"] == "Bar Baz"
+    assert "FOO" in bib.strings
+    del bib.strings["FOO"]
+    assert "foo" not in bib.strings
 
 
 def test_strings_set_invalid_name_raises(bib):
@@ -270,6 +280,25 @@ def test_rename_string_updates_usages(bib):
     assert entry._dirty is True
 
 
+def test_rename_string_case_insensitive(bib):
+    """`rename_string` looks up the old name case-insensitively and
+    normalizes the new name to lowercase."""
+    bib.rename_string("JPB", "JPhysB")
+    assert bib.strings["jphysb"] == "J. Phys. B"
+    assert "jpb" not in bib.strings
+    assert bib["GoerzJPB2011"]["journal"] == "jphysb"
+
+
+def test_rename_string_case_only_is_noop(bib):
+    """Renaming a macro onto itself (including a case-only change) is
+    a no-op, not an "already exists" error."""
+    bib.rename_string("jpb", "JPB")
+    bib.rename_string("jpb", "jpb")
+    assert bib.strings["jpb"] == "J. Phys. B"
+    assert bib["GoerzJPB2011"]["journal"] == "jpb"
+    assert bib._modified is False
+
+
 def test_rename_string_unknown_raises(bib):
     """Renaming an undefined macro raises `KeyError`."""
     with pytest.raises(KeyError):
@@ -301,6 +330,46 @@ def test_delete_unused_string_succeeds(bib):
     bib.strings["unused"] = "Unused Macro"
     del bib.strings["unused"]
     assert "unused" not in bib.strings
+
+
+def test_strings_non_string_key(bib):
+    """A non-string key behaves as on a plain dict: absent, raising
+    `KeyError` (rather than crashing on the lowercase lookup)."""
+    assert 42 not in bib.strings
+    with pytest.raises(KeyError):
+        bib.strings[42]  # pylint: disable=pointless-statement
+    with pytest.raises(KeyError):
+        del bib.strings[42]
+
+
+def test_load_normalizes_macro_names(tmp_path):
+    """Mixed-case macro names in a hand-edited file -- `@string`
+    definitions and bare references -- are lowercased on load, and a
+    modified library writes them back in lowercase."""
+    text = (
+        "@string{PRA = {Phys. Rev. A}}\n"
+        "\n"
+        "@article{k1,\n"
+        "\tjournal = PRA,\n"
+        "\ttitle = {T},\n"
+        "\tyear = {2024}}\n"
+    )
+    path = tmp_path / "mixed.bib"
+    path.write_text(text, encoding="utf-8")
+    bib = Library(path)
+    assert set(bib.strings) == {"pra"}
+    assert bib.strings["PRA"] == "Phys. Rev. A"
+    entry = bib["k1"]
+    assert entry["journal"] == "pra"
+    rendered = bib.render("k1")
+    assert "Phys. Rev. A" in rendered  # the reference resolves
+    bib.strings["pra"] = "Physical Review A"
+    out = tmp_path / "out.bib"
+    bib.save(out)
+    output = out.read_text(encoding="utf-8")
+    assert "@string{pra = {Physical Review A}}" in output
+    assert "journal = pra" in output
+    assert "PRA" not in output
 
 
 def test_duplicate_macro_value_warning_on_set(bib):
@@ -1367,6 +1436,34 @@ def test_month_macro_file_override_roundtrip(tmp_path):
     assert "@string{jan = {Januar}}" in out.read_text(encoding="utf-8")
     reloaded = Library(out)
     assert reloaded.strings["jan"] == "Januar"
+
+
+def test_month_macro_mixed_case_file_override(tmp_path):
+    """A hand-edited mixed-case `@string{JAN = ...}` overrides the
+    built-in `jan` month macro, a `month = JAN` reference resolves
+    against it, and (like any month-macro override) it can be deleted
+    while still referenced."""
+    text = (
+        "@string{JAN = {Janvier}}\n"
+        "\n"
+        "@article{k1,\n"
+        "\tauthor = {Doe, Jane},\n"
+        "\ttitle = {T},\n"
+        "\tjournal = {Journal},\n"
+        "\tmonth = JAN,\n"
+        "\tyear = {2024}}\n"
+    )
+    path = tmp_path / "override.bib"
+    path.write_text(text, encoding="utf-8")
+    bib = Library(path)
+    assert bib.strings["jan"] == "Janvier"
+    assert bib["k1"]["month"] == "jan"
+    keys = [e.key for e in bib.search("Janvier", fields=["month"])]
+    assert keys == ["k1"]
+    del bib.strings["JAN"]  # falls back to the built-in month
+    keys = [e.key for e in bib.search("January", fields=["month"])]
+    assert keys == ["k1"]
+    bib.save(tmp_path / "x.bib")  # month reference is not undefined
 
 
 def test_month_macro_override_is_saved_and_reloaded(tmp_path, bib):

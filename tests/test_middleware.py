@@ -11,6 +11,7 @@ from bibdeskparser.groups import render_static_groups
 from bibdeskparser.middleware import (
     BibDeskFileMiddleware,
     DeTeXifyMiddleware,
+    NormalizeMacroNamesMiddleware,
     TeXifyMiddleware,
     parse_stack,
 )
@@ -57,11 +58,39 @@ def test_parse_stack_returns_fresh_instances():
     stack1 = parse_stack()
     stack2 = parse_stack()
     assert [type(mw) for mw in stack1] == [
+        NormalizeMacroNamesMiddleware,
         DeTeXifyMiddleware,
         BibDeskFileMiddleware,
     ]
     for mw1, mw2 in zip(stack1, stack2):
         assert mw1 is not mw2
+
+
+def test_normalize_macro_names():
+    """`@string` names and bare macro-reference field values are
+    lowercased on read; braced values, `keywords`, and URL fields are
+    untouched."""
+    source = "\n".join(
+        [
+            "@string{JRNL = {Some Journal}}",
+            "",
+            "@article{key1,",
+            "\tjournal = JRNL,",
+            "\tmonth = JAN,",
+            "\ttitle = {JAN},",
+            "\tkeywords = Selected,",
+            "\turl = HTTP://Example.org/Path}",
+            "",
+        ]
+    )
+    bib = bibtexparser.parse_string(source, parse_stack=parse_stack())
+    assert bib.strings[0].key == "jrnl"
+    entry = bib.entries[0]
+    assert entry["journal"] == "jrnl"
+    assert entry["month"] == "jan"
+    assert entry["title"] == "{JAN}"  # braced: literal text
+    assert entry["keywords"] == "Selected"  # keywords: never a macro
+    assert entry["url"] == "HTTP://Example.org/Path"
 
 
 def test_detexify_entry_fields(bib):

@@ -30,6 +30,7 @@ Use `parse_stack` to get the standard read stack:
 from bibtexparser.middlewares.middleware import BlockMiddleware
 
 from .bdskfile import BibDeskFile
+from .macros import is_valid_macro_name
 from .texmap import detexify, skip_texify, texify
 
 __all__ = []
@@ -37,11 +38,62 @@ __all__ = []
 # All members whose name does not start with an underscore must be listed
 # either in __all__ or in __private__
 __private__ = [
+    "NormalizeMacroNamesMiddleware",
     "DeTeXifyMiddleware",
     "TeXifyMiddleware",
     "BibDeskFileMiddleware",
     "parse_stack",
 ]
+
+
+class NormalizeMacroNamesMiddleware(BlockMiddleware):
+    r"""Middleware lowercasing `@string` macro names (*read*).
+
+    ```python
+    NormalizeMacroNamesMiddleware(allow_inplace_modification=True)
+    ```
+
+    Lowercases the name of every `@string` definition, and every bare
+    (unbraced/unquoted) field value that is shaped like a valid macro
+    name -- i.e., every candidate `@string` reference. BibDesk's macro
+    table is case-insensitive (`BDSKMacroResolver` hashes names
+    case-insensitively), so `@string{JAN = ...}` defines the same
+    macro as `@string{jan = ...}`, and a field value `month = JAN`
+    references it. Normalizing both sides to BibDesk's canonical
+    lowercase form once, at parse time, lets every later macro lookup
+    be a plain (case-sensitive) `dict` operation.
+
+    The `keywords` field is exempt (a bare keywords value is literal
+    text, never a macro reference), as are the URL and `bdsk-*` fields
+    for which `skip_texify` is `True` (their values are never macro
+    references, and their case must not be mangled).
+
+    * `allow_inplace_modification`: if `True` (default), transform the
+      given library's blocks in place instead of copying them (see the
+      `bibtexparser` `Middleware` base class).
+    """
+
+    def transform_entry(self, entry, library):
+        """Lowercase all bare macro-reference field values of
+        `entry`."""
+        for field in entry.fields:
+            value = field.value
+            # A braced/quoted value can never pass the macro-name
+            # check: `{`, `}`, and `"` are not valid name characters.
+            if (
+                isinstance(value, str)
+                and value
+                and field.key.lower() != "keywords"
+                and not skip_texify(field.key)
+                and is_valid_macro_name(value, normalized=False)
+            ):
+                field.value = value.lower()
+        return entry
+
+    def transform_string(self, string, library):
+        """Lowercase the name of the `@string` definition `string`."""
+        string.key = string.key.lower()
+        return string
 
 
 class DeTeXifyMiddleware(BlockMiddleware):
@@ -156,6 +208,7 @@ def parse_stack():
 
     ```python
     [
+        NormalizeMacroNamesMiddleware(),
         DeTeXifyMiddleware(),
         BibDeskFileMiddleware(),
     ]
@@ -169,6 +222,7 @@ def parse_stack():
     like BibDesk's internal model.
     """
     return [
+        NormalizeMacroNamesMiddleware(),
         DeTeXifyMiddleware(),
         BibDeskFileMiddleware(),
     ]

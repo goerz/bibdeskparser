@@ -394,6 +394,34 @@ def test_edit_strings():
     assert strings["prl"] == "Phys. Rev. Lett."
 
 
+def test_edit_strings_mixed_case_names():
+    """An edited `@string` name that differs only in case from an
+    existing macro refers to that same macro (matching BibDesk's
+    case-insensitive macro table): a case-only change is a no-op, and
+    an uppercase name with a new value redefines the macro in place."""
+    bib = Library()
+    bib.strings["jpb"] = "J. Phys. B"
+    bib.strings["prl"] = "Phys. Rev. Lett."
+
+    def editor(path):
+        text = path.read_text(encoding="utf-8")
+        text = text.replace(
+            "@string{jpb = {J. Phys. B}}",
+            "@string{JPB = {J. Phys. B}}",  # case-only: no-op
+        ).replace(
+            "@string{prl = {Phys. Rev. Lett.}}",
+            "@string{PRL = {Physical Review Letters}}",  # redefine
+        )
+        path.write_text(text, encoding="utf-8")
+
+    edit_strings(bib, editor=editor)
+
+    assert dict(bib.strings) == {
+        "jpb": "J. Phys. B",
+        "prl": "Physical Review Letters",
+    }
+
+
 def test_edit_strings_failed_deletion_raises():
     """With a callable editor, deleting a macro that is still
     referenced by an entry raises `ValueError`; other changes from
