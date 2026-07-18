@@ -25,6 +25,7 @@ import arxiv
 import httpx
 from habanero import Crossref, cn
 
+from .abstracttext import cleaned_abstract
 from .names import structured_names
 
 __all__ = []
@@ -129,7 +130,7 @@ def _entry_text(entry_type, fields):
 # -- the arXiv backend --------------------------------------------------- #
 
 
-def _bibtex_from_arxiv(arxiv_id):
+def _bibtex_from_arxiv(arxiv_id, include_abstract=False):
     """A minimal BibTeX preprint entry for `arxiv_id`, from the arXiv
     API."""
     search = arxiv.Search(id_list=[arxiv_id])
@@ -152,6 +153,9 @@ def _bibtex_from_arxiv(arxiv_id):
             "archiveprefix": "arXiv",
             "year": result.published.year,
             "url": f"https://doi.org/10.48550/arXiv.{base_id}",
+            "abstract": (
+                cleaned_abstract(result.summary) if include_abstract else None
+            ),
         },
     )
 
@@ -234,7 +238,7 @@ def _event_location(record):
         return None
 
 
-def _crossref_fields(record):
+def _crossref_fields(record, include_abstract=False):
     """Map a Crossref `record` to `(entry_type, fields)` for
     `_entry_text`, or to `(None, None)` for a work type with no
     BibTeX equivalent."""
@@ -246,6 +250,11 @@ def _crossref_fields(record):
         "title": _first(record, "title"),
         "year": _year(record),
         "doi": record.get("DOI"),
+        "abstract": (
+            cleaned_abstract(record.get("abstract"), jats=True)
+            if include_abstract
+            else None
+        ),
     }
     if entry_type == "article":
         fields.update(
@@ -279,11 +288,11 @@ def _crossref_fields(record):
     return entry_type, fields
 
 
-def _bibtex_from_record(record):
+def _bibtex_from_record(record, include_abstract=False):
     """BibTeX text for a Crossref `record`: a minimal entry for the
     supported work types, else publisher BibTeX via DOI content
-    negotiation."""
-    entry_type, fields = _crossref_fields(record)
+    negotiation (which never includes an abstract)."""
+    entry_type, fields = _crossref_fields(record, include_abstract)
     if entry_type is not None:
         return _entry_text(entry_type, fields)
     doi = record.get("DOI")
@@ -295,14 +304,14 @@ def _bibtex_from_record(record):
     return cn.content_negotiation(ids=doi)
 
 
-def _bibtex_from_doi(doi):
+def _bibtex_from_doi(doi, include_abstract=False):
     """BibTeX text for the work identified by `doi`, from Crossref."""
     response = Crossref().works(ids=doi)
     _check_response(response)
-    return _bibtex_from_record(response["message"])
+    return _bibtex_from_record(response["message"], include_abstract)
 
 
-def _bibtex_from_query(query):
+def _bibtex_from_query(query, include_abstract=False):
     """BibTeX text for the best Crossref match of the bibliographic
     `query`."""
     response = Crossref().works(query_bibliographic=query, limit=1)
@@ -310,16 +319,22 @@ def _bibtex_from_query(query):
     items = response["message"].get("items") or []
     if not items:
         raise ValueError(f"no Crossref match for query {query!r}")
-    return _bibtex_from_record(items[0])
+    return _bibtex_from_record(items[0], include_abstract)
 
 
 # -- entry points -------------------------------------------------------- #
 
 
-def fetch_bibtex(query):
+def fetch_bibtex(query, *, include_abstract=False):
     """Fetch bibliographic data for `query` (an arXiv identifier, a
     DOI, a URL containing either, or free-form search text -- see
     {meth}`bibdeskparser.Library.add`) and return it as BibTeX text.
+
+    With `include_abstract=True`, the abstract returned alongside the
+    metadata (Crossref deposit or arXiv summary) is included as an
+    `abstract` field, cleaned and validated via
+    {func}`bibdeskparser.abstracttext.cleaned_abstract` (omitted if the
+    source provides none or the text fails validation).
 
     Raises {exc}`ValueError` for anything that goes wrong (network
     errors, no match for the query, an unsupported record without a
@@ -327,10 +342,10 @@ def fetch_bibtex(query):
     kind, identifier = _classify(query)
     try:
         if kind == "arxiv":
-            return _bibtex_from_arxiv(identifier)
+            return _bibtex_from_arxiv(identifier, include_abstract)
         if kind == "doi":
-            return _bibtex_from_doi(identifier)
-        return _bibtex_from_query(identifier)
+            return _bibtex_from_doi(identifier, include_abstract)
+        return _bibtex_from_query(identifier, include_abstract)
     except ValueError:
         raise
     except Exception as exc:  # pylint: disable=broad-except

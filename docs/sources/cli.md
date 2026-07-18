@@ -65,6 +65,8 @@ print the generated key or file path, as does
 [`import`](cli-import)/[`add`](cli-add), which print the citation
 keys of the added entries (`add --dry-run` only prints the fetched
 entry, without modifying the file).
+[`add_abstract`](cli-add-abstract) prints a per-key report of the
+fetched abstracts (with `--dry-run`, without modifying the file).
 
 ## JSON output
 
@@ -454,6 +456,8 @@ rejected; custom entry types can be defined in the `types` table of
 $ bibdeskparser set_type library.bib Preskill2018 misc
 ```
 
+(cli-set-field)=
+
 ### `set_field KEY FIELDNAME VALUE`
 
 Set one field of an entry, adding the field if it does not exist.
@@ -583,6 +587,59 @@ $ bibdeskparser add library.bib --dry-run 10.22331/q-2022-01-24-629
 
 @article{SilverioQ2022,
 ...
+```
+
+## Abstracts and preprints
+
+(cli-add-abstract)=
+
+### `add_abstract KEY...`
+
+Fetch and store missing abstracts for the given entries, via
+{py:meth}`~bibdeskparser.Library.add_abstract`. For each `KEY`,
+candidate abstracts are gathered from Crossref (via the entry's
+`doi`), from the text of the entry's first attached PDF (requires the
+[poppler](https://poppler.freedesktop.org) `pdftotext` tool on
+`PATH`; skipped otherwise), from the arXiv API (via the entry's
+`eprint`), and from Semantic Scholar as a last resort. Each candidate
+is cleaned to plain-unicode prose (math markup converted to unicode,
+publisher copyright trailers stripped) and validated with heuristic
+garble checks, and the best one is stored in the entry's `abstract`
+field -- but only if its *confidence* reaches `--min-confidence`
+(`high`, the default; `medium`; or `low`):
+
+* `high`: an online abstract identified by the entry's `doi`/`eprint`
+  (and agreeing with the PDF text, where both exist), or an
+  unambiguous PDF extraction;
+* `medium`: a single unconfirmed source;
+* `low`: the PDF text and an online source *disagree* -- one of them
+  probably grabbed the wrong text.
+
+The command prints a per-key report. A candidate that was *not*
+stored is reported in full, so it can be reviewed and applied
+manually with [`set_field`](cli-set-field). Entries that already have
+a non-empty abstract are skipped (`--overwrite` refetches and
+replaces them); an entry whose abstract is present but *empty* does
+not need `--overwrite`. With `--mark-empty`, an entry for which no
+valid abstract is found anywhere gets an *empty* `abstract` field,
+marking it as audited: such entries are matched by
+`keys --empty abstract`, no longer by `keys --missing abstract`.
+`--min-confidence` and `--mark-empty` default to the
+[`[add_abstract]` configuration table](config-add). Requires network
+access; `--dry-run` prints the report without modifying the `.bib`
+file, and `--json` maps each key to
+`{abstract, source, confidence, note, applied}`.
+
+```console
+$ bibdeskparser keys library.bib --type article --missing abstract
+BaumgratzPRL2014
+Koch2016
+$ bibdeskparser add_abstract library.bib BaumgratzPRL2014 Koch2016
+BaumgratzPRL2014: stored (crossref, high)
+Koch2016: needs review (pdf, medium) [cr-miss; pdf-abstract-inline]
+    We review different aspects of quantum control ...
+$ bibdeskparser set_field library.bib Koch2016 abstract \
+    "We review different aspects of quantum control ..."
 ```
 
 ## Groups

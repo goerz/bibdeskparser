@@ -645,3 +645,27 @@ def test_config_file_override(tmp_path):
         assert Library.config.verify_fields is False
     finally:
         Library.config.config_file = None
+
+
+def test_add_abstract_option_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "add_abstract = 1\n")
+    with pytest.raises(ValueError, match=r"\[add_abstract\] must be a table"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[add_abstract]\nmin_confidence = "certain"\n')
+    with pytest.raises(ValueError, match="min_confidence"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[add_abstract]\nmark_empty = "yes"\n')
+    with pytest.raises(ValueError, match="mark_empty must be a boolean"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[add_abstract]\nnonsense = 1\n")
+    with pytest.warns(
+        UserWarning, match=r"unknown key\(s\) in \[add_abstract\]"
+    ):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_add_abstract_min_confidence_assignment():
+    """Assigning an invalid `min_confidence` raises immediately."""
+    with pytest.raises(ValueError, match="min_confidence"):
+        config.active.add_abstract.min_confidence = "certain"
