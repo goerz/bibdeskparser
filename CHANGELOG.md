@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.3.0] - 2026-07-18
 
 * Added: a `create` CLI command, creating a new, empty `.bib` file that contains only the standard BibDesk header comment (`bibdeskparser create new.bib`, or `bibdeskparser create` to bootstrap the configured `default_bib_file`). It is the one command whose `BIBFILE` must *not* already exist -- an existing file is never overwritten; every other command still requires an existing file, and the "bibfile not found" error now suggests `create`. [[#24]]
 * Changed: the first `save()` of a from-scratch `Library` (constructed without a path) now always synthesizes the standard BibDesk header, even if the library was never modified; previously an unmodified from-scratch library saved as an empty file. It also now raises `FileExistsError` if the destination path already exists (a from-scratch library has no baseline timestamp for the `StaleFileError` check, so it would previously overwrite silently); to adapt, pass `force=True` to `save()` to deliberately overwrite an existing file with a from-scratch library. [[#24]]
@@ -73,7 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial release.
 
-[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.2.1..HEAD
+[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.3.0..HEAD
+[v0.3.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.3.0
 [v0.2.1]: https://github.com/goerz/bibdeskparser/releases/tag/v0.2.1
 [v0.2.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.2.0
 [v0.1.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.1.0
