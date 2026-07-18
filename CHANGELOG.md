@@ -3,6 +3,8 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [v0.3.0] - 2026-07-18
 
 * Added: a `create` CLI command, creating a new, empty `.bib` file that contains only the standard BibDesk header comment (`bibdeskparser create new.bib`, or `bibdeskparser create` to bootstrap the configured `default_bib_file`). It is the one command whose `BIBFILE` must *not* already exist -- an existing file is never overwritten; every other command still requires an existing file, and the "bibfile not found" error now suggests `create`. [[#24]]
