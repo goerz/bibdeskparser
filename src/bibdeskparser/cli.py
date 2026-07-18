@@ -46,6 +46,7 @@ __private__ = [
     "render",
     "export",
     "eval_format_spec",
+    "create",
     "rekey",
     "delete",
     "set_type",
@@ -164,6 +165,8 @@ class _BibCommand(click.Command):
     `Library` API errors into clean one-line `click` errors.
     """
 
+    bibfile_must_exist = True
+
     def parse_args(self, ctx, args):
         ctx.obj = None
         if (
@@ -183,12 +186,21 @@ class _BibCommand(click.Command):
             # Deferred from parse_args so that `--help` (handled
             # there, by its eager callback) works without a bibfile.
             ctx.obj = _default_bibfile(ctx)
-        if not ctx.obj.is_file():
-            raise click.ClickException(f"bibfile not found: {ctx.obj}")
+        if self.bibfile_must_exist and not ctx.obj.is_file():
+            raise click.ClickException(
+                f"bibfile not found: {ctx.obj} (use 'bibdeskparser "
+                f"create {ctx.obj}' to start a new library)"
+            )
         try:
             return super().invoke(ctx)
         except _API_ERRORS as exc:
             raise click.ClickException(_error_message(exc)) from exc
+
+
+class _NewBibCommand(_BibCommand):
+    """A `_BibCommand` whose bibfile need not exist yet (`create`)."""
+
+    bibfile_must_exist = False
 
 
 _json_option = click.option(
@@ -237,6 +249,7 @@ def _examples(*lines):
 
 @click.group(
     epilog=_examples(
+        "bibdeskparser create new.bib  # start a new library",
         "bibdeskparser keys     # list all citation keys",
         "bibdeskparser keys --type article --missing doi",
         'bibdeskparser search "quantum computing"',
@@ -273,6 +286,9 @@ def main():
     modifying the file; `add_abstract` and `add_preprint` print a
     per-key report of the fetched abstracts/arXiv identifiers, with
     `--dry-run` without modifying the file).
+    Every command requires the `.bib` file to exist, except `create`,
+    which starts a new, empty library and requires that the file does
+    *not* exist yet.
     On any error they print `Error: <message>` to stderr and exit
     non-zero (2 for bad usage, 1 for a library error such as an unknown
     key or a `.bib` file changed on disk since it was read). Run
@@ -963,6 +979,32 @@ def eval_format_spec(bibfile, citekey, format_spec, filename, as_json):
 
 
 # -- mutating commands -------------------------------------------------- #
+
+
+@main.command(
+    name="create",
+    cls=_NewBibCommand,
+    short_help="Create a new, empty .bib file.",
+    epilog=_examples(
+        "bibdeskparser create new.bib",
+        "bibdeskparser create   # the configured default_bib_file",
+        "bibdeskparser create new.bib && \\\n"
+        "    bibdeskparser import new.bib entries.bib",
+    ),
+)
+@click.pass_obj
+def create(bibfile):
+    """Create BIBFILE as a new, empty library: a `.bib` file
+    containing only the standard BibDesk header comment, ready for
+    `import`, `add`, `set_string`, etc. Unlike for every other
+    command, BIBFILE must *not* already exist; an existing file is
+    never overwritten. Prints nothing on success."""
+    # `Library.save` also refuses an existing path (`FileExistsError`),
+    # but its message suggests `force=True`, which has no CLI
+    # equivalent (deliberately: `create` must never overwrite).
+    if bibfile.exists():
+        raise click.ClickException(f"bibfile already exists: {bibfile}")
+    Library().save(bibfile)
 
 
 @main.command(
