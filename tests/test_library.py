@@ -1349,6 +1349,39 @@ def test_from_scratch_roundtrip(tmp_path):
     assert reloaded.strings["x"] == "Y"
 
 
+def test_from_scratch_empty_save_writes_header(tmp_path):
+    """Saving an empty, unmodified from-scratch library synthesizes
+    the standard BibDesk header (not a zero-byte file)."""
+    out = tmp_path / "new.bib"
+    lib = Library(creator="Jane Doe")
+    lib.save(out)
+    assert lib.timestamp is not None
+
+    text = out.read_text(encoding="utf-8")
+    creator, timestamp = parse_header(text)
+    assert creator == "Jane Doe"
+    assert timestamp == lib.timestamp
+
+    reloaded = Library(out)
+    assert len(reloaded) == 0
+    assert reloaded.timestamp == lib.timestamp
+
+
+def test_from_scratch_save_existing_raises(tmp_path):
+    """Saving a from-scratch library over an existing file raises
+    `FileExistsError` (there is no baseline timestamp for the
+    `StaleFileError` check); `force=True` overwrites anyway."""
+    out = tmp_path / "existing.bib"
+    out.write_text("@article{K1,\n    title = {T}\n}\n", encoding="utf-8")
+    lib = Library()
+    with pytest.raises(FileExistsError, match="already exists"):
+        lib.save(out)
+    assert "K1" in Library(out)  # untouched
+
+    lib.save(out, force=True)
+    assert "K1" not in Library(out)
+
+
 # -- 12. undefined macro validation on save --------------------------------#
 
 

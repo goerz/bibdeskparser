@@ -682,6 +682,47 @@ def test_eval_format_spec_empty_filename(runner, bibfile):
 # -- mutating commands -------------------------------------------------- #
 
 
+def test_create(runner, tmp_path):
+    """`create` writes a new, empty library with a BibDesk header."""
+    newfile = tmp_path / "new.bib"
+    result = _run(runner, "create", newfile)
+    assert result.output == ""
+    lib = Library(newfile)
+    assert len(lib) == 0
+    assert lib.timestamp is not None
+    assert "Created for" in newfile.read_text(encoding="utf-8")
+
+
+def test_create_existing_file_fails(runner, bibfile):
+    """`create` never overwrites an existing file."""
+    before = bibfile.read_text(encoding="utf-8")
+    result = runner.invoke(main, ["create", str(bibfile)])
+    assert result.exit_code == 1
+    assert "already exists" in result.stderr
+    assert "Traceback" not in result.stderr
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_create_default_bib_file(runner, tmp_path, monkeypatch):
+    """`create` without BIBFILE bootstraps the configured
+    `default_bib_file`."""
+    (tmp_path / "bibdeskparser.toml").write_text(
+        'default_bib_file = "new.bib"\n', encoding="utf-8"
+    )
+    monkeypatch.chdir(tmp_path)
+    _run(runner, "create")
+    assert len(Library(tmp_path / "new.bib")) == 0
+
+
+def test_create_missing_parent_dir(runner, tmp_path):
+    """`create` in a nonexistent directory fails cleanly."""
+    result = runner.invoke(
+        main, ["create", str(tmp_path / "no-such-dir" / "new.bib")]
+    )
+    assert result.exit_code == 1
+    assert "Traceback" not in result.stderr
+
+
 def test_rekey(runner, bibfile):
     result = _run(runner, "rekey", bibfile, "GoerzDiploma2010", "Goerz2010")
     assert result.output == ""  # explicit renames print nothing
@@ -1494,6 +1535,7 @@ def test_nonexistent_bibfile(runner, tmp_path):
     result = runner.invoke(main, ["keys", str(tmp_path / "missing.bib")])
     assert result.exit_code == 1
     assert "bibfile not found" in result.stderr
+    assert "bibdeskparser create" in result.stderr  # points at the fix
     assert "Traceback" not in result.stderr
 
 

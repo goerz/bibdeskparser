@@ -2085,18 +2085,19 @@ class Library(MutableMapping):
           library was loaded from (or last saved to); raises
           {exc}`ValueError` if there is none (a from-scratch library
           that has never been given a path).
-        * `force`: bypass the {exc}`StaleFileError` check (see below).
+        * `force`: bypass the {exc}`StaleFileError` and
+          {exc}`FileExistsError` checks (see below).
 
         If the library was not modified since it was loaded (no entry
         was modified, {attr}`groups` was not mutated, and no
         entries/strings were added or removed),
-        the file is written byte-identical to how it was parsed (or,
-        for a from-scratch library, is simply rendered), and the
-        header timestamp is *not* touched. The one exception to
+        the file is written byte-identical to how it was parsed, and
+        the header timestamp is *not* touched. The one exception to
         byte-identity: a hand-edited mixed-case macro name (a
         `@string{JAN = ...}` definition or a bare `month = JAN`
         reference) is normalized on load and written back in its
-        canonical lowercase form. Otherwise: the header
+        canonical lowercase form. Otherwise (including the first save
+        of a from-scratch library, even an empty one): the header
         timestamp is updated (synthesizing a header if the library did
         not already have one), the static-groups `@comment` block is
         re-rendered from the current {attr}`groups` (synthesizing the
@@ -2117,7 +2118,13 @@ class Library(MutableMapping):
         header timestamp is strictly newer than {attr}`timestamp`
         (i.e., it was saved -- by BibDesk or otherwise -- after this
         library was loaded or last saved), unless `force=True`.
+
+        For a from-scratch library that has never been saved, there is
+        no baseline timestamp for the {exc}`StaleFileError` check;
+        instead, raises {exc}`FileExistsError` if `path` already
+        exists, unless `force=True`.
         """
+        from_scratch = self._path is None
         path = path if path is not None else self._path
         if path is None:
             raise ValueError(
@@ -2126,26 +2133,38 @@ class Library(MutableMapping):
         path = Path(path)
 
         if path.exists():
-            on_disk_timestamp = peek_timestamp(path)
-            if (
-                on_disk_timestamp is not None
-                and self._timestamp is not None
-                and on_disk_timestamp > self._timestamp
-                and not force
-            ):
-                raise StaleFileError(
-                    f"{path} has a newer save timestamp "
-                    f"({on_disk_timestamp}) than this library "
-                    f"({self._timestamp}); it appears to have been "
-                    "modified on disk since it was loaded. Pass "
-                    "force=True to overwrite anyway."
-                )
+            if from_scratch:
+                if not force:
+                    raise FileExistsError(
+                        f"{path} already exists; not overwriting it "
+                        "with a from-scratch library. Pass force=True "
+                        "to overwrite anyway."
+                    )
+            else:
+                on_disk_timestamp = peek_timestamp(path)
+                if (
+                    on_disk_timestamp is not None
+                    and self._timestamp is not None
+                    and on_disk_timestamp > self._timestamp
+                    and not force
+                ):
+                    raise StaleFileError(
+                        f"{path} has a newer save timestamp "
+                        f"({on_disk_timestamp}) than this library "
+                        f"({self._timestamp}); it appears to have been "
+                        "modified on disk since it was loaded. Pass "
+                        "force=True to overwrite anyway."
+                    )
 
         self._validate_for_save(path)
 
-        pristine = not self._modified and not any(
-            entry._dirty  # pylint: disable=protected-access
-            for entry in self._entries.values()
+        pristine = (
+            not from_scratch
+            and not self._modified
+            and not any(
+                entry._dirty  # pylint: disable=protected-access
+                for entry in self._entries.values()
+            )
         )
 
         if pristine:

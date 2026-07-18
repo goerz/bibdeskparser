@@ -37,6 +37,8 @@ used instead; the configuration file is discovered relative to the
 current working directory, falling back to the XDG location (see
 [Configuration](configuration)). With neither a `BIBFILE` argument nor
 a configured `default_bib_file`, the command fails with a usage error.
+The `.bib` file must already exist for every command except
+[`create`](cli-create), which starts a new, empty library.
 
 The commands are named after the corresponding
 {class}`~bibdeskparser.Library` methods and properties (`import`
@@ -95,6 +97,34 @@ invalid value, a missing file, or a
 {exc}`~bibdeskparser.StaleFileError` when the `.bib` file changed on
 disk while being edited -- prints a one-line `Error: <message>` on
 stderr and exits with code 1, without a traceback.
+
+## Creating a library
+
+(cli-create)=
+
+### `create`
+
+Create `BIBFILE` as a new, empty library: a `.bib` file containing
+only the standard BibDesk header comment. Corresponds to saving a
+from-scratch {class}`~bibdeskparser.Library`
+(`Library().save(path)`). Unlike for every other command, the file
+must *not* already exist; an existing file is never overwritten.
+
+```console
+$ bibdeskparser create new.bib
+```
+
+All other commands require the `.bib` file to exist, so a new library
+is started with `create` and then filled with entries:
+
+```console
+$ bibdeskparser create new.bib
+$ bibdeskparser import new.bib entries.bib
+```
+
+With a `default_bib_file` configured in `bibdeskparser.toml` (see
+[Configuration](configuration)), `bibdeskparser create` without an
+argument creates that file, bootstrapping the configured library.
 
 ## Inspecting
 
