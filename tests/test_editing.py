@@ -317,6 +317,20 @@ def test_edit_entries_macro_rename_detection():
     assert entry["journal"] == "jphysb"
 
 
+def test_edit_month_macro_is_not_undefined():
+    """Adding a bare `month = jan` in the editor passes validation:
+    the standard month macros are always defined."""
+    bib = Library()
+    entry = Entry("article", "Key2026", fields={"title": "T"})
+    bib["Key2026"] = entry
+    edit_entries(
+        [entry],
+        library=bib,
+        editor=_replace_editor("title = {T}", "title = {T},\n\tmonth = jan"),
+    )
+    assert entry["month"] == "jan"
+
+
 def test_export_edit_roundtrip_invariant():
     """The text presented to the editor is byte-for-byte the
     `export_entries(..., format="default")` output for the same

@@ -1297,6 +1297,105 @@ def test_undefined_macro_raises_on_save(tmp_path, bib):
     assert (tmp_path / "x.bib").exists()
 
 
+# -- 12b. standard month macros ---------------------------------------------#
+
+
+def test_month_macro_saves_without_definition(tmp_path, bib):
+    """`month = jan` references a standard macro: saving neither
+    raises nor writes a `@string` definition for it."""
+    bib["GoerzJPB2011"]["month"] = "jan"
+    out = tmp_path / "x.bib"
+    bib.save(out)
+    text = out.read_text(encoding="utf-8")
+    assert "month = jan" in _entry_block(text, "GoerzJPB2011")
+    assert "@string{jan" not in text
+
+
+def test_month_macros_not_in_strings_view(bib):
+    """The built-in month macros are a fallback, not part of the
+    `.strings` view."""
+    assert "jan" not in bib.strings
+    assert "dec" not in bib.strings
+
+
+def test_month_macro_expands_in_search(bib):
+    """A `month = jan` field matches a search for the expanded month
+    name."""
+    bib["GoerzJPB2011"]["month"] = "jan"
+    keys = [e.key for e in bib.search("January", fields=["month"])]
+    assert keys == ["GoerzJPB2011"]
+
+
+def test_month_macro_renders_expanded(tmp_path):
+    """A bare month macro renders as the month (not as an unresolved
+    macro name)."""
+    text = (
+        "@inproceedings{k1,\n"
+        "\tauthor = {Doe, Jane},\n"
+        "\ttitle = {T},\n"
+        "\tbooktitle = {Proceedings},\n"
+        "\tmonth = jul,\n"
+        "\tyear = {2024}}\n"
+    )
+    path = tmp_path / "months.bib"
+    path.write_text(text, encoding="utf-8")
+    bib = Library(path)
+    assert "Jul" in bib.render("k1")
+
+
+def test_month_macro_file_override_roundtrip(tmp_path):
+    """A `@string` definition of a month macro in the file overrides
+    the built-in value and round-trips byte-exact."""
+    text = (
+        "@string{jan = {Januar}}\n"
+        "\n"
+        "@article{k1,\n"
+        "\tauthor = {Doe, Jane},\n"
+        "\ttitle = {T},\n"
+        "\tjournal = {Journal},\n"
+        "\tmonth = jan,\n"
+        "\tyear = {2024}}\n"
+    )
+    path = tmp_path / "override.bib"
+    path.write_text(text, encoding="utf-8")
+    bib = Library(path)
+    assert bib.strings["jan"] == "Januar"
+    keys = [e.key for e in bib.search("Januar", fields=["month"])]
+    assert keys == ["k1"]
+    out = tmp_path / "out.bib"
+    bib.save(out)
+    assert "@string{jan = {Januar}}" in out.read_text(encoding="utf-8")
+    reloaded = Library(out)
+    assert reloaded.strings["jan"] == "Januar"
+
+
+def test_month_macro_override_is_saved_and_reloaded(tmp_path, bib):
+    """An override of a month macro assigned via `.strings` is written
+    to the `.bib` file as an ordinary `@string` definition, and still
+    overrides the built-in value after a reload."""
+    bib["GoerzJPB2011"]["month"] = "jan"
+    bib.strings["jan"] = "Januar"
+    out = tmp_path / "override.bib"
+    bib.save(out)
+    assert "@string{jan = {Januar}}" in out.read_text(encoding="utf-8")
+    reloaded = Library(out)
+    assert reloaded.strings["jan"] == "Januar"
+    keys = [e.key for e in reloaded.search("Januar", fields=["month"])]
+    assert keys == ["GoerzJPB2011"]
+
+
+def test_month_macro_override_delete_while_in_use(tmp_path, bib):
+    """Deleting a month-macro override is allowed even while entries
+    reference it: the reference falls back to the built-in month."""
+    bib["GoerzJPB2011"]["month"] = "jan"
+    bib.strings["jan"] = "Januar"
+    del bib.strings["jan"]
+    assert "jan" not in bib.strings
+    keys = [e.key for e in bib.search("January", fields=["month"])]
+    assert keys == ["GoerzJPB2011"]
+    bib.save(tmp_path / "x.bib")  # month = jan is not undefined
+
+
 # -- 13. missing referenced file -------------------------------------------#
 
 

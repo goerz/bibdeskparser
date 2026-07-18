@@ -35,6 +35,7 @@ from .groups import (
 from .header import make_header, parse_header, peek_timestamp, update_header
 from .importing import import_entries
 from .macros import (
+    STANDARD_MACROS,
     MacroString,
     ValueString,
     is_valid_macro_name,
@@ -360,7 +361,9 @@ class _StringsView(MutableMapping):
     macro name (validating it and lowercasing it, matching BibDesk's
     case-insensitive macro table). Deleting a macro that is still
     referenced (as a bare field value) by any entry raises
-    {exc}`ValueError`.
+    {exc}`ValueError` -- except for an override of a standard month
+    macro (`STANDARD_MACROS`), whose references fall back to the
+    built-in month name.
     """
 
     def __init__(self, owner):
@@ -390,12 +393,15 @@ class _StringsView(MutableMapping):
         strings_dict = self._strings_dict
         if name not in strings_dict:
             raise KeyError(name)
-        users = self._owner._macro_users(name)
-        if users:
-            raise ValueError(
-                f"cannot delete macro {name!r}: in use by entries "
-                f"{sorted(users)}"
-            )
+        # Deleting an override of a standard month macro never leaves
+        # a dangling reference: it falls back to the built-in value.
+        if name not in STANDARD_MACROS:
+            users = self._owner._macro_users(name)
+            if users:
+                raise ValueError(
+                    f"cannot delete macro {name!r}: in use by entries "
+                    f"{sorted(users)}"
+                )
         self._owner._library.remove([strings_dict[name]])
         self._owner._modified = True
 
@@ -556,7 +562,9 @@ class Library(MutableMapping):
       by {meth}`save`.
     - {attr}`strings`: a read-write view of the `@string` macro
       definitions. {meth}`rename_string` renames a macro, rewriting
-      every entry field that references it.
+      every entry field that references it. The twelve BibTeX month
+      macros (`jan` ... `dec`) are always defined as a built-in
+      fallback (like in BibDesk), without appearing in the view.
     - {attr}`groups`: a read-write `dict`-like view of the "BibDesk
       Static Groups", mapping each group name to a tuple of citation
       keys. Assigning a tuple of keys creates or replaces a group
@@ -808,8 +816,27 @@ class Library(MutableMapping):
         raises `ValueError` instead of leaving a dangling reference;
         use {meth}`rename_string` to rename a macro everywhere it is
         used in one step.
+
+        The view contains only the macros defined in the `.bib` file
+        itself. Like BibDesk, the twelve BibTeX month macros
+        (`jan` ... `dec`, expanding to `"January"` ... `"December"`)
+        are additionally always defined as a built-in fallback:
+        a `month = jan` field resolves (in {meth}`render`,
+        {meth}`search`, and format specifiers) without a `@string`
+        definition, and does not count as an undefined macro when
+        saving. A `@string` definition of the same name overrides the
+        built-in value, and (unlike other in-use macros) can be
+        deleted even while referenced, since the reference then falls
+        back to the built-in month name.
         """
         return self._strings_view
+
+    def _all_strings(self):
+        """{attr}`strings` as a plain `dict`, with the standard month
+        macros merged in as the lowest-priority fallback -- the mapping
+        to resolve a bare macro reference against (BibDesk's
+        `allMacroDefinitions`)."""
+        return {**STANDARD_MACROS, **self.strings}
 
     def _macro_users(self, name):
         """Citation keys of entries with a bare field value equal to
@@ -1383,7 +1410,7 @@ class Library(MutableMapping):
         new_name = specifiers.render_format(
             fmt,
             entry,
-            strings=dict(self.strings),
+            strings=self._all_strings(),
             initials=active.initials,
             lowercase=active.auto_file.lowercase,
             clean=active.auto_file.clean,
@@ -1450,7 +1477,7 @@ class Library(MutableMapping):
         new_key = specifiers.render_format(
             fmt,
             entry,
-            strings=dict(self.strings),
+            strings=self._all_strings(),
             initials=active.initials,
             lowercase=active.auto_key.lowercase,
             clean=active.auto_key.clean,
@@ -1530,7 +1557,7 @@ class Library(MutableMapping):
         new_name = specifiers.render_format(
             fmt,
             entry,
-            strings=dict(self.strings),
+            strings=self._all_strings(),
             initials=active.initials,
             lowercase=active.auto_file.lowercase,
             clean=active.auto_file.clean,
@@ -2012,6 +2039,7 @@ class Library(MutableMapping):
                 if (
                     is_valid_macro_name(value, normalized=True)
                     and value not in strings_dict
+                    and value not in STANDARD_MACROS
                 ):
                     undefined.add(value)
         if undefined:
@@ -2055,7 +2083,9 @@ class Library(MutableMapping):
         canonical order, and {attr}`timestamp` is updated.
 
         Before writing, raises {exc}`ValueError` if any entry
-        references an undefined `@string` macro, and warns (without
+        references an undefined `@string` macro (the standard month
+        macros `jan` ... `dec` are always defined, see
+        {attr}`strings`), and warns (without
         raising) about any linked file
         ({attr}`Entry.files`) that does not exist
         relative to `path`'s directory (such files may legitimately
@@ -2226,7 +2256,7 @@ class Library(MutableMapping):
         return search_entries(
             self.values(),
             query,
-            strings=dict(self.strings),
+            strings=self._all_strings(),
             fields=fields,
             match=match,
         )
@@ -2248,7 +2278,7 @@ class Library(MutableMapping):
         * `"default"` (the default): like `"paragraphs"`, except a
           single `"html"` citation is not wrapped in `<p>...</p>`.
         """
-        strings = dict(self.strings)
+        strings = self._all_strings()
         entries = [_expand_macros(self[key], strings) for key in keys]
         return render_entries(entries, format=format, style=style)
 

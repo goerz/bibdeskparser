@@ -4,6 +4,7 @@ import pytest
 
 from bibdeskparser.macros import (
     _MACRO_NAME_CHARS,
+    STANDARD_MACROS,
     is_valid_macro_name,
     normalize_macro_name,
 )
@@ -92,3 +93,16 @@ def test_normalize_macro_name_invalid():
         normalize_macro_name("bad name")
     with pytest.raises(ValueError, match="invalid BibDesk macro name"):
         normalize_macro_name("a{b")
+
+
+def test_standard_macros():
+    """The standard macros are exactly the twelve BibTeX month macros
+    (as in BibDesk's `BDSKMacroResolver`), with valid normalized names
+    and full English month names as values."""
+    assert len(STANDARD_MACROS) == 12
+    assert STANDARD_MACROS["jan"] == "January"
+    assert STANDARD_MACROS["dec"] == "December"
+    for name, value in STANDARD_MACROS.items():
+        assert is_valid_macro_name(name)
+        assert value.capitalize() == value
+        assert value.lower().startswith(name)

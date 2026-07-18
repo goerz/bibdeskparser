@@ -15,7 +15,37 @@ __all__ = ["ValueString", "MacroString"]
 
 # All members whose name does not start with an underscore must be listed
 # either in __all__ or in __private__
-__private__ = ["is_valid_macro_name", "normalize_macro_name"]
+__private__ = [
+    "is_valid_macro_name",
+    "normalize_macro_name",
+    "STANDARD_MACROS",
+]
+
+# BibDesk's built-in "standard" macros: exactly the twelve BibTeX month
+# macros, and nothing else (`standardMacroDefinitions` in
+# `BDSKMacroResolver.m`). BibDesk maps them to the localized full month
+# names; we use the (deterministic) English names, which is also what
+# the standard BibTeX style `plain.bst` defines. These are a
+# lowest-priority *fallback* for resolving a bare reference, never part
+# of `Library.strings` and never written to the `.bib` file. A
+# `@string` definition of the same name is an ordinary macro -- it
+# overrides the fallback (as in BibTeX/BibDesk, where a `.bib`
+# `@string` beats a `.bst`/built-in definition) and round-trips through
+# `Library.strings` and save like any other macro.
+STANDARD_MACROS = {
+    "jan": "January",
+    "feb": "February",
+    "mar": "March",
+    "apr": "April",
+    "may": "May",
+    "jun": "June",
+    "jul": "July",
+    "aug": "August",
+    "sep": "September",
+    "oct": "October",
+    "nov": "November",
+    "dec": "December",
+}
 
 # Characters BibDesk allows in a field/macro name. Built exactly as
 # `invalidCiteKeyCharSet` in `BDSKTypeManager.m` (which

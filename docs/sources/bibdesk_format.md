@@ -225,6 +225,30 @@ value's shape -- wrap the value in
 {class}`~bibdeskparser.MacroString` instead, the mirror image of
 `ValueString`.
 
+### Default macros
+
+BibTeX itself has no built-in macros, but the standard `.bst` style
+files (`plain.bst` etc.) all define the twelve month macros `jan`
+... `dec` ("January" ... "December", or the abbreviated names in the
+abbreviating styles), plus a couple of journal abbreviations such as
+`acmcs` or `ieeetr`; biblatex's `biber` likewise treats `jan` ...
+`dec` as predefined (mapping them to month numbers). Writing `month =
+jan` without any `@string` definition is therefore standard, portable
+BibTeX.
+
+BibDesk builds in exactly the twelve month macros -- resolving to the
+full (localized) month names -- and nothing else; the `.bst` journal
+abbreviations are *not* built in. `bibdeskparser` does the same: `jan`
+... `dec` are always defined, expanding to the full English month
+names. They resolve at the lowest priority and are not part of
+{py:attr}`~bibdeskparser.library.Library.strings` (nor ever written to
+the `.bib` file), but in every other respect they behave as macro
+references: `month = jan` does not count as an undefined macro, and a
+`@string{jan = ...}` definition in the file is an ordinary macro that
+overrides the built-in month name and round-trips like any other. A
+bare reference to a `.bst` journal abbreviation, by contrast, is
+undefined unless the `.bib` file defines it.
+
 ## BibDesk Static Groups
 
 BibDesk lets you organize entries into user-curated "static" groups

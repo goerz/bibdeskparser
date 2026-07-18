@@ -29,6 +29,7 @@ from .entry import (
     _strip_enclosing,
 )
 from .macros import (
+    STANDARD_MACROS,
     MacroString,
     ValueString,
     is_valid_macro_name,
@@ -451,7 +452,9 @@ def _stage_entry(
         fields["title"] = ValueString(
             _protect_title(str(title), active.protected_words)
         )
-    defined = set(existing_strings) | set(planned_strings)
+    defined = (
+        set(existing_strings) | set(planned_strings) | set(STANDARD_MACROS)
+    )
     for lkey, value in fields.items():
         if isinstance(value, MacroString) and str(value) not in defined:
             problems.append(

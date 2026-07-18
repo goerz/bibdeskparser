@@ -156,6 +156,24 @@ def test_undefined_macro_is_an_error():
         bib.import_bibtex(ARTICLE.replace("{Phys. Rev. A}", "pra"))
 
 
+def test_month_macro_is_not_undefined():
+    """A bare `month = jan` is a standard macro, not an undefined
+    reference (`month` is dropped for `@article` imports, so use
+    `@unpublished`)."""
+    bib = Library()
+    text = (
+        "@unpublished{k1,\n"
+        "    Author = {Doe, Jane},\n"
+        "    Title = {A Title},\n"
+        "    Month = jan,\n"
+        "    Year = {2024},\n"
+        "}\n"
+    )
+    (key,) = bib.import_bibtex(text)
+    assert bib[key]["month"] == MacroString("jan")
+    assert "jan" not in bib.strings
+
+
 # -- @string handling --------------------------------------------------- #
 
 
