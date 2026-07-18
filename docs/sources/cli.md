@@ -642,6 +642,58 @@ $ bibdeskparser set_field library.bib Koch2016 abstract \
     "We review different aspects of quantum control ..."
 ```
 
+(cli-add-preprint)=
+
+### `add_preprint KEY...`
+
+Find and store the matching arXiv preprint for the given entries, via
+{py:meth}`~bibdeskparser.Library.add_preprint`. For each `KEY`, the
+arXiv API is searched for a preprint matching the entry (by title and
+first author, precise queries first) and, on a confident match, its
+identifier is stored in the entry's `eprint` field, along with
+`archiveprefix = arXiv`. A result is accepted only when
+
+* its arXiv DOI equals the entry's `doi` field (the strongest
+  signal), or
+* its title is a near-exact match, or
+* a good title match is corroborated by the first author's last name.
+
+A title-based match whose arXiv submission postdates the entry's
+`year` by more than a year is rejected unless its journal reference
+names that year -- a guard against unrelated papers sharing a generic
+title. Such a `postdated-unverified` candidate is only reported;
+after reviewing it, apply it explicitly with `--eprint ID` (a single
+`KEY` only, no network access; a leading `arXiv:` prefix and a
+version suffix are stripped).
+
+The `eprint` field encodes the entry's audit state: *absent* means
+the preprint status is unknown (`keys --missing eprint`), *empty*
+means a search ran cleanly and found no preprint
+(`keys --empty eprint`), non-empty holds the identifier. With
+`--mark-empty` (defaulting to the
+[`[add_preprint]` configuration table](config-add)), a clean
+no-match stores that empty marker, so repeated fill-in runs skip the
+entry. Entries that already have a non-empty `eprint` are skipped
+(`--overwrite` re-searches and replaces); the empty marker is
+re-searched without `--overwrite`. On a failed search (network/API
+error) the entry is never modified, so a re-run picks it up.
+
+The command prints a per-key report; `--dry-run` prints it without
+modifying the `.bib` file, and `--json` maps each key to
+`{eprint, match, ratio, note, applied}`. Requires network access
+(except with `--eprint`) and respects the arXiv API's rate limit of
+one request every three seconds, so large runs take time.
+
+```console
+$ bibdeskparser keys library.bib --type article --missing eprint
+BaumgratzPRL2014
+Feynman1982
+$ bibdeskparser add_preprint library.bib --mark-empty \
+    BaumgratzPRL2014 Feynman1982
+BaumgratzPRL2014: stored eprint 1311.0275 (match=doi, ratio=1.00)
+Feynman1982: no preprint found (stored empty marker) [best-ratio=0.31]
+```
+
 ## Groups
 
 ### `add_to_group NAME KEY...`

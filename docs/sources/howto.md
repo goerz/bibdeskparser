@@ -554,6 +554,63 @@ The entry then no longer shows up in `keys --missing abstract` (it is
 matched by `keys --empty abstract` instead), so repeated fill-in
 passes stay fast and idempotent.
 
+(howto-add-preprint)=
+
+## How to fill in missing arXiv identifiers
+
+{py:meth}`Library.add_preprint <bibdeskparser.library.Library.add_preprint>`
+searches arXiv for the preprint of an existing entry and records its identifier in
+the entry's `eprint` field (along with `archiveprefix = arXiv`):
+
+```python
+result = bib.add_preprint("MuellerPRA2014")
+bib.save()
+```
+
+A search result is stored only on a confident match: an arXiv DOI
+equal to the entry's `doi`, a near-exact title match, or a good title
+match corroborated by the first author. On the command line, list the
+entries whose preprint status is unknown and fill them in bulk
+({ref}`CLI reference <cli-add-preprint>`):
+
+```console
+$ bibdeskparser keys library.bib --type article --missing eprint
+BaumgratzPRL2014
+Feynman1982
+$ bibdeskparser add_preprint library.bib --mark-empty \
+    BaumgratzPRL2014 Feynman1982
+BaumgratzPRL2014: stored eprint 1311.0275 (match=doi, ratio=1.00)
+Feynman1982: no preprint found (stored empty marker) [best-ratio=0.31]
+```
+
+With `--mark-empty` (or `mark_empty = true` in the
+[`[add_preprint]` configuration table](config-add)), an entry for
+which no preprint is found gets an *empty* `eprint` field. Like the
+empty-abstract marker of the previous recipe, this records "searched,
+nothing found": the entry moves from `keys --missing eprint` to
+`keys --empty eprint`, so repeated fill-in passes do not re-query
+arXiv for it. Since a non-match can also be a matching failure,
+re-audit those markers occasionally:
+
+```console
+$ bibdeskparser add_preprint library.bib $(bibdeskparser keys \
+    library.bib --empty eprint)
+```
+
+A match that the search rejects as `postdated-unverified` (an arXiv
+submission years after the entry's publication, without a
+corroborating journal reference) is only reported; if reviewing it
+shows it really is the paper's preprint (authors do post old papers
+late), record it explicitly, which needs no network access:
+
+```console
+$ bibdeskparser add_preprint library.bib Greiner2002 --eprint 2505.01234
+```
+
+The search respects the arXiv API's rate limit of one request every
+three seconds, so filling in a large library takes time -- let it
+run.
+
 ## How to import BibTeX entries from a publisher or another library
 
 {py:meth}`~bibdeskparser.library.Library.import_bibtex` runs any

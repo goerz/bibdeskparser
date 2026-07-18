@@ -669,3 +669,18 @@ def test_add_abstract_min_confidence_assignment():
     """Assigning an invalid `min_confidence` raises immediately."""
     with pytest.raises(ValueError, match="min_confidence"):
         config.active.add_abstract.min_confidence = "certain"
+
+
+def test_add_preprint_option_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "add_preprint = 1\n")
+    with pytest.raises(ValueError, match=r"\[add_preprint\] must be a table"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[add_preprint]\nmark_empty = "yes"\n')
+    with pytest.raises(ValueError, match="mark_empty must be a boolean"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[add_preprint]\nnonsense = 1\n")
+    with pytest.warns(
+        UserWarning, match=r"unknown key\(s\) in \[add_preprint\]"
+    ):
+        config.active.load(bib_dir=tmp_path)
