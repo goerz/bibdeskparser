@@ -688,7 +688,9 @@ def edit_strings(library, editor=None):
     Exports `library.strings` (only, no entries) as a series of
     `@string{name = {value}}` lines, sorted by name, opens it in
     `editor`, waits for the editor to exit, re-parses the result,
-    validates it, and merges the changes back into `library.strings`:
+    validates it, and merges the changes back into `library.strings`
+    (macro names are matched case-insensitively, normalized to
+    BibDesk's canonical lowercase form):
 
     * A new name/value pair is defined.
     * A changed value is redefined in place.
@@ -727,8 +729,14 @@ def edit_strings(library, editor=None):
             edited_text = path.read_text(encoding="utf-8")
             parsed, problems = _parse_and_validate_strings(edited_text)
             if not problems:
+                # Validation has already checked every name, so
+                # normalization cannot fail here; it maps an edited
+                # mixed-case name onto the same (lowercase) macro,
+                # matching BibDesk's case-insensitive macro table.
                 parsed_strings = {
-                    string.key: _strip_enclosing(string.value)
+                    normalize_macro_name(string.key): _strip_enclosing(
+                        string.value
+                    )
                     for string in parsed.strings
                 }
                 problems = _merge_strings(

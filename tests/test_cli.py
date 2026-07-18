@@ -949,6 +949,16 @@ def test_rename_string(runner, bibfile):
     assert lib["GoerzJPB2011"]["journal"] == "jphysb"
 
 
+def test_rename_string_mixed_case(runner, bibfile):
+    """A mixed-case new name (as in the command's own `--help`
+    example) is normalized to lowercase, matching BibDesk's
+    case-insensitive macro table."""
+    _run(runner, "rename_string", bibfile, "jpb", "PhysRevLett")
+    lib = _load(bibfile)
+    assert lib.strings["physrevlett"] == "J. Phys. B"
+    assert lib["GoerzJPB2011"]["journal"] == "physrevlett"
+
+
 def test_add_to_keyword(runner, bibfile):
     _run(runner, "add_to_keyword", bibfile, "testing", "GoerzJPB2011")
     assert _load(bibfile).keywords["testing"] == ("GoerzJPB2011",)

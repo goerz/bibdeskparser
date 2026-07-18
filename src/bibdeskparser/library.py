@@ -355,15 +355,18 @@ def _place_string_block(raw_library):
 class _StringsView(MutableMapping):
     """Read-write `dict`-like view of {attr}`Library.strings`.
 
-    Backed by `library._library.strings_dict`. Reading strips the
-    enclosing `{...}`/`"..."` delimiters; writing re-adds them (after
-    stripping any the caller redundantly supplied) and normalizes the
-    macro name (validating it and lowercasing it, matching BibDesk's
-    case-insensitive macro table). Deleting a macro that is still
-    referenced (as a bare field value) by any entry raises
-    {exc}`ValueError` -- except for an override of a standard month
-    macro (`STANDARD_MACROS`), whose references fall back to the
-    built-in month name.
+    Backed by `library._library.strings_dict`, whose keys are always
+    in BibDesk's canonical lowercase form (parsing normalizes them,
+    see `bibdeskparser.middleware.NormalizeMacroNamesMiddleware`).
+    Lookups (reading, `in`, deleting) lowercase the requested name, so
+    the whole view matches BibDesk's case-insensitive macro table.
+    Reading strips the enclosing `{...}`/`"..."` delimiters; writing
+    re-adds them (after stripping any the caller redundantly supplied)
+    and normalizes the macro name (validating it and lowercasing it).
+    Deleting a macro that is still referenced (as a bare field value)
+    by any entry raises {exc}`ValueError` -- except for an override of
+    a standard month macro (`STANDARD_MACROS`), whose references fall
+    back to the built-in month name.
     """
 
     def __init__(self, owner):
@@ -374,6 +377,9 @@ class _StringsView(MutableMapping):
         return self._owner._library.strings_dict
 
     def __getitem__(self, name):
+        # A non-str key falls through to a dict-like KeyError.
+        if isinstance(name, str):
+            name = name.lower()
         return _strip_enclosing(self._strings_dict[name].value)
 
     def __setitem__(self, name, value):
@@ -390,6 +396,9 @@ class _StringsView(MutableMapping):
         _check_duplicate_macro_values(self._strings_dict)
 
     def __delitem__(self, name):
+        # A non-str key falls through to a dict-like KeyError.
+        if isinstance(name, str):
+            name = name.lower()
         strings_dict = self._strings_dict
         if name not in strings_dict:
             raise KeyError(name)
@@ -807,11 +816,15 @@ class Library(MutableMapping):
         """Read-write `dict`-like view of the `@string` macro
         definitions.
 
-        Assigning a name validates that it is a valid BibDesk macro
-        name (a subset of ASCII, no leading digit) and raises
-        `ValueError` if it is not; the name is lowercased to match
-        BibDesk's case-insensitive macro table, so `strings["PRA"] =
-        ...` defines the same macro as `strings["pra"] = ...`.
+        Macro names are case-insensitive, matching BibDesk's macro
+        table: they are stored (and iterated) in their canonical
+        lowercase form -- names from the parsed `.bib` file are
+        lowercased on load -- and every lookup (reading, `in`,
+        deleting) lowercases the requested name, so `strings["PRA"]`
+        and `strings["pra"]` are the same macro. Assigning a name
+        additionally validates that it is a valid BibDesk macro name
+        (a subset of ASCII, no leading digit) and raises `ValueError`
+        if it is not.
         Deleting a name that is still referenced by any entry's field
         raises `ValueError` instead of leaving a dangling reference;
         use {meth}`rename_string` to rename a macro everywhere it is
@@ -857,17 +870,23 @@ class Library(MutableMapping):
         Updates the `@string` definition itself, and every entry field
         that bare-references `old_name` (case-insensitively) is
         rewritten to reference `new_name` instead (marking that entry
-        as modified).
+        as modified). Both names are treated case-insensitively,
+        matching BibDesk's macro table: `old_name` is looked up by its
+        lowercase form, and `new_name` is normalized to lowercase. A
+        rename onto the same macro (`new_name` differing from
+        `old_name` at most in case) is a no-op.
 
         Raises {exc}`KeyError` if `old_name` is not a defined macro,
         and {exc}`ValueError` if `new_name` is not a valid macro name
         or already names a different macro.
         """
+        old_name = old_name.lower()
         strings_dict = self._library.strings_dict
         if old_name not in strings_dict:
             raise KeyError(old_name)
-        if not is_valid_macro_name(new_name, normalized=True):
-            raise ValueError(f"invalid BibDesk macro name: {new_name!r}")
+        new_name = normalize_macro_name(new_name)
+        if new_name == old_name:
+            return
         if new_name in strings_dict:
             raise ValueError(f"macro {new_name!r} already exists")
         old_string = strings_dict[old_name]
@@ -875,10 +894,9 @@ class Library(MutableMapping):
         self._library.replace(
             old_string, new_string, fail_on_duplicate_key=True
         )
-        lname = old_name.lower()
         for entry in self._entries.values():
             for field, value in _bare_macro_fields(entry):
-                if value.lower() == lname:
+                if value.lower() == old_name:
                     field.value = new_name
                     entry._touch()  # pylint: disable=protected-access
         self._modified = True
@@ -2074,7 +2092,11 @@ class Library(MutableMapping):
         entries/strings were added or removed),
         the file is written byte-identical to how it was parsed (or,
         for a from-scratch library, is simply rendered), and the
-        header timestamp is *not* touched. Otherwise: the header
+        header timestamp is *not* touched. The one exception to
+        byte-identity: a hand-edited mixed-case macro name (a
+        `@string{JAN = ...}` definition or a bare `month = JAN`
+        reference) is normalized on load and written back in its
+        canonical lowercase form. Otherwise: the header
         timestamp is updated (synthesizing a header if the library did
         not already have one), the static-groups `@comment` block is
         re-rendered from the current {attr}`groups` (synthesizing the
