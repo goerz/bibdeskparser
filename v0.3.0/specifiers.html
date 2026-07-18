@@ -1,0 +1,727 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Format Specifiers &mdash; BibDeskParser 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/docs-versions-menu.js?v=2187e224"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Command Line Interface" href="cli.html" />
+    <link rel="prev" title="Configuration" href="config.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+  <a href="index.html" class="icon icon-home">
+    BibDeskParser
+  </a>
+
+  <div class="version">
+    v0.3.0
+  </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#development">Development</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="howto.html">How-to Guides</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Format Specifiers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#specifiers">Specifiers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#anatomy-of-a-specifier">Anatomy of a specifier</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#author-names-a-a-p-p">Author names: <code class="docutils literal notranslate"><span class="pre">%a</span></code>, <code class="docutils literal notranslate"><span class="pre">%A</span></code>, <code class="docutils literal notranslate"><span class="pre">%p</span></code>, <code class="docutils literal notranslate"><span class="pre">%P</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#title-t-t">Title: <code class="docutils literal notranslate"><span class="pre">%t</span></code>, <code class="docutils literal notranslate"><span class="pre">%T</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#date-y-y-m">Date: <code class="docutils literal notranslate"><span class="pre">%y</span></code>, <code class="docutils literal notranslate"><span class="pre">%Y</span></code>, <code class="docutils literal notranslate"><span class="pre">%m</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#arbitrary-fields-f-w">Arbitrary fields: <code class="docutils literal notranslate"><span class="pre">%f</span></code>, <code class="docutils literal notranslate"><span class="pre">%w</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#conditional-text-s">Conditional text: <code class="docutils literal notranslate"><span class="pre">%s</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#acronym-c">Acronym: <code class="docutils literal notranslate"><span class="pre">%c</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#keywords-and-file-name-k-b">Keywords and file name: <code class="docutils literal notranslate"><span class="pre">%k</span></code>, <code class="docutils literal notranslate"><span class="pre">%b</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#original-file-name-l-l-e-e">Original file name: <code class="docutils literal notranslate"><span class="pre">%l</span></code>, <code class="docutils literal notranslate"><span class="pre">%L</span></code>, <code class="docutils literal notranslate"><span class="pre">%e</span></code>, <code class="docutils literal notranslate"><span class="pre">%E</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#random-and-unique-characters-r-r-d-u-u-n">Random and unique characters: <code class="docutils literal notranslate"><span class="pre">%r</span></code>, <code class="docutils literal notranslate"><span class="pre">%R</span></code>, <code class="docutils literal notranslate"><span class="pre">%d</span></code>, <code class="docutils literal notranslate"><span class="pre">%u</span></code>, <code class="docutils literal notranslate"><span class="pre">%U</span></code>, <code class="docutils literal notranslate"><span class="pre">%n</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#literal-characters-0-9">Literal characters: <code class="docutils literal notranslate"><span class="pre">%0</span></code>–<code class="docutils literal notranslate"><span class="pre">%9</span></code>, <code class="docutils literal notranslate"><span class="pre">%[</span></code>, <code class="docutils literal notranslate"><span class="pre">%]</span></code>, <code class="docutils literal notranslate"><span class="pre">%-</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#venue-initials-c-and-the-initials-mapping">Venue initials: <code class="docutils literal notranslate"><span class="pre">%c</span></code> and the <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unique-specifiers">Unique specifiers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#deterministic-unique-characters">Deterministic unique characters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#sanitization">Sanitization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#file-name-formats">File-name formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#differences-from-bibdesk">Differences from BibDesk</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BibDeskParser</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Format Specifiers</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="format-specifiers">
+<span id="id1"></span><h1>Format Specifiers<a class="headerlink" href="#format-specifiers" title="Link to this heading"></a></h1>
+<p>BibDesk has a small <em>format-specifier language</em> – <code class="docutils literal notranslate"><span class="pre">%</span></code>-templates like
+<code class="docutils literal notranslate"><span class="pre">&quot;%a1%c{journal}0%Y%u0&quot;</span></code> that expand against an entry’s fields. BibDesk
+uses it in two places: to autogenerate <strong>citation keys</strong> (its
+<em>Preferences → Cite Key</em> pane) and to autogenerate <strong>attachment file
+names</strong> (its AutoFile feature). This page documents the language
+itself. <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> applies it in the same two places: citation
+keys (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rekey" title="bibdeskparser.Library.rekey"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.rekey</span></code></a>, configured
+by the <a class="reference internal" href="config.html#config-auto-key"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> table</span></a>) and attachment file
+names (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_file" title="bibdeskparser.Library.add_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.add_file</span></code></a> and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.rename_file</span></code></a>,
+configured by the <a class="reference internal" href="config.html#config-auto-file"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> table</span></a>). The two
+uses share the specifiers described below; the
+<a class="reference internal" href="#specifiers-files"><span class="std std-ref">file-name dialect</span></a> differs only in the few points
+covered in its own section.</p>
+<p>The most common use is autogenerating a citation key from a <em>format
+string</em>, via single-argument
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rekey" title="bibdeskparser.Library.rekey"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.rekey</span></code></a> (or the
+<a class="reference internal" href="cli.html#cli-rekey"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">rekey</span></code> CLI command</span></a> without a <code class="docutils literal notranslate"><span class="pre">NEW_KEY</span></code>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Library</span><span class="p">,</span> <span class="n">Entry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;temp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;temp&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Goerz, Michael H. and Koch, Christiane P.&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Robustness of high-fidelity </span><span class="si">{Rydberg}</span><span class="s2"> gates&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;Phys. Rev. A&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;volume&quot;</span><span class="p">:</span> <span class="s2">&quot;90&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;pages&quot;</span><span class="p">:</span> <span class="s2">&quot;032329&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2014&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;month&quot;</span><span class="p">:</span> <span class="s2">&quot;aug&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;doi&quot;</span><span class="p">:</span> <span class="s2">&quot;10.1103/PhysRevA.90.032329&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="s2">&quot;temp&quot;</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">)</span>
+<span class="go">&#39;GoerzPRA2014&#39;</span>
+
+</pre></div>
+</div>
+<p>The format string language is <strong>BibDesk’s own</strong>: a format string that
+works in BibDesk’s <em>Preferences → Cite Key</em> pane works here identically
+(with the few exceptions <a class="reference internal" href="#specifiers-differences"><span class="std std-ref">noted below</span></a>).</p>
+<p>For citation keys, the format is usually configured once, in the
+<code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> table of <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> (see the
+<a class="reference internal" href="config.html#configuration"><span class="std std-ref">configuration</span></a>), where
+it may also be given <a class="reference internal" href="config.html#config-auto-key"><span class="std std-ref">per entry type</span></a>; the
+<code class="docutils literal notranslate"><span class="pre">format_spec</span></code> argument used above overrides it ad hoc. The examples
+below use <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.eval_format_spec" title="bibdeskparser.Library.eval_format_spec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.eval_format_spec</span></code></a> instead, which evaluates a
+format for an entry and returns the resulting key <em>without renaming
+anything</em>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1%Y&quot;</span><span class="p">)</span>
+<span class="go">&#39;Goerz2014&#39;</span>
+
+</pre></div>
+</div>
+<section id="specifiers">
+<h2>Specifiers<a class="headerlink" href="#specifiers" title="Link to this heading"></a></h2>
+<p>Any character other than <code class="docutils literal notranslate"><span class="pre">%</span></code> stands for itself (subject to
+<a class="reference internal" href="#specifiers-sanitization"><span class="std std-ref">sanitization</span></a>); a <code class="docutils literal notranslate"><span class="pre">%</span></code> introduces a specifier.</p>
+<section id="anatomy-of-a-specifier">
+<h3>Anatomy of a specifier<a class="headerlink" href="#anatomy-of-a-specifier" title="Link to this heading"></a></h3>
+<p>After the <code class="docutils literal notranslate"><span class="pre">%</span></code>, a specifier has up to four parts, always in this order.
+Only the letter is required; the rest are added as needed. For example,
+in the specifier <code class="docutils literal notranslate"><span class="pre">%f{journal}[/]5</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%f</span></code> – the <strong>specifier</strong>: <code class="docutils literal notranslate"><span class="pre">%</span></code> plus one letter that chooses <em>what</em> to
+insert (an author, the title, the year, …).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{journal}</span></code> – a <strong><code class="docutils literal notranslate"><span class="pre">{Field}</span></code> name</strong>, the entry field to read. Only
+<code class="docutils literal notranslate"><span class="pre">%f</span></code>, <code class="docutils literal notranslate"><span class="pre">%w</span></code>, <code class="docutils literal notranslate"><span class="pre">%c</span></code>, and <code class="docutils literal notranslate"><span class="pre">%s</span></code> take one, written right after the letter.
+The name is case-insensitive.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[/]</span></code> – one or more <strong>arguments</strong> in square brackets: separators,
+“et al.” text, or per-character replacements. Arguments are
+<em>positional</em>, so to supply a later one you must supply the earlier
+ones too, giving an unused one as empty (<code class="docutils literal notranslate"><span class="pre">[]</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">5</span></code> – the <strong>trailing number</strong>, which caps an amount. <em>What</em> it
+counts is specific to the specifier (names, words, keywords,
+characters, …). A few specifiers take <em>two</em> numbers, written back
+to back with no separator: <code class="docutils literal notranslate"><span class="pre">%a22</span></code> means two names, two characters
+each.</p></li>
+</ul>
+<p>A bare <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference as a field value (e.g.
+<code class="docutils literal notranslate"><span class="pre">journal</span> <span class="pre">=</span> <span class="pre">pra</span></code>) is expanded using the library’s macro definitions
+before any specifier is applied.</p>
+<p>The subsections below are the complete reference for each group of
+specifiers. The examples evaluate a format against the
+<code class="docutils literal notranslate"><span class="pre">GoerzPRA2014</span></code> entry defined above (an <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code> by Goerz and Koch).</p>
+</section>
+<section id="author-names-a-a-p-p">
+<h3>Author names: <code class="docutils literal notranslate"><span class="pre">%a</span></code>, <code class="docutils literal notranslate"><span class="pre">%A</span></code>, <code class="docutils literal notranslate"><span class="pre">%p</span></code>, <code class="docutils literal notranslate"><span class="pre">%P</span></code><a class="headerlink" href="#author-names-a-a-p-p" title="Link to this heading"></a></h3>
+<p>The last names of the people in the <code class="docutils literal notranslate"><span class="pre">author</span></code> field. <code class="docutils literal notranslate"><span class="pre">%p</span></code> and <code class="docutils literal notranslate"><span class="pre">%P</span></code> use
+the <code class="docutils literal notranslate"><span class="pre">editor</span></code> field instead when the entry has no author.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%a</span></code> / <code class="docutils literal notranslate"><span class="pre">%p</span></code> – the last names, concatenated. <em>Arguments</em>
+<code class="docutils literal notranslate"><span class="pre">[separator][etal]</span></code>: text placed between names, and text appended
+when names are dropped. <em>Number</em> the count of names (a single digit,
+or a negative <code class="docutils literal notranslate"><span class="pre">-N</span></code> counting from the last author), optionally
+followed by a second digit giving the characters to keep per name.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%A</span></code> / <code class="docutils literal notranslate"><span class="pre">%P</span></code> – the last names, each with the author’s first initial.
+<em>Arguments</em> <code class="docutils literal notranslate"><span class="pre">[author</span> <span class="pre">separator][name</span> <span class="pre">separator][etal]</span></code>. <em>Number</em> the
+count of names.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;GoerzPRA2014&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">)</span>     <span class="c1"># all authors, full last names</span>
+<span class="go">&#39;GoerzKoch&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1&quot;</span><span class="p">)</span>    <span class="c1"># first author only</span>
+<span class="go">&#39;Goerz&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">22&quot;</span><span class="p">)</span>   <span class="c1"># two authors, two chars each</span>
+<span class="go">&#39;GoKo&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">-1&quot;</span><span class="p">)</span>   <span class="c1"># the *last* author</span>
+<span class="go">&#39;Koch&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">[-][X]1&quot;</span><span class="p">)</span>   <span class="c1"># &quot;X&quot; marks dropped authors</span>
+<span class="go">&#39;GoerzX&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%A&quot;</span><span class="p">)</span>     <span class="c1"># last name + first initial</span>
+<span class="go">&#39;Goerz.M;Koch.C&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%A[-][][]1&quot;</span><span class="p">)</span>  <span class="c1"># empty in-name separator</span>
+<span class="go">&#39;GoerzM&#39;</span>
+
+</pre></div>
+</div>
+<p>As a BibDesk quirk, an unescaped trailing digit in the <code class="docutils literal notranslate"><span class="pre">[etal]</span></code>
+argument further lowers the name count: for a five-author paper,
+<code class="docutils literal notranslate"><span class="pre">%a[][X1]2</span></code> requests two names but the trailing <code class="docutils literal notranslate"><span class="pre">1</span></code> cuts that to one,
+rendering the first author followed by <code class="docutils literal notranslate"><span class="pre">X</span></code> (<code class="docutils literal notranslate"><span class="pre">GoerzX</span></code>).</p>
+</section>
+<section id="title-t-t">
+<h3>Title: <code class="docutils literal notranslate"><span class="pre">%t</span></code>, <code class="docutils literal notranslate"><span class="pre">%T</span></code><a class="headerlink" href="#title-t-t" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%t</span></code> – the whole title. <em>Number</em> characters to keep.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%T</span></code> – the title word by word, joined with <code class="docutils literal notranslate"><span class="pre">-</span></code>. <em>Number</em> words to
+keep, counting only words longer than the <em>small word length</em>
+(default 3). <em>Argument</em> <code class="docutils literal notranslate"><span class="pre">[small</span> <span class="pre">word</span> <span class="pre">length]</span></code> overrides that length
+<strong>and</strong> drops the short words entirely; without the argument, short
+words are kept (they simply do not count toward the number).</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%t12&quot;</span><span class="p">)</span>    <span class="c1"># first 12 characters</span>
+<span class="go">&#39;Robustness-o&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%T[3]2&quot;</span><span class="p">)</span>  <span class="c1"># two words longer than 3 chars</span>
+<span class="go">&#39;Robustness-high-fidelity&#39;</span>
+
+</pre></div>
+</div>
+</section>
+<section id="date-y-y-m">
+<h3>Date: <code class="docutils literal notranslate"><span class="pre">%y</span></code>, <code class="docutils literal notranslate"><span class="pre">%Y</span></code>, <code class="docutils literal notranslate"><span class="pre">%m</span></code><a class="headerlink" href="#date-y-y-m" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%y</span></code> / <code class="docutils literal notranslate"><span class="pre">%Y</span></code> – the year, two-digit / four-digit.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%m</span></code> – the month as two digits, read from a number or an English
+month name (<code class="docutils literal notranslate"><span class="pre">aug</span></code>, <code class="docutils literal notranslate"><span class="pre">August</span></code>).</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%Y-%y-%m&quot;</span><span class="p">)</span>
+<span class="go">&#39;2014-14-08&#39;</span>
+
+</pre></div>
+</div>
+</section>
+<section id="arbitrary-fields-f-w">
+<h3>Arbitrary fields: <code class="docutils literal notranslate"><span class="pre">%f</span></code>, <code class="docutils literal notranslate"><span class="pre">%w</span></code><a class="headerlink" href="#arbitrary-fields-f-w" title="Link to this heading"></a></h3>
+<p>Both take a <code class="docutils literal notranslate"><span class="pre">{Field}</span></code> name. The special names <code class="docutils literal notranslate"><span class="pre">Cite</span> <span class="pre">Key</span></code> and
+<code class="docutils literal notranslate"><span class="pre">BibTeX</span> <span class="pre">Type</span></code> yield the entry’s current key and its type.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%f{Field}</span></code> – the field’s value. <em>Argument</em> <code class="docutils literal notranslate"><span class="pre">[slash]</span></code>, a
+replacement for any <code class="docutils literal notranslate"><span class="pre">/</span></code> in the value. <em>Number</em> characters to keep.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%w{Field}</span></code> – the field’s value split into words. <em>Arguments</em>
+<code class="docutils literal notranslate"><span class="pre">[separator</span> <span class="pre">characters][slash][separator]</span></code>. <em>Number</em> words to keep.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%f{volume}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="go">&#39;90&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%f{journal}</span><span class="s2">5&quot;</span><span class="p">)</span>  <span class="c1"># first 5 characters</span>
+<span class="go">&#39;Phys.&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%f{doi}</span><span class="s2">[_]&quot;</span><span class="p">)</span>    <span class="c1"># &quot;/&quot; replaced by &quot;_&quot;</span>
+<span class="go">&#39;10.1103_PhysRevA.90.032329&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%w</span><span class="si">{doi}</span><span class="s2">[./][-][_]2&quot;</span><span class="p">)</span>  <span class="c1"># first 2 &quot;words&quot;</span>
+<span class="go">&#39;10_1103&#39;</span>
+
+</pre></div>
+</div>
+</section>
+<section id="conditional-text-s">
+<h3>Conditional text: <code class="docutils literal notranslate"><span class="pre">%s</span></code><a class="headerlink" href="#conditional-text-s" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%s{Field}</span></code> – fixed text chosen by interpreting a field’s value as
+boolean-ish (<code class="docutils literal notranslate"><span class="pre">yes</span></code>/<code class="docutils literal notranslate"><span class="pre">no</span></code>/<code class="docutils literal notranslate"><span class="pre">true</span></code>/<code class="docutils literal notranslate"><span class="pre">false</span></code>/<code class="docutils literal notranslate"><span class="pre">1</span></code>/<code class="docutils literal notranslate"><span class="pre">0</span></code>, plus a “mixed” state
+for <code class="docutils literal notranslate"><span class="pre">-1</span></code>). <em>Arguments</em> <code class="docutils literal notranslate"><span class="pre">[yes][no][mixed]</span></code>. <em>Number</em> characters to
+keep. Unlike the other field specifiers, <code class="docutils literal notranslate"><span class="pre">%s</span></code> emits its argument
+text, not the field value itself.</p></li>
+</ul>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">%s{Draft}[D][F]</span></code> renders <code class="docutils literal notranslate"><span class="pre">D</span></code> when the entry has
+<code class="docutils literal notranslate"><span class="pre">Draft</span> <span class="pre">=</span> <span class="pre">{yes}</span></code> and <code class="docutils literal notranslate"><span class="pre">F</span></code> otherwise.</p>
+</section>
+<section id="acronym-c">
+<h3>Acronym: <code class="docutils literal notranslate"><span class="pre">%c</span></code><a class="headerlink" href="#acronym-c" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%c{Field}</span></code> – the acronym (“initials”) of a field value: the
+uppercased first letter of each of its words. <em>Number</em> the small word
+length (default 3; use <code class="docutils literal notranslate"><span class="pre">0</span></code> to keep every word).</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">%c</span></code> works on any field, but in practice it abbreviates a venue name
+(e.g. <code class="docutils literal notranslate"><span class="pre">Phys.</span> <span class="pre">Rev.</span> <span class="pre">A</span></code> → <code class="docutils literal notranslate"><span class="pre">PRA</span></code>) — a journal, conference, or book series,
+which lives in a different field per entry type (<code class="docutils literal notranslate"><span class="pre">journal</span></code> for an
+<code class="docutils literal notranslate"><span class="pre">&#64;article</span></code>, <code class="docutils literal notranslate"><span class="pre">booktitle</span></code> for an <code class="docutils literal notranslate"><span class="pre">&#64;inproceedings</span></code>, <code class="docutils literal notranslate"><span class="pre">series</span></code> for a
+<code class="docutils literal notranslate"><span class="pre">&#64;book</span></code>). Its recommended pattern, the small-word-length rule, and the
+<code class="docutils literal notranslate"><span class="pre">[initials]</span></code> exception table are covered in
+<a class="reference internal" href="#specifiers-initials"><span class="std std-ref">venue initials</span></a>.</p>
+</section>
+<section id="keywords-and-file-name-k-b">
+<h3>Keywords and file name: <code class="docutils literal notranslate"><span class="pre">%k</span></code>, <code class="docutils literal notranslate"><span class="pre">%b</span></code><a class="headerlink" href="#keywords-and-file-name-k-b" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%k</span></code> – the entry’s keywords, concatenated. <em>Arguments</em>
+<code class="docutils literal notranslate"><span class="pre">[slash][separator]</span></code> (a replacement for <code class="docutils literal notranslate"><span class="pre">/</span></code> inside a keyword, and
+text between keywords). <em>Number</em> keywords to keep.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%b</span></code> – the library file’s name, without the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> extension.</p></li>
+</ul>
+<p>For example, an entry with the keywords <code class="docutils literal notranslate"><span class="pre">quantum</span> <span class="pre">control</span></code> and
+<code class="docutils literal notranslate"><span class="pre">rydberg</span></code> renders <code class="docutils literal notranslate"><span class="pre">%k[-][_]</span></code> as <code class="docutils literal notranslate"><span class="pre">quantum-control_rydberg</span></code> (spaces
+become <code class="docutils literal notranslate"><span class="pre">-</span></code>, and the keywords are joined by <code class="docutils literal notranslate"><span class="pre">_</span></code>).</p>
+</section>
+<section id="original-file-name-l-l-e-e">
+<h3>Original file name: <code class="docutils literal notranslate"><span class="pre">%l</span></code>, <code class="docutils literal notranslate"><span class="pre">%L</span></code>, <code class="docutils literal notranslate"><span class="pre">%e</span></code>, <code class="docutils literal notranslate"><span class="pre">%E</span></code><a class="headerlink" href="#original-file-name-l-l-e-e" title="Link to this heading"></a></h3>
+<p>These four specifiers exist only in
+<a class="reference internal" href="#specifiers-files"><span class="std std-ref">file-name formats</span></a> (they are rejected in a
+citation-key format, exactly as in BibDesk). They refer to the
+attached file that is being renamed, under its <em>current</em> name – the
+name it has before the move; no separate “original” name is stored
+anywhere:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%l</span></code> – the file’s name without its extension.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%L</span></code> – the file’s full name, including the extension.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%e</span></code> – the extension, <em>with</em> its leading dot (<code class="docutils literal notranslate"><span class="pre">.pdf</span></code>), or nothing
+if the file has no extension.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%E</span></code> – the extension <em>without</em> the dot. <em>Argument</em> <code class="docutils literal notranslate"><span class="pre">[default]</span></code>, a
+fallback used when the file has no extension.</p></li>
+</ul>
+<p>BibDesk’s default file-name format, <code class="docutils literal notranslate"><span class="pre">%l%n0%e</span></code>, keeps every file’s
+name and merely appends a number when a file of that name already
+exists at the target location.</p>
+</section>
+<section id="random-and-unique-characters-r-r-d-u-u-n">
+<h3>Random and unique characters: <code class="docutils literal notranslate"><span class="pre">%r</span></code>, <code class="docutils literal notranslate"><span class="pre">%R</span></code>, <code class="docutils literal notranslate"><span class="pre">%d</span></code>, <code class="docutils literal notranslate"><span class="pre">%u</span></code>, <code class="docutils literal notranslate"><span class="pre">%U</span></code>, <code class="docutils literal notranslate"><span class="pre">%n</span></code><a class="headerlink" href="#random-and-unique-characters-r-r-d-u-u-n" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%r</span></code> / <code class="docutils literal notranslate"><span class="pre">%R</span></code> / <code class="docutils literal notranslate"><span class="pre">%d</span></code> – random lowercase letters / uppercase letters /
+digits. <em>Number</em> characters (default 1).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%u</span></code> / <code class="docutils literal notranslate"><span class="pre">%U</span></code> / <code class="docutils literal notranslate"><span class="pre">%n</span></code> – <strong>unique</strong> lowercase letters / uppercase
+letters / digits, inserted to make the key unique in the library.
+<em>Number</em> characters (default 1; <code class="docutils literal notranslate"><span class="pre">0</span></code> inserts only as many as needed).
+At most one of these three may appear in a format. They have their
+own section: <a class="reference internal" href="#specifiers-unique"><span class="std std-ref">unique specifiers</span></a>.</p></li>
+</ul>
+</section>
+<section id="literal-characters-0-9">
+<h3>Literal characters: <code class="docutils literal notranslate"><span class="pre">%0</span></code>–<code class="docutils literal notranslate"><span class="pre">%9</span></code>, <code class="docutils literal notranslate"><span class="pre">%[</span></code>, <code class="docutils literal notranslate"><span class="pre">%]</span></code>, <code class="docutils literal notranslate"><span class="pre">%-</span></code><a class="headerlink" href="#literal-characters-0-9" title="Link to this heading"></a></h3>
+<p>A digit or bracket right after another specifier would be read as its
+number or an argument, so these characters are escaped as <code class="docutils literal notranslate"><span class="pre">%&lt;char&gt;</span></code> to
+insert them literally:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;ref</span><span class="si">%-%</span><span class="s2">Y</span><span class="si">%1%</span><span class="s2">[x%]&quot;</span><span class="p">)</span>  <span class="c1"># literal - 1 [ ]</span>
+<span class="go">&#39;ref-20141[x]&#39;</span>
+
+</pre></div>
+</div>
+</section>
+</section>
+<section id="venue-initials-c-and-the-initials-mapping">
+<span id="specifiers-initials"></span><h2>Venue initials: <code class="docutils literal notranslate"><span class="pre">%c</span></code> and the <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> mapping<a class="headerlink" href="#venue-initials-c-and-the-initials-mapping" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">%c{Field}</span></code> builds an acronym from the uppercased first letters of the
+words of a field value. The trailing number is the <em>small word length</em>:
+words no longer than it are dropped, except words ending in a period
+(like the <code class="docutils literal notranslate"><span class="pre">Phys.</span></code> and <code class="docutils literal notranslate"><span class="pre">Rev.</span></code> of a journal abbreviation), which always
+count. The default is 3.</p>
+<p>Because that default drops words of three or fewer letters, a value
+like <code class="docutils literal notranslate"><span class="pre">Phys.</span> <span class="pre">Rev.</span> <span class="pre">A</span></code> would lose its trailing <code class="docutils literal notranslate"><span class="pre">A</span></code>. <strong>The recommended
+pattern is therefore <code class="docutils literal notranslate"><span class="pre">%c{journal}0</span></code>:</strong> the trailing <code class="docutils literal notranslate"><span class="pre">0</span></code> sets the small
+word length to zero, so no words are omitted and the acronym is built
+from every word. <code class="docutils literal notranslate"><span class="pre">Phys.</span> <span class="pre">Rev.</span> <span class="pre">A</span></code> then abbreviates to <code class="docutils literal notranslate"><span class="pre">PRA</span></code> with no
+manual configuration:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%c{journal}</span><span class="s2">0&quot;</span><span class="p">)</span>  <span class="c1"># keep every word</span>
+<span class="go">&#39;PRA&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%c{journal}</span><span class="s2">&quot;</span><span class="p">)</span>   <span class="c1"># default 3 drops the &quot;A&quot;</span>
+<span class="go">&#39;PR&#39;</span>
+
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">0</span></code> is a plain example of the trailing <em>number</em>; it is not special
+to <code class="docutils literal notranslate"><span class="pre">%c</span></code> beyond meaning “small word length zero”. Use it (or a per-type
+<code class="docutils literal notranslate"><span class="pre">%c{...}0</span></code> format) wherever you want the full venue acronym.</p>
+<p>For venue names where the acronym is <em>not</em> the desired abbreviation,
+the <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> table in <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> (see the
+<a class="reference internal" href="config.html#configuration"><span class="std std-ref">configuration</span></a>) defines explicit exceptions per
+field, keyed by the full field value or by the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro name:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[initials.journal]</span>
+<span class="s2">&quot;npj Quantum Inf&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;NPJQI&quot;</span>
+<span class="s2">&quot;SIAM Rev.&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;SR&quot;</span>
+</pre></div>
+</div>
+<p>With this configuration, <code class="docutils literal notranslate"><span class="pre">%c{journal}0</span></code> renders <code class="docutils literal notranslate"><span class="pre">NPJQI</span></code> for an entry
+published in npj Quantum Inf (instead of the plain acronym <code class="docutils literal notranslate"><span class="pre">NQI</span></code>).
+The mapping applies whenever <code class="docutils literal notranslate"><span class="pre">%c</span></code> is rendered, including with an
+explicit <code class="docutils literal notranslate"><span class="pre">format_spec</span></code> pattern.</p>
+<p>The table works for any field, so a per-type format that uses
+<code class="docutils literal notranslate"><span class="pre">%c{booktitle}</span></code> for conference papers or <code class="docutils literal notranslate"><span class="pre">%c{series}</span></code> for books draws
+on <code class="docutils literal notranslate"><span class="pre">[initials.booktitle]</span></code> / <code class="docutils literal notranslate"><span class="pre">[initials.series]</span></code> the same way:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[initials.booktitle]</span>
+<span class="s2">&quot;Proc. SPIE 11700, Optical and Quantum Sensing&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;SPIE&quot;</span>
+</pre></div>
+</div>
+<p>Conference <code class="docutils literal notranslate"><span class="pre">booktitle</span></code> values are awkward for a plain acronym — they
+carry a volume number and a long subtitle that change from year to
+year — so this mapping is the intended way to pin a stable
+abbreviation (here <code class="docutils literal notranslate"><span class="pre">SPIE</span></code> rather than the raw acronym <code class="docutils literal notranslate"><span class="pre">PSOAQS</span></code>).
+Because the mapping matches the <em>full</em> field value, and that value
+differs for every proceedings volume, it is often cleaner to store the
+<code class="docutils literal notranslate"><span class="pre">booktitle</span></code> as an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro and key the mapping by the macro
+name: one macro (e.g. <code class="docutils literal notranslate"><span class="pre">spie_oqspm</span></code>) can then stand in for every volume
+of the series, and <code class="docutils literal notranslate"><span class="pre">[initials.booktitle]</span></code> needs only the single entry
+<code class="docutils literal notranslate"><span class="pre">spie_oqspm</span> <span class="pre">=</span> <span class="pre">&quot;SPIE&quot;</span></code>.</p>
+</section>
+<section id="unique-specifiers">
+<span id="specifiers-unique"></span><h2>Unique specifiers<a class="headerlink" href="#unique-specifiers" title="Link to this heading"></a></h2>
+<p>At most one <code class="docutils literal notranslate"><span class="pre">%u</span></code> (lowercase letters), <code class="docutils literal notranslate"><span class="pre">%U</span></code> (uppercase letters), or
+<code class="docutils literal notranslate"><span class="pre">%n</span></code> (digits) may occur in a format. It inserts, at its position,
+characters that make the key unique within the library (in a
+<a class="reference internal" href="#specifiers-files"><span class="std std-ref">file-name format</span></a>, where it is required, unique
+against the files at the target location). With a
+trailing count of <code class="docutils literal notranslate"><span class="pre">0</span></code>, characters are only added when needed for
+disambiguation; with a fixed count <code class="docutils literal notranslate"><span class="pre">N</span></code>, exactly <code class="docutils literal notranslate"><span class="pre">N</span></code> characters are
+always added:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Goerz2014&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;Goerz2014&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Goerz, Michael H.&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Another Paper&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;Phys. Rev. A&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2014&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="s2">&quot;Goerz2014&quot;</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">)</span>
+<span class="go">&#39;GoerzPRA2014a&#39;</span>
+
+</pre></div>
+</div>
+<p>Regenerating a key is <strong>idempotent</strong>: a key that already fits the
+format (base text, any unique characters, ending) is kept unchanged,
+so re-running key generation over a library does not churn the
+disambiguation suffixes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014a&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">)</span>
+<span class="go">&#39;GoerzPRA2014a&#39;</span>
+
+</pre></div>
+</div>
+<p>Conversely, <code class="docutils literal notranslate"><span class="pre">bib.eval_format_spec(key,</span> <span class="pre">fmt)</span> <span class="pre">!=</span> <span class="pre">key</span></code> identifies the
+entries whose key does <em>not</em> follow a given format (see the
+<a class="reference internal" href="howto.html#howto-auto-keys"><span class="std std-ref">how-to guide</span></a>).</p>
+<p>A format <em>without</em> a unique specifier can generate a key that is
+already taken; <code class="docutils literal notranslate"><span class="pre">rekey</span></code> then raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>, like an explicit
+rename to a taken key. Should a format render an entirely empty
+key, a plain number is used instead (<code class="docutils literal notranslate"><span class="pre">1</span></code>, <code class="docutils literal notranslate"><span class="pre">2</span></code>, …).</p>
+<section id="deterministic-unique-characters">
+<h3>Deterministic unique characters<a class="headerlink" href="#deterministic-unique-characters" title="Link to this heading"></a></h3>
+<p>With a fixed count, an optional <code class="docutils literal notranslate"><span class="pre">[Field]</span></code> argument derives the added
+characters from a hash of that field instead of by sequential search,
+so the same reference gets the same key in any library:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1:%Y</span><span class="si">%u</span><span class="s2">[Title]2&quot;</span><span class="p">)</span>
+<span class="go">&#39;Goerz:2014vy&#39;</span>
+
+</pre></div>
+</div>
+<p>(If the hashed candidate is taken, sequential search is the
+fallback.) The exact format <code class="docutils literal notranslate"><span class="pre">%a1:%Y%u[Title]2</span></code> — or with <code class="docutils literal notranslate"><span class="pre">[Doi]</span></code> — is
+BibDesk’s “universal cite key”, hash-compatible with the Papers 2/3
+reference manager.</p>
+</section>
+</section>
+<section id="sanitization">
+<span id="specifiers-sanitization"></span><h2>Sanitization<a class="headerlink" href="#sanitization" title="Link to this heading"></a></h2>
+<p>This section describes the citation-key context; file names are
+sanitized differently (see <a class="reference internal" href="#specifiers-files"><span class="std std-ref">file-name formats</span></a>).
+Generated keys must be TeX-safe. Every field value is cleaned up
+before it enters the key:</p>
+<ol class="arabic simple">
+<li><p>TeX markup is removed, per the <code class="docutils literal notranslate"><span class="pre">clean</span></code> option of the <code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code>
+configuration table: <code class="docutils literal notranslate"><span class="pre">&quot;tex&quot;</span></code> (the default) removes commands like
+<code class="docutils literal notranslate"><span class="pre">\emph{...}</span></code> and all braces, <code class="docutils literal notranslate"><span class="pre">&quot;braces&quot;</span></code> removes only braces, and
+<code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> disables this step.</p></li>
+<li><p>Accents and ligatures are decomposed to plain ASCII letters
+(<code class="docutils literal notranslate"><span class="pre">ü</span></code> → <code class="docutils literal notranslate"><span class="pre">u</span></code>, <code class="docutils literal notranslate"><span class="pre">ø</span></code> → <code class="docutils literal notranslate"><span class="pre">o</span></code>, <code class="docutils literal notranslate"><span class="pre">æ</span></code> → <code class="docutils literal notranslate"><span class="pre">ae</span></code>, <code class="docutils literal notranslate"><span class="pre">ß</span></code> → <code class="docutils literal notranslate"><span class="pre">ss</span></code>, …).</p></li>
+<li><p>Whitespace becomes <code class="docutils literal notranslate"><span class="pre">-</span></code>, and any remaining character outside
+<code class="docutils literal notranslate"><span class="pre">a-z</span> <span class="pre">A-Z</span> <span class="pre">0-9</span> <span class="pre">-</span> <span class="pre">.</span> <span class="pre">/</span> <span class="pre">:</span> <span class="pre">;</span></code> is dropped.</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Mueller&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;Mueller&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Müller, Jörg&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;It&#39;s a </span><span class="si">{Schrödinger}</span><span class="s2"> World&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;New J. Phys.&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2020&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Mueller&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y:%t&quot;</span><span class="p">)</span>
+<span class="go">&#39;MullerNJP2020:Its-a-Schrodinger-World&#39;</span>
+
+</pre></div>
+</div>
+<p>Note that BibDesk simply strips accented characters of their accent
+(<code class="docutils literal notranslate"><span class="pre">Müller</span></code> → <code class="docutils literal notranslate"><span class="pre">Muller</span></code>); it does not apply German transliteration
+(<code class="docutils literal notranslate"><span class="pre">Mueller</span></code>). If you want <code class="docutils literal notranslate"><span class="pre">Mueller</span></code>, hard-code the intended key with a
+two-argument <code class="docutils literal notranslate"><span class="pre">rekey</span></code>. Literal text in the format itself is sanitized
+similarly (whitespace becomes <code class="docutils literal notranslate"><span class="pre">-</span></code>; characters invalid in a hand-typed
+key are dropped, which notably includes <code class="docutils literal notranslate"><span class="pre">(</span></code>, <code class="docutils literal notranslate"><span class="pre">)</span></code>, and <code class="docutils literal notranslate"><span class="pre">&#64;</span></code>).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">lowercase</span></code> option of the <code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> table lowercases the whole
+generated key; a <code class="docutils literal notranslate"><span class="pre">%U</span></code> specifier then adds lowercase characters, like
+<code class="docutils literal notranslate"><span class="pre">%u</span></code>.</p>
+</section>
+<section id="file-name-formats">
+<span id="specifiers-files"></span><h2>File-name formats<a class="headerlink" href="#file-name-formats" title="Link to this heading"></a></h2>
+<p>A format for attachment file names (BibDesk’s <em>AutoFile</em> feature) is
+the same language, with a few differences. It is configured in the
+<a class="reference internal" href="config.html#config-auto-file"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> table</span></a> and used by
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.rename_file</span></code></a>
+without a <code class="docutils literal notranslate"><span class="pre">new_filename</span></code> and by
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_file" title="bibdeskparser.Library.add_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.add_file</span></code></a> when
+auto-filing (see the <a class="reference internal" href="howto.html#howto-auto-file"><span class="std std-ref">how-to guide</span></a>); the generated
+name is interpreted relative to the configured auto-file <em>location</em>.</p>
+<ul class="simple">
+<li><p>The original-file-name specifiers <code class="docutils literal notranslate"><span class="pre">%l</span></code>, <code class="docutils literal notranslate"><span class="pre">%L</span></code>, <code class="docutils literal notranslate"><span class="pre">%e</span></code>, and <code class="docutils literal notranslate"><span class="pre">%E</span></code>
+(documented above) are available.</p></li>
+<li><p>A <strong>unique specifier</strong> (<code class="docutils literal notranslate"><span class="pre">%u</span></code>/<code class="docutils literal notranslate"><span class="pre">%U</span></code>/<code class="docutils literal notranslate"><span class="pre">%n</span></code>) is <strong>required</strong>, so that
+generated names can never collide. Uniqueness is checked against
+the <em>files on disk</em> at the target location, not against the
+library: a candidate name is taken if a file already exists there.</p></li>
+<li><p>A literal <code class="docutils literal notranslate"><span class="pre">/</span></code> in the format is a <strong>directory separator</strong>: the file
+is filed into (newly created, as needed) subfolders of the
+location. A <code class="docutils literal notranslate"><span class="pre">/</span></code> inside a <em>field value</em> becomes <code class="docutils literal notranslate"><span class="pre">-</span></code> instead, so
+values can never introduce unintended subfolders.</p></li>
+<li><p>Sanitization is file-name oriented: after the TeX cleanup (the
+<code class="docutils literal notranslate"><span class="pre">clean</span></code> option of <code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code>), only <code class="docutils literal notranslate"><span class="pre">:</span></code> – the one character
+invalid in a file name – is removed. In particular, spaces,
+parentheses, and non-ASCII text all survive, unlike in a citation
+key. The <code class="docutils literal notranslate"><span class="pre">lowercase</span></code> option of <code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> lowercases the whole
+generated name.</p></li>
+</ul>
+<p>To preview the file name a format generates, use
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.eval_format_spec" title="bibdeskparser.Library.eval_format_spec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.eval_format_spec</span></code></a>
+with a <code class="docutils literal notranslate"><span class="pre">filename</span></code>. This is a pure evaluation of the format: it never
+touches the filesystem and moves nothing. The <code class="docutils literal notranslate"><span class="pre">filename</span></code> argument only
+supplies the original-name specifiers <code class="docutils literal notranslate"><span class="pre">%l</span></code>/<code class="docutils literal notranslate"><span class="pre">%L</span></code>/<code class="docutils literal notranslate"><span class="pre">%e</span></code>/<code class="docutils literal notranslate"><span class="pre">%E</span></code> (above); it
+need not exist or be one of the entry’s attachments, and any
+non-<code class="docutils literal notranslate"><span class="pre">None</span></code> value – including the empty string <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> – selects the
+file-name dialect:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="p">[</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Goerz, Michael H. and Koch, Christiane P.&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Robustness of high-fidelity </span><span class="si">{Rydberg}</span><span class="s2"> gates&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;Phys. Rev. A&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2014&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">{Cite Key}</span><span class="si">%u</span><span class="s2">0</span><span class="si">%e</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;downloaded.pdf&quot;</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="go">&#39;GoerzPRA2014.pdf&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1/%Y</span><span class="si">%u</span><span class="s2">0</span><span class="si">%e</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;downloaded.pdf&quot;</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="go">&#39;Goerz/2014.pdf&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>  <span class="c1"># spaces survive in a file name</span>
+<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;%t</span><span class="si">%u</span><span class="s2">0</span><span class="si">%e</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;downloaded.pdf&quot;</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="go">&#39;Robustness of high-fidelity Rydberg gates.pdf&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>  <span class="c1"># &quot;&quot; still selects the file dialect</span>
+<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">{Cite Key}</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="go">&#39;GoerzPRA2014&#39;</span>
+
+</pre></div>
+</div>
+<p>A preview shows the <em>base</em> name, with the required unique specifier
+contributing no disambiguation. On-disk collision avoidance happens
+only during actual filing (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a>
+/ <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_file" title="bibdeskparser.Library.add_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_file()</span></code></a>), where the unique specifier
+grows a suffix (e.g. <code class="docutils literal notranslate"><span class="pre">GoerzPRA2014a.pdf</span></code>) whenever another file already
+occupies the target name.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">filename</span></code> is an attachment’s current library-relative path (as
+listed by <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.files" title="bibdeskparser.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">files</span></code></a>) and already matches the format, it
+evaluates to itself – the same idempotency as a regenerated citation
+key. <code class="docutils literal notranslate"><span class="pre">bib.eval_format_spec(key,</span> <span class="pre">fmt,</span> <span class="pre">filename=name)</span> <span class="pre">!=</span> <span class="pre">name</span></code> thus
+identifies the attachments that do not yet follow the format:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>  <span class="c1"># &quot;downloaded.pdf&quot; matches %l%n0%e</span>
+<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%l%</span><span class="s2">n0</span><span class="si">%e</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;downloaded.pdf&quot;</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="go">&#39;downloaded.pdf&#39;</span>
+
+</pre></div>
+</div>
+<p><strong>The recommended format is <code class="docutils literal notranslate"><span class="pre">%f{Cite</span> <span class="pre">Key}%u0%e</span></code>:</strong> it names each
+attachment after its entry’s citation key while preserving the file’s
+real extension. Prefer <code class="docutils literal notranslate"><span class="pre">%e</span></code> over hard-coding an extension like
+<code class="docutils literal notranslate"><span class="pre">.pdf</span></code>, which would mislabel a <code class="docutils literal notranslate"><span class="pre">.ps</span></code> or <code class="docutils literal notranslate"><span class="pre">.epub</span></code> attachment; <code class="docutils literal notranslate"><span class="pre">%e</span></code>
+renders identically for PDFs and stays correct for everything else.</p>
+</section>
+<section id="differences-from-bibdesk">
+<span id="specifiers-differences"></span><h2>Differences from BibDesk<a class="headerlink" href="#differences-from-bibdesk" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%i{Key}</span></code> (BibDesk <em>document info</em>) is recognized but raises
+<code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code>: <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> does not currently model the
+<code class="docutils literal notranslate"><span class="pre">&#64;bibdesk_info</span></code> block in which BibDesk stores document-level
+metadata.</p></li>
+<li><p>BibDesk applies its <em>Preferences → Cite Key</em> and <em>Preferences →
+AutoFile</em> options; the equivalents here are the <code class="docutils literal notranslate"><span class="pre">format_spec</span></code>,
+<code class="docutils literal notranslate"><span class="pre">lowercase</span></code>, and <code class="docutils literal notranslate"><span class="pre">clean</span></code> keys of the <code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> and <code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code>
+configuration tables. BibDesk’s two strictest file-name cleaning
+levels (Windows-safe characters, and lossy ASCII) have no
+equivalent; <code class="docutils literal notranslate"><span class="pre">clean</span></code> stops at <code class="docutils literal notranslate"><span class="pre">&quot;tex&quot;</span></code>.</p></li>
+<li><p>BibDesk files attachments into its global <em>Papers Folder</em>
+preference, falling back to the document’s own directory when it is
+empty. The equivalent here is the <code class="docutils literal notranslate"><span class="pre">location</span></code> key of <code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code>,
+whose default <code class="docutils literal notranslate"><span class="pre">&quot;.&quot;</span></code> (the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file’s directory) corresponds to
+the empty Papers Folder.</p></li>
+<li><p>BibDesk has a single, global cite-key format and a single file-name
+format. Here, <code class="docutils literal notranslate"><span class="pre">format_spec</span></code> may instead be a
+<a class="reference internal" href="config.html#config-auto-key"><span class="std std-ref">per-type mapping</span></a> that applies a different format
+to each entry type — a <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> extension.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> exception mapping for <code class="docutils literal notranslate"><span class="pre">%c</span></code> is a <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code>
+extension; BibDesk always uses the plain acronym.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="config.html" class="btn btn-neutral float-left" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cli.html" class="btn btn-neutral float-right" title="Command Line Interface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Michael Goerz.
+      <span class="lastupdated">Last updated on Jul 18, 2026.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
