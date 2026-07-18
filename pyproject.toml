@@ -37,7 +37,7 @@ dependencies = [
 bibdeskparser = "bibdeskparser.cli:main"
 
 [project.optional-dependencies]
-macos = ["pyobjc-framework-Cocoa; sys_platform == 'darwin'"]
+macos = ["pyobjc-framework-Cocoa>=8; sys_platform == 'darwin'"]
 
 [project.urls]
 Homepage = "https://github.com/goerz/bibdeskparser"
