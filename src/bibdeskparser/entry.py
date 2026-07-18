@@ -820,6 +820,8 @@ class Entry(MutableMapping):
             return result._replace(applied=True)
         if result.match == "none" and mark_empty:
             self["eprint"] = ValueString("")
+            if str(self.get("archiveprefix") or "").lower() == "arxiv":
+                del self["archiveprefix"]
             return result._replace(applied=True)
         return result
 
