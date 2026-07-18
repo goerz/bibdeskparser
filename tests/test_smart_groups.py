@@ -35,12 +35,15 @@ def fixture_refs_smart_block():
 
 
 def test_refs_bib_contains_smart_group(refs_smart_block):
-    """`refs.bib` holds a smart group "Goerz Articles" (saved by
-    BibDesk), so the tests here actually exercise smart groups."""
-    assert "<string>Goerz Articles</string>" in refs_smart_block
-    # ... which is a saved search, not a static group:
+    """`refs.bib` holds smart groups "Missing DOI" and "Preprints"
+    (saved by BibDesk), so the tests here actually exercise smart
+    groups."""
+    assert "<string>Missing DOI</string>" in refs_smart_block
+    assert "<string>Preprints</string>" in refs_smart_block
+    # ... which are saved searches, not static groups:
     bib = Library(REFS_BIB)
-    assert "Goerz Articles" not in bib.groups
+    assert "Missing DOI" not in bib.groups
+    assert "Preprints" not in bib.groups
 
 
 def test_pristine_save_preserves_smart_groups(tmp_path, refs_smart_block):
@@ -56,17 +59,17 @@ def test_pristine_save_preserves_smart_groups(tmp_path, refs_smart_block):
 def test_smart_group_survives_modification_roundtrip(
     tmp_path, refs_smart_block
 ):
-    """The "Goerz Articles" smart group exists in `refs.bib` and is
+    """The "Missing DOI" smart group exists in `refs.bib` and is
     still there, verbatim, after a round trip in which entries were
     modified, added, deleted, and renamed (plus static-group
     mutations)."""
-    assert "<string>Goerz Articles</string>" in refs_smart_block
+    assert "<string>Missing DOI</string>" in refs_smart_block
 
     bib = Library(REFS_BIB)
     bib["GoerzJPB2011"]["note"] = "Some note."
     bib["GoerzNJP2014"]["title"] = "A Changed Title"
     bib.groups["New Group"] = ("GoerzJPB2011",)
-    bib.add_to_group("Preprints", "GoerzNJP2014")
+    bib.add_to_group("Diploma", "GoerzNJP2014")
     bib.rekey("GoerzQ2022", "GoerzQuantum2022")
     del bib["GoerzDiploma2010"]
     bib["New2026"] = Entry(
@@ -85,7 +88,7 @@ def test_smart_group_survives_modification_roundtrip(
         bib.save(out)
     text = out.read_text(encoding="utf-8")
     assert _smart_groups_block(text) == refs_smart_block
-    assert "<string>Goerz Articles</string>" in _smart_groups_block(text)
+    assert "<string>Missing DOI</string>" in _smart_groups_block(text)
 
     # ... and it is still intact after a reload/save cycle
     out2 = tmp_path / "out2.bib"

@@ -78,12 +78,12 @@ data as JSON instead of human-readable text, for consumption by other
 tools:
 
 ```console
-$ bibdeskparser groups library.bib --json
+$ bibdeskparser show tests/Refs/refs.bib GoerzA2023 --field doi,volume --json
 {
-  "quantum computing": [
-    "NielsenChuangBook",
-    "Preskill2018"
-  ]
+  "GoerzA2023": {
+    "doi": "10.3390/atoms11020036",
+    "volume": "11"
+  }
 }
 ```
 
@@ -135,9 +135,11 @@ List citation keys, one per line. See
 strings.
 
 ```console
-$ bibdeskparser keys library.bib
-NielsenChuangBook
-Preskill2018
+$ bibdeskparser keys tests/Refs/refs.bib --type book
+Shapiro2012
+BrumerShapiro2003
+Tannor2007
+MATLAB:2014
 ```
 
 Without options, every entry is listed. Filter options narrow the
@@ -152,8 +154,10 @@ neither "missing" nor "has". Types and field names are matched
 case-insensitively.
 
 ```console
-$ bibdeskparser keys library.bib --type article --missing doi
-Preskill2018
+$ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
+WinckelIP2008
+TuriniciHAL00640217
+Vecheck2022.09.09.507322
 ```
 
 ### `duplicate_keys`
@@ -163,7 +167,8 @@ List citation keys that occur more than once, one per line. See
 array of strings.
 
 ```console
-$ bibdeskparser duplicate_keys library.bib
+$ bibdeskparser duplicate_keys tests/Refs/with_duplicates.bib
+GoerzSPP2019
 ```
 
 (cli-show)=
@@ -190,14 +195,20 @@ with an error and no output; `--skip-missing` instead reports each miss
 on stderr and shows the remaining entries.
 
 ```console
-$ bibdeskparser show library.bib Preskill2018
-Preskill2018 (article)
-    author:  Preskill, John
-    title:   Quantum Computing in the NISQ era and beyond
-    journal: Quantum
-    year:    2018
-  groups:   quantum computing
-  keywords: NISQ
+$ bibdeskparser show tests/Refs/refs.bib GoerzDiploma2010
+GoerzDiploma2010 (mastersthesis)
+    author:   Goerz, Michael
+    keywords: OCT, Quantum Gates, Ultracold Atoms
+    school:   Freie Universität Berlin
+    title:    Optimization of a Controlled Phasegate for Ultracold Calcium Atoms in an Optical Lattice
+    type:     {Diplomarbeit}
+    url:      https://michaelgoerz.net/research/diploma_thesis.pdf
+    year:     2010
+  groups:        My Papers
+  keywords:      OCT, Quantum Gates, Ultracold Atoms
+  urls:          https://michaelgoerz.net/research/diploma_thesis.pdf
+  date added:    2026-07-18T07:49:28-04:00
+  date modified: 2026-07-18T11:43:24-04:00
 ```
 
 For example, to inspect the DOI and title of every entry that is
@@ -219,10 +230,12 @@ internal date and `bdsk-*` fields; use [`show`](cli-show) for a
 complete view of an entry. With `--json`: an array of strings.
 
 ```console
-$ bibdeskparser fields library.bib Preskill2018
+$ bibdeskparser fields tests/Refs/refs.bib Evans1983
 author
+keywords
+note
 title
-journal
+url
 year
 ```
 
@@ -236,8 +249,8 @@ the definitions). Fails for a field not defined on the entry (see
 [`fields`](cli-fields)). With `--json`: a string.
 
 ```console
-$ bibdeskparser get_field library.bib Preskill2018 title
-Quantum Computing in the NISQ era and beyond
+$ bibdeskparser get_field tests/Refs/refs.bib GoerzJPB2011 title
+The quantum speed limit of optimal controlled phasegates for trapped neutral atoms
 ```
 
 ### `author KEY`, `editor KEY`
@@ -251,18 +264,19 @@ objects with `first`, `von`, `last`, and `jr` keys, each an array of
 name words.
 
 ```console
-$ bibdeskparser author library.bib NielsenChuangBook
-Nielsen, Michael A.
-Chuang, Isaac L.
-$ bibdeskparser author library.bib Preskill2018 --json
+$ bibdeskparser author tests/Refs/refs.bib Shapiro2012
+Shapiro, Moshe
+Brumer, Paul
+$ bibdeskparser author tests/Refs/refs.bib KochJPCM2016 --json
 [
   {
     "first": [
-      "John"
+      "Christiane",
+      "P."
     ],
     "von": [],
     "last": [
-      "Preskill"
+      "Koch"
     ],
     "jr": []
   }
@@ -293,8 +307,8 @@ previous level and are case-insensitive; `regex` follows standard
   pattern says `(?i)`).
 
 ```console
-$ bibdeskparser search library.bib "Schroedinger" --field author
-Schroedinger1926
+$ bibdeskparser search tests/Refs/refs.bib "Schroedinger" --field title
+WP_Schroedinger
 ```
 
 ### `groups [KEY]`
@@ -304,8 +318,9 @@ Without `KEY`, list all static groups and the keys they contain. See
 mapping each group name to an array of keys.
 
 ```console
-$ bibdeskparser groups library.bib
-quantum computing: NielsenChuangBook, Preskill2018
+$ bibdeskparser groups tests/Refs/refs.bib
+Diploma: Tannor2007, NielsenChuangCh10QEC, Evans1983, LapertPRA09
+My Papers: GoerzDiploma2010, GoerzJPB2011, GoerzNJP2014, GoerzPRA2014, GoerzPhd2015, GoerzPRA2015, GoerzEPJQT2015, GoerzNPJQI2017, GoerzQST2018, GoerzSPP2019, GoerzSPIEO2021, GoerzQ2022, GoerzA2023
 ```
 
 With `KEY`, list the names of the groups that entry belongs to, one
@@ -313,8 +328,8 @@ per line ({py:attr}`~bibdeskparser.Entry.groups`; with `--json`: an
 array of strings):
 
 ```console
-$ bibdeskparser groups library.bib Preskill2018
-quantum computing
+$ bibdeskparser groups tests/Refs/refs.bib GoerzQ2022
+My Papers
 ```
 
 ### `keywords [KEY]`
@@ -324,8 +339,10 @@ them. See {py:attr}`~bibdeskparser.Library.keywords`. With `--json`:
 an object mapping each keyword to an array of keys.
 
 ```console
-$ bibdeskparser keywords library.bib
-NISQ: Preskill2018
+$ bibdeskparser keywords tests/Refs/refs.bib
+OCT: BrifNJP2010, KochJPCM2016, SolaAAMOP2018, MorzhinRMS2019, ...
+Coherent Control: BrifNJP2010, Shapiro2012, SolaAAMOP2018, ...
+...
 ```
 
 With `KEY`, list the keywords of that entry, one per line
@@ -333,8 +350,9 @@ With `KEY`, list the keywords of that entry, one per line
 strings):
 
 ```console
-$ bibdeskparser keywords library.bib Preskill2018
-NISQ
+$ bibdeskparser keywords tests/Refs/refs.bib LapertPRA09
+Filtering
+OCT
 ```
 
 (cli-strings)=
@@ -350,10 +368,15 @@ presents in the editor, and thus the baseline for a non-interactive
 `edit_strings --stdin` round trip.
 
 ```console
-$ bibdeskparser strings library.bib
-prl = Phys. Rev. Lett.
-$ bibdeskparser strings library.bib --bib
-@string{prl = {Phys. Rev. Lett.}}
+$ bibdeskparser strings tests/Refs/refs.bib
+atoms = Atoms
+epjd = Eur. Phys. J. D
+epjqt = EPJ Quantum Technol.
+...
+$ bibdeskparser strings tests/Refs/refs.bib --bib
+@string{atoms = {Atoms}}
+@string{epjd = {Eur. Phys. J. D}}
+...
 ```
 
 ### `timestamp`
@@ -364,8 +387,8 @@ nothing, if the header has no timestamp). See
 or `null`.
 
 ```console
-$ bibdeskparser timestamp library.bib
-2026-07-07T12:30:05-04:00
+$ bibdeskparser timestamp tests/Refs/refs.bib
+2026-07-18T16:02:00-04:00
 ```
 
 (cli-eval-format-spec)=
@@ -385,8 +408,9 @@ A key that already matches the format evaluates to itself, so any
 output other than `KEY` itself flags a nonconforming key:
 
 ```console
-$ bibdeskparser eval_format_spec library.bib Preskill2018 '%a1%c{journal}0%Y%u0'
-PreskillQ2018
+$ bibdeskparser eval_format_spec tests/Refs/refs.bib LapertPRA09 \
+    '%a1%c{journal}0%Y%u0'
+LapertPRA2009
 ```
 
 With `--filename FILE`, the format is evaluated as a *file name*
@@ -401,8 +425,9 @@ collision suffixes are added only by actual filing (`rename_file` /
 matches the format, it prints unchanged:
 
 ```console
-$ bibdeskparser eval_format_spec library.bib Preskill2018 --filename preskill.pdf
-Preskill2018.pdf
+$ bibdeskparser eval_format_spec tests/Refs/refs.bib Shapiro2012 \
+    '%f{Cite Key}%u0%e' --filename shapiro.pdf
+Shapiro2012.pdf
 ```
 
 ## Rendering and exporting
@@ -417,7 +442,7 @@ another (`default`, `paragraphs`, `numbered list`, or
 `itemized list`).
 
 ```console
-$ bibdeskparser render library.bib Preskill2018 --format tex
+$ bibdeskparser render tests/Refs/refs.bib GoerzA2023 --format tex
 ```
 
 (cli-export)=
@@ -431,7 +456,8 @@ selects the export format (`default`, `raw`, or `minimal`);
 `--outfile PATH` writes to a file instead of printing to stdout.
 
 ```console
-$ bibdeskparser export library.bib Preskill2018 --format minimal --outfile out.bib
+$ bibdeskparser export tests/Refs/refs.bib GoerzA2023 --format minimal \
+    --outfile out.bib
 ```
 
 ## Entries
@@ -444,7 +470,7 @@ Change the citation key of an entry, via
 {py:meth}`~bibdeskparser.Library.rekey`.
 
 ```console
-$ bibdeskparser rekey library.bib Preskill2018 Preskill2018NISQ
+$ bibdeskparser rekey tests/Refs/refs.bib LapertPRA09 LapertPRA2009
 ```
 
 Without `NEW_KEY`, the key is **generated** from an auto-key format in
@@ -455,10 +481,10 @@ map a format per entry type; see the [configuration](configuration)) --
 and printed to stdout:
 
 ```console
-$ bibdeskparser rekey library.bib Preskill2018NISQ
-Preskill2018
-$ bibdeskparser rekey library.bib Preskill2018 --format-spec '%a1%c{journal}0%Y%u0'
-PreskillQ2018
+$ bibdeskparser rekey tests/Refs/refs.bib LapertPRA09
+LapertPRA2009
+$ bibdeskparser rekey tests/Refs/refs.bib LapertPRA09 --format-spec '%a1:%Y%u0'
+Lapert:2009
 ```
 
 A key that already matches the format is kept unchanged, and a
@@ -472,7 +498,7 @@ Delete one or more entries from the library. Corresponds to
 `del lib[key]`.
 
 ```console
-$ bibdeskparser delete library.bib StaleEntry2001
+$ bibdeskparser delete tests/Refs/refs.bib WP_Schroedinger
 ```
 
 ### `set_type KEY TYPE`
@@ -484,7 +510,7 @@ rejected; custom entry types can be defined in the `types` table of
 `bibdeskparser.toml` (see the [configuration](configuration)).
 
 ```console
-$ bibdeskparser set_type library.bib Preskill2018 misc
+$ bibdeskparser set_type tests/Refs/refs.bib Wilhelm2003.10132 unpublished
 ```
 
 (cli-set-field)=
@@ -496,7 +522,8 @@ Corresponds to assigning to an {class}`~bibdeskparser.Entry`,
 `lib[key][fieldname] = value`; field names are case-insensitive.
 
 ```console
-$ bibdeskparser set_field library.bib Preskill2018 doi 10.22331/q-2018-08-06-79
+$ bibdeskparser set_field tests/Refs/refs.bib TuriniciHAL00640217 note \
+    "Lecture notes for a graduate course"
 ```
 
 Like BibDesk, a `VALUE` that is a valid `@string` macro name is
@@ -520,7 +547,7 @@ and for the `keywords`, date, and `bdsk-*` fields (use
 `remove_from_keyword`, `unlink_file`, `remove_url`, etc. instead).
 
 ```console
-$ bibdeskparser delete_field library.bib Preskill2018 note
+$ bibdeskparser delete_field tests/Refs/refs.bib GoerzJPB2011 note
 ```
 
 ## Adding entries
@@ -558,17 +585,17 @@ and any validation problem in the snippet rejects the whole import,
 reporting all problems at once, with the `.bib` file untouched.
 
 ```console
-$ bibdeskparser import library.bib entries.bib
+$ bibdeskparser import tests/Refs/refs.bib entries.bib
 BaumgratzPRL2014
-$ pbpaste | bibdeskparser import library.bib --stdin
+$ pbpaste | bibdeskparser import tests/Refs/refs.bib --stdin
 GrapeJMR2005
-$ bibdeskparser import library.bib --url https://example.com/refs.bib
-KochEPJQT2022
+$ bibdeskparser import tests/Refs/refs.bib --url https://example.com/more.bib
+MotzoiPRL2009
 ```
 
 Note that the *first* argument ending in `.bib` names the library, so
 importing from a `.bib` file requires naming the library explicitly
-(`import library.bib entries.bib`), even with a configured
+(`import tests/Refs/refs.bib entries.bib`), even with a configured
 `default_bib_file`.
 
 (cli-add)=
@@ -599,11 +626,11 @@ via DOI content negotiation and imported as-is. Requires network
 access; the arXiv API's rate limits are respected automatically.
 
 ```console
-$ bibdeskparser add library.bib 10.1103/PhysRevA.89.032334
+$ bibdeskparser add tests/Refs/refs.bib 10.1103/PhysRevA.89.032334
 MuellerPRA2014
-$ bibdeskparser add library.bib https://arxiv.org/abs/2205.15044
-Goerz2205.15044
-$ bibdeskparser add library.bib pulser open-source pulse sequences
+$ bibdeskparser add tests/Refs/refs.bib https://arxiv.org/abs/1801.00862
+Preskill1801.00862
+$ bibdeskparser add tests/Refs/refs.bib pulser open-source pulse sequences
 SilverioQ2022
 ```
 
@@ -625,7 +652,7 @@ does. All three options default to the
 form (`--no-add-abstract`, ...) to override a configured `true`.
 
 ```console
-$ bibdeskparser add library.bib --dry-run 10.22331/q-2022-01-24-629
+$ bibdeskparser add tests/Refs/refs.bib --dry-run 10.22331/q-2022-01-24-629
 @string{quant = {Quantum}}
 
 @article{SilverioQ2022,
@@ -674,15 +701,18 @@ file, and `--json` maps each key to
 `{abstract, source, confidence, note, applied}`.
 
 ```console
-$ bibdeskparser keys library.bib --type article --missing abstract
-BaumgratzPRL2014
-Koch2016
-$ bibdeskparser add_abstract library.bib BaumgratzPRL2014 Koch2016
-BaumgratzPRL2014: stored (crossref, high)
-Koch2016: needs review (pdf, medium) [cr-miss; pdf-abstract-inline]
-    We review different aspects of quantum control ...
-$ bibdeskparser set_field library.bib Koch2016 abstract \
-    "We review different aspects of quantum control ..."
+$ bibdeskparser keys tests/Refs/refs.bib --type article --missing abstract
+TuriniciHAL00640217
+SauvagePRXQ2020
+Vecheck2022.09.09.507322
+KatrukhaNC2017
+$ bibdeskparser add_abstract tests/Refs/refs.bib \
+    SauvagePRXQ2020 Vecheck2022.09.09.507322
+SauvagePRXQ2020: stored (crossref, high)
+Vecheck2022.09.09.507322: needs review (semanticscholar, medium) [cr-miss]
+    Quantum biology examines quantum effects in living cells ...
+$ bibdeskparser set_field tests/Refs/refs.bib Vecheck2022.09.09.507322 \
+    abstract "Quantum biology examines quantum effects in living cells ..."
 ```
 
 (cli-add-preprint)=
@@ -728,13 +758,14 @@ modifying the `.bib` file, and `--json` maps each key to
 one request every three seconds, so large runs take time.
 
 ```console
-$ bibdeskparser keys library.bib --type article --missing eprint
-BaumgratzPRL2014
-Feynman1982
-$ bibdeskparser add_preprint library.bib --mark-empty \
-    BaumgratzPRL2014 Feynman1982
-BaumgratzPRL2014: stored eprint 1311.0275 (match=doi, ratio=1.00)
-Feynman1982: no preprint found (stored empty marker) [best-ratio=0.31]
+$ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
+WinckelIP2008
+TuriniciHAL00640217
+Vecheck2022.09.09.507322
+$ bibdeskparser add_preprint tests/Refs/refs.bib --mark-empty \
+    WinckelIP2008 Vecheck2022.09.09.507322
+WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]
+Vecheck2022.09.09.507322: no preprint found (stored empty marker) [best-ratio=0.31]
 ```
 
 ## Groups
@@ -745,7 +776,7 @@ Add entries to the static group `NAME`, via
 {py:meth}`~bibdeskparser.Library.add_to_group`.
 
 ```console
-$ bibdeskparser add_to_group library.bib "quantum computing" Preskill2018
+$ bibdeskparser add_to_group tests/Refs/refs.bib Diploma GoerzDiploma2010
 ```
 
 ### `remove_from_group NAME KEY...`
@@ -754,7 +785,7 @@ Remove entries from the group `NAME`, via
 {py:meth}`~bibdeskparser.Library.remove_from_group`.
 
 ```console
-$ bibdeskparser remove_from_group library.bib "quantum computing" Preskill2018
+$ bibdeskparser remove_from_group tests/Refs/refs.bib Diploma GoerzDiploma2010
 ```
 
 ### `set_group NAME [KEY...]`
@@ -766,7 +797,8 @@ is created (or emptied) with no members. Corresponds to
 {py:attr}`~bibdeskparser.Library.groups`).
 
 ```console
-$ bibdeskparser set_group library.bib "to read" Preskill2018 NielsenChuangBook
+$ bibdeskparser set_group tests/Refs/refs.bib "To Read" \
+    BrifNJP2010 KochEPJQT2022
 ```
 
 ### `delete_group NAME`
@@ -775,7 +807,7 @@ Delete the static group `NAME`; the entries themselves are not
 affected. Corresponds to `del lib.groups[name]`.
 
 ```console
-$ bibdeskparser delete_group library.bib "to read"
+$ bibdeskparser delete_group tests/Refs/refs.bib "To Read"
 ```
 
 ## Keywords
@@ -788,7 +820,7 @@ Add `KEYWORD` to the given entries, via
 {py:meth}`~bibdeskparser.Library.add_to_keyword`.
 
 ```console
-$ bibdeskparser add_to_keyword library.bib NISQ Preskill2018
+$ bibdeskparser add_to_keyword tests/Refs/refs.bib Review BrifNJP2010
 ```
 
 ### `remove_from_keyword KEYWORD KEY...`
@@ -797,7 +829,7 @@ Remove `KEYWORD` from the given entries, via
 {py:meth}`~bibdeskparser.Library.remove_from_keyword`.
 
 ```console
-$ bibdeskparser remove_from_keyword library.bib NISQ Preskill2018
+$ bibdeskparser remove_from_keyword tests/Refs/refs.bib Review BrifNJP2010
 ```
 
 ## Strings (macros)
@@ -809,7 +841,7 @@ Define or redefine the `@string` macro `NAME`. Corresponds to
 {py:attr}`~bibdeskparser.Library.strings`).
 
 ```console
-$ bibdeskparser set_string library.bib prl "Phys. Rev. Lett."
+$ bibdeskparser set_string tests/Refs/refs.bib prl "Phys. Rev. Lett."
 ```
 
 ### `delete_string NAME`
@@ -818,7 +850,7 @@ Delete the `@string` macro `NAME` (which must not be referenced by any
 entry). Corresponds to `del lib.strings[name]`.
 
 ```console
-$ bibdeskparser delete_string library.bib prl
+$ bibdeskparser delete_string tests/Refs/refs.bib prl
 ```
 
 ### `rename_string OLD NEW`
@@ -827,7 +859,7 @@ Rename the `@string` macro `OLD` to `NEW`, updating every entry that
 references it, via {py:meth}`~bibdeskparser.Library.rename_string`.
 
 ```console
-$ bibdeskparser rename_string library.bib prl PRL
+$ bibdeskparser rename_string tests/Refs/refs.bib quant quantum
 ```
 
 ## Files
@@ -841,7 +873,7 @@ Attach the file `FILENAME` to the entry `KEY`, via
 must exist on disk; pass `--no-check-exists` to skip that check.
 
 ```console
-$ bibdeskparser add_file library.bib Preskill2018 papers/Preskill2018.pdf
+$ bibdeskparser add_file tests/Refs/refs.bib Shapiro2012 papers/shapiro-brumer.pdf
 ```
 
 When **auto-filing** is in effect, the file is not attached under its
@@ -856,9 +888,10 @@ the [configuration](configuration)), or when the configuration sets
 attach regardless of the configuration:
 
 ```console
-$ bibdeskparser add_file library.bib Preskill2018 ~/Downloads/1801.00862.pdf \
+$ bibdeskparser add_file tests/Refs/refs.bib Shapiro2012 \
+    ~/Downloads/9780471973461.pdf \
     --format-spec '%f{Cite Key}%u0%e' --location Papers
-Papers/Preskill2018.pdf
+Papers/Shapiro2012.pdf
 ```
 
 ### `replace_file KEY OLD NEW`
@@ -869,7 +902,8 @@ also delete the old file from the filesystem, and `--no-check-exists`
 to not require `NEW` to exist on disk.
 
 ```console
-$ bibdeskparser replace_file library.bib Preskill2018 draft.pdf final.pdf --remove
+$ bibdeskparser replace_file tests/Refs/refs.bib GoerzJPB2011 \
+    GoerzJPB2011.pdf corrected.pdf --remove
 ```
 
 ### `unlink_file KEY FILENAME`
@@ -879,7 +913,7 @@ Remove `FILENAME` from the entry's attachments, via
 delete the file from the filesystem.
 
 ```console
-$ bibdeskparser unlink_file library.bib Preskill2018 notes.pdf
+$ bibdeskparser unlink_file tests/Refs/refs.bib GoerzQ2022 GoerzQ2022.pdf
 ```
 
 (cli-rename-file)=
@@ -891,7 +925,8 @@ filesystem, updating every entry that links it, via
 {py:meth}`~bibdeskparser.Library.rename_file`.
 
 ```console
-$ bibdeskparser rename_file library.bib Preskill2018 preskill.pdf Preskill2018.pdf
+$ bibdeskparser rename_file tests/Refs/refs.bib MorzhinRMS2019 \
+    MorzhinRMS2019.pdf Reviews/MorzhinRMS2019.pdf
 ```
 
 Without `NEW`, the target is generated by **auto-filing**: the file
@@ -904,8 +939,8 @@ of `bibdeskparser.toml` (see the [configuration](configuration)) --
 and the new path (relative to the `.bib` file) is printed to stdout:
 
 ```console
-$ bibdeskparser rename_file library.bib Preskill2018 preskill.pdf
-Preskill2018.pdf
+$ bibdeskparser rename_file tests/Refs/refs.bib GraceJMO2007 grace_jmo_2007.pdf
+GraceJMO2007.pdf
 ```
 
 A file whose name already matches the format is left in place
@@ -922,7 +957,8 @@ Add `URL` to the entry `KEY`, via
 {py:meth}`~bibdeskparser.Library.add_url`.
 
 ```console
-$ bibdeskparser add_url library.bib Preskill2018 https://arxiv.org/abs/1801.00862
+$ bibdeskparser add_url tests/Refs/refs.bib WattsPRA2015 \
+    https://arxiv.org/abs/1412.7347
 ```
 
 ### `replace_url KEY OLD NEW`
@@ -931,7 +967,9 @@ Replace the entry's URL `OLD` with `NEW`, via
 {py:meth}`~bibdeskparser.Library.replace_url`.
 
 ```console
-$ bibdeskparser replace_url library.bib Preskill2018 http://example.org https://example.org
+$ bibdeskparser replace_url tests/Refs/refs.bib GoerzDiploma2010 \
+    https://michaelgoerz.net/research/diploma_thesis.pdf \
+    https://michaelgoerz.net/diploma_thesis.pdf
 ```
 
 ### `remove_url KEY URL`
@@ -940,7 +978,8 @@ Remove `URL` from the entry `KEY`, via
 {py:meth}`~bibdeskparser.Library.remove_url`.
 
 ```console
-$ bibdeskparser remove_url library.bib Preskill2018 https://arxiv.org/abs/1801.00862
+$ bibdeskparser remove_url tests/Refs/refs.bib WattsPRA2015 \
+    https://arxiv.org/abs/1412.7347
 ```
 
 ## Free-form editing
@@ -961,7 +1000,7 @@ entries are presented; `--editor CMD` overrides the editor command
 (which defaults to `$EDITOR`).
 
 ```console
-$ bibdeskparser edit library.bib Preskill2018 --editor vim
+$ bibdeskparser edit tests/Refs/refs.bib GoerzQ2022 --editor vim
 ```
 
 With `--stdin` (mutually exclusive with `--editor`), the full edited
@@ -971,9 +1010,9 @@ same keys, so any pipeline that transforms the exported text works;
 piping it back unchanged is a no-op:
 
 ```console
-$ bibdeskparser export library.bib Preskill2018 \
-    | sed 's/NISQ era/noisy intermediate-scale quantum era/' \
-    | bibdeskparser edit library.bib Preskill2018 --stdin
+$ bibdeskparser export tests/Refs/refs.bib GoerzQ2022 \
+    | sed 's/Semi-Automatic/Semiautomatic/' \
+    | bibdeskparser edit tests/Refs/refs.bib GoerzQ2022 --stdin
 ```
 
 Empty input to `--stdin` is a usage error (so an accidental
@@ -990,14 +1029,14 @@ Edit the `@string` macro definitions and merge the changes back into
 the library, via {py:meth}`~bibdeskparser.Library.edit_strings`.
 
 ```console
-$ bibdeskparser edit_strings library.bib
+$ bibdeskparser edit_strings tests/Refs/refs.bib
 ```
 
 With `--stdin`, the edited definitions are read from standard input;
 the baseline text comes from [`strings --bib`](cli-strings):
 
 ```console
-$ bibdeskparser strings library.bib --bib \
-    | sed 's/Phys. Rev. Lett./Physical Review Letters/' \
-    | bibdeskparser edit_strings library.bib --stdin
+$ bibdeskparser strings tests/Refs/refs.bib --bib \
+    | sed 's/EPJ Quantum Technol./EPJ Quantum Technology/' \
+    | bibdeskparser edit_strings tests/Refs/refs.bib --stdin
 ```

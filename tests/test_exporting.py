@@ -27,6 +27,13 @@ def jpb_entry(refs_library):
 
 
 @pytest.fixture
+def nc_entry(refs_library):
+    """`KatrukhaNC2017`: article carrying every field of the "minimal"
+    `article` whitelist, including `number`."""
+    return Entry._wrap(refs_library.entries_dict["KatrukhaNC2017"])
+
+
+@pytest.fixture
 def diploma_entry(refs_library):
     """`GoerzDiploma2010`: mastersthesis whose `school` field has a
     stored TeX accent (`Universit{\\"a}t`)."""
@@ -83,10 +90,10 @@ def test_keywords_exported(jpb_entry):
     """The `keywords` field is exported in the "default" and "raw"
     formats, and is readable (but not writable) through the `Entry`
     dict interface."""
-    line = "\tkeywords = {Rydberg atoms, quantum computing, "
+    line = "\tkeywords = {OCT, Quantum Gates, "
     assert line in export_entries([jpb_entry], format="default")
     assert line in export_entries([jpb_entry], format="raw")
-    assert jpb_entry["keywords"].startswith("Rydberg atoms, quantum computing")
+    assert jpb_entry["keywords"].startswith("OCT, Quantum Gates")
 
 
 def test_one_word_keyword_never_a_macro():
@@ -208,12 +215,12 @@ def _minimal_body_lines(text):
     return lines[1:-1]
 
 
-def test_minimal_article_whitelist(jpb_entry):
+def test_minimal_article_whitelist(nc_entry):
     """`article` whitelist, in order, 4-space indent, Title-case names,
     trailing comma on every field including the last, bare macro."""
-    text = export_entries([jpb_entry], format="minimal")
+    text = export_entries([nc_entry], format="minimal")
     assert text.splitlines(keepends=True)[0] == (
-        f"@{jpb_entry.entry_type}{{{jpb_entry.key},\n"
+        f"@{nc_entry.entry_type}{{{nc_entry.key},\n"
     )
     expected_fields = [
         "author",
@@ -228,7 +235,7 @@ def test_minimal_article_whitelist(jpb_entry):
     body_lines = _minimal_body_lines(text)
     assert len(body_lines) == len(expected_fields)
     for line, name in zip(body_lines, expected_fields):
-        value = jpb_entry[name]
+        value = nc_entry[name]
         if name == "journal":
             assert line == f"    Journal = {value},\n"
         else:

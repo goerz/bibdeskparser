@@ -18,6 +18,7 @@ from bibdeskparser.header import parse_header, update_header
 from bibdeskparser.library import Library, StaleFileError
 
 REFS_BIB = Path(__file__).parent / "Refs" / "refs.bib"
+WITH_DUPLICATES_BIB = Path(__file__).parent / "Refs" / "with_duplicates.bib"
 
 
 def _entry_block(text, key):
@@ -96,7 +97,6 @@ def test_modify_one_entry_roundtrip(tmp_path, refs_text, bib):
         "journal",
         "keywords",
         "note",
-        "number",
         "pages",
         "title",
         "volume",
@@ -124,9 +124,9 @@ def test_timestamp_after_load(bib):
     assert bib.timestamp == datetime.datetime(
         2026,
         7,
-        11,
-        13,
-        35,
+        18,
+        16,
+        2,
         0,
         tzinfo=datetime.timezone(datetime.timedelta(hours=-4)),
     )
@@ -237,7 +237,7 @@ def test_strings_set_existing_updates_value(bib):
     place."""
     bib.strings["jpb"] = "Journal of Physics B"
     assert bib.strings["jpb"] == "Journal of Physics B"
-    assert len(bib.strings) == 9
+    assert len(bib.strings) == 19
 
 
 def test_strings_delitem_unknown_raises(bib):
@@ -250,7 +250,7 @@ def test_strings_mapping_interface(bib):
     """`.strings` behaves like a `dict` for reading."""
     assert "epjqt" in bib.strings
     assert "no-such-macro" not in bib.strings
-    assert len(bib.strings) == 9
+    assert len(bib.strings) == 19
     assert set(bib.strings) >= {"epjqt", "jpb", "pra"}
 
 
@@ -425,11 +425,16 @@ def test_render_undefined_macro_falls_back_to_name(tmp_path):
 # -- 6. .groups ---------------------------------------------------------- #
 
 GROUP_NAMES = [
+    "Diploma",
     "My Papers",
-    "OCT Software",
-    "Preprints",
-    "Superconducting Qubits",
 ]
+
+DIPLOMA_KEYS = (
+    "Tannor2007",
+    "NielsenChuangCh10QEC",
+    "Evans1983",
+    "LapertPRA09",
+)
 
 
 @pytest.fixture(name="stale_bib")
@@ -450,10 +455,10 @@ def test_groups_mapping_read_interface(bib):
     """`.groups` reads like a `dict` mapping group name to a tuple of
     citation keys, and compares equal to an equivalent plain `dict`."""
     assert list(bib.groups) == GROUP_NAMES
-    assert len(bib.groups) == 4
+    assert len(bib.groups) == 2
     assert "My Papers" in bib.groups
     assert "No Such Group" not in bib.groups
-    assert bib.groups["Preprints"] == ("Aiello2605.00152",)
+    assert bib.groups["Diploma"] == DIPLOMA_KEYS
     assert isinstance(bib.groups["My Papers"], tuple)
     assert bib.groups == dict(bib.groups)
     with pytest.raises(KeyError):
@@ -464,7 +469,7 @@ def test_groups_repr_shows_members(bib):
     """`repr(bib.groups)` immediately shows every group and its
     members, exactly like a plain `dict`."""
     assert repr(bib.groups) == repr(dict(bib.groups))
-    assert repr(bib.groups).startswith("{'My Papers': (")
+    assert repr(bib.groups).startswith("{'Diploma': (")
 
 
 def test_groups_repr_pretty_shows_members(bib):
@@ -476,7 +481,9 @@ def test_groups_repr_pretty_shows_members(bib):
 def test_groups_for_entry_via_entry(bib):
     """`entry.groups` (a tuple) reflects the group data."""
     assert bib["GoerzJPB2011"].groups == ("My Papers",)
-    assert bib["GoerzSPP2019"].groups == ("My Papers", "OCT Software")
+    assert bib["Tannor2007"].groups == ("Diploma",)
+    bib.add_to_group("Diploma", "GoerzSPP2019")
+    assert set(bib["GoerzSPP2019"].groups) == {"My Papers", "Diploma"}
 
 
 def test_groups_setitem_creates_empty_group(bib):
@@ -594,10 +601,10 @@ def test_add_to_group_unknown_key_raises(bib):
     """Adding a citation key that has no corresponding entry raises
     `KeyError`, without modifying the group."""
     assert "NoSuchKey2099" not in bib
-    before = bib.groups["Preprints"]
+    before = bib.groups["Diploma"]
     with pytest.raises(KeyError, match="NoSuchKey2099"):
-        bib.add_to_group("Preprints", "NoSuchKey2099")
-    assert bib.groups["Preprints"] == before
+        bib.add_to_group("Diploma", "NoSuchKey2099")
+    assert bib.groups["Diploma"] == before
 
 
 def test_remove_from_group_updates_only_that_entry(bib):
@@ -614,7 +621,7 @@ def test_remove_from_group_not_a_member_is_noop(bib):
     """Removing a key that is not a member is a silent no-op, but an
     unknown group name raises `KeyError`."""
     before = bib["GoerzJPB2011"].groups
-    bib.remove_from_group("Preprints", "GoerzJPB2011")
+    bib.remove_from_group("Diploma", "GoerzJPB2011")
     assert bib["GoerzJPB2011"].groups == before
     with pytest.raises(KeyError):
         bib.remove_from_group("No Such Group", "GoerzJPB2011")
@@ -640,14 +647,14 @@ def test_groups_delitem_unknown_name_raises(bib):
 def test_groups_mutablemapping_mixins(bib):
     """The `MutableMapping` mixins funnel through the view's
     `__setitem__`/`__delitem__`, maintaining entry consistency."""
-    keys = bib.groups.pop("Preprints")
-    assert keys == ("Aiello2605.00152",)
-    assert "Preprints" not in bib.groups
-    assert bib["Aiello2605.00152"].groups == ()
-    assert bib.groups.setdefault("Preprints", ()) == ()
-    assert bib.groups["Preprints"] == ()
-    bib.groups.update({"Preprints": ("Aiello2605.00152",)})
-    assert bib["Aiello2605.00152"].groups == ("Preprints",)
+    keys = bib.groups.pop("Diploma")
+    assert keys == DIPLOMA_KEYS
+    assert "Diploma" not in bib.groups
+    assert bib["Tannor2007"].groups == ()
+    assert bib.groups.setdefault("Diploma", ()) == ()
+    assert bib.groups["Diploma"] == ()
+    bib.groups.update({"Diploma": ("Tannor2007",)})
+    assert bib["Tannor2007"].groups == ("Diploma",)
     bib.groups.clear()
     assert len(bib.groups) == 0
     assert all(entry.groups == () for entry in bib.entries)
@@ -655,11 +662,12 @@ def test_groups_mutablemapping_mixins(bib):
 
 def test_delete_entry_cascades_to_groups(bib):
     """Deleting an entry removes its citation key from every group."""
+    bib.add_to_group("Diploma", "GoerzSPP2019")
     assert "GoerzSPP2019" in bib.groups["My Papers"]
-    assert "GoerzSPP2019" in bib.groups["OCT Software"]
+    assert "GoerzSPP2019" in bib.groups["Diploma"]
     del bib["GoerzSPP2019"]
     assert "GoerzSPP2019" not in bib.groups["My Papers"]
-    assert "GoerzSPP2019" not in bib.groups["OCT Software"]
+    assert "GoerzSPP2019" not in bib.groups["Diploma"]
 
 
 def test_rekey_cascades_to_groups(bib):
@@ -675,10 +683,11 @@ def test_rekey_cascades_to_groups(bib):
 def test_setitem_rekey_cascades_to_groups(bib):
     """The `bib[new] = bib[old]` spelling of a rename keeps group
     membership, exactly like `rekey`."""
-    position = bib.groups["OCT Software"].index("GoerzQ2022")
+    bib.add_to_group("Diploma", "GoerzQ2022")
+    position = bib.groups["Diploma"].index("GoerzQ2022")
     bib["NewKey2026"] = bib["GoerzQ2022"]
-    assert bib.groups["OCT Software"][position] == "NewKey2026"
-    assert bib["NewKey2026"].groups == ("My Papers", "OCT Software")
+    assert bib.groups["Diploma"][position] == "NewKey2026"
+    assert set(bib["NewKey2026"].groups) == {"My Papers", "Diploma"}
 
 
 # -- 7. .keywords ---------------------------------------------------------#
@@ -687,12 +696,16 @@ def test_setitem_rekey_cascades_to_groups(bib):
 def test_keywords_computed_from_entries(bib):
     """`.keywords` maps each keyword to the tuple of citation keys of
     the entries carrying it, computed from the stored fields."""
-    assert bib.keywords["quantum computing"] == ("GoerzJPB2011",)
-    assert bib.keywords["optimal control"] == ("GoerzDiploma2010",)
+    assert bib.keywords["Filtering"] == ("LapertPRA09",)
+    assert bib.keywords["Spin Squeezing"] == (
+        "CarrascoPRA2022",
+        "GrondPRA2009b",
+        "GrondPRA2009a",
+    )
     assert bib["GoerzJPB2011"].keywords == (
-        "Rydberg atoms",
-        "quantum computing",
-        "quantum information",
+        "OCT",
+        "Quantum Gates",
+        "Ultracold Atoms",
     )
 
 
@@ -710,12 +723,13 @@ def test_keywords_field_readable_not_writable_via_dict(bib):
 def test_add_to_keyword_updates_immediately(bib):
     """`add_to_keyword` edits the entries' stored field; the change is
     visible in `entry.keywords` and `library.keywords` right away."""
-    entry = bib["GoerzNJP2014"]
+    entry = bib["Tannor2007"]
+    assert entry.keywords == ()
     assert entry._dirty is False
-    assert bib.add_to_keyword("new topic", "GoerzNJP2014", "GoerzQ2022") is (
-        None
-    )
-    assert bib.keywords["new topic"] == ("GoerzNJP2014", "GoerzQ2022")
+    assert bib.add_to_keyword(
+        "new topic", "Tannor2007", "Nolting1997Coulomb"
+    ) is (None)
+    assert bib.keywords["new topic"] == ("Tannor2007", "Nolting1997Coulomb")
     assert entry.keywords == ("new topic",)
     assert entry._dirty is True  # keyword edits touch the entry ...
 
@@ -733,7 +747,7 @@ def test_add_to_keyword_existing_is_noop(bib):
     """Adding a keyword an entry already carries is a silent no-op."""
     entry = bib["GoerzJPB2011"]
     before = entry.keywords
-    bib.add_to_keyword("quantum computing", "GoerzJPB2011")
+    bib.add_to_keyword("Quantum Gates", "GoerzJPB2011")
     assert entry.keywords == before
     assert entry._dirty is False
 
@@ -742,9 +756,9 @@ def test_add_to_keyword_unknown_key_raises(bib):
     """An unknown citation key raises `KeyError` before any entry is
     modified."""
     with pytest.raises(KeyError):
-        bib.add_to_keyword("new topic", "GoerzNJP2014", "NoSuchKey2099")
+        bib.add_to_keyword("new topic", "Tannor2007", "NoSuchKey2099")
     assert "new topic" not in bib.keywords
-    assert bib["GoerzNJP2014"].keywords == ()
+    assert bib["Tannor2007"].keywords == ()
 
 
 def test_add_to_keyword_invalid_keyword_raises(bib):
@@ -761,26 +775,25 @@ def test_add_to_keyword_invalid_keyword_raises(bib):
 def test_remove_from_keyword_drops_empty_field(bib):
     """Removing an entry's last keyword removes the stored `keywords`
     field entirely."""
-    entry = bib["GoerzDiploma2010"]
-    bib.remove_from_keyword("optimal control", "GoerzDiploma2010")
+    entry = bib["Evans1983"]
+    assert entry.keywords == ("OCT",)
+    bib.remove_from_keyword("OCT", "Evans1983")
     assert entry.keywords == ()
-    assert "optimal control" not in bib.keywords
+    assert "Evans1983" not in bib.keywords["OCT"]
     assert entry._find_field("keywords") is None
     # removing it again (or from a non-carrying entry) is a no-op:
-    bib.remove_from_keyword("optimal control", "GoerzDiploma2010")
+    bib.remove_from_keyword("OCT", "Evans1983")
 
 
 def test_keyword_changes_survive_save_and_reload(tmp_path, bib):
     """Keyword edits are persisted in the entries' `keywords` fields."""
-    bib.add_to_keyword("Schrödinger", "GoerzNJP2014")
-    bib.remove_from_keyword("quantum computing", "GoerzJPB2011")
+    bib.add_to_keyword("Schrödinger", "Tannor2007")
+    bib.remove_from_keyword("Filtering", "LapertPRA09")
     out = tmp_path / "out.bib"
     bib.save(out)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")  # the duplicate-key warning
-        reloaded = Library(out)
-    assert reloaded["GoerzNJP2014"].keywords == ("Schrödinger",)
-    assert "quantum computing" not in reloaded.keywords
+    reloaded = Library(out)
+    assert reloaded["Tannor2007"].keywords == ("Schrödinger",)
+    assert "Filtering" not in reloaded.keywords
     assert 'Schr{\\"o}dinger' in out.read_text(encoding="utf-8")
 
 
@@ -800,19 +813,19 @@ def test_keywords_view_setitem_and_delitem(bib):
 def test_keywords_view_setitem_empty_deletes(bib):
     """Assigning `()` removes the keyword from every entry (an empty
     keyword has no representation in the file)."""
-    bib.keywords["optimal control"] = ()
-    assert "optimal control" not in bib.keywords
-    assert bib["GoerzDiploma2010"].keywords == ()
+    bib.keywords["Filtering"] = ()
+    assert "Filtering" not in bib.keywords
+    assert "Filtering" not in bib["LapertPRA09"].keywords
 
 
 def test_keywords_view_setitem_validates_before_mutating(bib):
     """A bare string or an unknown citation key is rejected before any
     entry is modified."""
     with pytest.raises(TypeError, match="single string"):
-        bib.keywords["optimal control"] = "GoerzJPB2011"
+        bib.keywords["Filtering"] = "GoerzJPB2011"
     with pytest.raises(KeyError):
-        bib.keywords["optimal control"] = ("GoerzJPB2011", "NoSuchKey2099")
-    assert bib.keywords["optimal control"] == ("GoerzDiploma2010",)
+        bib.keywords["Filtering"] = ("GoerzJPB2011", "NoSuchKey2099")
+    assert bib.keywords["Filtering"] == ("LapertPRA09",)
     assert bib["GoerzJPB2011"]._dirty is False
 
 
@@ -825,11 +838,11 @@ def test_keywords_view_delitem_unknown_raises(bib):
 def test_keywords_view_mapping_interface(bib):
     """`.keywords` behaves like a `dict` for reading, with a plain-dict
     `repr` that shows all keywords and their entries."""
-    assert "quantum computing" in list(bib.keywords)
+    assert "OCT" in list(bib.keywords)
     assert len(bib.keywords) == len(list(bib.keywords))
     assert bib.keywords == dict(bib.keywords)
     assert repr(bib.keywords) == repr(dict(bib.keywords))
-    assert "'optimal control': ('GoerzDiploma2010',)" in repr(bib.keywords)
+    assert "'Filtering': ('LapertPRA09',)" in repr(bib.keywords)
 
 
 def test_keywords_repr_pretty_shows_entries(bib):
@@ -865,11 +878,11 @@ def test_bare_keywords_value_is_not_a_macro_reference(tmp_path):
 
 
 def test_duplicate_keys_warns_and_reports():
-    """Loading `refs.bib` warns about, and reports, its deliberate
-    duplicate key."""
+    """Loading `with_duplicates.bib` warns about, and reports, its
+    deliberate duplicate key."""
     with pytest.warns(UserWarning, match="duplicate citation keys"):
-        duplicate_library = Library(REFS_BIB)
-    assert duplicate_library.duplicate_keys == ("GoerzJOSS2025",)
+        duplicate_library = Library(WITH_DUPLICATES_BIB)
+    assert duplicate_library.duplicate_keys == ("GoerzSPP2019",)
 
 
 def test_duplicate_keys_load_does_not_log_bibtexparser_noise(caplog):
@@ -878,7 +891,7 @@ def test_duplicate_keys_load_does_not_log_bibtexparser_noise(caplog):
     condition is only reported via the `UserWarning` above."""
     with caplog.at_level("WARNING"):
         with pytest.warns(UserWarning, match="duplicate citation keys"):
-            Library(REFS_BIB)
+            Library(WITH_DUPLICATES_BIB)
     assert "Unknown block type" not in caplog.text
 
 
@@ -919,10 +932,11 @@ def test_keys_no_filter(bib):
 def test_keys_filter_types(bib):
     """`types` keeps only entries of the given type(s), matched
     case-insensitively; a single name may be given as a string."""
-    assert bib.keys(types="phdthesis") == ("GoerzPhd2015",)
+    assert bib.keys(types="phdthesis") == ("GoerzPhd2015", "BrionPhd2004")
     assert bib.keys(types=["PhdThesis", "mastersthesis"]) == (
         "GoerzDiploma2010",
         "GoerzPhd2015",
+        "BrionPhd2004",
     )
     assert bib.keys(types="nosuchtype") == ()
 
@@ -1425,24 +1439,14 @@ def test_month_macro_expands_in_search(bib):
     name."""
     bib["GoerzJPB2011"]["month"] = "jan"
     keys = [e.key for e in bib.search("January", fields=["month"])]
-    assert keys == ["GoerzJPB2011"]
+    # `Giles2008b` carries `month = jan` in `refs.bib` itself
+    assert keys == ["GoerzJPB2011", "Giles2008b"]
 
 
-def test_month_macro_renders_expanded(tmp_path):
+def test_month_macro_renders_expanded(bib):
     """A bare month macro renders as the month (not as an unresolved
-    macro name)."""
-    text = (
-        "@inproceedings{k1,\n"
-        "\tauthor = {Doe, Jane},\n"
-        "\ttitle = {T},\n"
-        "\tbooktitle = {Proceedings},\n"
-        "\tmonth = jul,\n"
-        "\tyear = {2024}}\n"
-    )
-    path = tmp_path / "months.bib"
-    path.write_text(text, encoding="utf-8")
-    bib = Library(path)
-    assert "Jul" in bib.render("k1")
+    macro name): `PaszkeNIPS2019` carries `month = dec`."""
+    assert "Dec 2019" in bib.render("PaszkeNIPS2019")
 
 
 def test_month_macro_file_override_roundtrip(tmp_path):
@@ -1511,7 +1515,7 @@ def test_month_macro_override_is_saved_and_reloaded(tmp_path, bib):
     reloaded = Library(out)
     assert reloaded.strings["jan"] == "Januar"
     keys = [e.key for e in reloaded.search("Januar", fields=["month"])]
-    assert keys == ["GoerzJPB2011"]
+    assert keys == ["GoerzJPB2011", "Giles2008b"]
 
 
 def test_month_macro_override_delete_while_in_use(tmp_path, bib):
@@ -1522,7 +1526,7 @@ def test_month_macro_override_delete_while_in_use(tmp_path, bib):
     del bib.strings["jan"]
     assert "jan" not in bib.strings
     keys = [e.key for e in bib.search("January", fields=["month"])]
-    assert keys == ["GoerzJPB2011"]
+    assert keys == ["GoerzJPB2011", "Giles2008b"]
     bib.save(tmp_path / "x.bib")  # month = jan is not undefined
 
 
@@ -2196,14 +2200,14 @@ def _keys(entries):
 def test_search_macro_literal(bib):
     """A bare `@string` macro name matches as a literal, and the
     macro's expansion matches, too."""
-    assert _keys(bib.search("pra", fields=["journal"], match="exact")) == [
-        "GoerzPRA2014"
+    assert _keys(bib.search("epjd", fields=["journal"], match="exact")) == [
+        "Luc-KoenigEPJD2004"
     ]
     assert _keys(
-        bib.search("Phys. Rev. A", fields=["journal"], match="exact")
-    ) == ["GoerzPRA2014"]
-    assert _keys(bib.search("njp", fields=["journal"], match="exact")) == [
-        "GoerzNJP2014"
+        bib.search("Eur. Phys. J. D", fields=["journal"], match="exact")
+    ) == ["Luc-KoenigEPJD2004"]
+    assert _keys(bib.search("rms", fields=["journal"], match="exact")) == [
+        "MorzhinRMS2019"
     ]
 
 
@@ -2217,9 +2221,15 @@ def test_search_accented_all_variants(bib):
     ):
         assert _keys(bib.search(query)) == ["GoerzPhd2015"]
         assert _keys(bib.search(query, match="folded")) == ["GoerzPhd2015"]
+    # (the ranking differs between the spellings: the exact-case match
+    # ranks first, so compare the result as a set)
     for query in ("Sebastián", "Sebastian"):
         result = _keys(bib.search(query, fields=["author"]))
-        assert result == ["GoerzQ2022", "GoerzJOSS2025", "Aiello2605.00152"]
+        assert sorted(result) == [
+            "CarrascoPRA2022",
+            "GoerzQ2022",
+            "RaithelQST2022",
+        ]
 
 
 def test_search_tex_query(bib):
@@ -2238,14 +2248,18 @@ def test_search_field_limiting(bib):
     """`fields` restricts the search; unrestricted search over the
     same query returns a superset. A single field may be given as a
     plain string."""
-    limited = _keys(
-        bib.search("optimal control", fields=["keywords"], match="exact")
-    )
-    assert limited == ["GoerzDiploma2010"]
-    unlimited = _keys(bib.search("optimal control", match="exact"))
+    limited = _keys(bib.search("Krotov", fields=["keywords"], match="exact"))
+    assert limited == [
+        "MorzhinRMS2019",
+        "GoerzSPP2019",
+        "JaegerPRA2014",
+        "GoerzQST2018",
+        "GoerzEPJQT2015",
+    ]
+    unlimited = _keys(bib.search("Krotov", match="exact"))
     assert set(unlimited) > set(limited)
     assert limited == _keys(
-        bib.search("optimal control", fields="keywords", match="exact")
+        bib.search("Krotov", fields="keywords", match="exact")
     )
 
 
@@ -2272,11 +2286,11 @@ def test_search_match_levels_subsumption(bib):
 def test_search_regex(bib):
     """`match="regex"` treats the query as a regular expression, with
     standard case-sensitive `re` semantics."""
-    result = _keys(bib.search(r"^10\.1103/", fields=["doi"], match="regex"))
-    assert result == ["GoerzPRA2014"]
-    assert bib.search(r"^10\.1103/PHYSREV", match="regex") == []
-    result = _keys(bib.search(r"(?i)^10\.1103/PHYSREV", match="regex"))
-    assert result == ["GoerzPRA2014"]
+    result = _keys(bib.search(r"^10\.21468/", fields=["doi"], match="regex"))
+    assert result == ["GoerzSPP2019"]
+    assert bib.search(r"^10\.21468/SCIPOST", match="regex") == []
+    result = _keys(bib.search(r"(?i)^10\.21468/SCIPOST", match="regex"))
+    assert result == ["GoerzSPP2019"]
 
 
 def test_search_key_pseudofield(bib):
@@ -2289,9 +2303,9 @@ def test_search_ranking_and_ties(bib):
     """Stricter matches rank first; equally ranked entries keep the
     library's entry order."""
     result = bib.search("optimal control", match="words")
-    # exact substring in the short `keywords` field outranks matches
-    # inside longer fields
-    assert result[0].key == "GoerzDiploma2010"
+    # the exact phrase in the short title of an entry without an
+    # abstract outranks matches buried inside longer fields
+    assert result[0].key == "Evans1983"
     regex_matches = _keys(bib.search("(?i)goerz", match="regex"))
     assert regex_matches == [key for key in bib if key in set(regex_matches)]
 

@@ -13,10 +13,8 @@ from bibdeskparser.groups import (
 REFS_BIB = Path(__file__).parent / "Refs" / "refs.bib"
 
 GROUP_NAMES = [
+    "Diploma",
     "My Papers",
-    "OCT Software",
-    "Preprints",
-    "Superconducting Qubits",
 ]
 
 
@@ -44,12 +42,13 @@ def test_parse_refs_comment(refs_comment):
     assert isinstance(groups, dict)
     assert list(groups) == GROUP_NAMES
     assert all(isinstance(keys, tuple) for keys in groups.values())
-    assert len(groups["My Papers"]) == 10
+    assert len(groups["My Papers"]) == 13
     assert "GoerzJPB2011" in groups["My Papers"]
-    assert groups["Preprints"] == ("Aiello2605.00152",)
-    assert groups["Superconducting Qubits"] == (
-        "GoerzEPJQT2015",
-        "GoerzNPJQI2017",
+    assert groups["Diploma"] == (
+        "Tannor2007",
+        "NielsenChuangCh10QEC",
+        "Evans1983",
+        "LapertPRA09",
     )
 
 

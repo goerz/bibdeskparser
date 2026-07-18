@@ -91,40 +91,50 @@ pip install git+https://github.com/goerz/bibdeskparser.git@master#egg=bibdeskpar
 
 ## Usage
 
+`Library` loads an existing `.bib` file and behaves like a dict of
+citation key to `Entry`. The examples below use the example database
+shipped in this repository at `tests/Refs/refs.bib`; substitute the
+path to your own library.
+
 ```python
->>> import tempfile
->>> from pathlib import Path
->>> from bibdeskparser import Entry, Library
->>> tmpdir = tempfile.TemporaryDirectory()
->>> bib_path = Path(tmpdir.name) / "references.bib"
->>> bib = Library()
->>> bib["Smith2020"] = Entry(
-...     "article",
-...     "Smith2020",
-...     fields={
-...         "title": "A Title",
-...         "author": "Smith, John and Doe, Jane",
-...         "journal": "J. Test",
-...         "year": "2020",
-...     },
-... )
->>> bib.save(bib_path)
-
->>> bib = Library(bib_path)
->>> entry = bib["Smith2020"]
+>>> from bibdeskparser import Library
+>>> bib = Library("tests/Refs/refs.bib")
+>>> len(bib)
+61
+>>> entry = bib["GoerzQ2022"]
 >>> print(entry["title"])
-A Title
->>> print(entry.author[0].last[0])  # 'Smith'
-Smith
-
->>> entry["title"] = "A Better Title"
->>> bib.groups["Favorites"] = ("Smith2020",)  # BibDesk static group
->>> entry.groups
-('Favorites',)
->>> bib.save()
->>> tmpdir.cleanup()
+Quantum Optimal Control via Semi-Automatic Differentiation
+>>> print(entry.author[0].last[0])
+Goerz
+>>> entry.files  # linked PDF attachment, relative to the .bib file
+['GoerzQ2022.pdf']
 
 ```
+
+Full-text search and rendering a formatted citation:
+
+```python
+>>> [e.key for e in bib.search("tractor atom interferometry")]
+['RaithelQST2022']
+>>> print(bib.render("RaithelQST2022"))
+G. Raithel, A. Duspayev, B. Dash, *et al.* *Principles of tractor atom interferometry*. [Quantum Sci. Technol. **8**, p. 014001](https://doi.org/10.1088/2058-9565/ac9429) (2022), [arXiv:2207.09023](https://arxiv.org/abs/2207.09023).
+
+```
+
+Any change is written back with `save()`, preserving BibDesk's file
+format byte-for-byte for everything that was not touched:
+
+```python
+>>> entry["note"] = "Implemented in the QuantumControl.jl framework."
+>>> bib.groups["To Read"] = ("BrifNJP2010", "KochEPJQT2022")
+>>> bib["KochEPJQT2022"].groups
+('To Read',)
+>>> bib.save()
+
+```
+
+A new `.bib` file can also be created from scratch, with `Library()`
+in Python or `bibdeskparser create` on the command line.
 
 
 ## Development

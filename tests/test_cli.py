@@ -45,6 +45,16 @@ def fixture_bibfile(tmp_path):
     return Path(shutil.copy(REFS_DIR / "refs.bib", tmp_path))
 
 
+@pytest.fixture(name="dupfile")
+def fixture_dupfile(tmp_path):
+    """A copy of `with_duplicates.bib` in `tmp_path`, with the linked
+    PDFs: a variant of `refs.bib` with a deliberate duplicate citation
+    key."""
+    for pdf in REFS_DIR.glob("*.pdf"):
+        shutil.copy(pdf, tmp_path)
+    return Path(shutil.copy(REFS_DIR / "with_duplicates.bib", tmp_path))
+
+
 @pytest.fixture(name="runner")
 def fixture_runner():
     try:
@@ -56,7 +66,7 @@ def fixture_runner():
 
 def _load(bibfile):
     """Load `bibfile` as a `Library`, suppressing load-time warnings
-    (`refs.bib` deliberately contains a duplicate citation key)."""
+    (e.g. the duplicate-key warning for `with_duplicates.bib`)."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return Library(bibfile)
@@ -108,7 +118,7 @@ def test_keys_json(runner, bibfile):
 
 def test_keys_filter_type(runner, bibfile):
     result = _run(runner, "keys", bibfile, "--type", "phdthesis")
-    assert result.output.splitlines() == ["GoerzPhd2015"]
+    assert result.output.splitlines() == ["GoerzPhd2015", "BrionPhd2004"]
     result = _run(
         runner,
         "keys",
@@ -118,7 +128,11 @@ def test_keys_filter_type(runner, bibfile):
         "--type",
         "mastersthesis",
     )
-    assert result.output.splitlines() == ["GoerzDiploma2010", "GoerzPhd2015"]
+    assert result.output.splitlines() == [
+        "GoerzDiploma2010",
+        "GoerzPhd2015",
+        "BrionPhd2004",
+    ]
 
 
 def test_keys_filter_has_missing_empty(runner, bibfile):
@@ -157,7 +171,8 @@ def test_keys_filter_combined(runner, bibfile):
         "--json",
     )
     data = json.loads(result.output)
-    assert "GoerzJPB2011" in data
+    assert "KochJPCM2016" in data
+    assert "GoerzJPB2011" not in data  # has a note field
     assert "GoerzSPIEO2021" not in data  # inproceedings
     lib = _load(bibfile)
     for key in data:
@@ -173,7 +188,7 @@ def test_show(runner, bibfile):
     assert "journal:" in result.output
     assert "groups:" in result.output
     assert "My Papers" in result.output
-    assert "GoerzJPB11.pdf" in result.output
+    assert "GoerzJPB2011.pdf" in result.output
 
 
 def test_show_multiple(runner, bibfile):
@@ -203,7 +218,7 @@ def test_show_json(runner, bibfile):
     assert isinstance(entry["fields"], dict)
     assert entry["fields"]["journal"] == "jpb"
     assert entry["groups"] == ["My Papers"]
-    assert entry["files"] == ["GoerzJPB11.pdf"]
+    assert entry["files"] == ["GoerzJPB2011.pdf"]
     assert isinstance(entry["urls"], list)
     lib = _load(bibfile)
     assert entry["date_added"] == lib["GoerzJPB2011"].date_added.isoformat()
@@ -361,10 +376,10 @@ def test_get_field_json(runner, bibfile):
 
 def test_get_field_undefined(runner, bibfile):
     result = runner.invoke(
-        main, ["get_field", str(bibfile), "GoerzJPB2011", "note"]
+        main, ["get_field", str(bibfile), "GoerzJPB2011", "number"]
     )
     assert result.exit_code == 1
-    assert "has no field 'note'" in result.stderr
+    assert "has no field 'number'" in result.stderr
     assert "Traceback" not in result.stderr
 
 
@@ -394,7 +409,7 @@ def test_author_json(runner, bibfile):
 
 
 def test_editor(runner, bibfile):
-    # no entry in refs.bib has an editor field
+    # GoerzJPB2011 has no editor field
     result = _run(runner, "editor", bibfile, "GoerzJPB2011")
     assert result.output == ""
     result = _run(runner, "editor", bibfile, "GoerzJPB2011", "--json")
@@ -431,18 +446,18 @@ def test_search_options(runner, bibfile):
         runner,
         "search",
         bibfile,
-        r"^10\.1103/",
+        r"^10\.21468/",
         "--field",
         "doi",
         "--match",
         "regex",
     )
-    assert result.output.splitlines() == ["GoerzPRA2014"]
+    assert result.output.splitlines() == ["GoerzSPP2019"]
     result = _run(
         runner,
         "search",
         bibfile,
-        "pra",
+        "rms",
         "--field",
         "journal",
         "--field",
@@ -450,7 +465,7 @@ def test_search_options(runner, bibfile):
         "--match",
         "exact",
     )
-    assert result.output.splitlines() == ["GoerzPRA2014"]
+    assert result.output.splitlines() == ["MorzhinRMS2019"]
 
 
 def test_search_no_results(runner, bibfile):
@@ -509,18 +524,18 @@ def test_groups_of_entry(runner, bibfile):
 
 def test_keywords(runner, bibfile):
     result = _run(runner, "keywords", bibfile)
-    assert "optimal control: GoerzDiploma2010" in result.output
+    assert "Filtering: LapertPRA09" in result.output
 
 
 def test_keywords_json(runner, bibfile):
     result = _run(runner, "keywords", bibfile, "--json")
     data = json.loads(result.output)
-    assert data["optimal control"] == ["GoerzDiploma2010"]
+    assert data["Filtering"] == ["LapertPRA09"]
 
 
 def test_keywords_of_entry(runner, bibfile):
     result = _run(runner, "keywords", bibfile, "GoerzDiploma2010")
-    assert "optimal control" in result.output.splitlines()
+    assert "Quantum Gates" in result.output.splitlines()
     result = _run(runner, "keywords", bibfile, "GoerzDiploma2010", "--json")
     data = json.loads(result.output)
     assert data == list(_load(bibfile)["GoerzDiploma2010"].keywords)
@@ -538,14 +553,19 @@ def test_strings_json(runner, bibfile):
     assert data["jpb"] == "J. Phys. B"
 
 
-def test_duplicate_keys(runner, bibfile):
+def test_duplicate_keys(runner, dupfile):
+    result = _run(runner, "duplicate_keys", dupfile)
+    assert result.output.splitlines() == ["GoerzSPP2019"]
+
+
+def test_duplicate_keys_json(runner, dupfile):
+    result = _run(runner, "duplicate_keys", dupfile, "--json")
+    assert json.loads(result.output) == ["GoerzSPP2019"]
+
+
+def test_duplicate_keys_none(runner, bibfile):
     result = _run(runner, "duplicate_keys", bibfile)
-    assert result.output.splitlines() == ["GoerzJOSS2025"]
-
-
-def test_duplicate_keys_json(runner, bibfile):
-    result = _run(runner, "duplicate_keys", bibfile, "--json")
-    assert json.loads(result.output) == ["GoerzJOSS2025"]
+    assert result.output == ""
 
 
 def test_timestamp(runner, bibfile):
@@ -923,10 +943,10 @@ def test_delete_field(runner, bibfile):
 
 def test_delete_field_undefined(runner, bibfile):
     result = runner.invoke(
-        main, ["delete_field", str(bibfile), "GoerzJPB2011", "note"]
+        main, ["delete_field", str(bibfile), "GoerzJPB2011", "number"]
     )
     assert result.exit_code == 1
-    assert "has no field 'note'" in result.stderr
+    assert "has no field 'number'" in result.stderr
 
 
 def test_delete_field_protected(runner, bibfile):
@@ -938,14 +958,14 @@ def test_delete_field_protected(runner, bibfile):
 
 
 def test_add_to_group(runner, bibfile):
-    _run(runner, "add_to_group", bibfile, "Preprints", "GoerzDiploma2010")
+    _run(runner, "add_to_group", bibfile, "Diploma", "GoerzDiploma2010")
     lib = _load(bibfile)
-    assert "GoerzDiploma2010" in lib.groups["Preprints"]
+    assert "GoerzDiploma2010" in lib.groups["Diploma"]
 
 
 def test_remove_from_group(runner, bibfile):
-    _run(runner, "remove_from_group", bibfile, "Preprints", "Aiello2605.00152")
-    assert _load(bibfile).groups["Preprints"] == ()
+    _run(runner, "remove_from_group", bibfile, "Diploma", "Tannor2007")
+    assert "Tannor2007" not in _load(bibfile).groups["Diploma"]
 
 
 def test_set_group(runner, bibfile):
@@ -967,8 +987,8 @@ def test_set_group_empty(runner, bibfile):
 
 
 def test_delete_group(runner, bibfile):
-    _run(runner, "delete_group", bibfile, "Preprints")
-    assert "Preprints" not in _load(bibfile).groups
+    _run(runner, "delete_group", bibfile, "Diploma")
+    assert "Diploma" not in _load(bibfile).groups
 
 
 def test_set_string(runner, bibfile):
@@ -1154,18 +1174,18 @@ def test_replace_file(runner, bibfile, tmp_path):
         "replace_file",
         bibfile,
         "GoerzJPB2011",
-        "GoerzJPB11.pdf",
+        "GoerzJPB2011.pdf",
         "new.pdf",
     )
     assert _load(bibfile)["GoerzJPB2011"].files == ["new.pdf"]
     # without --remove, the old file stays on disk
-    assert (tmp_path / "GoerzJPB11.pdf").exists()
+    assert (tmp_path / "GoerzJPB2011.pdf").exists()
 
 
 def test_unlink_file(runner, bibfile, tmp_path):
-    _run(runner, "unlink_file", bibfile, "GoerzJPB2011", "GoerzJPB11.pdf")
+    _run(runner, "unlink_file", bibfile, "GoerzJPB2011", "GoerzJPB2011.pdf")
     assert _load(bibfile)["GoerzJPB2011"].files == []
-    assert (tmp_path / "GoerzJPB11.pdf").exists()
+    assert (tmp_path / "GoerzJPB2011.pdf").exists()
 
 
 def test_unlink_file_remove(runner, bibfile, tmp_path):
@@ -1174,11 +1194,11 @@ def test_unlink_file_remove(runner, bibfile, tmp_path):
         "unlink_file",
         bibfile,
         "GoerzJPB2011",
-        "GoerzJPB11.pdf",
+        "GoerzJPB2011.pdf",
         "--remove",
     )
     assert _load(bibfile)["GoerzJPB2011"].files == []
-    assert not (tmp_path / "GoerzJPB11.pdf").exists()
+    assert not (tmp_path / "GoerzJPB2011.pdf").exists()
 
 
 def test_rename_file(runner, bibfile, tmp_path):
@@ -1187,12 +1207,12 @@ def test_rename_file(runner, bibfile, tmp_path):
         "rename_file",
         bibfile,
         "GoerzJPB2011",
-        "GoerzJPB11.pdf",
+        "GoerzJPB2011.pdf",
         "renamed.pdf",
     )
     assert _load(bibfile)["GoerzJPB2011"].files == ["renamed.pdf"]
     assert (tmp_path / "renamed.pdf").exists()
-    assert not (tmp_path / "GoerzJPB11.pdf").exists()
+    assert not (tmp_path / "GoerzJPB2011.pdf").exists()
 
 
 def test_rename_file_auto_from_config(runner, bibfile, tmp_path):
@@ -1202,13 +1222,22 @@ def test_rename_file_auto_from_config(runner, bibfile, tmp_path):
         '[auto_file]\nformat_spec = "%f{Cite Key}%u0%e"\n',
         encoding="utf-8",
     )
+    # move the attachment away from its auto-filed name first
+    _run(
+        runner,
+        "rename_file",
+        bibfile,
+        "GoerzJPB2011",
+        "GoerzJPB2011.pdf",
+        "misfiled.pdf",
+    )
     result = _run(
-        runner, "rename_file", bibfile, "GoerzJPB2011", "GoerzJPB11.pdf"
+        runner, "rename_file", bibfile, "GoerzJPB2011", "misfiled.pdf"
     )
     assert result.output.strip() == "GoerzJPB2011.pdf"
     assert _load(bibfile)["GoerzJPB2011"].files == ["GoerzJPB2011.pdf"]
     assert (tmp_path / "GoerzJPB2011.pdf").exists()
-    assert not (tmp_path / "GoerzJPB11.pdf").exists()
+    assert not (tmp_path / "misfiled.pdf").exists()
 
 
 def test_rename_file_options(runner, bibfile, tmp_path):
@@ -1218,7 +1247,7 @@ def test_rename_file_options(runner, bibfile, tmp_path):
         "rename_file",
         bibfile,
         "GoerzJPB2011",
-        "GoerzJPB11.pdf",
+        "GoerzJPB2011.pdf",
         "--format-spec",
         "%f{Cite Key}%u0%e",
         "--location",
@@ -1236,7 +1265,7 @@ def test_rename_file_new_with_format_spec_fails(runner, bibfile):
             "rename_file",
             str(bibfile),
             "GoerzJPB2011",
-            "GoerzJPB11.pdf",
+            "GoerzJPB2011.pdf",
             "new.pdf",
             "--format-spec",
             "%f{Cite Key}%u0%e",
@@ -1252,14 +1281,14 @@ def test_add_url(runner, bibfile):
 
 
 def test_replace_url(runner, bibfile):
-    old = "http://michaelgoerz.net/research/diploma_thesis.pdf"
+    old = "https://michaelgoerz.net/research/diploma_thesis.pdf"
     new = "https://example.org/thesis.pdf"
     _run(runner, "replace_url", bibfile, "GoerzDiploma2010", old, new)
     assert _load(bibfile)["GoerzDiploma2010"].urls == (new,)
 
 
 def test_remove_url(runner, bibfile):
-    url = "http://michaelgoerz.net/research/diploma_thesis.pdf"
+    url = "https://michaelgoerz.net/research/diploma_thesis.pdf"
     _run(runner, "remove_url", bibfile, "GoerzDiploma2010", url)
     assert _load(bibfile)["GoerzDiploma2010"].urls == ()
 
@@ -2010,14 +2039,14 @@ def _forbid_find_preprint(monkeypatch):
 
 def test_add_preprint_stores(runner, bibfile, monkeypatch):
     calls = _mock_find_preprint(monkeypatch, [("2510.12345", "doi", 1.0, "")])
-    result = _run(runner, "add_preprint", bibfile, "GoerzJOSS2025")
+    result = _run(runner, "add_preprint", bibfile, "WinckelIP2008")
     assert result.stdout == (
-        "GoerzJOSS2025: stored eprint 2510.12345 (match=doi, ratio=1.00)\n"
+        "WinckelIP2008: stored eprint 2510.12345 (match=doi, ratio=1.00)\n"
     )
-    assert calls[0]["doi"] == "10.21105/joss.08813"
+    assert calls[0]["doi"] == "10.1088/0266-5611/24/3/034007"
     lib = _load(bibfile)
-    assert lib["GoerzJOSS2025"]["eprint"] == "2510.12345"
-    assert lib["GoerzJOSS2025"]["archiveprefix"] == "arXiv"
+    assert lib["WinckelIP2008"]["eprint"] == "2510.12345"
+    assert lib["WinckelIP2008"]["archiveprefix"] == "arXiv"
 
 
 def test_add_preprint_skips_existing(runner, bibfile, monkeypatch):
@@ -2043,22 +2072,22 @@ def test_add_preprint_not_found_and_mark_empty(runner, bibfile, monkeypatch):
             ("", "none", 0.55, "best-ratio=0.55"),
         ],
     )
-    result = _run(runner, "add_preprint", bibfile, "GoerzJOSS2025")
+    result = _run(runner, "add_preprint", bibfile, "WinckelIP2008")
     assert (
-        "GoerzJOSS2025: no preprint found [best-ratio=0.55]" in result.stdout
+        "WinckelIP2008: no preprint found [best-ratio=0.55]" in result.stdout
     )
     lib = _load(bibfile)
-    assert "eprint" not in lib["GoerzJOSS2025"]
+    assert "eprint" not in lib["WinckelIP2008"]
     result = _run(
-        runner, "add_preprint", bibfile, "--mark-empty", "GoerzJOSS2025"
+        runner, "add_preprint", bibfile, "--mark-empty", "WinckelIP2008"
     )
     assert (
-        "GoerzJOSS2025: no preprint found (stored empty marker) "
+        "WinckelIP2008: no preprint found (stored empty marker) "
         "[best-ratio=0.55]" in result.stdout
     )
     lib = _load(bibfile)
-    assert lib["GoerzJOSS2025"]["eprint"] == ""
-    assert "archiveprefix" not in lib["GoerzJOSS2025"]
+    assert lib["WinckelIP2008"]["eprint"] == ""
+    assert "archiveprefix" not in lib["WinckelIP2008"]
 
 
 def test_add_preprint_mark_empty_config(runner, bibfile, monkeypatch):
@@ -2068,10 +2097,10 @@ def test_add_preprint_mark_empty_config(runner, bibfile, monkeypatch):
         "[add_preprint]\nmark_empty = true\n", encoding="utf-8"
     )
     _mock_find_preprint(monkeypatch, [("", "none", 0.55, "best-ratio=0.55")])
-    result = _run(runner, "add_preprint", bibfile, "GoerzJOSS2025")
+    result = _run(runner, "add_preprint", bibfile, "WinckelIP2008")
     assert "stored empty marker" in result.stdout
     lib = _load(bibfile)
-    assert lib["GoerzJOSS2025"]["eprint"] == ""
+    assert lib["WinckelIP2008"]["eprint"] == ""
 
 
 def test_add_preprint_error(runner, bibfile, monkeypatch):
@@ -2082,10 +2111,10 @@ def test_add_preprint_error(runner, bibfile, monkeypatch):
     )
     before = bibfile.read_text(encoding="utf-8")
     result = _run(
-        runner, "add_preprint", bibfile, "--mark-empty", "GoerzJOSS2025"
+        runner, "add_preprint", bibfile, "--mark-empty", "WinckelIP2008"
     )
     assert (
-        "GoerzJOSS2025: search failed [arxiv-error(HTTPError: 500)]"
+        "WinckelIP2008: search failed [arxiv-error(HTTPError: 500)]"
         in result.stdout
     )
     assert bibfile.read_text(encoding="utf-8") == before
@@ -2099,12 +2128,12 @@ def test_add_preprint_explicit(runner, bibfile, monkeypatch):
         bibfile,
         "--eprint",
         "arXiv:2510.12345v2",
-        "GoerzJOSS2025",
+        "WinckelIP2008",
     )
-    assert result.stdout == "GoerzJOSS2025: stored eprint 2510.12345\n"
+    assert result.stdout == "WinckelIP2008: stored eprint 2510.12345\n"
     lib = _load(bibfile)
-    assert lib["GoerzJOSS2025"]["eprint"] == "2510.12345"
-    assert lib["GoerzJOSS2025"]["archiveprefix"] == "arXiv"
+    assert lib["WinckelIP2008"]["eprint"] == "2510.12345"
+    assert lib["WinckelIP2008"]["archiveprefix"] == "arXiv"
 
 
 def test_add_preprint_explicit_invalid(runner, bibfile):
@@ -2115,7 +2144,7 @@ def test_add_preprint_explicit_invalid(runner, bibfile):
             str(bibfile),
             "--eprint",
             "10.1103/x",
-            "GoerzJOSS2025",
+            "WinckelIP2008",
         ],
     )
     assert result.exit_code == 1
@@ -2130,7 +2159,7 @@ def test_add_preprint_explicit_single_key_only(runner, bibfile):
             str(bibfile),
             "--eprint",
             "2510.12345",
-            "GoerzJOSS2025",
+            "WinckelIP2008",
             "GoerzPhd2015",
         ],
     )
@@ -2151,11 +2180,11 @@ def test_add_preprint_json(runner, bibfile, monkeypatch):
         "add_preprint",
         bibfile,
         "--json",
-        "GoerzJOSS2025",
+        "WinckelIP2008",
         "GoerzPhd2015",
     )
     data = json.loads(result.stdout)
-    assert data["GoerzJOSS2025"] == {
+    assert data["WinckelIP2008"] == {
         "eprint": "2510.12345",
         "match": "title+author",
         "ratio": 0.95,
@@ -2164,16 +2193,16 @@ def test_add_preprint_json(runner, bibfile, monkeypatch):
     }
     assert data["GoerzPhd2015"]["applied"] is False
     lib = _load(bibfile)
-    assert lib["GoerzJOSS2025"]["eprint"] == "2510.12345"
+    assert lib["WinckelIP2008"]["eprint"] == "2510.12345"
 
 
 def test_add_preprint_dry_run(runner, bibfile, monkeypatch):
     _mock_find_preprint(monkeypatch, [("2510.12345", "doi", 1.0, "")])
     before = bibfile.read_text(encoding="utf-8")
     result = _run(
-        runner, "add_preprint", bibfile, "--dry-run", "GoerzJOSS2025"
+        runner, "add_preprint", bibfile, "--dry-run", "WinckelIP2008"
     )
-    assert "GoerzJOSS2025: stored eprint 2510.12345" in result.stdout
+    assert "WinckelIP2008: stored eprint 2510.12345" in result.stdout
     assert bibfile.read_text(encoding="utf-8") == before
 
 

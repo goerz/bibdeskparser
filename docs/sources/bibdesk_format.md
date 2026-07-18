@@ -9,7 +9,9 @@ them exactly, so that a file loaded and saved again -- without any changes --
 comes back byte-for-byte identical. This page walks through each of these
 features and the API that exposes it. For the full method and property
 reference, see the {py:mod}`bibdeskparser` API documentation, in particular the
-`Library` and `Entry` classes.
+`Library` and `Entry` classes. The examples on this page operate on the
+example database shipped in the repository at `tests/Refs/refs.bib`, a
+BibDesk-authored library that exercises every feature described here.
 
 ## The file header
 
@@ -20,7 +22,7 @@ Every `.bib` file BibDesk writes starts with a fixed comment block:
 %% http://bibdesk.sourceforge.net/
 
 
-%% Created for Michael Goerz at 2026-07-11 13:35:00 -0400
+%% Created for Michael Goerz at 2026-07-18 16:02:00 -0400
 
 
 %% Saved with string encoding Unicode (UTF-8)
@@ -36,23 +38,14 @@ when something in the library actually changed. Saving an unmodified
 library leaves the header (and the rest of the file) untouched:
 
 ```python
->>> import shutil
->>> import tempfile
 >>> import warnings
->>> from pathlib import Path
 >>> from bibdeskparser import Library
->>> tmpdir = tempfile.TemporaryDirectory()
->>> copy_dir = Path(tmpdir.name) / "Refs"
->>> _ = shutil.copytree("tests/Refs", copy_dir)
->>> with warnings.catch_warnings():
-...     warnings.simplefilter("ignore")  # the duplicate-key warning, see below
-...     bib = Library(str(copy_dir / "refs.bib"))
+>>> bib = Library("tests/Refs/refs.bib")
 >>> bib.timestamp
-datetime.datetime(2026, 7, 11, 13, 35, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
+datetime.datetime(2026, 7, 18, 16, 2, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
 >>> bib.save()  # no changes made: the header timestamp is unchanged
 >>> bib.timestamp
-datetime.datetime(2026, 7, 11, 13, 35, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
->>> tmpdir.cleanup()
+datetime.datetime(2026, 7, 18, 16, 2, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))
 
 ```
 
@@ -71,9 +64,9 @@ exposed as read-only `datetime.datetime` objects:
 ```python
 >>> entry = bib["GoerzNJP2014"]
 >>> print(entry.date_added)
-2026-07-04 09:04:26-04:00
+2026-07-18 07:49:28-04:00
 >>> print(entry.date_modified)
-2026-07-04 09:04:26-04:00
+2026-07-18 16:00:04-04:00
 
 ```
 
@@ -123,7 +116,7 @@ as a plain list of relative path strings:
 direct consequence of how the attachments are stored: the paths in a
 `bdsk-file-N` field are relative to the `.bib` file, and only the
 `Library` knows where that file lives -- an `Entry` on its own could
-not tell what `Smith2020.pdf` is relative *to*. Operating at the
+not tell what `GoerzNJP2014.pdf` is relative *to*. Operating at the
 library level also lets these methods handle concerns that span
 entries: the same file can be linked from several entries, so
 deleting a file from disk must check all of them, and renaming a file
@@ -292,9 +285,9 @@ citation keys:
 
 ```python
 >>> sorted(bib.groups)
-['My Papers', 'OCT Software', 'Preprints', 'Superconducting Qubits']
->>> bib.groups["Superconducting Qubits"]
-('GoerzEPJQT2015', 'GoerzNPJQI2017')
+['Diploma', 'My Papers']
+>>> bib.groups["Diploma"]
+('Tannor2007', 'NielsenChuangCh10QEC', 'Evans1983', 'LapertPRA09')
 
 ```
 
@@ -314,15 +307,15 @@ change, keeps the two consistent at all times:
 ```python
 >>> entry.groups  # already in one group
 ('My Papers',)
->>> bib.add_to_group("Preprints", "GoerzNJP2014")
+>>> bib.add_to_group("Diploma", "GoerzNJP2014")
 >>> entry.groups
-('My Papers', 'Preprints')
+('Diploma', 'My Papers')
 >>> bib.groups["Numerics"] = ("GoerzSPP2019", "GoerzQ2022")
 >>> bib["GoerzSPP2019"].groups
-('My Papers', 'OCT Software', 'Numerics')
+('My Papers', 'Numerics')
 >>> del bib.groups["Numerics"]
 >>> bib["GoerzSPP2019"].groups
-('My Papers', 'OCT Software')
+('My Papers',)
 
 ```
 
@@ -418,12 +411,12 @@ entries carrying it, mirroring `.groups`:
 
 ```python
 >>> bib["GoerzJPB2011"].keywords
-('Rydberg atoms', 'quantum computing', 'quantum information')
->>> bib.keywords["optimal control"]
-('GoerzDiploma2010',)
->>> bib.add_to_keyword("optimal control", "GoerzJPB2011")
->>> bib.keywords["optimal control"]
-('GoerzDiploma2010', 'GoerzJPB2011')
+('OCT', 'Quantum Gates', 'Ultracold Atoms')
+>>> bib.keywords["Filtering"]
+('LapertPRA09',)
+>>> bib.add_to_keyword("Filtering", "GoerzJPB2011")
+>>> bib.keywords["Filtering"]
+('GoerzJPB2011', 'LapertPRA09')
 
 ```
 
@@ -491,8 +484,13 @@ the affected keys via
 blocking you from working with the rest of the file:
 
 ```python
->>> bib.duplicate_keys
-('GoerzJOSS2025',)
+>>> bib.duplicate_keys  # the example database itself is clean
+()
+>>> with warnings.catch_warnings():
+...     warnings.simplefilter("ignore")  # the duplicate-key warning
+...     dup_bib = Library("tests/Refs/with_duplicates.bib")
+>>> dup_bib.duplicate_keys
+('GoerzSPP2019',)
 
 ```
 
