@@ -52,3 +52,39 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: goerz/bibdeskparser
           verbose: false
+
+  check_changelog_pr:
+    name: Changelog references PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check that added changelog entries reference this PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          added=$(git diff "$BASE"...HEAD -- CHANGELOG.md \
+                  | grep -E '^\+\* ' || true)
+          if [ -z "$added" ]; then
+            echo "No changelog bullets added; nothing to check."
+            exit 0
+          fi
+          fail=0
+          if ! echo "$added" | grep -qF "[#$PR]"; then
+            echo "::error file=CHANGELOG.md::Added changelog entries must reference this PR as [[#$PR]]"
+            fail=1
+          fi
+          issues=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" \
+                   --json closingIssuesReferences \
+                   -q '.closingIssuesReferences[].number')
+          for issue in $issues; do
+            if ! echo "$added" | grep -qF "[#$issue]"; then
+              echo "::error file=CHANGELOG.md::Changelog entry must also reference closed issue [[#$issue]]"
+              fail=1
+            fi
+          done
+          exit $fail
