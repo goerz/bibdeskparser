@@ -785,19 +785,24 @@ and the list of problems on stderr, leaving the `.bib` file untouched.
 
 {py:meth}`Library.export <bibdeskparser.library.Library.export>` writes
 selected entries as plain bibtex text, stripped of BibDesk-only fields; use
-`format="minimal"` to further restrict each entry to a small,
+`fields="minimal"` to further restrict each entry to a small,
 per-entry-type whitelist of citation-relevant fields (dropping things
 like `abstract` and `annote`), and `outfile=` to write straight to a
-file:
+file. The `@string` definitions referenced by the exported entries
+are included, so the file is self-contained (pass
+`expand_strings=True` to instead replace each reference by the
+macro's value and omit the definitions).
 
 Note how the entries' `abstract` and `keywords`, and the `article`
 entry's linked file, are all dropped:
 
 ```python
 >>> bib.export(
-...     "GrondPRA2009a", "Evans1983", format="minimal", outfile="paper.bib"
+...     "GrondPRA2009a", "Evans1983", fields="minimal", outfile="paper.bib"
 ... )
 >>> print(Path("paper.bib").read_text())
+@string{pra = {Phys. Rev. A}}
+<BLANKLINE>
 @article{GrondPRA2009a,
     Author = {Grond, Julian and Schmiedmayer, J\"org and Hohenester, Ulrich},
     Title = {Optimizing number squeezing when splitting a mesoscopic condensate},

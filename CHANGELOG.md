@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Changed: `Library.export` and the `export` CLI command no longer take a `format` parameter. The formerly bundled aspects of the output are now controlled independently: `unicode=True|False` (`--unicode/--no-unicode`) selects Unicode or TeX-encoded field values, `expand_strings=True|False` (`--expand-strings/--no-expand-strings`) selects whether `@string` macro references are replaced by their values or kept bare with the needed `@string` definitions prepended, and `fields` -- `"full"`, `"minimal"`, or a list of field names (`--minimal`, `--field`) -- selects which fields are exported. To adapt: `format="default"` becomes no arguments (the defaults); `format="raw"` becomes `unicode=False` (which now consistently TeX-encodes the `@string` definitions as well, and re-encodes deterministically instead of exposing the in-memory stored form); `format="minimal"` becomes `fields="minimal"` (which now also prepends the needed `@string` definitions; add `expand_strings=True` for a standalone snippet without them, with the references replaced by their values instead of left dangling). [[#27]]
+* Changed: all exports now use a single layout, previously used only by `format="minimal"`: 4-space indentation, capitalized field names (`Author`, `Bdsk-File-1`), a comma after every field, and the closing brace on its own line. Reproducing the byte-exact BibDesk file layout remains the job of `Library.save`. [[#27]]
+* Changed: `Library.edit`, the underlying editing functions, and the `edit` CLI command no longer take a `format` parameter; editing always uses the default export form. [[#27]]
+* Changed: the `show` and `get_field` CLI commands now render field values: `@string` macro references are replaced by the macro's value (`--no-expand-strings` shows the bare macro name instead; in JSON output, every field value then uniformly becomes a `{"macro": ..., "value": ...}` object -- `macro` is `null` for a literal value -- so a macro reference remains distinguishable from a literal value while all fields share one shape), and `--no-unicode` shows TeX-encoded values. [[#27]]
+* Fixed: `Library.export` no longer turns a literal field value that happens to look like a macro name (a `ValueString`) into a bare `@string` macro reference; the stored literal-vs-macro distinction is now preserved on export. [[#27]]
+
 ## [v0.3.0] - 2026-07-18
 
 * Added: a `create` CLI command, creating a new, empty `.bib` file that contains only the standard BibDesk header comment (`bibdeskparser create new.bib`, or `bibdeskparser create` to bootstrap the configured `default_bib_file`). It is the one command whose `BIBFILE` must *not* already exist -- an existing file is never overwritten; every other command still requires an existing file, and the "bibfile not found" error now suggests `create`. [[#24]]
@@ -99,3 +105,4 @@ Initial release.
 [#22]: https://github.com/goerz/bibdeskparser/issues/22
 [#23]: https://github.com/goerz/bibdeskparser/pull/23
 [#24]: https://github.com/goerz/bibdeskparser/pull/24
+[#27]: https://github.com/goerz/bibdeskparser/pull/27

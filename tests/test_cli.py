@@ -216,12 +216,52 @@ def test_show_json(runner, bibfile):
     assert entry["entry_type"] == "article"
     assert entry["key"] == "GoerzJPB2011"
     assert isinstance(entry["fields"], dict)
-    assert entry["fields"]["journal"] == "jpb"
+    assert entry["fields"]["journal"] == "J. Phys. B"
     assert entry["groups"] == ["My Papers"]
     assert entry["files"] == ["GoerzJPB2011.pdf"]
     assert isinstance(entry["urls"], list)
     lib = _load(bibfile)
     assert entry["date_added"] == lib["GoerzJPB2011"].date_added.isoformat()
+
+
+def test_show_no_expand_strings(runner, bibfile):
+    """With --no-expand-strings, a macro reference prints as its bare
+    name, and in JSON *every* field value uniformly becomes a
+    {"macro": ..., "value": ...} object."""
+    result = _run(
+        runner, "show", bibfile, "GoerzJPB2011", "--no-expand-strings"
+    )
+    assert ["journal:", "jpb"] in [
+        line.split() for line in result.output.splitlines()
+    ]
+    result = _run(
+        runner,
+        "show",
+        bibfile,
+        "GoerzJPB2011",
+        "--no-expand-strings",
+        "--json",
+    )
+    fields = json.loads(result.output)["GoerzJPB2011"]["fields"]
+    assert fields["journal"] == {"macro": "jpb", "value": "J. Phys. B"}
+    for value in fields.values():
+        assert set(value) == {"macro", "value"}
+    assert fields["title"]["macro"] is None
+    assert isinstance(fields["title"]["value"], str)
+
+
+def test_show_no_unicode(runner, bibfile):
+    """With --no-unicode, field values are TeX-encoded."""
+    result = _run(
+        runner,
+        "show",
+        bibfile,
+        "GoerzDiploma2010",
+        "--field",
+        "school",
+        "--no-unicode",
+    )
+    assert 'Universit{\\"a}t' in result.output
 
 
 def test_show_field(runner, bibfile):
@@ -361,9 +401,32 @@ def test_get_field(runner, bibfile):
     # field names are case-insensitive
     result = _run(runner, "get_field", bibfile, "GoerzJPB2011", "EPRINT")
     assert result.output.splitlines() == ["1103.6050"]
-    # a macro reference prints as the bare macro name
+    # a macro reference prints as the macro's value ...
     result = _run(runner, "get_field", bibfile, "GoerzJPB2011", "journal")
+    assert result.output.splitlines() == ["J. Phys. B"]
+    # ... unless --no-expand-strings asks for the bare macro name
+    result = _run(
+        runner,
+        "get_field",
+        bibfile,
+        "GoerzJPB2011",
+        "journal",
+        "--no-expand-strings",
+    )
     assert result.output.splitlines() == ["jpb"]
+
+
+def test_get_field_no_unicode(runner, bibfile):
+    """With --no-unicode, the value is TeX-encoded."""
+    result = _run(
+        runner,
+        "get_field",
+        bibfile,
+        "GoerzDiploma2010",
+        "school",
+        "--no-unicode",
+    )
+    assert result.output.rstrip() == 'Freie Universit{\\"a}t Berlin'
 
 
 def test_get_field_json(runner, bibfile):
@@ -372,6 +435,30 @@ def test_get_field_json(runner, bibfile):
     )
     data = json.loads(result.output)
     assert data == str(_load(bibfile)["GoerzJPB2011"]["title"])
+    # with --no-expand-strings, the value is uniformly a JSON object
+    result = _run(
+        runner,
+        "get_field",
+        bibfile,
+        "GoerzJPB2011",
+        "journal",
+        "--no-expand-strings",
+        "--json",
+    )
+    data = json.loads(result.output)
+    assert data == {"macro": "jpb", "value": "J. Phys. B"}
+    # ... for a literal field as well, with a null "macro"
+    result = _run(
+        runner,
+        "get_field",
+        bibfile,
+        "GoerzJPB2011",
+        "year",
+        "--no-expand-strings",
+        "--json",
+    )
+    data = json.loads(result.output)
+    assert data == {"macro": None, "value": "2011"}
 
 
 def test_get_field_undefined(runner, bibfile):
@@ -618,11 +705,53 @@ def test_export_outfile(runner, bibfile, tmp_path):
 
 
 def test_export_minimal(runner, bibfile):
-    result = _run(
-        runner, "export", bibfile, "GoerzJPB2011", "--format", "minimal"
-    )
+    result = _run(runner, "export", bibfile, "GoerzJPB2011", "--minimal")
     assert "@article{GoerzJPB2011," in result.output
-    assert "abstract" not in result.output
+    assert "Abstract" not in result.output
+
+
+def test_export_expand_strings(runner, bibfile):
+    """--expand-strings inlines macro values and drops the @string
+    block."""
+    result = _run(
+        runner, "export", bibfile, "GoerzJPB2011", "--expand-strings"
+    )
+    assert "Journal = {J. Phys. B}," in result.output
+    assert "@string" not in result.output
+
+
+def test_export_no_unicode(runner, bibfile):
+    """--no-unicode exports the TeX-encoded stored values."""
+    result = _run(
+        runner, "export", bibfile, "GoerzDiploma2010", "--no-unicode"
+    )
+    assert 'Universit{\\"a}t' in result.output
+
+
+def test_export_field(runner, bibfile):
+    """--field restricts the export to the named fields."""
+    result = _run(
+        runner, "export", bibfile, "GoerzJPB2011", "--field", "title,year"
+    )
+    assert "Title = {" in result.output
+    assert "Year = {2011}," in result.output
+    assert "Journal" not in result.output
+
+
+def test_export_minimal_field_mutually_exclusive(runner, bibfile):
+    result = runner.invoke(
+        main,
+        [
+            "export",
+            str(bibfile),
+            "GoerzJPB2011",
+            "--minimal",
+            "--field",
+            "doi",
+        ],
+    )
+    assert result.exit_code == 2
+    assert "mutually exclusive" in result.stderr
 
 
 def test_eval_format_spec(runner, bibfile):
@@ -1393,7 +1522,7 @@ def test_edit_stdin_validation_failure(runner, bibfile):
     file is left unchanged."""
     before = bibfile.read_text(encoding="utf-8")
     exported = _run(runner, "export", bibfile, "GoerzJPB2011").output
-    edited = exported.replace("year = {2011}", "year = nosuchmacro")
+    edited = exported.replace("Year = {2011}", "Year = nosuchmacro")
     assert edited != exported
     result = runner.invoke(
         main, ["edit", str(bibfile), "GoerzJPB2011", "--stdin"], input=edited

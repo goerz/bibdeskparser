@@ -2339,27 +2339,58 @@ class Library(MutableMapping):
         entries = [_expand_macros(self[key], strings) for key in keys]
         return render_entries(entries, format=format, style=style)
 
-    def export(self, *keys, format="default", outfile=None):
-        # pylint: disable=redefined-builtin
+    def export(
+        self,
+        *keys,
+        unicode=True,
+        expand_strings=False,
+        fields="full",
+        outfile=None,
+    ):
         """Export the entries with the given citation `keys` (at
         least one required) as bibtex text.
 
-        `format` is one of `"default"` (Unicode, as displayed by the
-        `dict` interface), `"raw"` (the literal, possibly TeX-encoded,
-        stored values), or `"minimal"` (only the fields needed to
-        typeset a bibliography). For `"default"`/`"raw"`, the
-        `@string` macro definitions needed to make the selected
-        entries self-contained are included.
+        Three independent parameters control the output:
+
+        * `unicode`: with `True` (default), field values are the
+          Unicode text also returned by the `Entry` dict interface;
+          with `False`, they are TeX-encoded, exactly as they would
+          be written to the `.bib` file on disk.
+        * `expand_strings`: with `False` (default), a field value
+          referencing an `@string` macro stays a bare reference, and
+          the `@string` definitions needed by the selected entries
+          are included, so the export is self-contained; with `True`,
+          each reference is replaced by the macro's value (the
+          standard BibTeX month macros `jan` ... `dec` also resolve),
+          and no `@string` definitions are emitted. An undefined
+          macro stays a bare reference, with a `UserWarning`.
+        * `fields`: `"full"` (default: every field except the
+          `date-added`/`date-modified` bookkeeping fields, with
+          file attachments and URLs as plain paths/URLs),
+          `"minimal"` (only the fields needed to typeset a
+          bibliography), or a list of field names (in the given
+          order; names not defined on an entry are omitted).
+
+        The output layout is always the same (4-space indent,
+        capitalized field names, a comma after every field); it is
+        *not* the byte-exact layout of the `.bib` file on disk, and
+        even with `unicode=False` the export is not a byte-faithful
+        slice of the file (`bdsk-file-N` values are plain paths, not
+        the stored binary plist data).
+
+        With `outfile`, the text is written (UTF-8) to that path or
+        open file object instead of being returned.
         """
         return export_entries(
             [self[key] for key in keys],
             strings=dict(self.strings),
-            format=format,
+            unicode=unicode,
+            expand_strings=expand_strings,
+            fields=fields,
             outfile=outfile,
         )
 
-    def edit(self, *keys, format="default", editor=None):
-        # pylint: disable=redefined-builtin
+    def edit(self, *keys, editor=None):
         """Edit the entries with the given citation `keys` (at least
         one required) together, in `editor` (or `$EDITOR`), merging
         changes back into them (and into `.strings`) in place.
@@ -2376,7 +2407,6 @@ class Library(MutableMapping):
         editing.edit_entries(
             [self[key] for key in keys],
             library=self,
-            format=format,
             editor=editor,
         )
 

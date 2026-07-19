@@ -161,8 +161,8 @@ class ValueString(str):
     forces the opposite (bare `@string` macro reference) storage. Both
     return the same value through the `dict` interface -- the
     difference is only in how the value is *stored* (as a literal
-    braced string vs. a bare macro reference), visible in the `"raw"`
-    export format (see {meth}`Library.export`):
+    braced string vs. a bare macro reference), visible in an export
+    of the stored values (`unicode=False`, see {meth}`Library.export`):
 
     ```python
     >>> from bibdeskparser import Entry, Library, ValueString
@@ -172,17 +172,17 @@ class ValueString(str):
     >>> entry["journal"]
     'prl'
     >>> bib["Key2024"] = entry
-    >>> bib.export("Key2024", format="raw") == (
-    ...     "@article{Key2024,\n\tjournal = {prl}\n}\n"
-    ... )
-    True
+    >>> print(bib.export("Key2024", unicode=False), end="")
+    @article{Key2024,
+        Journal = {prl},
+    }
     >>> entry["journal"] = "prl"  # bare str: treated as a macro ref
     >>> entry["journal"]
     'prl'
-    >>> bib.export("Key2024", format="raw") == (
-    ...     "@article{Key2024,\n\tjournal = prl\n}\n"
-    ... )
-    True
+    >>> print(bib.export("Key2024", unicode=False), end="")
+    @article{Key2024,
+        Journal = prl,
+    }
 
     ```
     """
@@ -212,8 +212,8 @@ class MacroString(str):
     forces the opposite (literal braced) storage. Both return the same
     value through the `dict` interface -- the difference is only in how
     the value is *stored* (as a bare macro reference vs. a literal
-    braced string), visible in the `"raw"` export format (see
-    {meth}`Library.export`):
+    braced string), visible in an export of the stored values
+    (`unicode=False`, see {meth}`Library.export`):
 
     ```python
     >>> from bibdeskparser import Entry, Library, MacroString
@@ -223,10 +223,10 @@ class MacroString(str):
     >>> entry["journal"]
     'prl'
     >>> bib["Key2024"] = entry
-    >>> bib.export("Key2024", format="raw") == (
-    ...     "@article{Key2024,\n\tjournal = prl\n}\n"
-    ... )
-    True
+    >>> print(bib.export("Key2024", unicode=False), end="")
+    @article{Key2024,
+        Journal = prl,
+    }
 
     ```
     """
