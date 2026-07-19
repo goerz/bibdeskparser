@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How-to Guides &mdash; BibDeskParser 0.3.0 documentation</title>
+  <title>How-to Guides &mdash; BibDeskParser 0.4.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/documentation_options.js?v=6c02275b"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.3.0
+    v0.4.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -70,6 +70,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#how-to-add-a-reference-from-a-doi-arxiv-id-or-search-query">How to add a reference from a DOI, arXiv ID, or search query</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-fill-in-missing-abstracts">How to fill in missing abstracts</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-fill-in-missing-arxiv-identifiers">How to fill in missing arXiv identifiers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-manage-preprint-only-publications">How to manage preprint-only publications</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-import-bibtex-entries-from-a-publisher-or-another-library">How to import BibTeX entries from a publisher or another library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-edit-an-entry-in-your-text-editor">How to edit an entry in your text editor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-render-a-bibliography-in-a-specific-citation-format">How to render a bibliography in a specific citation format</a></li>
@@ -81,6 +82,7 @@
 <p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -312,7 +314,7 @@ here into a subdirectory next to the <code class="docutils literal notranslate">
 <code class="docutils literal notranslate"><span class="pre">file_automatically</span> <span class="pre">=</span> <span class="pre">true</span></code>.)</p>
 </section>
 <section id="how-to-define-or-rename-a-string-macro-journal-abbreviation">
-<h2>How to define or rename a <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro (journal abbreviation)<a class="headerlink" href="#how-to-define-or-rename-a-string-macro-journal-abbreviation" title="Link to this heading"></a></h2>
+<span id="howto-string-macros"></span><h2>How to define or rename a <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro (journal abbreviation)<a class="headerlink" href="#how-to-define-or-rename-a-string-macro-journal-abbreviation" title="Link to this heading"></a></h2>
 <p>Define a macro through
 <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.strings" title="bibdeskparser.library.Library.strings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Library.strings</span></code></a>,
 then reference it in a field with a bare (unquoted) string; rename it
@@ -674,9 +676,7 @@ default. On the command line, list the entries that need an abstract,
 fill them in bulk, and review what remains
 (<a class="reference internal" href="cli.html#cli-add-abstract"><span class="std std-ref">CLI reference</span></a>):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--type<span class="w"> </span>article<span class="w"> </span>--missing<span class="w"> </span>abstract
-<span class="go">TuriniciHAL00640217</span>
 <span class="go">SauvagePRXQ2020</span>
-<span class="go">Vecheck2022.09.09.507322</span>
 <span class="go">KatrukhaNC2017</span>
 <span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_abstract<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>SauvagePRXQ2020<span class="w"> </span>Vecheck2022.09.09.507322
@@ -704,7 +704,8 @@ passes stay fast and idempotent.</p>
 <span id="howto-add-preprint"></span><h2>How to fill in missing arXiv identifiers<a class="headerlink" href="#how-to-fill-in-missing-arxiv-identifiers" title="Link to this heading"></a></h2>
 <p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_preprint" title="bibdeskparser.library.Library.add_preprint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.add_preprint</span></code></a>
 searches arXiv for the preprint of an existing entry and records its identifier in
-the entry’s <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field (along with <code class="docutils literal notranslate"><span class="pre">archiveprefix</span> <span class="pre">=</span> <span class="pre">arXiv</span></code>):</p>
+the entry’s <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field (along with <code class="docutils literal notranslate"><span class="pre">archiveprefix</span> <span class="pre">=</span> <span class="pre">arXiv</span></code> and
+the preprint’s primary category in <code class="docutils literal notranslate"><span class="pre">primaryclass</span></code>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">bib</span><span class="o">.</span><span class="n">add_preprint</span><span class="p">(</span><span class="s2">&quot;WinckelIP2008&quot;</span><span class="p">)</span>
 <span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
 </pre></div>
@@ -716,8 +717,6 @@ entries whose preprint status is unknown and fill them in bulk
 (<a class="reference internal" href="cli.html#cli-add-preprint"><span class="std std-ref">CLI reference</span></a>):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--type<span class="w"> </span>article<span class="w"> </span>--missing<span class="w"> </span>eprint
 <span class="go">WinckelIP2008</span>
-<span class="go">TuriniciHAL00640217</span>
-<span class="go">Vecheck2022.09.09.507322</span>
 <span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_preprint<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--mark-empty<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>WinckelIP2008<span class="w"> </span>Vecheck2022.09.09.507322
 <span class="go">WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]</span>
@@ -749,6 +748,105 @@ late), record it explicitly, which needs no network access:</p>
 three seconds, so filling in a large library takes time – let it
 run.</p>
 </section>
+<section id="how-to-manage-preprint-only-publications">
+<span id="howto-preprints"></span><h2>How to manage preprint-only publications<a class="headerlink" href="#how-to-manage-preprint-only-publications" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> stores a preprint-only work as an <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code>
+entry that carries the structured
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>/<code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> fields, a <em>pseudo-journal</em>
+like <code class="docutils literal notranslate"><span class="pre">arXiv:2205.15044</span></code>, <code class="docutils literal notranslate"><span class="pre">bioRxiv:2022.09.09.507322</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">HAL:hal-00640217</span></code>, a <code class="docutils literal notranslate"><span class="pre">doi</span></code>, and a publication-status <code class="docutils literal notranslate"><span class="pre">note</span></code> – see
+<a class="reference internal" href="preprints.html"><span class="doc std std-doc">Preprints</span></a> for this convention and the reasoning behind it.</p>
+<p>To add a preprint from arXiv, pass its identifier (or its
+<code class="docutils literal notranslate"><span class="pre">arxiv.org</span></code> URL) to <a class="reference internal" href="cli.html#cli-add"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">add</span></code></span></a>, which fetches the metadata and
+creates the entry in this form:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="m">2212</span>.12602
+<span class="go">Goerz2212.12602</span>
+</pre></div>
+</div>
+<p>For any preprint server, <a class="reference internal" href="cli.html#cli-import"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">import</span></code></span></a> recognizes a
+preprint-only entry in incoming BibTeX – by its pseudo-journal, or
+as a <code class="docutils literal notranslate"><span class="pre">misc</span></code>/<code class="docutils literal notranslate"><span class="pre">unpublished</span></code> entry with an <code class="docutils literal notranslate"><span class="pre">eprint</span></code> (e.g. arXiv’s own
+“Export BibTeX citation”) – and normalizes it into the same form
+(<code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> type, canonical archive spelling, derived
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>/<code class="docutils literal notranslate"><span class="pre">doi</span></code> fields):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--stdin<span class="w"> </span>&lt;&lt;<span class="w"> </span><span class="s1">&#39;EOF&#39;</span>
+<span class="go">@article{naceur,</span>
+<span class="go">    Author = {Naceur, Younes and Balada Gaggioli, Llorenç},</span>
+<span class="go">    Title = {Reachability and optimal-time certificates for quantum control},</span>
+<span class="go">    Journal = {HAL:hal-05667276},</span>
+<span class="go">    Url = {https://hal.science/hal-05667276},</span>
+<span class="go">    Year = {2026},</span>
+<span class="go">}</span>
+<span class="go">EOF</span>
+<span class="go">Naceurhal-05667276</span>
+</pre></div>
+</div>
+<p>An archive that <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> does not recognize is rejected (the
+journal must not be turned into an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro); add it to the
+<a class="reference internal" href="config.html#config-preprint-archives"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[preprint_archives]</span></code> configuration table</span></a>,
+or use <code class="docutils literal notranslate"><span class="pre">--keep-journals</span></code> to keep every incoming <code class="docutils literal notranslate"><span class="pre">journal</span></code> (and entry
+type) untouched.</p>
+<p>Record the publication status in the <code class="docutils literal notranslate"><span class="pre">note</span></code> field – “preprint
+only”, “submitted to Phys. Rev. A”, “lecture notes”. The note is
+never filled in automatically; an entry without one shows up as
+incomplete in BibDesk (<code class="docutils literal notranslate"><span class="pre">note</span></code> is a required field of
+<code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code>), which is your signal to set it:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_field<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Naceurhal-05667276<span class="w"> </span>note<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="s2">&quot;preprint only&quot;</span>
+</pre></div>
+</div>
+<p>To cite preprints from LaTeX, export them in the form that
+matches the document’s bibliography style (<code class="docutils literal notranslate"><span class="pre">--preprint</span></code>, defaulting
+to the <a class="reference internal" href="config.html#config-preprint-export"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">preprint_export</span></code> setting</span></a>): the
+structured <code class="docutils literal notranslate"><span class="pre">unpublished</span></code> (default) or <code class="docutils literal notranslate"><span class="pre">misc</span></code> forms for styles that
+render the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field (REVTeX, <code class="docutils literal notranslate"><span class="pre">elsarticle</span></code>, biblatex), or the
+<code class="docutils literal notranslate"><span class="pre">article</span></code> form for classic styles (<code class="docutils literal notranslate"><span class="pre">plain</span></code>, <code class="docutils literal notranslate"><span class="pre">unsrt</span></code>, <code class="docutils literal notranslate"><span class="pre">IEEEtran</span></code>,
+…) that would drop it:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Wilhelm2003.10132<span class="w"> </span>--minimal
+<span class="go">@unpublished{Wilhelm2003.10132,</span>
+<span class="go">    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},</span>
+<span class="go">    Title = {An introduction into optimal control for quantum technologies},</span>
+<span class="go">    Eprint = {2003.10132},</span>
+<span class="go">    Archiveprefix = {arXiv},</span>
+<span class="go">    Primaryclass = {quant-ph},</span>
+<span class="go">    Doi = {10.48550/arxiv.2003.10132},</span>
+<span class="go">    Note = {preprint only},</span>
+<span class="go">    Year = {2020},</span>
+<span class="go">}</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Wilhelm2003.10132<span class="w"> </span>--minimal<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--preprint<span class="w"> </span>article
+<span class="go">@article{Wilhelm2003.10132,</span>
+<span class="go">    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},</span>
+<span class="go">    Title = {An introduction into optimal control for quantum technologies},</span>
+<span class="go">    Journal = {arXiv:2003.10132},</span>
+<span class="go">    Url = {https://doi.org/10.48550/arxiv.2003.10132},</span>
+<span class="go">    Note = {preprint only},</span>
+<span class="go">    Year = {2020},</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>For a preprint on a non-arXiv archive, the structured forms also
+emit the <code class="docutils literal notranslate"><span class="pre">archive</span></code> field, so that REVTeX’s eprint link points at the
+right server (see <a class="reference internal" href="preprints.html#preprints-archive-field"><span class="std std-ref">the <code class="docutils literal notranslate"><span class="pre">archive</span></code> field</span></a>).
+The <a class="reference internal" href="cli.html#cli-render"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">render</span></code></span></a> command shows the preprint reference in
+the journal position, hyperlinked, with the status note appended:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>render<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>TuriniciHAL00640217
+<span class="go">G. Turinici. [*Quantum control*](https://hal.science/hal-00640217). [HAL:hal-00640217](https://hal.science/hal-00640217) (2012), lecture notes.</span>
+</pre></div>
+</div>
+<p>When a preprint gets published, update the entry in place: make
+it an <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code>, replace the pseudo-journal with the real journal
+(an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro, see <a class="reference internal" href="#howto-string-macros"><span class="std std-ref">above</span></a>), add the
+<code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code>, and published <code class="docutils literal notranslate"><span class="pre">doi</span></code>, and remove (or update) the
+status <code class="docutils literal notranslate"><span class="pre">note</span></code>. The retained <code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> fields automatically
+start rendering and exporting as the “published, with preprint”
+link.</p>
+<p>Then generate the key the published article should have
+(<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span> <span class="pre">rekey</span></code>).</p>
+<p>Conversely, <a class="reference internal" href="#howto-add-preprint"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">add_preprint</span></code></span></a> fills in the
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code> field for already-published entries, so that readers behind
+a paywall get a link to the free copy.</p>
+</section>
 <section id="how-to-import-bibtex-entries-from-a-publisher-or-another-library">
 <h2>How to import BibTeX entries from a publisher or another library<a class="headerlink" href="#how-to-import-bibtex-entries-from-a-publisher-or-another-library" title="Link to this heading"></a></h2>
 <p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.import_bibtex" title="bibdeskparser.library.Library.import_bibtex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.import_bibtex</span></code></a>
@@ -761,6 +859,7 @@ adds the entries:</p>
 </div>
 <p>On the command line, <code class="docutils literal notranslate"><span class="pre">import</span></code> reads from a file, stdin, or a URL
 (<a class="reference internal" href="cli.html#cli-import"><span class="std std-ref">CLI reference</span></a>):</p>
+<!-- notest -->
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>entries.bib
 <span class="gp">$ </span>pbpaste<span class="w"> </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--stdin
 <span class="gp">$ </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--url<span class="w"> </span>https://example.com/refs.bib
@@ -769,9 +868,10 @@ adds the entries:</p>
 <p>Since <a class="reference internal" href="cli.html#cli-export"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">export</span></code></span></a> writes exactly the kind of snippet that
 <code class="docutils literal notranslate"><span class="pre">import</span></code> accepts (including the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions), this also
 moves entries between libraries:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GoerzPRA2014<span class="w"> </span><span class="se">\</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>create<span class="w"> </span>other.bib
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Tannor2007<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>other.bib<span class="w"> </span>--stdin
-<span class="go">GoerzPRA2014</span>
+<span class="go">Tannor2007</span>
 </pre></div>
 </div>
 <p>If anything about a snippet is not acceptable (an undefined macro, an
@@ -892,16 +992,23 @@ and the list of problems on stderr, leaving the <code class="docutils literal no
 <h2>How to export a minimal BibTeX file for LaTeX<a class="headerlink" href="#how-to-export-a-minimal-bibtex-file-for-latex" title="Link to this heading"></a></h2>
 <p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.library.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.export</span></code></a> writes
 selected entries as plain bibtex text, stripped of BibDesk-only fields; use
-<code class="docutils literal notranslate"><span class="pre">format=&quot;minimal&quot;</span></code> to further restrict each entry to a small,
+<code class="docutils literal notranslate"><span class="pre">fields=&quot;minimal&quot;</span></code> to further restrict each entry to a small,
 per-entry-type whitelist of citation-relevant fields (dropping things
 like <code class="docutils literal notranslate"><span class="pre">abstract</span></code> and <code class="docutils literal notranslate"><span class="pre">annote</span></code>), and <code class="docutils literal notranslate"><span class="pre">outfile=</span></code> to write straight to a
-file:</p>
+file. The <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions referenced by the exported entries
+are included, so the file is self-contained (pass
+<code class="docutils literal notranslate"><span class="pre">expand_strings=True</span></code> to instead replace each reference by the
+macro’s value and omit the definitions).</p>
 <p>Note how the entries’ <code class="docutils literal notranslate"><span class="pre">abstract</span></code> and <code class="docutils literal notranslate"><span class="pre">keywords</span></code>, and the <code class="docutils literal notranslate"><span class="pre">article</span></code>
-entry’s linked file, are all dropped:</p>
+entry’s linked file, are all dropped (the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> fields are kept:
+they render as a “published, with preprint” link under styles like
+REVTeX, and are ignored by classic styles; see <a class="reference internal" href="preprints.html"><span class="doc std std-doc">Preprints</span></a>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;GrondPRA2009a&quot;</span><span class="p">,</span> <span class="s2">&quot;Evans1983&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="s2">&quot;paper.bib&quot;</span>
+<span class="gp">... </span>    <span class="s2">&quot;GrondPRA2009a&quot;</span><span class="p">,</span> <span class="s2">&quot;Evans1983&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="s2">&quot;paper.bib&quot;</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;paper.bib&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
+<span class="go">@string{pra = {Phys. Rev. A}}</span>
+
 <span class="go">@article{GrondPRA2009a,</span>
 <span class="go">    Author = {Grond, Julian and Schmiedmayer, J\&quot;org and Hohenester, Ulrich},</span>
 <span class="go">    Title = {Optimizing number squeezing when splitting a mesoscopic condensate},</span>
@@ -910,6 +1017,8 @@ entry’s linked file, are all dropped:</p>
 <span class="go">    Doi = {10.1103/physreva.79.021603},</span>
 <span class="go">    Pages = {021603},</span>
 <span class="go">    Volume = {79},</span>
+<span class="go">    Eprint = {0806.3877},</span>
+<span class="go">    Archiveprefix = {arXiv},</span>
 <span class="go">}</span>
 
 <span class="go">@unpublished{Evans1983,</span>
@@ -936,7 +1045,7 @@ entry’s linked file, are all dropped:</p>
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 18, 2026.
+      <span class="lastupdated">Last updated on Jul 22, 2026.
       </span></p>
   </div>
 

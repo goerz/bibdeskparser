@@ -286,7 +286,7 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} edit(*keys, format='default', editor=None)
+````{py:method} edit(*keys, editor=None)
 :canonical: bibdeskparser.library.Library.edit
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.edit
@@ -322,7 +322,7 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} export(*keys, format='default', outfile=None)
+````{py:method} export(*keys, unicode=True, expand_strings=False, fields='full', outfile=None, preprint=None)
 :canonical: bibdeskparser.library.Library.export
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.export
@@ -340,7 +340,7 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} import_bibtex(text, *, keep_keys=False, fix_uppercase=False)
+````{py:method} import_bibtex(text, *, keep_keys=False, fix_uppercase=False, keep_journals=False)
 :canonical: bibdeskparser.library.Library.import_bibtex
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.import_bibtex

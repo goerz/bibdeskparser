@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Package API &mdash; BibDeskParser 0.3.0 documentation</title>
+  <title>Package API &mdash; BibDeskParser 0.4.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/documentation_options.js?v=6c02275b"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.3.0
+    v0.4.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -63,6 +63,7 @@
 <p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../bibdesk_format.html">BibDesk's .bib Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../preprints.html">Preprints</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -358,7 +359,13 @@ uses only the entry’s own fields, so it works the same for an
 entry that is not (yet) in a <a class="reference internal" href="#bibdeskparser.Library" title="bibdeskparser.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a>.</p>
 <p>Whenever a non-empty <code class="docutils literal notranslate"><span class="pre">eprint</span></code> is stored, an
 <code class="docutils literal notranslate"><span class="pre">archiveprefix</span> <span class="pre">=</span> <span class="pre">arXiv</span></code> field is added alongside it (unless
-the entry already has an <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>).</p>
+the entry already has an <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>). A search match
+additionally stores the preprint’s arXiv primary category
+(e.g. <code class="docutils literal notranslate"><span class="pre">quant-ph</span></code>) in the <code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> field, replacing any
+existing value (which, with <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>, described the
+replaced identifier); an explicitly given identifier stores
+no <code class="docutils literal notranslate"><span class="pre">primaryclass</span></code>, since without network access the category
+is unknown.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field encodes the entry’s audit state, mirroring
 how <a class="reference internal" href="#bibdeskparser.Entry.add_abstract" title="bibdeskparser.Entry.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a> treats the <code class="docutils literal notranslate"><span class="pre">abstract</span></code> field: a field
 that is <em>absent</em> means the preprint status is unknown
@@ -379,15 +386,16 @@ the entry already has a <em>non-empty</em> <code class="docutils literal notrans
 searched and the existing identifier is returned with match
 <code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code>, unless <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>; the empty marker does
 not require <code class="docutils literal notranslate"><span class="pre">overwrite</span></code>.</p>
-<p>Returns a named tuple <code class="docutils literal notranslate"><span class="pre">(eprint,</span> <span class="pre">match,</span> <span class="pre">ratio,</span> <span class="pre">note,</span> <span class="pre">applied)</span></code>: the stored (or existing) arXiv identifier (<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> if
-none), how it was matched (<code class="docutils literal notranslate"><span class="pre">&quot;doi&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;title&quot;</span></code>, or
+<p>Returns a named tuple <code class="docutils literal notranslate"><span class="pre">(eprint,</span> <span class="pre">match,</span> <span class="pre">ratio,</span> <span class="pre">note,</span> <span class="pre">applied,</span> <span class="pre">primaryclass)</span></code>: the stored (or existing) arXiv identifier
+(<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> if none), how it was matched (<code class="docutils literal notranslate"><span class="pre">&quot;doi&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;title&quot;</span></code>, or
 <code class="docutils literal notranslate"><span class="pre">&quot;title+author&quot;</span></code> for a search match, in decreasing order of
 strength; <code class="docutils literal notranslate"><span class="pre">&quot;explicit&quot;</span></code> for a given identifier; <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> for a
 clean no-match; <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code> when the search could not run;
 <code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code> when the entry was skipped), the title-similarity
 ratio of the best search result (<code class="docutils literal notranslate"><span class="pre">None</span></code> when no search ran),
-a short diagnostic trace (<code class="docutils literal notranslate"><span class="pre">note</span></code>), and whether the entry was
-modified (<code class="docutils literal notranslate"><span class="pre">applied</span></code>). On a <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code> result (network/API
+a short diagnostic trace (<code class="docutils literal notranslate"><span class="pre">note</span></code>), whether the entry was
+modified (<code class="docutils literal notranslate"><span class="pre">applied</span></code>), and the primary category of a search
+match (<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> otherwise). On a <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code> result (network/API
 failure, or an entry without a title) the entry is never
 modified – in particular, no empty marker is stored – so a
 re-run picks it up.</p>
@@ -743,7 +751,8 @@ normalization applied and for <code class="docutils literal notranslate"><span c
 any string containing <code class="docutils literal notranslate"><span class="pre">arXiv</span></code> followed by an identifier
 (e.g. an <code class="docutils literal notranslate"><span class="pre">https://arxiv.org/abs/...</span></code> URL) – fetched from
 the <a class="reference external" href="https://info.arxiv.org/help/api/">arXiv API</a>, added as
-an <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code> preprint with a literal <code class="docutils literal notranslate"><span class="pre">arXiv:...</span></code> journal;</p></li>
+a preprint-only <code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code> entry with a literal <code class="docutils literal notranslate"><span class="pre">arXiv:...</span></code>
+pseudo-journal and the structured eprint fields;</p></li>
 <li><p>a DOI (<code class="docutils literal notranslate"><span class="pre">10.1103/PhysRevA.89.032334</span></code>), or a URL containing
 one (e.g. <code class="docutils literal notranslate"><span class="pre">https://doi.org/...</span></code> or most publisher article
 pages) – fetched from
@@ -951,7 +960,7 @@ discarded this way.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Library.edit">
-<span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">editor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.edit" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">editor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.edit" title="Link to this definition"></a></dt>
 <dd><p>Edit the entries with the given citation <code class="docutils literal notranslate"><span class="pre">keys</span></code> (at least
 one required) together, in <code class="docutils literal notranslate"><span class="pre">editor</span></code> (or <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>), merging
 changes back into them (and into <code class="docutils literal notranslate"><span class="pre">.strings</span></code>) in place.</p>
@@ -1022,15 +1031,75 @@ the resulting key would equal the entry’s own <code class="docutils literal no
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Library.export">
-<span class="sig-name descname"><span class="pre">export</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.export" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">export</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unicode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expand_strings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'full'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.export" title="Link to this definition"></a></dt>
 <dd><p>Export the entries with the given citation <code class="docutils literal notranslate"><span class="pre">keys</span></code> (at
 least one required) as bibtex text.</p>
-<p><code class="docutils literal notranslate"><span class="pre">format</span></code> is one of <code class="docutils literal notranslate"><span class="pre">&quot;default&quot;</span></code> (Unicode, as displayed by the
-<code class="docutils literal notranslate"><span class="pre">dict</span></code> interface), <code class="docutils literal notranslate"><span class="pre">&quot;raw&quot;</span></code> (the literal, possibly TeX-encoded,
-stored values), or <code class="docutils literal notranslate"><span class="pre">&quot;minimal&quot;</span></code> (only the fields needed to
-typeset a bibliography). For <code class="docutils literal notranslate"><span class="pre">&quot;default&quot;</span></code>/<code class="docutils literal notranslate"><span class="pre">&quot;raw&quot;</span></code>, the
-<code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro definitions needed to make the selected
-entries self-contained are included.</p>
+<p>Three independent parameters control the output:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">unicode</span></code>: with <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), field values are the
+Unicode text also returned by the <code class="docutils literal notranslate"><span class="pre">Entry</span></code> dict interface;
+with <code class="docutils literal notranslate"><span class="pre">False</span></code>, they are TeX-encoded, exactly as they would
+be written to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file on disk.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">expand_strings</span></code>: with <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), a field value
+referencing an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro stays a bare reference, and
+the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions needed by the selected entries
+are included, so the export is self-contained; with <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+each reference is replaced by the macro’s value (the
+standard BibTeX month macros <code class="docutils literal notranslate"><span class="pre">jan</span></code> … <code class="docutils literal notranslate"><span class="pre">dec</span></code> also resolve),
+and no <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions are emitted. An undefined
+macro stays a bare reference, with a <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fields</span></code>: <code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code> (default: every field except the
+<code class="docutils literal notranslate"><span class="pre">date-added</span></code>/<code class="docutils literal notranslate"><span class="pre">date-modified</span></code> bookkeeping fields, with
+file attachments and URLs as plain paths/URLs),
+<code class="docutils literal notranslate"><span class="pre">&quot;minimal&quot;</span></code> (only the fields needed to typeset a
+bibliography), or a list of field names (in the given
+order; names not defined on an entry are omitted).</p></li>
+</ul>
+<p>A <em>preprint-only</em> entry – a <code class="docutils literal notranslate"><span class="pre">misc</span></code> or <code class="docutils literal notranslate"><span class="pre">unpublished</span></code>
+entry with an <code class="docutils literal notranslate"><span class="pre">eprint</span></code> from a recognized preprint archive,
+or any entry whose <code class="docutils literal notranslate"><span class="pre">journal</span></code> is a preprint pseudo-journal
+like <code class="docutils literal notranslate"><span class="pre">arXiv:2205.15044</span></code> – is exported in the form selected
+by
+<code class="docutils literal notranslate"><span class="pre">preprint</span></code>, independent of its stored form:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;unpublished&quot;</span></code> (the default, via the <code class="docutils literal notranslate"><span class="pre">preprint_export</span></code>
+<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a> setting): an <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code>
+entry with the structured <code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> fields
+(derived from the pseudo-journal if not stored) – for
+BibTeX styles that render the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field (REVTeX,
+<code class="docutils literal notranslate"><span class="pre">elsarticle</span></code>, biblatex); under REVTeX, the eprint renders
+in the journal position. A minimal export guarantees the
+type’s required <code class="docutils literal notranslate"><span class="pre">note</span></code> field (the stored <code class="docutils literal notranslate"><span class="pre">note</span></code>, or the
+text “preprint”).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;misc&quot;</span></code>: the same structured form, as a <code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code> entry
+(no required fields, no <code class="docutils literal notranslate"><span class="pre">note</span></code> handling).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;article&quot;</span></code>: an <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code> whose <code class="docutils literal notranslate"><span class="pre">journal</span></code> is the
+pseudo-journal and whose <code class="docutils literal notranslate"><span class="pre">url</span></code> is the DOI-resolver
+address, without the <code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">doi</span></code> fields – for classic
+styles (<code class="docutils literal notranslate"><span class="pre">plain</span></code>, <code class="docutils literal notranslate"><span class="pre">unsrt</span></code>, <code class="docutils literal notranslate"><span class="pre">IEEEtran</span></code>, …) that would
+silently drop an <code class="docutils literal notranslate"><span class="pre">eprint</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;stored&quot;</span></code>: no transformation.</p></li>
+</ul>
+<p>For a non-arXiv archive with a <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/{id}</span></code> URL template
+(HAL, bioRxiv, medRxiv), the structured forms also emit an
+<code class="docutils literal notranslate"><span class="pre">archive</span></code> field holding the link base that REVTeX’s styles
+use for the rendered eprint; full and minimal exports of
+<em>published</em> entries with such an <code class="docutils literal notranslate"><span class="pre">eprint</span></code> gain the same
+field.</p>
+<p>A minimal export of a preprint-only entry reduces to the
+essential fields of the respective form; an explicit list of
+field names is always exported as stored, and the stored
+entry is never modified. See the
+<a class="reference internal" href="../../preprints.html#preprints-convention"><span class="std std-ref">preprints</span></a> documentation for how
+each form renders.</p>
+<p>The output layout is always the same (4-space indent,
+capitalized field names, a comma after every field); it is
+<em>not</em> the byte-exact layout of the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file on disk, and
+even with <code class="docutils literal notranslate"><span class="pre">unicode=False</span></code> the export is not a byte-faithful
+slice of the file (<code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> values are plain paths, not
+the stored binary plist data).</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">outfile</span></code>, the text is written (UTF-8) to that path or
+open file object instead of being returned.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1065,7 +1134,7 @@ preserved in the file verbatim without being interpreted
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Library.import_bibtex">
-<span class="sig-name descname"><span class="pre">import_bibtex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_uppercase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.import_bibtex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.import_bibtex" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">import_bibtex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fix_uppercase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_journals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.import_bibtex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.import_bibtex" title="Link to this definition"></a></dt>
 <dd><p>Import the entries of the BibTeX snippet <code class="docutils literal notranslate"><span class="pre">text</span></code>, sanitized
 and normalized, into the library.</p>
 <p>Every entry of <code class="docutils literal notranslate"><span class="pre">text</span></code> (which may also contain <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code>
@@ -1079,10 +1148,33 @@ macro configured in the <code class="docutils literal notranslate"><span class="
 added to the library as needed), or – with a <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>
 – a newly created macro named by the journal’s lowercased
 initials (honoring <code class="docutils literal notranslate"><span class="pre">[initials.journal]</span></code> exceptions). A
-literal <code class="docutils literal notranslate"><span class="pre">arXiv:...</span></code> pseudo-journal is the one exception: it
-marks an arXiv preprint and stays literal, and the entry’s
-<code class="docutils literal notranslate"><span class="pre">eprint</span></code> and <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> fields are derived from it if
-missing.</p></li>
+pseudo-journal whose archive is <em>not</em> recognized is
+rejected, since it must not be turned into a macro.</p></li>
+<li><p>A <em>preprint-only</em> entry – one whose <code class="docutils literal notranslate"><span class="pre">journal</span></code> is a
+preprint pseudo-journal like <code class="docutils literal notranslate"><span class="pre">arXiv:2205.15044</span></code> (any
+archive from the <code class="docutils literal notranslate"><span class="pre">preprint_archives</span></code>
+<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a>: arXiv, bioRxiv, medRxiv,
+ChemRxiv, HAL, and SSRN by default), or a <code class="docutils literal notranslate"><span class="pre">misc</span></code> entry
+with an <code class="docutils literal notranslate"><span class="pre">eprint</span></code> from a recognized archive (e.g. arXiv’s
+own BibTeX export) – is normalized to its canonical
+stored form: an <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> entry with the
+pseudo-journal in the archive’s canonical spelling
+(<code class="docutils literal notranslate"><span class="pre">hal:</span></code> becomes <code class="docutils literal notranslate"><span class="pre">HAL:</span></code>; synthesized from the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> if
+absent), the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> and <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> fields derived
+from the pseudo-journal if missing, and the <code class="docutils literal notranslate"><span class="pre">doi</span></code>
+extracted from a <code class="docutils literal notranslate"><span class="pre">https://doi.org/...</span></code> value in the <code class="docutils literal notranslate"><span class="pre">url</span></code>
+field (dropping that <code class="docutils literal notranslate"><span class="pre">url</span></code>) or, for arXiv, derived as
+<code class="docutils literal notranslate"><span class="pre">10.48550/arXiv.&lt;id&gt;</span></code>. A <code class="docutils literal notranslate"><span class="pre">url</span></code> that merely restates the
+archive’s page for the identifier is dropped when the
+entry carries a <code class="docutils literal notranslate"><span class="pre">doi</span></code>. A <code class="docutils literal notranslate"><span class="pre">note</span></code> is <em>never</em> synthesized: a
+missing publication-status note is a signal to fill it in
+by hand. See the <a class="reference internal" href="../../preprints.html#preprints-convention"><span class="std std-ref">preprints</span></a>
+documentation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">keep_journals=True</span></code> skips both of the above: every
+<code class="docutils literal notranslate"><span class="pre">journal</span></code> is preserved as-is, and the entry keeps its
+incoming type (preprint-only entries are still recognized
+for the <code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> derivation and the
+citation key).</p></li>
 <li><p>Capitalized words inside the <code class="docutils literal notranslate"><span class="pre">title</span></code> (assumed to be proper
 nouns) are wrapped in braces to protect their
 capitalization, unless the title looks like it is already
@@ -1090,6 +1182,10 @@ in (English) title case; any of the configured
 <code class="docutils literal notranslate"><span class="pre">protected_words</span></code> are brace-protected in every title.</p></li>
 <li><p>A <code class="docutils literal notranslate"><span class="pre">doi</span></code> is normalized to its bare, lowercase form (no
 <code class="docutils literal notranslate"><span class="pre">https://doi.org/</span></code> or <code class="docutils literal notranslate"><span class="pre">doi:</span></code> prefix).</p></li>
+<li><p>An <code class="docutils literal notranslate"><span class="pre">archive</span></code> field holding the link base derivable from
+the entry’s <code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> is dropped (exports
+regenerate it), for preprint-only and published entries
+alike.</p></li>
 <li><p>For an <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code>, a <code class="docutils literal notranslate"><span class="pre">pages</span></code> range collapses to its first
 page, the fields <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">day</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>,
 <code class="docutils literal notranslate"><span class="pre">numpages</span></code>, and <code class="docutils literal notranslate"><span class="pre">issn</span></code> are dropped, and a <code class="docutils literal notranslate"><span class="pre">url</span></code> is dropped
@@ -1101,9 +1197,9 @@ are kept, with the dash normalized to <code class="docutils literal notranslate"
 <code class="docutils literal notranslate"><span class="pre">%p1%c{journal}0%Y%u0</span></code> for an article (e.g.
 <code class="docutils literal notranslate"><span class="pre">GoerzPRA2014</span></code>), <code class="docutils literal notranslate"><span class="pre">%p1%c{booktitle}0%Y%u0</span></code> for
 inproceedings/incollection, and <code class="docutils literal notranslate"><span class="pre">%p1%Y%u0</span></code> for any other
-type. ArXiv preprints always use <code class="docutils literal notranslate"><span class="pre">%p1%f{eprint}[.]</span></code> (e.g.
-<code class="docutils literal notranslate"><span class="pre">Goerz2205.15044</span></code>). An incoming key that already matches
-the format is kept.</p></li>
+type. Preprint-only entries (a recognized pseudo-journal)
+always use <code class="docutils literal notranslate"><span class="pre">%p1%f{eprint}[.]</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">Goerz2205.15044</span></code>). An
+incoming key that already matches the format is kept.</p></li>
 <li><p>TeX-encoded accents (<code class="docutils literal notranslate"><span class="pre">Schr{\&quot;o}dinger</span></code>) are decoded to
 Unicode, exactly as if the values had been read from a
 <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file (saving re-encodes them).</p></li>
@@ -1112,7 +1208,10 @@ Unicode, exactly as if the values had been read from a
 names and <code class="docutils literal notranslate"><span class="pre">title</span></code> values (as found in some publisher data)
 are down-cased to name case/sentence case first; the result
 may need manual correction. <code class="docutils literal notranslate"><span class="pre">keep_keys=True</span></code> keeps the
-incoming citation keys instead of generating new ones.</p>
+incoming citation keys instead of generating new ones.
+<code class="docutils literal notranslate"><span class="pre">keep_journals=True</span></code> preserves every incoming <code class="docutils literal notranslate"><span class="pre">journal</span></code> field
+as-is instead of converting it to an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro
+reference.</p>
 <p>An entry whose <code class="docutils literal notranslate"><span class="pre">doi</span></code> or <code class="docutils literal notranslate"><span class="pre">eprint</span></code> is already in the library is
 rejected. <code class="docutils literal notranslate"><span class="pre">keywords</span></code>, <code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code>, and <code class="docutils literal notranslate"><span class="pre">date-added</span></code> fields
 are preserved; <code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> fields must hold plain file
@@ -1368,6 +1467,17 @@ blank line (for <code class="docutils literal notranslate"><span class="pre">&qu
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;default&quot;</span></code> (the default): like <code class="docutils literal notranslate"><span class="pre">&quot;paragraphs&quot;</span></code>, except a
 single <code class="docutils literal notranslate"><span class="pre">&quot;html&quot;</span></code> citation is not wrapped in <code class="docutils literal notranslate"><span class="pre">&lt;p&gt;...&lt;/p&gt;</span></code>.</p></li>
 </ul>
+<p>A <em>preprint-only</em> entry – a <code class="docutils literal notranslate"><span class="pre">misc</span></code> or <code class="docutils literal notranslate"><span class="pre">unpublished</span></code>
+entry with an <code class="docutils literal notranslate"><span class="pre">eprint</span></code> from a recognized preprint archive,
+or any entry whose <code class="docutils literal notranslate"><span class="pre">journal</span></code> is a preprint pseudo-journal
+like <code class="docutils literal notranslate"><span class="pre">arXiv:2205.15044</span></code> – renders its preprint reference
+(with the category tag from <code class="docutils literal notranslate"><span class="pre">primaryclass</span></code>, e.g.
+<code class="docutils literal notranslate"><span class="pre">arXiv:2205.15044</span> <span class="pre">[quant-ph]</span></code>) in the journal position,
+linked to the DOI, the entry’s first URL, or the archive’s
+page for the identifier. Any <em>other</em> entry’s <code class="docutils literal notranslate"><span class="pre">eprint</span></code> is
+rendered as a separate link into its preprint archive after
+the journal reference (the “published, with preprint”
+form).</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1613,8 +1723,8 @@ for a macro-shaped string – wrap it in <a class="reference internal" href="#bi
 forces the opposite (literal braced) storage. Both return the same
 value through the <code class="docutils literal notranslate"><span class="pre">dict</span></code> interface – the difference is only in how
 the value is <em>stored</em> (as a bare macro reference vs. a literal
-braced string), visible in the <code class="docutils literal notranslate"><span class="pre">&quot;raw&quot;</span></code> export format (see
-<a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.export()</span></code></a>):</p>
+braced string), visible in an export of the stored values
+(<code class="docutils literal notranslate"><span class="pre">unicode=False</span></code>, see <a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.export()</span></code></a>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">Library</span><span class="p">,</span> <span class="n">MacroString</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Key2024&quot;</span><span class="p">)</span>
@@ -1622,10 +1732,10 @@ braced string), visible in the <code class="docutils literal notranslate"><span 
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
 <span class="go">&#39;prl&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2024&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;@article{Key2024,</span><span class="se">\n\t</span><span class="s2">journal = prl</span><span class="se">\n</span><span class="s2">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-<span class="gp">... </span><span class="p">)</span>
-<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="go">@article{Key2024,</span>
+<span class="go">    Journal = prl,</span>
+<span class="go">}</span>
 
 </pre></div>
 </div>
@@ -1661,8 +1771,8 @@ instead, even though it would otherwise pass as a macro name.</p>
 forces the opposite (bare <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference) storage. Both
 return the same value through the <code class="docutils literal notranslate"><span class="pre">dict</span></code> interface – the
 difference is only in how the value is <em>stored</em> (as a literal
-braced string vs. a bare macro reference), visible in the <code class="docutils literal notranslate"><span class="pre">&quot;raw&quot;</span></code>
-export format (see <a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.export()</span></code></a>):</p>
+braced string vs. a bare macro reference), visible in an export
+of the stored values (<code class="docutils literal notranslate"><span class="pre">unicode=False</span></code>, see <a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.export()</span></code></a>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">Library</span><span class="p">,</span> <span class="n">ValueString</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Key2024&quot;</span><span class="p">)</span>
@@ -1670,17 +1780,17 @@ export format (see <a class="reference internal" href="#bibdeskparser.Library.ex
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
 <span class="go">&#39;prl&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2024&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;@article{Key2024,</span><span class="se">\n\t</span><span class="s2">journal = </span><span class="si">{prl}</span><span class="se">\n</span><span class="s2">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-<span class="gp">... </span><span class="p">)</span>
-<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="go">@article{Key2024,</span>
+<span class="go">    Journal = {prl},</span>
+<span class="go">}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;prl&quot;</span>  <span class="c1"># bare str: treated as a macro ref</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
 <span class="go">&#39;prl&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;@article{Key2024,</span><span class="se">\n\t</span><span class="s2">journal = prl</span><span class="se">\n</span><span class="s2">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-<span class="gp">... </span><span class="p">)</span>
-<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="go">@article{Key2024,</span>
+<span class="go">    Journal = prl,</span>
+<span class="go">}</span>
 
 </pre></div>
 </div>
@@ -1702,7 +1812,7 @@ export format (see <a class="reference internal" href="#bibdeskparser.Library.ex
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 18, 2026.
+      <span class="lastupdated">Last updated on Jul 22, 2026.
       </span></p>
   </div>
 

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to BibDeskParser’s documentation! &mdash; BibDeskParser 0.3.0 documentation</title>
+  <title>Welcome to BibDeskParser’s documentation! &mdash; BibDeskParser 0.4.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/documentation_options.js?v=6c02275b"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -38,7 +38,7 @@
   </a>
 
   <div class="version">
-    v0.3.0
+    v0.4.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -62,6 +62,7 @@
 <p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -164,6 +165,7 @@
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-add-a-reference-from-a-doi-arxiv-id-or-search-query">How to add a reference from a DOI, arXiv ID, or search query</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-fill-in-missing-abstracts">How to fill in missing abstracts</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-fill-in-missing-arxiv-identifiers">How to fill in missing arXiv identifiers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-manage-preprint-only-publications">How to manage preprint-only publications</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-import-bibtex-entries-from-a-publisher-or-another-library">How to import BibTeX entries from a publisher or another library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-edit-an-entry-in-your-text-editor">How to edit an entry in your text editor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto.html#how-to-render-a-bibliography-in-a-specific-citation-format">How to render a bibliography in a specific citation format</a></li>
@@ -188,6 +190,14 @@
 <li class="toctree-l2"><a class="reference internal" href="bibdesk_format.html#unicode-and-tex-escaped-characters">Unicode and TeX-escaped characters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bibdesk_format.html#duplicate-citation-keys">Duplicate citation keys</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bibdesk_format.html#byte-exact-round-tripping">Byte-exact round-tripping</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="preprints.html#encoding-preprints-in-bibtex">Encoding preprints in BibTeX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprints.html#how-bibdeskparser-stores-preprint-only-entries">How <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> stores preprint-only entries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprints.html#exporting-preprint-only-entries">Exporting preprint-only entries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprints.html#the-archive-field">The <code class="docutils literal notranslate"><span class="pre">archive</span></code> field</a></li>
+<li class="toctree-l2"><a class="reference internal" href="preprints.html#preprint-information-on-published-papers">Preprint information on <em>published</em> papers</a></li>
 </ul>
 </li>
 </ul>
@@ -231,6 +241,8 @@
 <li class="toctree-l2"><a class="reference internal" href="config.html#the-add-add-abstract-and-add-preprint-tables-fetching-defaults">The <code class="docutils literal notranslate"><span class="pre">[add]</span></code>, <code class="docutils literal notranslate"><span class="pre">[add_abstract]</span></code>, and <code class="docutils literal notranslate"><span class="pre">[add_preprint]</span></code> tables: fetching defaults</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#the-initials-table-acronym-exceptions">The <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> table: acronym exceptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#the-journal-macros-table-journal-name-to-macro-mappings">The <code class="docutils literal notranslate"><span class="pre">[journal_macros]</span></code> table: journal-name-to-macro mappings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#the-preprint-archives-table-recognized-preprint-servers">The <code class="docutils literal notranslate"><span class="pre">[preprint_archives]</span></code> table: recognized preprint servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#the-preprint-export-option">The <code class="docutils literal notranslate"><span class="pre">preprint_export</span></code> option</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#the-protected-words-list">The <code class="docutils literal notranslate"><span class="pre">protected_words</span></code> list</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#custom-and-extended-entry-types">Custom and extended entry types</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#custom-fields">Custom fields</a></li>
@@ -292,6 +304,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#v0-4-0-2026-07-21">v0.4.0 - 2026-07-21</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changelog.html#v0-3-0-2026-07-18">v0.3.0 - 2026-07-18</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changelog.html#v0-2-1-2026-07-14">v0.2.1 - 2026-07-14</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changelog.html#v0-2-0-2026-07-13">v0.2.0 - 2026-07-13</a></li>
@@ -320,7 +333,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 18, 2026.
+      <span class="lastupdated">Last updated on Jul 22, 2026.
       </span></p>
   </div>
 

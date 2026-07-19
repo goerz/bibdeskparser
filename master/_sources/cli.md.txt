@@ -19,6 +19,7 @@ invocations, guided by the `--help` output alone (see
 
 ## Usage
 
+<!-- notest -->
 ```console
 $ bibdeskparser <command> [BIBFILE] <args> <options>
 ```
@@ -53,10 +54,12 @@ assign to and delete from {py:attr}`~bibdeskparser.Library.strings`,
 `fields`/`get_field`/`set_field`/`delete_field` correspond to
 iterating over, indexing, assigning to, and `del` on a single
 {class}`~bibdeskparser.Entry` (its fields). Commands that read one
-entry's derived data -- `author`, `editor`, `groups KEY`,
-`keywords KEY` -- correspond to the same-named
+entry's derived data -- `author`, `editor`, `files`, `urls`,
+`groups KEY`, `keywords KEY` -- correspond to the same-named
 {class}`~bibdeskparser.Entry` properties, and `set_type` assigns
-{py:attr}`~bibdeskparser.Entry.entry_type`.
+{py:attr}`~bibdeskparser.Entry.entry_type`. The one command with no
+API counterpart is [`config_path`](cli-config-path), which reports
+the discovered configuration file.
 
 Read-only commands print their result to stdout. Mutating commands
 load the library, apply the change, save the file back in place, and
@@ -96,7 +99,9 @@ underlying library -- an unknown citation key or group name, an
 invalid value, a missing file, or a
 {exc}`~bibdeskparser.StaleFileError` when the `.bib` file changed on
 disk while being edited -- prints a one-line `Error: <message>` on
-stderr and exits with code 1, without a traceback.
+stderr and exits with code 1, without a traceback. The
+[`check`](cli-check) command additionally exits with code 1, after
+printing its report, when any audit finds a problem.
 
 ## Creating a library
 
@@ -117,6 +122,7 @@ $ bibdeskparser create new.bib
 All other commands require the `.bib` file to exist, so a new library
 is started with `create` and then filled with entries:
 
+<!-- notest -->
 ```console
 $ bibdeskparser create new.bib
 $ bibdeskparser import new.bib entries.bib
@@ -156,8 +162,6 @@ case-insensitively.
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
-TuriniciHAL00640217
-Vecheck2022.09.09.507322
 ```
 
 ### `duplicate_keys`
@@ -171,16 +175,78 @@ $ bibdeskparser duplicate_keys tests/Refs/with_duplicates.bib
 GoerzSPP2019
 ```
 
+(cli-check)=
+
+### `check [KEY...]`
+
+Run the standing audits and report every problem found, one per line,
+followed by a `PASS`/`FAIL` summary line; the exit code is 0 if all
+audits pass and 1 otherwise. A read-only pass/fail gate for the
+library, e.g. after a batch of edits.
+
+```console
+$ bibdeskparser check tests/Refs/refs.bib
+PASS (61 entries checked)
+$ bibdeskparser check tests/test_cli_fail_checks/problems.bib
+Duplicate2026: duplicate citation key
+MissingDoi2026: missing doi
+LiteralJournal2026: journal is the literal string 'Some Journal', not an @string macro reference
+UndefinedMacro2026: journal references undefined @string macro 'nosuchjournal'
+BadNames2026: author does not parse as names: Cannot split the following name `Doe, John, Jr, X, Y` into parts: Too many commas
+unused @string macro 'unusedjrnl'
+FAIL (6 problems, 7 entries checked)
+```
+
+The audits: the file parses cleanly (no skipped blocks); no citation
+key occurs more than once; every `article` that is not a
+[preprint](preprints) has a `doi` (a defined-but-empty `doi` marks an
+entry verified to have none, and passes); every `journal` field
+references a defined `@string` macro (a literal journal value is a
+problem, unless it is a recognized preprint pseudo-journal like
+`arXiv:2205.15044`); every `author` and `editor` field parses as
+names; and every `@string` macro defined in the file is referenced by
+some entry.
+
+With `KEY...`, only the given entries are audited: the doi, journal,
+and names audits cover just those entries, the duplicate-key audit
+reports only the given keys, and the unused-macros audit is skipped;
+problems parsing the file itself are always reported. An unknown key
+is an error.
+
+```console
+$ bibdeskparser check tests/test_cli_fail_checks/problems.bib EmptyDoi2026 Preprint2026
+PASS (2 entries checked)
+```
+
+With `--json`: an object `{"passed": ..., "entries_checked": ...,
+"problems": [...]}`, where each problem is an object with `check`
+(the audit that failed: `parse`, `duplicate_keys`, `doi`, `journal`,
+`names`, or `unused_strings`), `key` (the citation key, or `null` for
+a problem not tied to an entry), and `message`.
+
 (cli-show)=
 
 ### `show [KEY...]`
 
 Show the data of one or more entries: a `KEY (entry_type)` heading,
-the raw fields, and derived data (groups, keywords, files, URLs, and
-dates). Corresponds to indexing the library, `lib[key]`. With
+the fields, and derived data (groups, keywords, files, URLs, and
+dates). Corresponds to indexing the library, `lib[key]`, with the
+field values rendered for display as described below (rather than
+shown exactly as the `Entry` dict interface returns them). With
 `--json`: an object mapping each key to an object with `entry_type`,
 `key`, `fields`, `groups`, `keywords`, `files`, `urls`, `date_added`,
 and `date_modified`.
+
+Field values are rendered: as Unicode text (`--no-unicode` shows them
+TeX-encoded instead), and with a value that references an `@string`
+macro replaced by the macro's value. With `--no-expand-strings`, such
+a value prints as the bare macro name (see [`strings`](cli-strings)
+for the definitions), and in JSON output *every* field value
+uniformly becomes an object `{"macro": <name or null>, "value":
+<value or null>}` (`macro` is `null` for a literal value, `value` is
+`null` for an undefined macro) instead of a plain string -- one
+predictable shape per invocation, with a macro reference
+distinguishable from a literal value.
 
 `--field FIELD` narrows the output to the named fields (repeatable and
 comma-separated, case-insensitive), dropping the derived data; a field
@@ -215,8 +281,9 @@ For example, to inspect the DOI and title of every entry that is
 missing an `eprint` field, in one pipeline:
 
 ```console
-$ bibdeskparser keys --missing eprint \
-    | bibdeskparser show --field doi,title --json --keys-from -
+$ bibdeskparser keys tests/Refs/refs.bib --missing eprint \
+    | bibdeskparser show tests/Refs/refs.bib --field doi,title \
+        --json --keys-from -
 ```
 
 (cli-fields)=
@@ -243,10 +310,16 @@ year
 
 Print the value of one field of an entry. Corresponds to indexing an
 {class}`~bibdeskparser.Entry`, `lib[key][fieldname]`; field names are
-case-insensitive. A field whose value is a reference to an `@string`
-macro prints as the bare macro name (see [`strings`](cli-strings) for
-the definitions). Fails for a field not defined on the entry (see
-[`fields`](cli-fields)). With `--json`: a string.
+case-insensitive. The value is rendered as in [`show`](cli-show): as
+Unicode text (`--no-unicode` for TeX-encoded), with an `@string`
+macro reference replaced by the macro's value (`--no-expand-strings`
+for the bare macro name, which is also what the Python indexing
+itself returns; see [`strings`](cli-strings) for the definitions).
+Fails for a field not defined on the entry (see
+[`fields`](cli-fields)). With `--json`: a string; under
+`--no-expand-strings`, uniformly an object `{"macro": <name or
+null>, "value": <value or null>}` (`macro` is `null` for a literal
+value, `value` is `null` for an undefined macro).
 
 ```console
 $ bibdeskparser get_field tests/Refs/refs.bib GoerzJPB2011 title
@@ -281,6 +354,41 @@ $ bibdeskparser author tests/Refs/refs.bib KochJPCM2016 --json
     "jr": []
   }
 ]
+```
+
+(cli-files)=
+
+### `files KEY`
+
+List the file attachments of an entry (the `bdsk-file-N` fields),
+one per line, in numeric order; see
+{py:attr}`~bibdeskparser.Entry.files`. By default, each attachment is
+printed as an absolute path; with `--relative`, as stored in the
+`.bib` file, relative to its directory. An entry without attachments
+prints nothing. With `--json`: an array of strings.
+
+```console
+$ bibdeskparser files tests/Refs/refs.bib GoerzJPB2011 --relative
+GoerzJPB2011.pdf
+```
+
+Attachments are modified with [`add_file`](cli-add-file),
+`replace_file`, `unlink_file`, and [`rename_file`](cli-rename-file).
+
+(cli-urls)=
+
+### `urls KEY`
+
+List the URLs linked to an entry (the `bdsk-url-N` fields), one per
+line, in numeric order; see {py:attr}`~bibdeskparser.Entry.urls`. An
+entry without linked URLs prints nothing. With `--json`: an array of
+strings. Linked URLs are modified with `add_url`, `replace_url`, and
+`remove_url`.
+
+```console
+$ bibdeskparser urls tests/Refs/refs.bib TomzaPRA2012
+http://link.aps.org/doi/10.1103/PhysRevA.86.043424
+http://dx.doi.org/10.1103/PhysRevA.86.043424
 ```
 
 ### `search QUERY`
@@ -391,6 +499,37 @@ $ bibdeskparser timestamp tests/Refs/refs.bib
 2026-07-18T16:02:00-04:00
 ```
 
+### `path`
+
+Print the absolute path of the `.bib` file being operated on: the
+given `BIBFILE`, or the configured `default_bib_file` when `BIBFILE`
+is omitted. See {py:attr}`~bibdeskparser.Library.path`. With
+`--json`: a string.
+
+<!-- notest -->
+```console
+$ bibdeskparser path
+/Users/mg/Refs/refs.bib
+```
+
+(cli-config-path)=
+
+### `config_path`
+
+Print the absolute path of the `bibdeskparser.toml` configuration
+file in effect for the `.bib` file being operated on. Discovery
+checks the directory of the `.bib` file, then the file named by
+`$BIBDESKPARSER_CONFIG`, then the XDG location; first found wins (see
+[Configuration](configuration)). If no configuration file is found,
+the command fails with an error (the built-in defaults are then in
+effect). With `--json`: a string.
+
+<!-- notest -->
+```console
+$ bibdeskparser config_path
+/Users/mg/.config/bibdeskparser/bibdeskparser.toml
+```
+
 (cli-eval-format-spec)=
 
 ### `eval_format_spec KEY [FORMAT]`
@@ -432,6 +571,8 @@ Shapiro2012.pdf
 
 ## Rendering and exporting
 
+(cli-render)=
+
 ### `render KEY...`
 
 Render a formatted citation for one or more entries, via
@@ -440,6 +581,12 @@ selects the output format (`markdown`, the default, `tex`, or `html`);
 `--style` selects the layout of multiple citations relative to one
 another (`default`, `paragraphs`, `numbered list`, or
 `itemized list`).
+
+A [preprint-only entry](preprints) renders its preprint reference
+in the journal position, linked to the DOI, the entry's first URL,
+or the archive's page for the identifier; any other entry's
+`eprint` renders as a separate link into its preprint archive
+(e.g. `arXiv:2205.15044`) after the journal reference.
 
 ```console
 $ bibdeskparser render tests/Refs/refs.bib GoerzA2023 --format tex
@@ -450,14 +597,44 @@ $ bibdeskparser render tests/Refs/refs.bib GoerzA2023 --format tex
 ### `export KEY...`
 
 Export one or more entries as self-contained BibTeX text (including
-any `@string` macros they reference), via
-{py:meth}`~bibdeskparser.Library.export`. The `--format` option
-selects the export format (`default`, `raw`, or `minimal`);
+the definitions of any `@string` macros they reference), via
+{py:meth}`~bibdeskparser.Library.export`. Three independent option
+pairs control the output:
+
+- `--unicode/--no-unicode` (default: `--unicode`): field values as
+  Unicode text, or TeX-encoded as they would be written to the
+  `.bib` file.
+- `--expand-strings/--no-expand-strings` (default:
+  `--no-expand-strings`): with `--expand-strings`, `@string` macro
+  references are replaced by the macro's value and no `@string`
+  definitions are emitted; by default, references stay bare and the
+  needed definitions are prepended.
+- `--minimal`, or `--field FIELD` (repeatable and comma-separated;
+  the two are mutually exclusive): restrict the export to the fields
+  needed to typeset a bibliography, or to the named fields. By
+  default, every field is included (with file attachments and URLs
+  as plain paths/URLs; the `date-added`/`date-modified` bookkeeping
+  fields are omitted).
+
+A [preprint-only entry](preprints) is exported in the form selected
+by `--preprint`, whatever its stored form: `unpublished` (the
+structured `eprint`-field form with the required `note` guaranteed
+in minimal exports -- the stored note, or "preprint"; the default,
+via the [`preprint_export` setting](config-preprint-export)),
+`misc` (the same structured form as `@misc`), `article` (the
+pseudo-journal form, hyperlinked via `url`, for classic styles that
+would drop an `eprint`), or `stored` (no transformation). The
+structured forms emit the
+[`archive` link base](preprints-archive-field) for non-arXiv
+preprints, as do full and minimal exports of published entries
+with a non-arXiv `eprint`. An explicit `--field` list always
+exports the stored fields.
+
 `--outfile PATH` writes to a file instead of printing to stdout.
 
 ```console
-$ bibdeskparser export tests/Refs/refs.bib GoerzA2023 --format minimal \
-    --outfile out.bib
+$ bibdeskparser export tests/Refs/refs.bib GoerzA2023 --minimal \
+    --expand-strings --outfile out.bib
 ```
 
 ## Entries
@@ -480,6 +657,7 @@ configured in the `[auto_key]` table of `bibdeskparser.toml` (which may
 map a format per entry type; see the [configuration](configuration)) --
 and printed to stdout:
 
+<!-- notest -->
 ```console
 $ bibdeskparser rekey tests/Refs/refs.bib LapertPRA09
 LapertPRA2009
@@ -570,13 +748,22 @@ the journal becomes an `@string` macro reference -- resolved against
 the library's macros and the
 [`[journal_macros]` configuration](config-journal-macros), or newly
 created, with a warning, from the journal's lowercased initials
-(literal `arXiv:...` pseudo-journals excepted); proper nouns in
-sentence-case titles and all configured `protected_words` are
-brace-protected; DOIs are normalized; for articles, page ranges
-collapse to the first page and non-essential fields are dropped.
-Citation keys are regenerated from the
+(`--keep-journals` preserves every journal as-is instead); proper
+nouns in sentence-case titles and all configured `protected_words`
+are brace-protected; DOIs are normalized; for articles, page ranges
+collapse to the first page and non-essential fields are dropped. A
+[preprint-only entry](preprints) -- one with a pseudo-journal like
+`arXiv:2205.15044` (any archive from the
+[`[preprint_archives]` configuration](config-preprint-archives)),
+or a `misc`/`unpublished` entry with an `eprint`, like arXiv's own
+BibTeX export -- is normalized to its canonical stored form:
+`@unpublished`, with the pseudo-journal in the archive's canonical
+spelling and derived `eprint`/`archiveprefix`/`doi` fields (the
+publication-status `note` is never filled in automatically). A
+pseudo-journal with an *unrecognized* archive prefix is rejected,
+unless `--keep-journals` is given. Citation keys are regenerated from the
 [`[auto_key]` format](config-auto-key) if configured, else as e.g.
-`GoerzPRA2014` (articles) or `Goerz2205.15044` (arXiv preprints);
+`GoerzPRA2014` (articles) or `Goerz2205.15044` (preprints);
 `--keep-keys` keeps the incoming keys instead. `--fix-uppercase`
 repairs all-uppercase names/titles found in some publisher data.
 
@@ -584,6 +771,7 @@ An entry whose DOI or eprint is already in the library is rejected,
 and any validation problem in the snippet rejects the whole import,
 reporting all problems at once, with the `.bib` file untouched.
 
+<!-- notest -->
 ```console
 $ bibdeskparser import tests/Refs/refs.bib entries.bib
 BaumgratzPRL2014
@@ -609,8 +797,10 @@ source and add it to the library as a new, sanitized entry, via
 
 * an **arXiv identifier** (`2205.15044`, `quant-ph/0106057`), or any
   string containing one (e.g. an `arxiv.org` URL), is fetched from
-  the arXiv API and added as an `@article` preprint with a literal
-  `journal = {arXiv:...}`, `eprint`, and `archiveprefix`;
+  the arXiv API and added as a [preprint-only](preprints)
+  `@unpublished` entry with a pseudo-journal
+  `journal = {arXiv:...}` and the structured
+  `eprint`/`archiveprefix`/`primaryclass` fields;
 * a **DOI**, or a URL containing one (e.g. most publisher article
   pages), is fetched from [Crossref](https://www.crossref.org);
 * anything else (free text with spaces) is a **Crossref
@@ -702,9 +892,7 @@ file, and `--json` maps each key to
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing abstract
-TuriniciHAL00640217
 SauvagePRXQ2020
-Vecheck2022.09.09.507322
 KatrukhaNC2017
 $ bibdeskparser add_abstract tests/Refs/refs.bib \
     SauvagePRXQ2020 Vecheck2022.09.09.507322
@@ -724,7 +912,9 @@ Find and store the matching arXiv preprint for the given entries, via
 arXiv API is searched for a preprint matching the entry (by title and
 first author, precise queries first) and, on a confident match, its
 identifier is stored in the entry's `eprint` field, along with
-`archiveprefix = arXiv`. A result is accepted only when
+`archiveprefix = arXiv` and the preprint's primary category (e.g.
+`quant-ph`) in the `primaryclass` field. A result is accepted only
+when
 
 * its arXiv DOI equals the entry's `doi` field (the strongest
   signal), or
@@ -737,7 +927,7 @@ names that year -- a guard against unrelated papers sharing a generic
 title. Such a `postdated-unverified` candidate is only reported;
 after reviewing it, apply it explicitly with `--eprint ID` (a single
 `KEY` only, no network access; a leading `arXiv:` prefix and a
-version suffix are stripped).
+version suffix are stripped, and no `primaryclass` is stored).
 
 The `eprint` field encodes the entry's audit state: *absent* means
 the preprint status is unknown (`keys --missing eprint`), *empty*
@@ -753,15 +943,14 @@ error) the entry is never modified, so a re-run picks it up.
 
 The command prints a per-key report; `--dry-run` prints it without
 modifying the `.bib` file, and `--json` maps each key to
-`{eprint, match, ratio, note, applied}`. Requires network access
-(except with `--eprint`) and respects the arXiv API's rate limit of
-one request every three seconds, so large runs take time.
+`{eprint, match, ratio, note, applied, primaryclass}`. Requires
+network access (except with `--eprint`) and respects the arXiv API's
+rate limit of one request every three seconds, so large runs take
+time.
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
-TuriniciHAL00640217
-Vecheck2022.09.09.507322
 $ bibdeskparser add_preprint tests/Refs/refs.bib --mark-empty \
     WinckelIP2008 Vecheck2022.09.09.507322
 WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]
@@ -807,7 +996,7 @@ Delete the static group `NAME`; the entries themselves are not
 affected. Corresponds to `del lib.groups[name]`.
 
 ```console
-$ bibdeskparser delete_group tests/Refs/refs.bib "To Read"
+$ bibdeskparser delete_group tests/Refs/refs.bib Diploma
 ```
 
 ## Keywords
@@ -849,6 +1038,7 @@ $ bibdeskparser set_string tests/Refs/refs.bib prl "Phys. Rev. Lett."
 Delete the `@string` macro `NAME` (which must not be referenced by any
 entry). Corresponds to `del lib.strings[name]`.
 
+<!-- notest -->
 ```console
 $ bibdeskparser delete_string tests/Refs/refs.bib prl
 ```
@@ -864,6 +1054,9 @@ $ bibdeskparser rename_string tests/Refs/refs.bib quant quantum
 
 ## Files
 
+The commands in this section modify an entry's file attachments; the
+read-only [`files`](cli-files) command lists them.
+
 (cli-add-file)=
 
 ### `add_file KEY FILENAME`
@@ -872,6 +1065,7 @@ Attach the file `FILENAME` to the entry `KEY`, via
 {py:meth}`~bibdeskparser.Library.add_file`. By default, `FILENAME`
 must exist on disk; pass `--no-check-exists` to skip that check.
 
+<!-- notest -->
 ```console
 $ bibdeskparser add_file tests/Refs/refs.bib Shapiro2012 papers/shapiro-brumer.pdf
 ```
@@ -887,6 +1081,7 @@ the [configuration](configuration)), or when the configuration sets
 `file_automatically = true`; pass `--no-auto-file` to force a plain
 attach regardless of the configuration:
 
+<!-- notest -->
 ```console
 $ bibdeskparser add_file tests/Refs/refs.bib Shapiro2012 \
     ~/Downloads/9780471973461.pdf \
@@ -901,6 +1096,7 @@ Replace the entry's attached file `OLD` with `NEW`, via
 also delete the old file from the filesystem, and `--no-check-exists`
 to not require `NEW` to exist on disk.
 
+<!-- notest -->
 ```console
 $ bibdeskparser replace_file tests/Refs/refs.bib GoerzJPB2011 \
     GoerzJPB2011.pdf corrected.pdf --remove
@@ -938,6 +1134,7 @@ else the `format_spec` and `location` keys of the `[auto_file]` table
 of `bibdeskparser.toml` (see the [configuration](configuration)) --
 and the new path (relative to the `.bib` file) is printed to stdout:
 
+<!-- notest -->
 ```console
 $ bibdeskparser rename_file tests/Refs/refs.bib GraceJMO2007 grace_jmo_2007.pdf
 GraceJMO2007.pdf
@@ -950,6 +1147,9 @@ path without moving anything, use
 [`eval_format_spec --filename`](cli-eval-format-spec).
 
 ## URLs
+
+The commands in this section modify an entry's linked URLs; the
+read-only [`urls`](cli-urls) command lists them.
 
 ### `add_url KEY URL`
 
@@ -978,8 +1178,8 @@ Remove `URL` from the entry `KEY`, via
 {py:meth}`~bibdeskparser.Library.remove_url`.
 
 ```console
-$ bibdeskparser remove_url tests/Refs/refs.bib WattsPRA2015 \
-    https://arxiv.org/abs/1412.7347
+$ bibdeskparser remove_url tests/Refs/refs.bib TomzaPRA2012 \
+    http://dx.doi.org/10.1103/PhysRevA.86.043424
 ```
 
 ## Free-form editing
@@ -991,13 +1191,14 @@ without a terminal: invoked with no TTY on stdin and with neither
 `--stdin` nor an explicit `--editor`, they fail immediately with a
 usage error rather than hanging on `$EDITOR`.
 
+(cli-edit)=
+
 ### `edit KEY...`
 
 Edit one or more entries (as BibTeX text) and merge the changes back
-into the library, via {py:meth}`~bibdeskparser.Library.edit`. The
-`--format` option (`default`, `raw`, or `minimal`) controls how the
-entries are presented; `--editor CMD` overrides the editor command
-(which defaults to `$EDITOR`).
+into the library, via {py:meth}`~bibdeskparser.Library.edit`;
+`--editor CMD` overrides the editor command (which defaults to
+`$EDITOR`).
 
 ```console
 $ bibdeskparser edit tests/Refs/refs.bib GoerzQ2022 --editor vim

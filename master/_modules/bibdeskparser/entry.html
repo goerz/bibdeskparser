@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.entry &mdash; BibDeskParser 0.3.0 documentation</title>
+  <title>bibdeskparser.entry &mdash; BibDeskParser 0.4.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/documentation_options.js?v=6c02275b"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.3.0
+    v0.4.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -60,6 +60,7 @@
 <p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../bibdesk_format.html">BibDesk's .bib Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../preprints.html">Preprints</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -890,7 +891,13 @@
 
 <span class="sd">        Whenever a non-empty `eprint` is stored, an</span>
 <span class="sd">        `archiveprefix = arXiv` field is added alongside it (unless</span>
-<span class="sd">        the entry already has an `archiveprefix`).</span>
+<span class="sd">        the entry already has an `archiveprefix`). A search match</span>
+<span class="sd">        additionally stores the preprint&#39;s arXiv primary category</span>
+<span class="sd">        (e.g. `quant-ph`) in the `primaryclass` field, replacing any</span>
+<span class="sd">        existing value (which, with `overwrite=True`, described the</span>
+<span class="sd">        replaced identifier); an explicitly given identifier stores</span>
+<span class="sd">        no `primaryclass`, since without network access the category</span>
+<span class="sd">        is unknown.</span>
 
 <span class="sd">        The `eprint` field encodes the entry&#39;s audit state, mirroring</span>
 <span class="sd">        how {meth}`add_abstract` treats the `abstract` field: a field</span>
@@ -913,16 +920,17 @@
 <span class="sd">        `&quot;existing&quot;`, unless `overwrite=True`; the empty marker does</span>
 <span class="sd">        not require `overwrite`.</span>
 
-<span class="sd">        Returns a named tuple `(eprint, match, ratio, note,</span>
-<span class="sd">        applied)`: the stored (or existing) arXiv identifier (`&quot;&quot;` if</span>
-<span class="sd">        none), how it was matched (`&quot;doi&quot;`, `&quot;title&quot;`, or</span>
+<span class="sd">        Returns a named tuple `(eprint, match, ratio, note, applied,</span>
+<span class="sd">        primaryclass)`: the stored (or existing) arXiv identifier</span>
+<span class="sd">        (`&quot;&quot;` if none), how it was matched (`&quot;doi&quot;`, `&quot;title&quot;`, or</span>
 <span class="sd">        `&quot;title+author&quot;` for a search match, in decreasing order of</span>
 <span class="sd">        strength; `&quot;explicit&quot;` for a given identifier; `&quot;none&quot;` for a</span>
 <span class="sd">        clean no-match; `&quot;error&quot;` when the search could not run;</span>
 <span class="sd">        `&quot;existing&quot;` when the entry was skipped), the title-similarity</span>
 <span class="sd">        ratio of the best search result (`None` when no search ran),</span>
-<span class="sd">        a short diagnostic trace (`note`), and whether the entry was</span>
-<span class="sd">        modified (`applied`). On a `&quot;error&quot;` result (network/API</span>
+<span class="sd">        a short diagnostic trace (`note`), whether the entry was</span>
+<span class="sd">        modified (`applied`), and the primary category of a search</span>
+<span class="sd">        match (`&quot;&quot;` otherwise). On a `&quot;error&quot;` result (network/API</span>
 <span class="sd">        failure, or an entry without a title) the entry is never</span>
 <span class="sd">        modified -- in particular, no empty marker is stored -- so a</span>
 <span class="sd">        re-run picks it up.</span>
@@ -967,23 +975,30 @@
             <span class="n">year</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;year&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">eprint</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_store_eprint</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">eprint</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store_eprint</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">eprint</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">primaryclass</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">match</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span> <span class="ow">and</span> <span class="n">mark_empty</span><span class="p">:</span>
             <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;eprint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;archiveprefix&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;arxiv&quot;</span><span class="p">:</span>
                 <span class="k">del</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;archiveprefix&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;primaryclass&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;primaryclass&quot;</span><span class="p">]</span>
             <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_store_eprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_store_eprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">primaryclass</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Store the non-empty arXiv identifier `value`, maintaining</span>
 <span class="sd">        the invariant that a non-empty `eprint` is accompanied by an</span>
-<span class="sd">        `archiveprefix`.&quot;&quot;&quot;</span>
+<span class="sd">        `archiveprefix`. A non-empty `primaryclass` (the primary</span>
+<span class="sd">        category reported by the arXiv API for a search match)</span>
+<span class="sd">        replaces any existing `primaryclass`, which described a</span>
+<span class="sd">        previous identifier.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;eprint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;archiveprefix&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
             <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;archiveprefix&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="s2">&quot;arXiv&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">primaryclass</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;primaryclass&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">primaryclass</span><span class="p">)</span>
 
     <span class="c1"># -- structured names ---------------------------------------------- #</span>
 
@@ -1063,7 +1078,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 18, 2026.
+      <span class="lastupdated">Last updated on Jul 22, 2026.
       </span></p>
   </div>
 

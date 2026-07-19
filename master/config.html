@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configuration &mdash; BibDeskParser 0.3.0 documentation</title>
+  <title>Configuration &mdash; BibDeskParser 0.4.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/documentation_options.js?v=6c02275b"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.3.0
+    v0.4.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -63,6 +63,7 @@
 <p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -79,6 +80,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#the-add-add-abstract-and-add-preprint-tables-fetching-defaults">The <code class="docutils literal notranslate"><span class="pre">[add]</span></code>, <code class="docutils literal notranslate"><span class="pre">[add_abstract]</span></code>, and <code class="docutils literal notranslate"><span class="pre">[add_preprint]</span></code> tables: fetching defaults</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#the-initials-table-acronym-exceptions">The <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> table: acronym exceptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#the-journal-macros-table-journal-name-to-macro-mappings">The <code class="docutils literal notranslate"><span class="pre">[journal_macros]</span></code> table: journal-name-to-macro mappings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-preprint-archives-table-recognized-preprint-servers">The <code class="docutils literal notranslate"><span class="pre">[preprint_archives]</span></code> table: recognized preprint servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-preprint-export-option">The <code class="docutils literal notranslate"><span class="pre">preprint_export</span></code> option</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#the-protected-words-list">The <code class="docutils literal notranslate"><span class="pre">protected_words</span></code> list</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#custom-and-extended-entry-types">Custom and extended entry types</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#custom-fields">Custom fields</a></li>
@@ -407,8 +410,9 @@ lowercased initials.</p>
 <p>When entries are imported (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.import_bibtex" title="bibdeskparser.Library.import_bibtex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">import_bibtex()</span></code></a>,
 <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add" title="bibdeskparser.Library.add"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add()</span></code></a>, and the corresponding
 <a class="reference internal" href="cli.html#cli-import"><span class="std std-ref">CLI commands</span></a>), every journal name is replaced by
-an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference. A journal that does not match the value
-of a macro already in the library is looked up in the
+an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference (<a class="reference internal" href="preprints.html"><span class="doc std std-doc">preprint
+pseudo-journals</span></a> excepted). A journal that does not match
+the value of a macro already in the library is looked up in the
 <code class="docutils literal notranslate"><span class="pre">[journal_macros]</span></code> table, which maps a macro name to the journal name
 it stands for:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[journal_macros]</span>
@@ -430,6 +434,60 @@ created</em> macro (named by its lowercased initials, honoring
 consistent across libraries. The table is exposed as
 <code class="docutils literal notranslate"><span class="pre">Library.config.journal_macros</span></code>, a <code class="docutils literal notranslate"><span class="pre">dict</span></code> mapping each macro name to
 a tuple of journal names.</p>
+</section>
+<section id="the-preprint-archives-table-recognized-preprint-servers">
+<span id="config-preprint-archives"></span><h2>The <code class="docutils literal notranslate"><span class="pre">[preprint_archives]</span></code> table: recognized preprint servers<a class="headerlink" href="#the-preprint-archives-table-recognized-preprint-servers" title="Link to this heading"></a></h2>
+<p>The archives that may appear in a <a class="reference internal" href="preprints.html"><span class="doc std std-doc">preprint
+pseudo-journal</span></a> like <code class="docutils literal notranslate"><span class="pre">journal</span> <span class="pre">=</span> <span class="pre">{arXiv:2205.15044}</span></code>. The
+built-in archives are arXiv, bioRxiv, medRxiv, ChemRxiv, HAL, and
+SSRN; the table adds further archives (or, on a case-insensitive
+name match, overrides a built-in one), mapping the archive’s
+canonical spelling to a URL template for the online location of a
+preprint, with <code class="docutils literal notranslate"><span class="pre">{id}</span></code> standing for the identifier:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[preprint_archives]</span>
+<span class="n">Zenodo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://zenodo.org/records/{id}&quot;</span>
+<span class="n">EarthArXiv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+</pre></div>
+</div>
+<p>An empty template declares an archive without identifier-based URLs
+(like the built-in ChemRxiv, whose identifiers are DOIs): the archive
+is recognized, but rendering falls back to the entry’s <code class="docutils literal notranslate"><span class="pre">doi</span></code>/URL for
+the hyperlink.</p>
+<p>The recognized archives determine which entries count as
+<a class="reference internal" href="preprints.html"><span class="doc std std-doc">preprint-only</span></a>: on <a class="reference internal" href="cli.html#cli-import"><span class="std std-ref">import</span></a>, such entries
+are normalized to the canonical <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> form (an
+<em>unrecognized</em> pseudo-journal prefix is rejected); on
+<a class="reference internal" href="cli.html#cli-export"><span class="std std-ref">export</span></a>, they are written in the form selected by
+<code class="docutils literal notranslate"><span class="pre">--preprint</span></code>; and when <a class="reference internal" href="cli.html#cli-render"><span class="std std-ref">rendering</span></a>, the preprint
+reference is hyperlinked through the archive’s URL template when
+there is no DOI or URL.</p>
+<p>The URL template also determines the
+<a class="reference internal" href="preprints.html#preprints-archive-field"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">archive</span></code> field</span></a> that exports emit for
+non-arXiv preprints (the link base REVTeX uses for rendered
+eprints): whenever the template has the form <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/{id}</span></code>, the
+<code class="docutils literal notranslate"><span class="pre">&lt;base&gt;</span></code> part becomes the <code class="docutils literal notranslate"><span class="pre">archive</span></code> value. The table is exposed as
+<code class="docutils literal notranslate"><span class="pre">Library.config.preprint_archives</span></code>, a <code class="docutils literal notranslate"><span class="pre">dict</span></code> mapping each lowercased
+archive prefix to a named tuple <code class="docutils literal notranslate"><span class="pre">(name,</span> <span class="pre">url)</span></code>.</p>
+</section>
+<section id="the-preprint-export-option">
+<span id="config-preprint-export"></span><h2>The <code class="docutils literal notranslate"><span class="pre">preprint_export</span></code> option<a class="headerlink" href="#the-preprint-export-option" title="Link to this heading"></a></h2>
+<p>The entry type that <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a> (and
+the <code class="docutils literal notranslate"><span class="pre">export</span></code> CLI command) writes for a <a class="reference internal" href="preprints.html"><span class="doc std std-doc">preprint-only
+entry</span></a>: <code class="docutils literal notranslate"><span class="pre">&quot;unpublished&quot;</span></code> (the default) or <code class="docutils literal notranslate"><span class="pre">&quot;misc&quot;</span></code> for
+the structured <code class="docutils literal notranslate"><span class="pre">eprint</span></code>-field forms, understood by REVTeX,
+<code class="docutils literal notranslate"><span class="pre">elsarticle</span></code>, and biblatex (<code class="docutils literal notranslate"><span class="pre">&quot;unpublished&quot;</span></code> guarantees the type’s
+required <code class="docutils literal notranslate"><span class="pre">note</span></code> field in minimal exports – the stored note, or
+“preprint”), or <code class="docutils literal notranslate"><span class="pre">&quot;article&quot;</span></code> for the pseudo-journal form, which
+renders under every classic BibTeX style:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="n">preprint_export</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;article&quot;</span>
+</pre></div>
+</div>
+<p>This is only the <em>default</em> for the <code class="docutils literal notranslate"><span class="pre">preprint</span></code> argument of
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a> (<code class="docutils literal notranslate"><span class="pre">--preprint</span></code> on the
+command line), which also accepts <code class="docutils literal notranslate"><span class="pre">&quot;stored&quot;</span></code> for no transformation
+at all. The setting never affects the <em>stored</em> entry or an explicit
+<code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">--field</span></code> list. It is exposed as
+<code class="docutils literal notranslate"><span class="pre">Library.config.preprint_export</span></code>.</p>
 </section>
 <section id="the-protected-words-list">
 <h2>The <code class="docutils literal notranslate"><span class="pre">protected_words</span></code> list<a class="headerlink" href="#the-protected-words-list" title="Link to this heading"></a></h2>
@@ -561,6 +619,9 @@ appropriate for a templated type.</p>
 <span class="n">jcp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;J. Chem. Phys.&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;The Journal of Chemical Physics&quot;</span><span class="p">]</span>
 <span class="n">jpb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;J. Phys. B&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;J. Phys. B: At. Mol. Opt. Phys.&quot;</span><span class="p">]</span>
 
+<span class="k">[preprint_archives]</span><span class="w">          </span><span class="c1"># preprint servers beyond the built-ins</span>
+<span class="n">Zenodo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://zenodo.org/records/{id}&quot;</span>
+
 <span class="k">[add_abstract]</span><span class="w">               </span><span class="c1"># defaults for the add_abstract command</span>
 <span class="n">min_confidence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;high&quot;</span>
 <span class="n">mark_empty</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
@@ -608,7 +669,7 @@ proper nouns and acronyms brace-protected in every imported title.</p>
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 18, 2026.
+      <span class="lastupdated">Last updated on Jul 22, 2026.
       </span></p>
   </div>
 

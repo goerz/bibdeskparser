@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.library &mdash; BibDeskParser 0.3.0 documentation</title>
+  <title>bibdeskparser.library &mdash; BibDeskParser 0.4.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../_static/documentation_options.js?v=6c02275b"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.3.0
+    v0.4.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -60,6 +60,7 @@
 <p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../bibdesk_format.html">BibDesk's .bib Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../preprints.html">Preprints</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -2527,6 +2528,18 @@
 <span class="sd">          `itemize`; `html` `&lt;ul&gt;`).</span>
 <span class="sd">        * `&quot;default&quot;` (the default): like `&quot;paragraphs&quot;`, except a</span>
 <span class="sd">          single `&quot;html&quot;` citation is not wrapped in `&lt;p&gt;...&lt;/p&gt;`.</span>
+
+<span class="sd">        A *preprint-only* entry -- a `misc` or `unpublished`</span>
+<span class="sd">        entry with an `eprint` from a recognized preprint archive,</span>
+<span class="sd">        or any entry whose `journal` is a preprint pseudo-journal</span>
+<span class="sd">        like `arXiv:2205.15044` -- renders its preprint reference</span>
+<span class="sd">        (with the category tag from `primaryclass`, e.g.</span>
+<span class="sd">        `arXiv:2205.15044 [quant-ph]`) in the journal position,</span>
+<span class="sd">        linked to the DOI, the entry&#39;s first URL, or the archive&#39;s</span>
+<span class="sd">        page for the identifier. Any *other* entry&#39;s `eprint` is</span>
+<span class="sd">        rendered as a separate link into its preprint archive after</span>
+<span class="sd">        the journal reference (the &quot;published, with preprint&quot;</span>
+<span class="sd">        form).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">strings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_strings</span><span class="p">()</span>
         <span class="n">entries</span> <span class="o">=</span> <span class="p">[</span><span class="n">_expand_macros</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">strings</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
@@ -2535,30 +2548,102 @@
 
 <div class="viewcode-block" id="Library.export">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">keys</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="c1"># pylint: disable=redefined-builtin</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">keys</span><span class="p">,</span>
+        <span class="n">unicode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">expand_strings</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">fields</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
+        <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">preprint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Export the entries with the given citation `keys` (at</span>
 <span class="sd">        least one required) as bibtex text.</span>
 
-<span class="sd">        `format` is one of `&quot;default&quot;` (Unicode, as displayed by the</span>
-<span class="sd">        `dict` interface), `&quot;raw&quot;` (the literal, possibly TeX-encoded,</span>
-<span class="sd">        stored values), or `&quot;minimal&quot;` (only the fields needed to</span>
-<span class="sd">        typeset a bibliography). For `&quot;default&quot;`/`&quot;raw&quot;`, the</span>
-<span class="sd">        `@string` macro definitions needed to make the selected</span>
-<span class="sd">        entries self-contained are included.</span>
+<span class="sd">        Three independent parameters control the output:</span>
+
+<span class="sd">        * `unicode`: with `True` (default), field values are the</span>
+<span class="sd">          Unicode text also returned by the `Entry` dict interface;</span>
+<span class="sd">          with `False`, they are TeX-encoded, exactly as they would</span>
+<span class="sd">          be written to the `.bib` file on disk.</span>
+<span class="sd">        * `expand_strings`: with `False` (default), a field value</span>
+<span class="sd">          referencing an `@string` macro stays a bare reference, and</span>
+<span class="sd">          the `@string` definitions needed by the selected entries</span>
+<span class="sd">          are included, so the export is self-contained; with `True`,</span>
+<span class="sd">          each reference is replaced by the macro&#39;s value (the</span>
+<span class="sd">          standard BibTeX month macros `jan` ... `dec` also resolve),</span>
+<span class="sd">          and no `@string` definitions are emitted. An undefined</span>
+<span class="sd">          macro stays a bare reference, with a `UserWarning`.</span>
+<span class="sd">        * `fields`: `&quot;full&quot;` (default: every field except the</span>
+<span class="sd">          `date-added`/`date-modified` bookkeeping fields, with</span>
+<span class="sd">          file attachments and URLs as plain paths/URLs),</span>
+<span class="sd">          `&quot;minimal&quot;` (only the fields needed to typeset a</span>
+<span class="sd">          bibliography), or a list of field names (in the given</span>
+<span class="sd">          order; names not defined on an entry are omitted).</span>
+
+<span class="sd">        A *preprint-only* entry -- a `misc` or `unpublished`</span>
+<span class="sd">        entry with an `eprint` from a recognized preprint archive,</span>
+<span class="sd">        or any entry whose `journal` is a preprint pseudo-journal</span>
+<span class="sd">        like `arXiv:2205.15044` -- is exported in the form selected</span>
+<span class="sd">        by</span>
+<span class="sd">        `preprint`, independent of its stored form:</span>
+
+<span class="sd">        * `&quot;unpublished&quot;` (the default, via the `preprint_export`</span>
+<span class="sd">          [configuration](configuration) setting): an `@unpublished`</span>
+<span class="sd">          entry with the structured `eprint`/`archiveprefix` fields</span>
+<span class="sd">          (derived from the pseudo-journal if not stored) -- for</span>
+<span class="sd">          BibTeX styles that render the `eprint` field (REVTeX,</span>
+<span class="sd">          `elsarticle`, biblatex); under REVTeX, the eprint renders</span>
+<span class="sd">          in the journal position. A minimal export guarantees the</span>
+<span class="sd">          type&#39;s required `note` field (the stored `note`, or the</span>
+<span class="sd">          text &quot;preprint&quot;).</span>
+<span class="sd">        * `&quot;misc&quot;`: the same structured form, as a `@misc` entry</span>
+<span class="sd">          (no required fields, no `note` handling).</span>
+<span class="sd">        * `&quot;article&quot;`: an `@article` whose `journal` is the</span>
+<span class="sd">          pseudo-journal and whose `url` is the DOI-resolver</span>
+<span class="sd">          address, without the `eprint`/`doi` fields -- for classic</span>
+<span class="sd">          styles (`plain`, `unsrt`, `IEEEtran`, ...) that would</span>
+<span class="sd">          silently drop an `eprint`.</span>
+<span class="sd">        * `&quot;stored&quot;`: no transformation.</span>
+
+<span class="sd">        For a non-arXiv archive with a `&lt;base&gt;/{id}` URL template</span>
+<span class="sd">        (HAL, bioRxiv, medRxiv), the structured forms also emit an</span>
+<span class="sd">        `archive` field holding the link base that REVTeX&#39;s styles</span>
+<span class="sd">        use for the rendered eprint; full and minimal exports of</span>
+<span class="sd">        *published* entries with such an `eprint` gain the same</span>
+<span class="sd">        field.</span>
+
+<span class="sd">        A minimal export of a preprint-only entry reduces to the</span>
+<span class="sd">        essential fields of the respective form; an explicit list of</span>
+<span class="sd">        field names is always exported as stored, and the stored</span>
+<span class="sd">        entry is never modified. See the</span>
+<span class="sd">        [preprints](preprints-convention) documentation for how</span>
+<span class="sd">        each form renders.</span>
+
+<span class="sd">        The output layout is always the same (4-space indent,</span>
+<span class="sd">        capitalized field names, a comma after every field); it is</span>
+<span class="sd">        *not* the byte-exact layout of the `.bib` file on disk, and</span>
+<span class="sd">        even with `unicode=False` the export is not a byte-faithful</span>
+<span class="sd">        slice of the file (`bdsk-file-N` values are plain paths, not</span>
+<span class="sd">        the stored binary plist data).</span>
+
+<span class="sd">        With `outfile`, the text is written (UTF-8) to that path or</span>
+<span class="sd">        open file object instead of being returned.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">export_entries</span><span class="p">(</span>
             <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span>
             <span class="n">strings</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strings</span><span class="p">),</span>
-            <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">,</span>
+            <span class="n">unicode</span><span class="o">=</span><span class="n">unicode</span><span class="p">,</span>
+            <span class="n">expand_strings</span><span class="o">=</span><span class="n">expand_strings</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">,</span>
             <span class="n">outfile</span><span class="o">=</span><span class="n">outfile</span><span class="p">,</span>
+            <span class="n">preprint</span><span class="o">=</span><span class="n">preprint</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Library.edit">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.edit">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">keys</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="n">editor</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="c1"># pylint: disable=redefined-builtin</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">keys</span><span class="p">,</span> <span class="n">editor</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Edit the entries with the given citation `keys` (at least</span>
 <span class="sd">        one required) together, in `editor` (or `$EDITOR`), merging</span>
 <span class="sd">        changes back into them (and into `.strings`) in place.</span>
@@ -2575,7 +2660,6 @@
         <span class="n">editing</span><span class="o">.</span><span class="n">edit_entries</span><span class="p">(</span>
             <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span>
             <span class="n">library</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
-            <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">,</span>
             <span class="n">editor</span><span class="o">=</span><span class="n">editor</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -2599,7 +2683,14 @@
 
 <div class="viewcode-block" id="Library.import_bibtex">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.import_bibtex">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">import_bibtex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">keep_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fix_uppercase</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">import_bibtex</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">keep_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">fix_uppercase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">keep_journals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Import the entries of the BibTeX snippet `text`, sanitized</span>
 <span class="sd">        and normalized, into the library.</span>
 
@@ -2614,10 +2705,33 @@
 <span class="sd">          added to the library as needed), or -- with a `UserWarning`</span>
 <span class="sd">          -- a newly created macro named by the journal&#39;s lowercased</span>
 <span class="sd">          initials (honoring `[initials.journal]` exceptions). A</span>
-<span class="sd">          literal `arXiv:...` pseudo-journal is the one exception: it</span>
-<span class="sd">          marks an arXiv preprint and stays literal, and the entry&#39;s</span>
-<span class="sd">          `eprint` and `archiveprefix` fields are derived from it if</span>
-<span class="sd">          missing.</span>
+<span class="sd">          pseudo-journal whose archive is *not* recognized is</span>
+<span class="sd">          rejected, since it must not be turned into a macro.</span>
+<span class="sd">        * A *preprint-only* entry -- one whose `journal` is a</span>
+<span class="sd">          preprint pseudo-journal like `arXiv:2205.15044` (any</span>
+<span class="sd">          archive from the `preprint_archives`</span>
+<span class="sd">          [configuration](configuration): arXiv, bioRxiv, medRxiv,</span>
+<span class="sd">          ChemRxiv, HAL, and SSRN by default), or a `misc` entry</span>
+<span class="sd">          with an `eprint` from a recognized archive (e.g. arXiv&#39;s</span>
+<span class="sd">          own BibTeX export) -- is normalized to its canonical</span>
+<span class="sd">          stored form: an `@unpublished` entry with the</span>
+<span class="sd">          pseudo-journal in the archive&#39;s canonical spelling</span>
+<span class="sd">          (`hal:` becomes `HAL:`; synthesized from the `eprint` if</span>
+<span class="sd">          absent), the `eprint` and `archiveprefix` fields derived</span>
+<span class="sd">          from the pseudo-journal if missing, and the `doi`</span>
+<span class="sd">          extracted from a `https://doi.org/...` value in the `url`</span>
+<span class="sd">          field (dropping that `url`) or, for arXiv, derived as</span>
+<span class="sd">          `10.48550/arXiv.&lt;id&gt;`. A `url` that merely restates the</span>
+<span class="sd">          archive&#39;s page for the identifier is dropped when the</span>
+<span class="sd">          entry carries a `doi`. A `note` is *never* synthesized: a</span>
+<span class="sd">          missing publication-status note is a signal to fill it in</span>
+<span class="sd">          by hand. See the [preprints](preprints-convention)</span>
+<span class="sd">          documentation.</span>
+<span class="sd">        * `keep_journals=True` skips both of the above: every</span>
+<span class="sd">          `journal` is preserved as-is, and the entry keeps its</span>
+<span class="sd">          incoming type (preprint-only entries are still recognized</span>
+<span class="sd">          for the `eprint`/`archiveprefix` derivation and the</span>
+<span class="sd">          citation key).</span>
 <span class="sd">        * Capitalized words inside the `title` (assumed to be proper</span>
 <span class="sd">          nouns) are wrapped in braces to protect their</span>
 <span class="sd">          capitalization, unless the title looks like it is already</span>
@@ -2625,6 +2739,10 @@
 <span class="sd">          `protected_words` are brace-protected in every title.</span>
 <span class="sd">        * A `doi` is normalized to its bare, lowercase form (no</span>
 <span class="sd">          `https://doi.org/` or `doi:` prefix).</span>
+<span class="sd">        * An `archive` field holding the link base derivable from</span>
+<span class="sd">          the entry&#39;s `eprint`/`archiveprefix` is dropped (exports</span>
+<span class="sd">          regenerate it), for preprint-only and published entries</span>
+<span class="sd">          alike.</span>
 <span class="sd">        * For an `@article`, a `pages` range collapses to its first</span>
 <span class="sd">          page, the fields `month`, `day`, `publisher`, `address`,</span>
 <span class="sd">          `numpages`, and `issn` are dropped, and a `url` is dropped</span>
@@ -2636,9 +2754,9 @@
 <span class="sd">          `%p1%c{journal}0%Y%u0` for an article (e.g.</span>
 <span class="sd">          `GoerzPRA2014`), `%p1%c{booktitle}0%Y%u0` for</span>
 <span class="sd">          inproceedings/incollection, and `%p1%Y%u0` for any other</span>
-<span class="sd">          type. ArXiv preprints always use `%p1%f{eprint}[.]` (e.g.</span>
-<span class="sd">          `Goerz2205.15044`). An incoming key that already matches</span>
-<span class="sd">          the format is kept.</span>
+<span class="sd">          type. Preprint-only entries (a recognized pseudo-journal)</span>
+<span class="sd">          always use `%p1%f{eprint}[.]` (e.g. `Goerz2205.15044`). An</span>
+<span class="sd">          incoming key that already matches the format is kept.</span>
 <span class="sd">        * TeX-encoded accents (`Schr{\\&quot;o}dinger`) are decoded to</span>
 <span class="sd">          Unicode, exactly as if the values had been read from a</span>
 <span class="sd">          `.bib` file (saving re-encodes them).</span>
@@ -2648,6 +2766,9 @@
 <span class="sd">        are down-cased to name case/sentence case first; the result</span>
 <span class="sd">        may need manual correction. `keep_keys=True` keeps the</span>
 <span class="sd">        incoming citation keys instead of generating new ones.</span>
+<span class="sd">        `keep_journals=True` preserves every incoming `journal` field</span>
+<span class="sd">        as-is instead of converting it to an `@string` macro</span>
+<span class="sd">        reference.</span>
 
 <span class="sd">        An entry whose `doi` or `eprint` is already in the library is</span>
 <span class="sd">        rejected. `keywords`, `bdsk-url-N`, and `date-added` fields</span>
@@ -2689,7 +2810,11 @@
 <span class="sd">        ```</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">import_entries</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">keep_keys</span><span class="o">=</span><span class="n">keep_keys</span><span class="p">,</span> <span class="n">fix_uppercase</span><span class="o">=</span><span class="n">fix_uppercase</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">text</span><span class="p">,</span>
+            <span class="n">keep_keys</span><span class="o">=</span><span class="n">keep_keys</span><span class="p">,</span>
+            <span class="n">fix_uppercase</span><span class="o">=</span><span class="n">fix_uppercase</span><span class="p">,</span>
+            <span class="n">keep_journals</span><span class="o">=</span><span class="n">keep_journals</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -2714,7 +2839,8 @@
 <span class="sd">          any string containing `arXiv` followed by an identifier</span>
 <span class="sd">          (e.g. an `https://arxiv.org/abs/...` URL) -- fetched from</span>
 <span class="sd">          the [arXiv API](https://info.arxiv.org/help/api/), added as</span>
-<span class="sd">          an `@article` preprint with a literal `arXiv:...` journal;</span>
+<span class="sd">          a preprint-only `@misc` entry with a literal `arXiv:...`</span>
+<span class="sd">          pseudo-journal and the structured eprint fields;</span>
 <span class="sd">        * a DOI (`10.1103/PhysRevA.89.032334`), or a URL containing</span>
 <span class="sd">          one (e.g. `https://doi.org/...` or most publisher article</span>
 <span class="sd">          pages) -- fetched from</span>
@@ -2865,7 +2991,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 18, 2026.
+      <span class="lastupdated">Last updated on Jul 22, 2026.
       </span></p>
   </div>
 
