@@ -38,12 +38,16 @@ __private__ = [
     "get_field",
     "author",
     "editor",
+    "files",
+    "urls",
     "search",
     "groups",
     "keywords",
     "strings",
     "duplicate_keys",
     "timestamp",
+    "path",
+    "config_path",
     "render",
     "export",
     "eval_format_spec",
@@ -304,11 +308,12 @@ def main():
     named by the `default_bib_file` key of a discovered
     `bibdeskparser.toml` is used instead.
 
-    Read-only commands (`author`, `duplicate_keys`, `editor`,
-    `eval_format_spec`, `fields`, `get_field`, `groups`, `keys`,
-    `keywords`, `search`, `show`, `strings`, `timestamp`) print to
-    stdout and accept `--json` for machine-readable output; `render`
-    and `export` are read-only as well. The other commands modify the
+    Read-only commands (`author`, `config_path`, `duplicate_keys`,
+    `editor`, `eval_format_spec`, `fields`, `files`, `get_field`,
+    `groups`, `keys`, `keywords`, `path`, `search`, `show`, `strings`,
+    `timestamp`, `urls`) print to stdout and accept `--json` for
+    machine-readable output; `render` and `export` are read-only as
+    well. The other commands modify the
     `.bib` file in place and print nothing on success (except `rekey`
     without NEW_KEY and `rename_file` without NEW, which print the
     generated key or file path, as does `add_file` when it auto-files;
@@ -784,6 +789,68 @@ def editor(bibfile, citekey, as_json):
 
 
 @main.command(
+    name="files",
+    cls=_BibCommand,
+    short_help="List an entry's file attachments.",
+    epilog=_examples(
+        "bibdeskparser files GoerzJPB2011",
+        "bibdeskparser files GoerzJPB2011 --relative",
+        "bibdeskparser files GoerzJPB2011 --json",
+    ),
+)
+@click.argument("citekey", metavar="KEY")
+@click.option(
+    "--absolute/--relative",
+    "absolute",
+    default=True,
+    show_default=True,
+    help=(
+        "Print each attachment as an absolute path (default), or as "
+        "stored in the .bib file, relative to the file's directory "
+        "(--relative)."
+    ),
+)
+@_json_option
+@click.pass_obj
+def files(bibfile, citekey, absolute, as_json):
+    """List the file attachments of the entry with the given KEY (the
+    `bdsk-file-N` fields), one per line, in numeric order. By default,
+    each attachment is printed as an absolute path; with --relative,
+    as stored in the `.bib` file (relative to its directory). Prints
+    nothing (an empty array, with --json) for an entry without
+    attachments. Attachments are modified with `add_file`,
+    `replace_file`, `unlink_file`, and `rename_file`."""
+    lib = Library(bibfile)
+    paths = list(_entry(lib, citekey).files)
+    if absolute:
+        base = lib._files_base_dir()
+        paths = [str((base / p).resolve()) for p in paths]
+    _emit(paths, as_json, "\n".join(paths))
+
+
+@main.command(
+    name="urls",
+    cls=_BibCommand,
+    short_help="List an entry's linked URLs.",
+    epilog=_examples(
+        "bibdeskparser urls KochJPCM2016",
+        "bibdeskparser urls KochJPCM2016 --json",
+    ),
+)
+@click.argument("citekey", metavar="KEY")
+@_json_option
+@click.pass_obj
+def urls(bibfile, citekey, as_json):
+    """List the URLs linked to the entry with the given KEY (the
+    `bdsk-url-N` fields), one per line, in numeric order. Prints
+    nothing (an empty array, with --json) for an entry without linked
+    URLs. Linked URLs are modified with `add_url`, `replace_url`, and
+    `remove_url`."""
+    data = list(_entry(Library(bibfile), citekey).urls)
+    _emit(data, as_json, "\n".join(data))
+
+
+@main.command(
     name="search",
     cls=_BibCommand,
     short_help="List the keys of entries matching QUERY.",
@@ -972,6 +1039,53 @@ def timestamp(bibfile, as_json):
     """Print the modification timestamp from the file header."""
     data = _isoformat(Library(bibfile).timestamp)
     _emit(data, as_json, data or "")
+
+
+@main.command(
+    name="path",
+    cls=_BibCommand,
+    short_help="Print the absolute path of the .bib file.",
+    epilog=_examples(
+        "bibdeskparser path",
+        "bibdeskparser path --json",
+    ),
+)
+@_json_option
+@click.pass_obj
+def path(bibfile, as_json):
+    """Print the absolute path of the `.bib` file being operated on:
+    the given BIBFILE, or the configured `default_bib_file` when
+    BIBFILE is omitted. With --json: a string."""
+    data = str(Path(bibfile).resolve())
+    _emit(data, as_json, data)
+
+
+@main.command(
+    name="config_path",
+    cls=_BibCommand,
+    short_help="Print the absolute path of the config file.",
+    epilog=_examples(
+        "bibdeskparser config_path",
+        "bibdeskparser config_path --json",
+    ),
+)
+@_json_option
+@click.pass_obj
+def config_path(bibfile, as_json):
+    """Print the absolute path of the `bibdeskparser.toml`
+    configuration file in effect for the `.bib` file being operated
+    on. Discovery checks the directory of the `.bib` file, then the
+    file named by `$BIBDESKPARSER_CONFIG`, then the XDG location
+    (`~/.config/bibdeskparser/bibdeskparser.toml`); first found wins.
+    Fails with an error if no configuration file is found (the
+    built-in defaults are then in effect). With --json: a string."""
+    found = config.active.load(bib_dir=Path(bibfile).resolve().parent)
+    if found is None:
+        raise click.ClickException(
+            "no configuration file found (using built-in defaults)"
+        )
+    data = str(found.resolve())
+    _emit(data, as_json, data)
 
 
 @main.command(
