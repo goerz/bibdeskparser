@@ -185,21 +185,21 @@ def test_decode_return_types():
     assert journal == "prl"
 
 
-def test_value_string_and_macro_string_export_raw():
+def test_value_string_and_macro_string_export():
     """`ValueString` yields a braced `{prl}` and `MacroString` a bare
-    `prl` in the raw export format."""
+    `prl` in an export of the stored values (`unicode=False`)."""
     from bibdeskparser import Library
 
     bib = Library()
     entry = Entry("article", "Key2024")
     entry["journal"] = ValueString("prl")
     bib["Key2024"] = entry
-    assert bib.export("Key2024", format="raw") == (
-        "@article{Key2024,\n\tjournal = {prl}\n}\n"
+    assert bib.export("Key2024", unicode=False) == (
+        "@article{Key2024,\n    Journal = {prl},\n}\n"
     )
     entry["journal"] = MacroString("prl")
-    assert bib.export("Key2024", format="raw") == (
-        "@article{Key2024,\n\tjournal = prl\n}\n"
+    assert bib.export("Key2024", unicode=False) == (
+        "@article{Key2024,\n    Journal = prl,\n}\n"
     )
 
 

@@ -24,6 +24,7 @@ from . import __version__, config
 from .editing import strings_bib_text
 from .library import Library, StaleFileError
 from .macros import MacroString, ValueString
+from .texmap import skip_texify, texify
 
 __all__ = []
 
@@ -211,6 +212,34 @@ _json_option = click.option(
 )
 
 
+_unicode_option = click.option(
+    "--unicode/--no-unicode",
+    "unicode_",
+    default=True,
+    show_default=True,
+    help=(
+        "Show field values as Unicode text (default), or TeX-encoded "
+        "as stored in the .bib file (--no-unicode)."
+    ),
+)
+
+
+_expand_strings_option = click.option(
+    "--expand-strings/--no-expand-strings",
+    "expand_strings",
+    default=True,
+    show_default=True,
+    help=(
+        "Replace a field value that references an @string macro by "
+        "the macro's value (default). With --no-expand-strings, show "
+        "the bare macro name instead (see `strings` for the "
+        "definitions); with --json, every field value then uniformly "
+        'becomes an object {"macro": <name or null>, "value": <value '
+        "or null>} instead of a plain string."
+    ),
+)
+
+
 def _emit(data, as_json, text):
     """Print `data` as JSON if `as_json`, else print `text` (if any)."""
     if as_json:
@@ -254,11 +283,13 @@ def _examples(*lines):
         "bibdeskparser keys --type article --missing doi",
         'bibdeskparser search "quantum computing"',
         "bibdeskparser show Preskill2018 --json",
-        "bibdeskparser get_field Preskill2018 title",
+        "bibdeskparser get_field Preskill2018 journal",
+        "bibdeskparser get_field Preskill2018 journal --no-expand-strings",
         "bibdeskparser set_field Preskill2018 doi 10.1234/xyz",
         "bibdeskparser add_to_keyword NISQ Preskill2018",
         "bibdeskparser add_file Preskill2018 papers/nisq.pdf",
         "bibdeskparser export Preskill2018  # entry as BibTeX",
+        "bibdeskparser export Preskill2018 --minimal --expand-strings",
         "bibdeskparser render Preskill2018  # formatted citation",
         "bibdeskparser add 10.1103/PhysRevA.89.032334  # by DOI",
         "pbpaste | bibdeskparser import --stdin",
@@ -394,24 +425,66 @@ def _selected_field_values(entry, names):
     return result
 
 
-def _entry_data(entry, only_fields=None):
+def _display_value(value, name, strings, unicode_, expand):
+    """`(text, data)` display forms of one decoded field value.
+
+    `value` is what `entry[name]` returns ({class}`ValueString` or
+    {class}`MacroString`); `strings` maps macro names to their Unicode
+    values (including the standard month macros). `text` is the
+    human-readable form and `data` the JSON-ready form. With
+    `expand=True` (macro references replaced by their values), `data`
+    is a plain string; with `expand=False`, `data` is uniformly a
+    `{"macro": ..., "value": ...}` dict for *every* field (`macro` is
+    `None` for a literal value, `value` is `None` for an undefined
+    macro), so consumers get one shape per invocation. With
+    `unicode_=False`, string values are TeX-encoded.
+    """
+
+    def _tex(text):
+        if unicode_ or skip_texify(name):
+            return text
+        return texify(text)
+
+    if isinstance(value, MacroString):
+        macro = str(value)
+        resolved = strings.get(macro)
+        if expand:
+            shown = _tex(resolved) if resolved is not None else macro
+            return shown, shown
+        data = {
+            "macro": macro,
+            "value": _tex(resolved) if resolved is not None else None,
+        }
+        return macro, data
+    shown = _tex(str(value))
+    if expand:
+        return shown, shown
+    return shown, {"macro": None, "value": shown}
+
+
+def _entry_data(entry, strings, unicode_, expand, only_fields=None):
     """The JSON-ready data for `entry` (a dict).
 
     With `only_fields` (a list of field names), the result is just a
     map of those fields (that are defined) to their values; otherwise
     it is the full record (type, key, fields, and derived data).
+    Field values are rendered via `_display_value` (with the given
+    `strings`/`unicode_`/`expand` settings).
     """
     if only_fields is not None:
-        return {
-            name: str(value)
-            for name, value in _selected_field_values(
-                entry, only_fields
-            ).items()
-        }
+        field_values = _selected_field_values(entry, only_fields)
+    else:
+        field_values = dict(entry)
+    fields_data = {
+        name: _display_value(value, name, strings, unicode_, expand)[1]
+        for name, value in field_values.items()
+    }
+    if only_fields is not None:
+        return fields_data
     return {
         "entry_type": entry.entry_type,
         "key": entry.key,
-        "fields": dict(entry),
+        "fields": fields_data,
         "groups": list(entry.groups),
         "keywords": list(entry.keywords),
         "files": list(entry.files),
@@ -421,11 +494,13 @@ def _entry_data(entry, only_fields=None):
     }
 
 
-def _entry_block(entry, only_fields=None):
+def _entry_block(entry, strings, unicode_, expand, only_fields=None):
     """A human-readable multi-line block describing `entry`.
 
     With `only_fields`, only the `KEY (type)` heading and the named
     fields (that are defined) are shown, without the derived data.
+    Field values are rendered via `_display_value` (with the given
+    `strings`/`unicode_`/`expand` settings).
     """
     lines = [f"{entry.key} ({entry.entry_type})"]
     if only_fields is not None:
@@ -434,6 +509,7 @@ def _entry_block(entry, only_fields=None):
         field_values = dict(entry)
     width = max((len(name) for name in field_values), default=0)
     for name, value in field_values.items():
+        value = _display_value(value, name, strings, unicode_, expand)[0]
         lines.append(f"    {(name + ':').ljust(width + 1)} {value}")
     if only_fields is not None:
         return "\n".join(lines)
@@ -521,19 +597,34 @@ def _split_field_names(field_args):
         "for standard input), appended to any KEY arguments."
     ),
 )
+@_unicode_option
+@_expand_strings_option
 @_json_option
 @click.pass_obj
 # click passes all parameters by keyword
 # pylint: disable-next=too-many-positional-arguments
-def show(bibfile, citekeys, field_args, skip_missing, keys_from, as_json):
+def show(
+    bibfile,
+    citekeys,
+    field_args,
+    skip_missing,
+    keys_from,
+    unicode_,
+    expand_strings,
+    as_json,
+):
     """Show the data of the entries with the given keys.
 
     Keys come from the KEY arguments and/or --keys-from; at least one
     is required. By default every field and the derived data (groups,
     keywords, files, URLs, dates) are shown; --field narrows this to
-    the named fields. An unknown key aborts the command unless
-    --skip-missing is given, in which case it is reported on stderr
-    and the remaining entries are still shown.
+    the named fields. Field values are rendered: Unicode text
+    (--no-unicode for the TeX-encoded stored values), with @string
+    macro references replaced by the macro's value
+    (--no-expand-strings for the bare macro name). An unknown key
+    aborts the command unless --skip-missing is given, in which case
+    it is reported on stderr and the remaining entries are still
+    shown.
     """
     lib = Library(bibfile)
     keys = list(citekeys)
@@ -551,8 +642,17 @@ def show(bibfile, citekeys, field_args, skip_missing, keys_from, as_json):
         _fail_unknown_keys(missing)
     for key in missing:
         click.echo(f"Warning: unknown citation key {key!r}", err=True)
-    data = {entry.key: _entry_data(entry, only_fields) for entry in entries}
-    text = "\n\n".join(_entry_block(entry, only_fields) for entry in entries)
+    strings = lib._all_strings()
+    data = {
+        entry.key: _entry_data(
+            entry, strings, unicode_, expand_strings, only_fields
+        )
+        for entry in entries
+    }
+    text = "\n\n".join(
+        _entry_block(entry, strings, unicode_, expand_strings, only_fields)
+        for entry in entries
+    )
     _emit(data, as_json, text)
 
 
@@ -590,20 +690,33 @@ def fields(bibfile, citekey, as_json):
 )
 @click.argument("citekey", metavar="KEY")
 @click.argument("fieldname")
+@_unicode_option
+@_expand_strings_option
 @_json_option
 @click.pass_obj
-def get_field(bibfile, citekey, fieldname, as_json):
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def get_field(bibfile, citekey, fieldname, unicode_, expand_strings, as_json):
     """Print the value of the field FIELDNAME (case-insensitive) of
     the entry with the given KEY.
 
-    A field whose value is a reference to an `@string` macro prints
-    as the bare macro name (see `strings` for the definitions). Fails
-    for a field not defined on the entry (see `fields`)."""
-    entry = _entry(Library(bibfile), citekey)
+    The value is rendered: Unicode text (--no-unicode for the
+    TeX-encoded stored value), with an @string macro reference
+    replaced by the macro's value (--no-expand-strings for the bare
+    macro name; see `strings` for the definitions). Fails for a field
+    not defined on the entry (see `fields`)."""
+    lib = Library(bibfile)
+    entry = _entry(lib, citekey)
     if fieldname not in entry:
         raise KeyError(f"entry {citekey!r} has no field {fieldname!r}")
-    data = str(entry[fieldname])
-    _emit(data, as_json, data)
+    text, data = _display_value(
+        entry[fieldname],
+        fieldname,
+        lib._all_strings(),
+        unicode_,
+        expand_strings,
+    )
+    _emit(data, as_json, text)
 
 
 def _names_data(names):
@@ -902,17 +1015,52 @@ def render(bibfile, citekeys, format_, style):
     short_help="Export the given entries as bibtex text.",
     epilog=_examples(
         "bibdeskparser export Preskill2018",
+        "bibdeskparser export Preskill2018 --minimal --expand-strings",
         "bibdeskparser export Key1 Key2 --outfile out.bib",
     ),
 )
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.option(
-    "--format",
-    "format_",
-    type=click.Choice(["default", "raw", "minimal"]),
-    default="default",
+    "--unicode/--no-unicode",
+    "unicode_",
+    default=True,
     show_default=True,
-    help="The export format.",
+    help=(
+        "Export field values as Unicode text (default), or "
+        "TeX-encoded as stored in the .bib file (--no-unicode)."
+    ),
+)
+@click.option(
+    "--expand-strings/--no-expand-strings",
+    "expand_strings",
+    default=False,
+    show_default=True,
+    help=(
+        "Replace @string macro references by the macro's value. By "
+        "default, references are kept bare and the needed @string "
+        "definitions are prepended instead."
+    ),
+)
+@click.option(
+    "--field",
+    "field_args",
+    multiple=True,
+    metavar="FIELD",
+    help=(
+        "Export only these fields (case-insensitive) instead of the "
+        "full record; repeatable and comma-separated (e.g. "
+        "--field doi,title). A field not defined on an entry is "
+        "silently omitted for that entry. Mutually exclusive with "
+        "--minimal."
+    ),
+)
+@click.option(
+    "--minimal/--no-minimal",
+    default=False,
+    help=(
+        "Export only the fields needed to typeset a bibliography. "
+        "Mutually exclusive with --field."
+    ),
 )
 @click.option(
     "--outfile",
@@ -921,11 +1069,36 @@ def render(bibfile, citekeys, format_, style):
     help="Write to this file instead of printing to stdout.",
 )
 @click.pass_obj
-def export(bibfile, citekeys, format_, outfile):
-    """Export the entries with the given keys as bibtex text."""
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def export(
+    bibfile, citekeys, unicode_, expand_strings, field_args, minimal, outfile
+):
+    """Export the entries with the given keys as bibtex text.
+
+    By default, the export contains every field (with file
+    attachments and URLs as plain paths/URLs, and without the
+    date-added/date-modified bookkeeping fields), field values are
+    Unicode text, and @string macro references stay bare, with the
+    needed @string definitions prepended, so the output is
+    self-contained. --no-unicode exports the TeX-encoded values as
+    stored in the .bib file; --expand-strings replaces macro
+    references by their values (no @string definitions then);
+    --minimal or --field restrict which fields are exported."""
+    if minimal and field_args:
+        raise click.UsageError("--minimal and --field are mutually exclusive")
+    fields = (
+        "minimal" if minimal else (_split_field_names(field_args) or "full")
+    )
     lib = Library(bibfile)
     _check_keys(lib, citekeys)
-    text = lib.export(*citekeys, format=format_, outfile=outfile)
+    text = lib.export(
+        *citekeys,
+        unicode=unicode_,
+        expand_strings=expand_strings,
+        fields=fields,
+        outfile=outfile,
+    )
     if text is not None:
         _echo_block(text)
 
@@ -1680,14 +1853,6 @@ def _resolve_editor(editor_cmd, use_stdin, allow_empty=False):
 )
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
 @click.option(
-    "--format",
-    "format_",
-    type=click.Choice(["default", "raw", "minimal"]),
-    default="default",
-    show_default=True,
-    help="The format in which to present the entries in the editor.",
-)
-@click.option(
     "--editor",
     "editor_cmd",
     default=None,
@@ -1695,7 +1860,7 @@ def _resolve_editor(editor_cmd, use_stdin, allow_empty=False):
 )
 @_stdin_option
 @click.pass_obj
-def edit(bibfile, citekeys, format_, editor_cmd, use_stdin):
+def edit(bibfile, citekeys, editor_cmd, use_stdin):
     """Edit the entries with the given keys and merge the changes back
     into the library (modifies the `.bib` file in place). From a
     terminal, this opens the entries as BibTeX text in `$EDITOR` (or
@@ -1708,7 +1873,7 @@ def edit(bibfile, citekeys, format_, editor_cmd, use_stdin):
     lib = Library(bibfile)
     _check_keys(lib, citekeys)
     editor_cmd = _resolve_editor(editor_cmd, use_stdin)
-    lib.edit(*citekeys, format=format_, editor=editor_cmd)
+    lib.edit(*citekeys, editor=editor_cmd)
     lib.save()
 
 

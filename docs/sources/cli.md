@@ -176,11 +176,24 @@ GoerzSPP2019
 ### `show [KEY...]`
 
 Show the data of one or more entries: a `KEY (entry_type)` heading,
-the raw fields, and derived data (groups, keywords, files, URLs, and
-dates). Corresponds to indexing the library, `lib[key]`. With
+the fields, and derived data (groups, keywords, files, URLs, and
+dates). Corresponds to indexing the library, `lib[key]`, with the
+field values rendered for display as described below (rather than
+shown exactly as the `Entry` dict interface returns them). With
 `--json`: an object mapping each key to an object with `entry_type`,
 `key`, `fields`, `groups`, `keywords`, `files`, `urls`, `date_added`,
 and `date_modified`.
+
+Field values are rendered: as Unicode text (`--no-unicode` shows them
+TeX-encoded instead), and with a value that references an `@string`
+macro replaced by the macro's value. With `--no-expand-strings`, such
+a value prints as the bare macro name (see [`strings`](cli-strings)
+for the definitions), and in JSON output *every* field value
+uniformly becomes an object `{"macro": <name or null>, "value":
+<value or null>}` (`macro` is `null` for a literal value, `value` is
+`null` for an undefined macro) instead of a plain string -- one
+predictable shape per invocation, with a macro reference
+distinguishable from a literal value.
 
 `--field FIELD` narrows the output to the named fields (repeatable and
 comma-separated, case-insensitive), dropping the derived data; a field
@@ -243,10 +256,16 @@ year
 
 Print the value of one field of an entry. Corresponds to indexing an
 {class}`~bibdeskparser.Entry`, `lib[key][fieldname]`; field names are
-case-insensitive. A field whose value is a reference to an `@string`
-macro prints as the bare macro name (see [`strings`](cli-strings) for
-the definitions). Fails for a field not defined on the entry (see
-[`fields`](cli-fields)). With `--json`: a string.
+case-insensitive. The value is rendered as in [`show`](cli-show): as
+Unicode text (`--no-unicode` for TeX-encoded), with an `@string`
+macro reference replaced by the macro's value (`--no-expand-strings`
+for the bare macro name, which is also what the Python indexing
+itself returns; see [`strings`](cli-strings) for the definitions).
+Fails for a field not defined on the entry (see
+[`fields`](cli-fields)). With `--json`: a string; under
+`--no-expand-strings`, uniformly an object `{"macro": <name or
+null>, "value": <value or null>}` (`macro` is `null` for a literal
+value, `value` is `null` for an undefined macro).
 
 ```console
 $ bibdeskparser get_field tests/Refs/refs.bib GoerzJPB2011 title
@@ -450,14 +469,30 @@ $ bibdeskparser render tests/Refs/refs.bib GoerzA2023 --format tex
 ### `export KEY...`
 
 Export one or more entries as self-contained BibTeX text (including
-any `@string` macros they reference), via
-{py:meth}`~bibdeskparser.Library.export`. The `--format` option
-selects the export format (`default`, `raw`, or `minimal`);
+the definitions of any `@string` macros they reference), via
+{py:meth}`~bibdeskparser.Library.export`. Three independent option
+pairs control the output:
+
+- `--unicode/--no-unicode` (default: `--unicode`): field values as
+  Unicode text, or TeX-encoded as they would be written to the
+  `.bib` file.
+- `--expand-strings/--no-expand-strings` (default:
+  `--no-expand-strings`): with `--expand-strings`, `@string` macro
+  references are replaced by the macro's value and no `@string`
+  definitions are emitted; by default, references stay bare and the
+  needed definitions are prepended.
+- `--minimal`, or `--field FIELD` (repeatable and comma-separated;
+  the two are mutually exclusive): restrict the export to the fields
+  needed to typeset a bibliography, or to the named fields. By
+  default, every field is included (with file attachments and URLs
+  as plain paths/URLs; the `date-added`/`date-modified` bookkeeping
+  fields are omitted).
+
 `--outfile PATH` writes to a file instead of printing to stdout.
 
 ```console
-$ bibdeskparser export tests/Refs/refs.bib GoerzA2023 --format minimal \
-    --outfile out.bib
+$ bibdeskparser export tests/Refs/refs.bib GoerzA2023 --minimal \
+    --expand-strings --outfile out.bib
 ```
 
 ## Entries
@@ -994,10 +1029,9 @@ usage error rather than hanging on `$EDITOR`.
 ### `edit KEY...`
 
 Edit one or more entries (as BibTeX text) and merge the changes back
-into the library, via {py:meth}`~bibdeskparser.Library.edit`. The
-`--format` option (`default`, `raw`, or `minimal`) controls how the
-entries are presented; `--editor CMD` overrides the editor command
-(which defaults to `$EDITOR`).
+into the library, via {py:meth}`~bibdeskparser.Library.edit`;
+`--editor CMD` overrides the editor command (which defaults to
+`$EDITOR`).
 
 ```console
 $ bibdeskparser edit tests/Refs/refs.bib GoerzQ2022 --editor vim

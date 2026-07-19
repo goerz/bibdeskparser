@@ -17,9 +17,9 @@ text that {func}`edit_strings` presents in the editor (used by the
 command-line tool's `strings --bib` to produce a byte-identical
 baseline for `edit_strings --stdin`).
 
-Only the `"default"` export format can be round-tripped this way (see
-"Known limitations" below): re-parsing and merging back relies on its
-exact text shape.
+The editor is always presented with the default export form (Unicode
+values, `bdsk-file-N`/`bdsk-url-N` as plain paths/URLs): re-parsing
+and merging back relies on that exact text shape.
 
 In both functions, the `editor` argument may be a shell command string
 (or `None`, falling back to `$EDITOR`, then `"vi"`), or a *callable*
@@ -40,9 +40,6 @@ instead (see {func}`edit_entries`/{func}`edit_strings`).
   (also with a `UserWarning`). Renaming a citekey is not supported
   either, since that has wider implications (e.g. `Library` dict-key
   consistency) that are out of scope here.
-* Only `format="default"` is accepted (see {func}`edit_entries`'s
-  docstring for why); the parameter still exists for API symmetry with
-  `export_entries`/`render_entry`.
 * In {func}`edit_strings`, a macro whose deletion fails (because it is
   still referenced by an entry) is reported as a validation problem
   for that round and can be fixed by reopening the editor; however,
@@ -325,8 +322,8 @@ def _parse_and_validate_entries(text, library, entries, base_dir):
     `None`."""
     try:
         # An empty parse_stack (no middleware) keeps braces verbatim,
-        # matching what export_entries(..., format="default") wrote:
-        # in particular, bdsk-file-N fields are plain path strings
+        # matching what export_entries() (with default parameters)
+        # wrote: in particular, bdsk-file-N fields are plain path strings
         # here, not the base64 blob the normal read middleware stack
         # expects to decode, so running that stack over edited text
         # would fail or corrupt the paths. Field values are then
@@ -542,12 +539,11 @@ def _merge_strings(library, before, parsed_strings, allow_delete):
 # -- public API ----------------------------------------------------------- #
 
 
-def edit_entries(entries, library=None, format="default", editor=None):
-    # pylint: disable=redefined-builtin
+def edit_entries(entries, library=None, editor=None):
     """Edit `entries` together in `$EDITOR`, merging changes back.
 
     ```python
-    edit_entries(entries, library=None, format="default", editor=None)
+    edit_entries(entries, library=None, editor=None)
     ```
 
     Exports `entries` (an iterable of {class}`bibdeskparser.entry.Entry`)
@@ -567,13 +563,6 @@ def edit_entries(entries, library=None, format="default", editor=None):
       self-contained) and any `@string` changes detected in the edited
       text are merged back into `library.strings` (including
       macro-rename detection via `library.rename_string`).
-    * `format`: only `"default"` is accepted; raises `ValueError`
-      otherwise. Re-parsing the edited text relies on the exact shape
-      `export_entries(..., format="default")` produces (Unicode
-      values; `bdsk-file-N`/`bdsk-url-N` as plain paths/URLs); the
-      `"raw"` format is TeX-encoded rather than Unicode, and
-      `"minimal"` drops most fields -- neither can be merged back
-      correctly.
     * `editor`: a shell command string (may include arguments, e.g.
       `"code --wait"`), with resolution order: this argument, else
       `$EDITOR`, else `"vi"` -- or a callable taking the temporary
@@ -606,15 +595,6 @@ def edit_entries(entries, library=None, format="default", editor=None):
     is a validation problem: linked files are stored relative to the
     library's `.bib` file, so the library must be saved first.
     """
-    if format != "default":
-        raise ValueError(
-            "edit_entries only supports format='default': merging "
-            "changes back relies on the exact text shape produced by "
-            "export_entries(..., format='default') (unicode values, "
-            "bdsk-file-N/bdsk-url-N as plain paths/URLs); the 'raw' "
-            "format is TeX-encoded and 'minimal' drops most fields, "
-            "so neither can be parsed back and merged correctly"
-        )
     entries = list(entries)
     strings = dict(library.strings) if library is not None else None
     if library is None:
@@ -629,7 +609,7 @@ def edit_entries(entries, library=None, format="default", editor=None):
             if library_path is not None
             else None
         )
-    text = export_entries(entries, strings=strings, format="default")
+    text = export_entries(entries, strings=strings)
     path = _write_temp_file(text)
     try:
         while True:

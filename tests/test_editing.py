@@ -158,7 +158,7 @@ def test_keywords_line_deletion_clears_keywords():
     keywords (the stored field is removed entirely)."""
     entry = Entry("article", "Key2026", fields={"title": "T"})
     entry._set_keywords(("alpha", "beta"))
-    edit_entries([entry], editor=_drop_lines_editor("keywords"))
+    edit_entries([entry], editor=_drop_lines_editor("Keywords"))
     assert entry.keywords == ()
 
 
@@ -326,17 +326,18 @@ def test_edit_month_macro_is_not_undefined():
     edit_entries(
         [entry],
         library=bib,
-        editor=_replace_editor("title = {T}", "title = {T},\n\tmonth = jan"),
+        editor=_replace_editor(
+            "Title = {T},", "Title = {T},\n    Month = jan,"
+        ),
     )
     assert entry["month"] == "jan"
 
 
 def test_export_edit_roundtrip_invariant():
     """The text presented to the editor is byte-for-byte the
-    `export_entries(..., format="default")` output for the same
-    entries and strings -- i.e., exactly what `Library.export`
-    returns -- so piping an export back into a no-op edit is
-    guaranteed to be a no-op."""
+    default `export_entries` output for the same entries and strings
+    -- i.e., exactly what `Library.export` returns -- so piping an
+    export back into a no-op edit is guaranteed to be a no-op."""
     bib = Library()
     bib.strings["jpb"] = "J. Phys. B"
     entry = Entry("article", "Key2026", fields={"title": "T"})
@@ -349,9 +350,7 @@ def test_export_edit_roundtrip_invariant():
         library=bib,
         editor=lambda p: captured.append(p.read_text(encoding="utf-8")),
     )
-    expected = export_entries(
-        [entry], strings=dict(bib.strings), format="default"
-    )
+    expected = export_entries([entry], strings=dict(bib.strings))
     assert captured == [expected]
     assert bib.export("Key2026") == expected
     assert entry["title"] == "T"  # the no-op edit changed nothing
@@ -444,20 +443,7 @@ def test_edit_strings_failed_deletion_raises():
     assert strings["prl"] == "Physical Review Letters"  # already merged
 
 
-# -- format / editor resolution ----------------------------------------- #
-
-
-def test_format_raises_value_error(monkeypatch):
-    """A `format` other than `"default"` raises `ValueError` before
-    ever touching the filesystem or invoking an editor."""
-    entry = Entry("article", "Key2026", fields={"title": "T"})
-    monkeypatch.setattr(
-        subprocess, "run", Mock(side_effect=AssertionError("must not run"))
-    )
-    with pytest.raises(ValueError):
-        edit_entries([entry], format="raw")
-    with pytest.raises(ValueError):
-        edit_entries([entry], format="minimal")
+# -- editor resolution --------------------------------------------------- #
 
 
 def test_editor_resolution_defaults_to_vi(monkeypatch):
