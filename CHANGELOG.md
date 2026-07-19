@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Added: read-only `files KEY` and `urls KEY` CLI commands, listing an entry's file attachments and linked URLs, one per line (corresponding to the `Entry.files` and `Entry.urls` properties). `files` prints each attachment as an absolute path by default; `--relative` prints the stored form, relative to the `.bib` file's directory. [[#28]]
+* Added: a read-only `path` CLI command, printing the absolute path of the `.bib` file being operated on (the given `BIBFILE`, or the configured `default_bib_file`; corresponding to the `Library.path` property), and a read-only `config_path` CLI command, printing the absolute path of the discovered `bibdeskparser.toml` configuration file in effect for that `.bib` file (failing with an error when none is found). [[#28]]
 * Changed: `Library.export` and the `export` CLI command no longer take a `format` parameter. The formerly bundled aspects of the output are now controlled independently: `unicode=True|False` (`--unicode/--no-unicode`) selects Unicode or TeX-encoded field values, `expand_strings=True|False` (`--expand-strings/--no-expand-strings`) selects whether `@string` macro references are replaced by their values or kept bare with the needed `@string` definitions prepended, and `fields` -- `"full"`, `"minimal"`, or a list of field names (`--minimal`, `--field`) -- selects which fields are exported. To adapt: `format="default"` becomes no arguments (the defaults); `format="raw"` becomes `unicode=False` (which now consistently TeX-encodes the `@string` definitions as well, and re-encodes deterministically instead of exposing the in-memory stored form); `format="minimal"` becomes `fields="minimal"` (which now also prepends the needed `@string` definitions; add `expand_strings=True` for a standalone snippet without them, with the references replaced by their values instead of left dangling). [[#27]]
 * Changed: all exports now use a single layout, previously used only by `format="minimal"`: 4-space indentation, capitalized field names (`Author`, `Bdsk-File-1`), a comma after every field, and the closing brace on its own line. Reproducing the byte-exact BibDesk file layout remains the job of `Library.save`. [[#27]]
 * Changed: `Library.edit`, the underlying editing functions, and the `edit` CLI command no longer take a `format` parameter; editing always uses the default export form. [[#27]]
@@ -106,3 +108,4 @@ Initial release.
 [#23]: https://github.com/goerz/bibdeskparser/pull/23
 [#24]: https://github.com/goerz/bibdeskparser/pull/24
 [#27]: https://github.com/goerz/bibdeskparser/pull/27
+[#28]: https://github.com/goerz/bibdeskparser/pull/28

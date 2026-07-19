@@ -516,6 +516,66 @@ def test_editor(runner, bibfile):
     ]
 
 
+def test_files(runner, bibfile):
+    result = _run(runner, "files", bibfile, "GoerzJPB2011")
+    expected = bibfile.resolve().parent / "GoerzJPB2011.pdf"
+    assert result.output.splitlines() == [str(expected)]
+    assert expected.is_absolute()
+    assert expected.is_file()
+
+
+def test_files_relative(runner, bibfile):
+    result = _run(runner, "files", bibfile, "GoerzJPB2011", "--relative")
+    assert result.output.splitlines() == ["GoerzJPB2011.pdf"]
+
+
+def test_files_json(runner, bibfile):
+    result = _run(runner, "files", bibfile, "GoerzJPB2011", "--json")
+    expected = bibfile.resolve().parent / "GoerzJPB2011.pdf"
+    assert json.loads(result.output) == [str(expected)]
+    result = _run(
+        runner, "files", bibfile, "GoerzJPB2011", "--relative", "--json"
+    )
+    assert json.loads(result.output) == ["GoerzJPB2011.pdf"]
+
+
+def test_files_empty(runner, bibfile):
+    # SolaAAMOP2018 has no file attachments
+    result = _run(runner, "files", bibfile, "SolaAAMOP2018")
+    assert result.output == ""
+    result = _run(runner, "files", bibfile, "SolaAAMOP2018", "--json")
+    assert json.loads(result.output) == []
+
+
+def test_files_unknown_key(runner, bibfile):
+    result = runner.invoke(main, ["files", str(bibfile), "NoSuchKey"])
+    assert result.exit_code == 1
+    assert "Error: unknown citation key 'NoSuchKey'" in result.stderr
+
+
+def test_urls(runner, bibfile):
+    result = _run(runner, "urls", bibfile, "TomzaPRA2012")
+    assert result.output.splitlines() == [
+        "http://link.aps.org/doi/10.1103/PhysRevA.86.043424",
+        "http://dx.doi.org/10.1103/PhysRevA.86.043424",
+    ]
+
+
+def test_urls_json(runner, bibfile):
+    result = _run(runner, "urls", bibfile, "KochJPCM2016", "--json")
+    assert json.loads(result.output) == [
+        "http://dx.doi.org/10.1088/0953-8984/28/21/213001"
+    ]
+
+
+def test_urls_empty(runner, bibfile):
+    # MorzhinRMS2019 has a file attachment but no linked URLs
+    result = _run(runner, "urls", bibfile, "MorzhinRMS2019")
+    assert result.output == ""
+    result = _run(runner, "urls", bibfile, "MorzhinRMS2019", "--json")
+    assert json.loads(result.output) == []
+
+
 def test_search(runner, bibfile):
     result = _run(runner, "search", bibfile, "Universitaet Kassel")
     assert result.output.splitlines() == ["GoerzPhd2015"]
@@ -665,6 +725,40 @@ def test_timestamp_json(runner, bibfile):
     result = _run(runner, "timestamp", bibfile, "--json")
     expected = _load(bibfile).timestamp.isoformat()
     assert json.loads(result.output) == expected
+
+
+def test_path(runner, bibfile):
+    result = _run(runner, "path", bibfile)
+    assert result.output.splitlines() == [str(bibfile.resolve())]
+    result = _run(runner, "path", bibfile, "--json")
+    assert json.loads(result.output) == str(bibfile.resolve())
+
+
+def test_path_default_bib_file(runner, bibfile, tmp_path, monkeypatch):
+    """`path` resolves the configured `default_bib_file`."""
+    (tmp_path / "bibdeskparser.toml").write_text(
+        'default_bib_file = "refs.bib"\n', encoding="utf-8"
+    )
+    monkeypatch.chdir(tmp_path)
+    result = _run(runner, "path")
+    assert result.output.splitlines() == [str(bibfile.resolve())]
+
+
+def test_config_path(runner, bibfile, tmp_path):
+    """`config_path` finds the config next to the `.bib` file."""
+    toml = tmp_path / "bibdeskparser.toml"
+    toml.write_text("", encoding="utf-8")
+    result = _run(runner, "config_path", bibfile)
+    assert result.output.splitlines() == [str(toml.resolve())]
+    result = _run(runner, "config_path", bibfile, "--json")
+    assert json.loads(result.output) == str(toml.resolve())
+
+
+def test_config_path_none(runner, bibfile):
+    """Without a discoverable config, `config_path` fails cleanly."""
+    result = runner.invoke(main, ["config_path", str(bibfile)])
+    assert result.exit_code == 1
+    assert "no configuration file found" in result.stderr
 
 
 def test_render(runner, bibfile):

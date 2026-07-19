@@ -53,10 +53,12 @@ assign to and delete from {py:attr}`~bibdeskparser.Library.strings`,
 `fields`/`get_field`/`set_field`/`delete_field` correspond to
 iterating over, indexing, assigning to, and `del` on a single
 {class}`~bibdeskparser.Entry` (its fields). Commands that read one
-entry's derived data -- `author`, `editor`, `groups KEY`,
-`keywords KEY` -- correspond to the same-named
+entry's derived data -- `author`, `editor`, `files`, `urls`,
+`groups KEY`, `keywords KEY` -- correspond to the same-named
 {class}`~bibdeskparser.Entry` properties, and `set_type` assigns
-{py:attr}`~bibdeskparser.Entry.entry_type`.
+{py:attr}`~bibdeskparser.Entry.entry_type`. The one command with no
+API counterpart is [`config_path`](cli-config-path), which reports
+the discovered configuration file.
 
 Read-only commands print their result to stdout. Mutating commands
 load the library, apply the change, save the file back in place, and
@@ -302,6 +304,41 @@ $ bibdeskparser author tests/Refs/refs.bib KochJPCM2016 --json
 ]
 ```
 
+(cli-files)=
+
+### `files KEY`
+
+List the file attachments of an entry (the `bdsk-file-N` fields),
+one per line, in numeric order; see
+{py:attr}`~bibdeskparser.Entry.files`. By default, each attachment is
+printed as an absolute path; with `--relative`, as stored in the
+`.bib` file, relative to its directory. An entry without attachments
+prints nothing. With `--json`: an array of strings.
+
+```console
+$ bibdeskparser files tests/Refs/refs.bib GoerzJPB2011 --relative
+GoerzJPB2011.pdf
+```
+
+Attachments are modified with [`add_file`](cli-add-file),
+`replace_file`, `unlink_file`, and [`rename_file`](cli-rename-file).
+
+(cli-urls)=
+
+### `urls KEY`
+
+List the URLs linked to an entry (the `bdsk-url-N` fields), one per
+line, in numeric order; see {py:attr}`~bibdeskparser.Entry.urls`. An
+entry without linked URLs prints nothing. With `--json`: an array of
+strings. Linked URLs are modified with `add_url`, `replace_url`, and
+`remove_url`.
+
+```console
+$ bibdeskparser urls tests/Refs/refs.bib TomzaPRA2012
+http://link.aps.org/doi/10.1103/PhysRevA.86.043424
+http://dx.doi.org/10.1103/PhysRevA.86.043424
+```
+
 ### `search QUERY`
 
 List the keys of the entries matching `QUERY`, best match first, one
@@ -408,6 +445,35 @@ or `null`.
 ```console
 $ bibdeskparser timestamp tests/Refs/refs.bib
 2026-07-18T16:02:00-04:00
+```
+
+### `path`
+
+Print the absolute path of the `.bib` file being operated on: the
+given `BIBFILE`, or the configured `default_bib_file` when `BIBFILE`
+is omitted. See {py:attr}`~bibdeskparser.Library.path`. With
+`--json`: a string.
+
+```console
+$ bibdeskparser path
+/Users/mg/Refs/refs.bib
+```
+
+(cli-config-path)=
+
+### `config_path`
+
+Print the absolute path of the `bibdeskparser.toml` configuration
+file in effect for the `.bib` file being operated on. Discovery
+checks the directory of the `.bib` file, then the file named by
+`$BIBDESKPARSER_CONFIG`, then the XDG location; first found wins (see
+[Configuration](configuration)). If no configuration file is found,
+the command fails with an error (the built-in defaults are then in
+effect). With `--json`: a string.
+
+```console
+$ bibdeskparser config_path
+/Users/mg/.config/bibdeskparser/bibdeskparser.toml
 ```
 
 (cli-eval-format-spec)=
@@ -899,6 +965,9 @@ $ bibdeskparser rename_string tests/Refs/refs.bib quant quantum
 
 ## Files
 
+The commands in this section modify an entry's file attachments; the
+read-only [`files`](cli-files) command lists them.
+
 (cli-add-file)=
 
 ### `add_file KEY FILENAME`
@@ -985,6 +1054,9 @@ path without moving anything, use
 [`eval_format_spec --filename`](cli-eval-format-spec).
 
 ## URLs
+
+The commands in this section modify an entry's linked URLs; the
+read-only [`urls`](cli-urls) command lists them.
 
 ### `add_url KEY URL`
 
