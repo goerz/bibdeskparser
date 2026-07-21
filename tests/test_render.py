@@ -475,6 +475,46 @@ def test_render_more_entry_types(refs, key, snippets):
     assert "()" not in rendered
 
 
+def test_render_inbook_includes_publisher_and_series(refs):
+    """An `inbook` entry renders its publisher (with `\\&` converted),
+    series and volume (with `~` converted), chapter, and pages."""
+    rendered = render_entry(refs["Nolting1997Coulomb"])
+    assert "Vieweg & Teubner Verlag" in rendered
+    assert "Grundkurs Theoretische Physik Vol. 5.2" in rendered
+    assert "Chapter 6" in rendered
+    assert "p.\N{NO-BREAK SPACE}100" in rendered
+
+
+def test_render_inbook_with_booktitle(refs):
+    """An `inbook` entry with a `booktitle` renders it like an
+    `incollection` entry."""
+    rendered = render_entry(refs["NielsenChuangCh10QEC"])
+    assert "In: *Quantum Computation and Quantum Information*" in rendered
+    assert "Cambridge University Press (2000)" in rendered
+    assert "Chapter 10" in rendered
+
+
+def test_render_incollection_includes_editors_and_pages(refs):
+    """An `incollection` entry renders its editors, series/volume,
+    and pages (like an `inproceedings` entry already does)."""
+    rendered = render_entry(refs["Giles2008"])
+    assert "edited by" in rendered
+    assert "C. H. Bischof" in rendered
+    assert (
+        "Lecture Notes in Computational Science and Engineering Vol. 64"
+        in rendered
+    )
+    assert "pp.\N{NO-BREAK SPACE}35–44" in rendered
+
+
+def test_render_proceedings_includes_publisher_and_series(refs):
+    """A `proceedings` entry renders its series and publisher like a
+    `book` (previously, `proceedings` fell back to just the year)."""
+    rendered = render_entry(refs["AnderssonSGS2014"])
+    assert "Scottish Graduate Series" in rendered
+    assert "Springer (2014)" in rendered
+
+
 def test_render_entries_numbers_and_wraps(refs):
     """`render_entries` separates entries by a blank line per format."""
     entries = [refs["GoerzDiploma2010"], refs["GoerzPhd2015"]]

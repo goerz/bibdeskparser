@@ -21,8 +21,10 @@ following `Entry.entry_type` values:
 - `mastersthesis`/`phdthesis`: `label, school (year)`, where `label` is
   `"Master's thesis"`/`"Ph.D. thesis"` unless overridden by a `type`
   field.
-- `book`/`incollection`: `publisher, address (year)`, prefixed by `In:
-  *booktitle*, ` for `incollection`.
+- `book`/`inbook`/`incollection`/`proceedings`: `series Vol. N,
+  publisher, address (year), Chapter N, pages` (each piece only if
+  present), prefixed by `In: *booktitle*, ` for `inbook`/
+  `incollection`, and by `edited by ...` if there are editors.
 - `techreport`: `Technical Report, institution (year)`.
 
 Any other entry type (e.g. `misc`, `unpublished`) falls back to a
@@ -595,30 +597,50 @@ def _format_published_in_thesis(entry, fmt):
 
 
 def _format_published_in_book(entry, fmt):
-    """Published-in for `book`/`incollection`: publisher, address,
-    year; `incollection` is prefixed by the booktitle."""
-    prefix = ""
-    if entry.entry_type.lower() == "incollection":
+    """Published-in for the book family (`book`, `inbook`,
+    `incollection`, `proceedings`): booktitle and editors
+    (`inbook`/`incollection` are prefixed by `In: *booktitle*`), then
+    series/volume, publisher, and address, with the year in parens,
+    then chapter and pages."""
+    etype = entry.entry_type.lower()
+    head = ""
+    if etype in ("inbook", "incollection"):
         booktitle = _detex(
             entry.get("booktitle", "").strip(), fmt, drop_braces=True
         )
         if booktitle:
-            prefix = f"In: {_italic(booktitle, fmt)}"
+            head = f"In: {_italic(booktitle, fmt)}"
+    if entry.editor:
+        editor_names = _format_editors(entry)
+        head = (
+            f"{head}, edited by {editor_names}"
+            if head
+            else f"edited by {editor_names}"
+        )
 
-    publisher = entry.get("publisher", "").strip()
+    series = _detex(entry.get("series", "").strip(), fmt)
+    volume = _detex(entry.get("volume", "").strip(), fmt)
+    if volume and not volume.lower().startswith("vol"):
+        volume = f"Vol. {volume}"
+    series_volume = " ".join(bit for bit in (series, volume) if bit)
+
+    publisher = _detex(entry.get("publisher", "").strip(), fmt)
     address = entry.get("address", "").strip()
     year = entry.get("year", "").strip()
 
-    pub_addr = ", ".join(bit for bit in (publisher, address) if bit)
-    tail = f"({year})" if year else ""
-    if pub_addr and tail:
-        rest = f"{pub_addr} {tail}"
-    else:
-        rest = pub_addr or tail
+    rest = ", ".join(bit for bit in (series_volume, publisher, address) if bit)
+    if year:
+        rest = f"{rest} ({year})" if rest else f"({year})"
 
-    if prefix:
-        return f"{prefix}, {rest}" if rest else prefix
-    return rest
+    result = ", ".join(piece for piece in (head, rest) if piece)
+    chapter = entry.get("chapter", "").strip()
+    if chapter:
+        chapter_segment = f"Chapter {chapter}"
+        result = f"{result}, {chapter_segment}" if result else chapter_segment
+    pages = _format_pages(entry)
+    if pages:
+        result = f"{result}, {pages}" if result else pages
+    return result
 
 
 def _format_published_in_techreport(entry):
@@ -658,7 +680,7 @@ def _format_published_in(entry, fmt):
         return _format_published_in_inproceedings(entry, fmt)
     if etype in ("mastersthesis", "phdthesis"):
         return _format_published_in_thesis(entry, fmt)
-    if etype in ("book", "incollection"):
+    if etype in ("book", "inbook", "incollection", "proceedings"):
         return _format_published_in_book(entry, fmt)
     if etype == "techreport":
         return _format_published_in_techreport(entry)
