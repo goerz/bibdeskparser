@@ -11,12 +11,14 @@ from bibdeskparser.entry import Entry
 from bibdeskparser.middleware import parse_stack
 from bibdeskparser.render import (
     _bold,
+    _detex,
     _format_authors,
     _format_eprint,
     _format_pages,
     _italic,
     _join_parts,
     _link,
+    _mono,
     render_entries,
     render_entry,
 )
@@ -387,6 +389,61 @@ def test_render_title_strips_protection_braces(refs):
     assert "}" not in rendered
 
 
+# -- TeX markup in stored field values ---------------------------------- #
+
+
+@pytest.mark.parametrize("fmt", ["markdown", "html"])
+@pytest.mark.parametrize(
+    "key", ["GoerzSPP2019", "GoerzPhd2015", "SciPy", "jax"]
+)
+def test_render_no_raw_tex_commands(refs, key, fmt):
+    """TeX markup in stored fields (`\\url`, `\\href`, `\\texttt`,
+    `\\textit`) must not appear verbatim in markdown/html output."""
+    rendered = render_entry(refs[key], format=fmt)
+    for command in ("\\url", "\\href", "\\texttt", "\\textit"):
+        assert command not in rendered
+
+
+def test_render_note_tex_commands_markdown(refs):
+    """`\\url` and `\\href` in a note render as markdown links, and
+    `\\texttt` as a code span."""
+    rendered = render_entry(refs["GoerzPhd2015"])
+    assert "[https://michaelgoerz.net](https://michaelgoerz.net)" in rendered
+    assert "[Github](https://github.com/goerz/dissertation)" in rendered
+    rendered = render_entry(refs["GoerzSPP2019"])
+    assert "The `krotov` Python package" in rendered
+
+
+def test_render_note_tex_commands_html(refs):
+    """`\\url` and `\\textit` in a note render as HTML markup."""
+    rendered = render_entry(refs["SciPy"], format="html")
+    assert '<a href="https://scipy.org">https://scipy.org</a>' in rendered
+    rendered = render_entry(refs["DevoretLH1995"], format="html")
+    assert "<i>Les Houches Summer School</i>" in rendered
+
+
+@pytest.mark.parametrize("fmt", ["markdown", "html"])
+def test_render_texttt_title(refs, fmt):
+    """`\\texttt{JAX}` in a title renders as monospace markup; in
+    particular, the protection-brace stripping must not mangle it
+    into `\\textttJAX`."""
+    rendered = render_entry(refs["jax"], format=fmt)
+    if fmt == "markdown":
+        assert "*`JAX`: composable transformations" in rendered
+    else:
+        assert "<i><code>JAX</code>: composable transformations" in rendered
+
+
+def test_render_tex_format_keeps_tex_markup(refs):
+    """For tex output, TeX commands in stored fields pass through
+    verbatim (including their braces)."""
+    rendered = render_entry(refs["jax"], format="tex")
+    assert "\\texttt{JAX}: composable transformations" in rendered
+    rendered = render_entry(refs["GoerzPhd2015"], format="tex")
+    assert "\\url{https://michaelgoerz.net}" in rendered
+    assert "\\href{https://github.com/goerz/dissertation}{Github}" in rendered
+
+
 @pytest.mark.parametrize(
     "key, snippets",
     [
@@ -416,6 +473,75 @@ def test_render_more_entry_types(refs, key, snippets):
         assert snippet in rendered
     # a missing year must not leave empty parentheses behind
     assert "()" not in rendered
+
+
+def test_render_inbook_includes_publisher_and_series(refs):
+    """An `inbook` entry renders its publisher (with `\\&` converted),
+    series and volume (with `~` converted), chapter, and pages."""
+    rendered = render_entry(refs["Nolting1997Coulomb"])
+    assert "Vieweg & Teubner Verlag" in rendered
+    assert "Grundkurs Theoretische Physik Vol. 5.2" in rendered
+    assert "Chapter 6" in rendered
+    assert "p.\N{NO-BREAK SPACE}100" in rendered
+
+
+def test_render_inbook_with_booktitle(refs):
+    """An `inbook` entry with a `booktitle` renders it like an
+    `incollection` entry."""
+    rendered = render_entry(refs["NielsenChuangCh10QEC"])
+    assert "In: *Quantum Computation and Quantum Information*" in rendered
+    assert "Cambridge University Press (2000)" in rendered
+    assert "Chapter 10" in rendered
+
+
+def test_render_incollection_includes_editors_and_pages(refs):
+    """An `incollection` entry renders its editors, series/volume,
+    and pages (like an `inproceedings` entry already does)."""
+    rendered = render_entry(refs["Giles2008"])
+    assert "edited by" in rendered
+    assert "C. H. Bischof" in rendered
+    assert (
+        "Lecture Notes in Computational Science and Engineering Vol. 64"
+        in rendered
+    )
+    assert "pp.\N{NO-BREAK SPACE}35–44" in rendered
+
+
+def test_render_proceedings_includes_publisher_and_series(refs):
+    """A `proceedings` entry renders its series and publisher like a
+    `book` (previously, `proceedings` fell back to just the year)."""
+    rendered = render_entry(refs["AnderssonSGS2014"])
+    assert "Scottish Graduate Series" in rendered
+    assert "Springer (2014)" in rendered
+
+
+def test_render_editor_only_proceedings_shows_editors(refs):
+    """A `proceedings` entry without authors renders its editors in
+    the authors segment, marked "(eds.)", and does not repeat them as
+    "edited by ..." in the published-in segment."""
+    entry = refs["AnderssonSGS2014"]
+    assert "author" not in entry
+    rendered = render_entry(entry)
+    assert rendered.startswith("E. Andersson and P. Öhberg (eds.). ")
+    assert "edited by" not in rendered
+
+
+def test_render_editor_only_misc_shows_editor(refs):
+    """A `misc` entry with only an editor renders that editor, with
+    the singular "(ed.)" marker."""
+    entry = refs["QCRoadmap"]
+    assert "author" not in entry
+    rendered = render_entry(entry)
+    assert rendered.startswith("T. Heinrichs (ed.). ")
+
+
+def test_render_author_and_editor_keeps_edited_by(refs):
+    """An entry with both authors and editors still renders the
+    editors as "edited by ..." in the published-in segment."""
+    rendered = render_entry(refs["Giles2008"])
+    assert rendered.startswith("M. B. Giles. ")
+    assert "edited by C. H. Bischof" in rendered
+    assert "(eds.)" not in rendered
 
 
 def test_render_entries_numbers_and_wraps(refs):
@@ -513,6 +639,42 @@ def test_format_pages_absent():
     """No `pages` field: pages segment is empty."""
     entry = _make_entry("article", "k")
     assert _format_pages(entry) == ""
+
+
+def test_detex_nested_commands():
+    """Commands nested in a `\\href` label are converted recursively."""
+    assert _detex(r"\href{https://x.org}{\texttt{code}}", "markdown") == (
+        "[`code`](https://x.org)"
+    )
+
+
+def test_detex_escapes_and_nonbreaking_space():
+    """Escaped characters lose their backslash and `~` becomes a
+    space in markdown/html output; tex output is untouched."""
+    assert _detex(r"Vieweg \& Teubner", "markdown") == "Vieweg & Teubner"
+    assert _detex(r"Vol.~5.2", "html") == "Vol. 5.2"
+    assert _detex(r"Vieweg \& Teubner, Vol.~5.2", "tex") == (
+        r"Vieweg \& Teubner, Vol.~5.2"
+    )
+
+
+def test_detex_unknown_command_verbatim():
+    """An unrecognized command passes through verbatim, with its
+    braced argument intact even under `drop_braces`."""
+    text = r"in \textsc{Small Caps} and {Protected} text"
+    assert _detex(text, "markdown") == text
+    assert _detex(text, "markdown", drop_braces=True) == (
+        r"in \textsc{Small Caps} and Protected text"
+    )
+
+
+def test_detex_malformed_verbatim():
+    """Unbalanced braces or a missing `\\href` label pass through
+    verbatim."""
+    assert _detex(r"\texttt{oops", "markdown") == r"\texttt{oops"
+    assert _detex(r"see \href{https://x.org} now", "markdown") == (
+        r"see \href{https://x.org} now"
+    )
 
 
 def test_format_eprint_with_primaryclass():
@@ -728,6 +890,18 @@ def test_render_published_with_hal_eprint(refs):
     assert "arXiv" not in rendered
 
 
+def test_render_published_with_biorxiv_eprint(refs):
+    """A published article with a bioRxiv eprint: the eprint segment
+    names bioRxiv (canonicalized from `archiveprefix = {biorxiv}`)
+    and links to biorxiv.org, not arxiv.org."""
+    entry = refs["KatrukhaNC2017"]
+    assert entry["archiveprefix"].lower() == "biorxiv"
+    rendered = render_entry(entry)
+    assert "bioRxiv:089284" in rendered
+    assert "https://www.biorxiv.org/content/10.1101/089284" in rendered
+    assert "arXiv" not in rendered
+
+
 # -- _join_parts punctuation rules -------------------------------------- #
 
 
@@ -830,6 +1004,19 @@ def test_italic(fmt, expected):
 def test_bold(fmt, expected):
     """`_bold` formats text per format."""
     assert _bold("text", fmt) == expected
+
+
+@pytest.mark.parametrize(
+    "fmt, expected",
+    [
+        ("markdown", "`text`"),
+        ("tex", "\\texttt{text}"),
+        ("html", "<code>text</code>"),
+    ],
+)
+def test_mono(fmt, expected):
+    """`_mono` formats text per format."""
+    assert _mono("text", fmt) == expected
 
 
 # -- format validation --------------------------------------------------- #

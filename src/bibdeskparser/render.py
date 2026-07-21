@@ -2,7 +2,9 @@ r"""Render citations in an APS-journal-like numeric style.
 
 A citation is assembled from *authors*, *title*, *published-in*,
 *eprint*, and *note* segments, each rendered independently and then
-joined with sentence-like punctuation.
+joined with sentence-like punctuation. An entry without authors (e.g.
+an edited volume) renders its editors in the *authors* segment,
+marked with an `(ed.)`/`(eds.)` suffix.
 
 Three output formats are supported (the `format` argument of
 {func}`render_entry`/{func}`render_entries`): `"markdown"` (the default),
@@ -21,13 +23,27 @@ following `Entry.entry_type` values:
 - `mastersthesis`/`phdthesis`: `label, school (year)`, where `label` is
   `"Master's thesis"`/`"Ph.D. thesis"` unless overridden by a `type`
   field.
-- `book`/`incollection`: `publisher, address (year)`, prefixed by `In:
-  *booktitle*, ` for `incollection`.
+- `book`/`inbook`/`incollection`/`proceedings`: `series Vol. N,
+  publisher, address (year), Chapter N, pages` (each piece only if
+  present), prefixed by `In: *booktitle*, ` for `inbook`/
+  `incollection`, and by `edited by ...` if there are editors (and
+  authors: without authors, the editors render in the *authors*
+  segment instead; the same applies to `inproceedings`).
 - `techreport`: `Technical Report, institution (year)`.
 
 Any other entry type (e.g. `misc`, `unpublished`) falls back to a
 minimal `(year)` (or `""` if there is no year); such types are expected
 to carry their full citation information in the `note` field instead.
+
+TeX markup that BibDesk's TeX-to-Unicode conversion leaves in field
+values (typically in `note`, occasionally in a title) is converted to
+the output format: `\url{...}` and `\href{...}{...}` become
+hyperlinks, `\texttt{...}` becomes monospace text, `\textit{...}`/
+`\emph{...}` italics, and `\textbf{...}` bold; the escaped characters
+`\&`, `\%`, `\$`, `\#`, and `\_` lose their backslash, and the
+non-breaking space `~` becomes a plain space. Any other TeX command
+passes through verbatim, together with its braced argument. For
+`format="tex"`, all TeX markup is emitted unchanged.
 
 A *preprint-only* entry -- a `misc` (or `unpublished`) entry with
 an `eprint` from a recognized preprint archive, or any entry whose
@@ -114,27 +130,30 @@ _BRACES_RE = re.compile(r"[{}]")
 
 _PAGE_RANGE_RE = re.compile(r"(\d+)-+(\d+)")
 
-#: Markup our own `_link`/`_italic`/`_bold` primitives may produce at
-#: the *start* of a rendered segment, longest-first so that, e.g.,
-#: `"**"` (bold) is stripped before `"*"` (italic).
+#: A TeX command with a brace-delimited argument, e.g. `\texttt{`.
+_TEX_COMMAND_RE = re.compile(r"\\([a-zA-Z]+)\{")
+
+#: The TeX commands `_detex` converts to output markup (any other
+#: command passes through verbatim, together with its argument).
+_TEX_COMMANDS = ("url", "href", "texttt", "textit", "emph", "textbf")
+
+#: Escaped special characters and the non-breaking space `~`, which
+#: `_detex` converts to plain text outside of TeX output.
+_TEX_ESCAPE_RE = re.compile(r"\\([&%$#_])|~")
+
+#: Markup our own `_link`/`_italic`/`_bold`/`_mono` primitives may
+#: produce at the *start* of a rendered segment, longest-first so
+#: that, e.g., `"**"` (bold) is stripped before `"*"` (italic).
 _LEADING_MARKUP_RE = re.compile(
-    r"^(\*\*|\*|\[|\\textbf\{|\\textit\{|\\href\{[^}]*\}\{"
-    r'|<b>|<i>|<a href="[^"]*">)'
+    r"^(\*\*|\*|`|\[|\\textbf\{|\\textit\{|\\texttt\{|\\href\{[^}]*\}\{"
+    r'|<b>|<i>|<code>|<a href="[^"]*">)'
 )
 
 #: Markup our own primitives may produce at the *end* of a rendered
 #: segment.
-_TRAILING_MARKUP_RE = re.compile(r"(\*\*|\*|\}|</b>|</i>|</a>|\]\([^)]*\))$")
-
-
-def _strip_braces(text):
-    """Remove (but not the contents of) any `{...}` from `text`.
-
-    Used for `title`/`type`/`booktitle` fields, which may carry BibDesk
-    title-casing "protection" braces (LaTeX-only, invisible to a
-    reader).
-    """
-    return _BRACES_RE.sub("", text)
+_TRAILING_MARKUP_RE = re.compile(
+    r"(\*\*|\*|`|\}|</b>|</i>|</code>|</a>|\]\([^)]*\))$"
+)
 
 
 def _link(text, url, fmt):
@@ -169,6 +188,99 @@ def _bold(text, fmt):
     if fmt == "tex":
         return f"\\textbf{{{text}}}"
     return f"<b>{text}</b>"
+
+
+def _mono(text, fmt):
+    """Format `text` in monospace in format `fmt`."""
+    if fmt == "markdown":
+        return f"`{text}`"
+    if fmt == "tex":
+        return f"\\texttt{{{text}}}"
+    return f"<code>{text}</code>"
+
+
+def _matching_brace(text, start):
+    """Return the index of the `}` matching the `{` at index `start`
+    in `text`, or -1 if the braces are unbalanced."""
+    depth = 0
+    for i in range(start, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return i
+    return -1
+
+
+def _plain_text(chunk, fmt, drop_braces):
+    """Convert TeX in a command-free `chunk` of text (see `_detex`)."""
+    if drop_braces:
+        chunk = _BRACES_RE.sub("", chunk)
+    if fmt != "tex":
+        chunk = _TEX_ESCAPE_RE.sub(
+            lambda m: m.group(1) if m.group(1) else " ", chunk
+        )
+    return chunk
+
+
+def _detex(text, fmt, drop_braces=False):
+    r"""Convert TeX markup in `text` to `fmt` output.
+
+    Converts the commands in `_TEX_COMMANDS` -- `\url{...}` and
+    `\href{...}{...}` to hyperlinks, `\texttt{...}` to monospace,
+    `\textit{...}`/`\emph{...}` to italics, `\textbf{...}` to bold
+    (recursing into their arguments) -- the escaped characters
+    `\& \% \$ \# \_` to the bare character, and `~` to a space. Any
+    other command, and any command with unbalanced/missing braces,
+    passes through verbatim, together with its braced argument. For
+    `fmt="tex"`, commands and escapes are emitted unchanged.
+
+    With `drop_braces=True`, braces *outside* a command argument are
+    removed: BibDesk title-casing "protection" braces (LaTeX-only,
+    invisible to a reader) in `title`/`type`/`booktitle` fields.
+    """
+    out = []
+    pos = 0
+    while pos < len(text):
+        match = _TEX_COMMAND_RE.search(text, pos)
+        if match is None:
+            out.append(_plain_text(text[pos:], fmt, drop_braces))
+            break
+        out.append(_plain_text(text[pos : match.start()], fmt, drop_braces))
+        command = match.group(1)
+        close = _matching_brace(text, match.end() - 1)
+        if close == -1:  # unbalanced braces: pass through verbatim
+            out.append(text[match.start() :])
+            break
+        arg = text[match.end() : close]
+        pos = close + 1
+        if command not in _TEX_COMMANDS:
+            out.append(text[match.start() : pos])
+            continue
+        label = None
+        if command == "href":
+            if text[pos : pos + 1] == "{":
+                label_close = _matching_brace(text, pos)
+                if label_close != -1:
+                    label = text[pos + 1 : label_close]
+                    pos = label_close + 1
+            if label is None:  # no label argument: pass through
+                out.append(text[match.start() : pos])
+                continue
+        if fmt == "tex":
+            out.append(text[match.start() : pos])
+        elif command == "url":
+            out.append(_link(arg, arg, fmt))
+        elif command == "href":
+            out.append(_link(_detex(label, fmt), arg, fmt))
+        elif command == "texttt":
+            out.append(_mono(_detex(arg, fmt), fmt))
+        elif command in ("textit", "emph"):
+            out.append(_italic(_detex(arg, fmt), fmt))
+        else:  # textbf
+            out.append(_bold(_detex(arg, fmt), fmt))
+    return "".join(out)
 
 
 def _strip_leading_markup(text):
@@ -308,12 +420,22 @@ def _join_names(names, et_al_limit=None, et_al_text=None):
 
 
 def _format_authors(entry, fmt):
-    """Format `entry.author` (truncated to "et al." beyond 6 names)."""
-    names = entry.author
-    if not names:
-        return ""
+    """Format `entry.author` (truncated to "et al." beyond 6 names).
+
+    An entry without authors falls back to `entry.editor`, marked
+    with an `"(ed.)"`/`"(eds.)"` suffix -- standard practice for
+    edited volumes (a `proceedings` entry in particular can never
+    have an author)."""
     et_al_text = _italic("et al.", fmt)
-    return _join_names(names, et_al_limit=6, et_al_text=et_al_text)
+    names = entry.author
+    if names:
+        return _join_names(names, et_al_limit=6, et_al_text=et_al_text)
+    editors = entry.editor
+    if not editors:
+        return ""
+    suffix = "(eds.)" if len(editors) > 1 else "(ed.)"
+    joined = _join_names(editors, et_al_limit=6, et_al_text=et_al_text)
+    return f"{joined} {suffix}"
 
 
 def _format_editors(entry):
@@ -333,7 +455,7 @@ def _format_title(entry, fmt):
     title = entry.get("title", "").strip()
     if not title:
         return ""
-    title = _italic(_strip_braces(title), fmt)
+    title = _italic(_detex(title, fmt, drop_braces=True), fmt)
 
     url = None
     if entry.urls:
@@ -434,7 +556,9 @@ def _format_published_in_article(entry, fmt):
 def _format_published_in_inproceedings(entry, fmt):
     """Published-in for `inproceedings`: booktitle/editors, then
     organization/address/month/year in parens, then pages."""
-    booktitle = _strip_braces(entry.get("booktitle", "").strip())
+    booktitle = _detex(
+        entry.get("booktitle", "").strip(), fmt, drop_braces=True
+    )
     editors = entry.editor
     organization = entry.get("organization", "").strip()
     address = entry.get("address", "").strip()
@@ -443,7 +567,8 @@ def _format_published_in_inproceedings(entry, fmt):
     pages = _format_pages(entry)
 
     head = f"In: {_italic(booktitle, fmt)}" if booktitle else ""
-    if editors:
+    if editors and entry.author:
+        # without authors, the editors render in the authors segment
         editor_names = _format_editors(entry)
         head = (
             f"{head}, edited by {editor_names}"
@@ -462,7 +587,7 @@ def _format_published_in_inproceedings(entry, fmt):
     return result
 
 
-def _format_published_in_thesis(entry):
+def _format_published_in_thesis(entry, fmt):
     """Published-in for `mastersthesis`/`phdthesis`: label, school,
     year. `label` defaults to "Master's thesis"/"Ph.D. thesis" but is
     overridden by a `type` field, if present."""
@@ -472,7 +597,11 @@ def _format_published_in_thesis(entry):
         else "Ph.D. thesis"
     )
     type_field = entry.get("type", "").strip()
-    label = _strip_braces(type_field) if type_field else default_label
+    label = (
+        _detex(type_field, fmt, drop_braces=True)
+        if type_field
+        else default_label
+    )
     school = entry.get("school", "").strip()
     year = entry.get("year", "").strip()
 
@@ -483,28 +612,51 @@ def _format_published_in_thesis(entry):
 
 
 def _format_published_in_book(entry, fmt):
-    """Published-in for `book`/`incollection`: publisher, address,
-    year; `incollection` is prefixed by the booktitle."""
-    prefix = ""
-    if entry.entry_type.lower() == "incollection":
-        booktitle = _strip_braces(entry.get("booktitle", "").strip())
+    """Published-in for the book family (`book`, `inbook`,
+    `incollection`, `proceedings`): booktitle and editors
+    (`inbook`/`incollection` are prefixed by `In: *booktitle*`), then
+    series/volume, publisher, and address, with the year in parens,
+    then chapter and pages."""
+    etype = entry.entry_type.lower()
+    head = ""
+    if etype in ("inbook", "incollection"):
+        booktitle = _detex(
+            entry.get("booktitle", "").strip(), fmt, drop_braces=True
+        )
         if booktitle:
-            prefix = f"In: {_italic(booktitle, fmt)}"
+            head = f"In: {_italic(booktitle, fmt)}"
+    if entry.editor and entry.author:
+        # without authors, the editors render in the authors segment
+        editor_names = _format_editors(entry)
+        head = (
+            f"{head}, edited by {editor_names}"
+            if head
+            else f"edited by {editor_names}"
+        )
 
-    publisher = entry.get("publisher", "").strip()
+    series = _detex(entry.get("series", "").strip(), fmt)
+    volume = _detex(entry.get("volume", "").strip(), fmt)
+    if volume and not volume.lower().startswith("vol"):
+        volume = f"Vol. {volume}"
+    series_volume = " ".join(bit for bit in (series, volume) if bit)
+
+    publisher = _detex(entry.get("publisher", "").strip(), fmt)
     address = entry.get("address", "").strip()
     year = entry.get("year", "").strip()
 
-    pub_addr = ", ".join(bit for bit in (publisher, address) if bit)
-    tail = f"({year})" if year else ""
-    if pub_addr and tail:
-        rest = f"{pub_addr} {tail}"
-    else:
-        rest = pub_addr or tail
+    rest = ", ".join(bit for bit in (series_volume, publisher, address) if bit)
+    if year:
+        rest = f"{rest} ({year})" if rest else f"({year})"
 
-    if prefix:
-        return f"{prefix}, {rest}" if rest else prefix
-    return rest
+    result = ", ".join(piece for piece in (head, rest) if piece)
+    chapter = entry.get("chapter", "").strip()
+    if chapter:
+        chapter_segment = f"Chapter {chapter}"
+        result = f"{result}, {chapter_segment}" if result else chapter_segment
+    pages = _format_pages(entry)
+    if pages:
+        result = f"{result}, {pages}" if result else pages
+    return result
 
 
 def _format_published_in_techreport(entry):
@@ -543,8 +695,8 @@ def _format_published_in(entry, fmt):
     if etype == "inproceedings":
         return _format_published_in_inproceedings(entry, fmt)
     if etype in ("mastersthesis", "phdthesis"):
-        return _format_published_in_thesis(entry)
-    if etype in ("book", "incollection"):
+        return _format_published_in_thesis(entry, fmt)
+    if etype in ("book", "inbook", "incollection", "proceedings"):
         return _format_published_in_book(entry, fmt)
     if etype == "techreport":
         return _format_published_in_techreport(entry)
@@ -580,9 +732,9 @@ def _format_eprint(entry, fmt):
     return _link(text, url, fmt)
 
 
-def _format_note(entry):
-    """Format the `note` field verbatim (stripped)."""
-    return entry.get("note", "").strip()
+def _format_note(entry, fmt):
+    """Format the `note` field, converting TeX markup to `fmt`."""
+    return _detex(entry.get("note", "").strip(), fmt)
 
 
 def render_entry(entry, format="markdown"):  # noqa: A002 (shadows builtin)
@@ -634,7 +786,7 @@ def render_entry(entry, format="markdown"):  # noqa: A002 (shadows builtin)
         _format_title(entry, format),
         _format_published_in(entry, format),
         _format_eprint(entry, format),
-        _format_note(entry),
+        _format_note(entry, format),
     ]
     return _join_parts(parts)
 
