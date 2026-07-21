@@ -2,7 +2,9 @@ r"""Render citations in an APS-journal-like numeric style.
 
 A citation is assembled from *authors*, *title*, *published-in*,
 *eprint*, and *note* segments, each rendered independently and then
-joined with sentence-like punctuation.
+joined with sentence-like punctuation. An entry without authors (e.g.
+an edited volume) renders its editors in the *authors* segment,
+marked with an `(ed.)`/`(eds.)` suffix.
 
 Three output formats are supported (the `format` argument of
 {func}`render_entry`/{func}`render_entries`): `"markdown"` (the default),
@@ -24,7 +26,9 @@ following `Entry.entry_type` values:
 - `book`/`inbook`/`incollection`/`proceedings`: `series Vol. N,
   publisher, address (year), Chapter N, pages` (each piece only if
   present), prefixed by `In: *booktitle*, ` for `inbook`/
-  `incollection`, and by `edited by ...` if there are editors.
+  `incollection`, and by `edited by ...` if there are editors (and
+  authors: without authors, the editors render in the *authors*
+  segment instead; the same applies to `inproceedings`).
 - `techreport`: `Technical Report, institution (year)`.
 
 Any other entry type (e.g. `misc`, `unpublished`) falls back to a
@@ -416,12 +420,22 @@ def _join_names(names, et_al_limit=None, et_al_text=None):
 
 
 def _format_authors(entry, fmt):
-    """Format `entry.author` (truncated to "et al." beyond 6 names)."""
-    names = entry.author
-    if not names:
-        return ""
+    """Format `entry.author` (truncated to "et al." beyond 6 names).
+
+    An entry without authors falls back to `entry.editor`, marked
+    with an `"(ed.)"`/`"(eds.)"` suffix -- standard practice for
+    edited volumes (a `proceedings` entry in particular can never
+    have an author)."""
     et_al_text = _italic("et al.", fmt)
-    return _join_names(names, et_al_limit=6, et_al_text=et_al_text)
+    names = entry.author
+    if names:
+        return _join_names(names, et_al_limit=6, et_al_text=et_al_text)
+    editors = entry.editor
+    if not editors:
+        return ""
+    suffix = "(eds.)" if len(editors) > 1 else "(ed.)"
+    joined = _join_names(editors, et_al_limit=6, et_al_text=et_al_text)
+    return f"{joined} {suffix}"
 
 
 def _format_editors(entry):
@@ -553,7 +567,8 @@ def _format_published_in_inproceedings(entry, fmt):
     pages = _format_pages(entry)
 
     head = f"In: {_italic(booktitle, fmt)}" if booktitle else ""
-    if editors:
+    if editors and entry.author:
+        # without authors, the editors render in the authors segment
         editor_names = _format_editors(entry)
         head = (
             f"{head}, edited by {editor_names}"
@@ -610,7 +625,8 @@ def _format_published_in_book(entry, fmt):
         )
         if booktitle:
             head = f"In: {_italic(booktitle, fmt)}"
-    if entry.editor:
+    if entry.editor and entry.author:
+        # without authors, the editors render in the authors segment
         editor_names = _format_editors(entry)
         head = (
             f"{head}, edited by {editor_names}"

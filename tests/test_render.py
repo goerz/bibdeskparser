@@ -515,6 +515,35 @@ def test_render_proceedings_includes_publisher_and_series(refs):
     assert "Springer (2014)" in rendered
 
 
+def test_render_editor_only_proceedings_shows_editors(refs):
+    """A `proceedings` entry without authors renders its editors in
+    the authors segment, marked "(eds.)", and does not repeat them as
+    "edited by ..." in the published-in segment."""
+    entry = refs["AnderssonSGS2014"]
+    assert "author" not in entry
+    rendered = render_entry(entry)
+    assert rendered.startswith("E. Andersson and P. Öhberg (eds.). ")
+    assert "edited by" not in rendered
+
+
+def test_render_editor_only_misc_shows_editor(refs):
+    """A `misc` entry with only an editor renders that editor, with
+    the singular "(ed.)" marker."""
+    entry = refs["QCRoadmap"]
+    assert "author" not in entry
+    rendered = render_entry(entry)
+    assert rendered.startswith("T. Heinrichs (ed.). ")
+
+
+def test_render_author_and_editor_keeps_edited_by(refs):
+    """An entry with both authors and editors still renders the
+    editors as "edited by ..." in the published-in segment."""
+    rendered = render_entry(refs["Giles2008"])
+    assert rendered.startswith("M. B. Giles. ")
+    assert "edited by C. H. Bischof" in rendered
+    assert "(eds.)" not in rendered
+
+
 def test_render_entries_numbers_and_wraps(refs):
     """`render_entries` separates entries by a blank line per format."""
     entries = [refs["GoerzDiploma2010"], refs["GoerzPhd2015"]]
