@@ -560,3 +560,31 @@ def test_edit_file_change_without_library_path_raises(tmp_path):
             editor=_replace_editor("b.pdf", "c.pdf"),
         )
     assert entry.files == files_before
+
+
+def test_edit_preprint_only_entry_keeps_eprint():
+    """The editor buffer of a preprint-only entry shows its stored
+    `eprint`/`archiveprefix` (which a regular export omits as
+    redundant), so an edit round-trip does not delete them."""
+    entry = Entry(
+        "article",
+        "Doe1234.5678",
+        fields={
+            "author": "Doe, Jane",
+            "title": "A Title",
+            "journal": "arXiv:1234.5678",
+            "eprint": "1234.5678",
+            "archiveprefix": "arXiv",
+            "year": "2024",
+        },
+    )
+    seen = {}
+
+    def editor(path):
+        seen["text"] = path.read_text(encoding="utf-8")
+
+    edit_entries([entry], editor=editor)
+    assert "Eprint = {1234.5678}" in seen["text"]
+    assert "Archiveprefix = {arXiv}" in seen["text"]
+    assert entry["eprint"] == "1234.5678"
+    assert entry["archiveprefix"] == "arXiv"

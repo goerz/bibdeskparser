@@ -29,6 +29,48 @@ independent parameters control the output:
   explicit list of field names selects exactly those fields, in the
   given order (a name not defined on an entry is silently omitted).
 
+A *preprint-only* entry -- a `misc` (or `unpublished`) entry with an
+`eprint` from a recognized preprint archive, or any entry whose
+`journal` is a recognized preprint pseudo-journal like
+`arXiv:2205.15044` -- is exported in the form selected by the
+`preprint` parameter, whatever its stored form:
+
+- `preprint="unpublished"` (the default, via the `preprint_export`
+  [configuration](configuration) setting): an `@unpublished` entry
+  carrying the structured `eprint`/`archiveprefix` fields (derived
+  from the pseudo-journal if not stored). A minimal export reduces
+  to `author`/`title`/`eprint`/`archiveprefix`/`primaryclass`/
+  `doi`/`year` (plus any stored `url`), with the entry type's
+  required `note` field guaranteed: the stored `note` (typically a
+  status like "submitted to Phys. Rev. A"), or the text "preprint".
+  A full export keeps all other stored fields (including a stored
+  pseudo-journal, which every BibTeX style ignores on `unpublished`
+  and `misc` entries) and never synthesizes the `note`, so that a
+  full-export round trip cannot plant one in a library.
+- `preprint="misc"`: the same structured form as a `@misc` entry
+  (no `note` handling -- `@misc` has no required fields).
+- `preprint="article"`: an `@article` whose `journal` is the
+  canonical pseudo-journal and whose `url` is the DOI-resolver
+  address of the entry's `doi` (else the stored `url`, else the
+  archive's page for the identifier); the
+  `eprint`/`archiveprefix`/`primaryclass`/`doi` fields are omitted.
+  A minimal export reduces to `author`/`title`/`journal`/`url`/
+  `note`/`year`.
+- `preprint="stored"`: no transformation; the entry is exported
+  exactly as stored.
+
+For a non-arXiv archive whose URL template has the form
+`<base>/{id}` (HAL, bioRxiv, medRxiv by default), the structured
+forms also emit an `archive` field holding the base URL: REVTeX's
+`apsrev4-x`/`aipnum4-x` styles use it as the link base of the
+rendered eprint (their built-in default is arXiv's). The same
+`archive` field is appended to any full or minimal export of a
+*published* entry whose `eprint` names such an archive. A stored
+`archive` field is always written as-is, never overwritten.
+
+An explicit list of field names always exports the stored fields,
+and the stored entry is never modified by an export.
+
 Every export uses the same layout, independent of these parameters:
 fields indented with four spaces, capitalized field names (`Author`,
 `Bdsk-File-1`), a comma after every field, and the closing brace on
@@ -68,7 +110,16 @@ This module intentionally does not import `bibdeskparser.library`
 import re
 import warnings
 
+from bibtexparser.model import Field
+
 from .bdskfile import BibDeskFile
+from .config import active
+from .identifiers import (
+    _archive_base,
+    _archive_url,
+    _entry_preprint,
+    _strip_eprint_version,
+)
 from .macros import STANDARD_MACROS, is_valid_macro_name, normalize_macro_name
 from .texmap import skip_texify, texify
 from .writer import bibdesk_field_order
@@ -86,7 +137,10 @@ _DATE_KEYS = frozenset(("date-added", "date-modified"))
 _BDSK_FILE_RE = re.compile(r"bdsk-file-(\d+)$", re.IGNORECASE)
 _BDSK_URL_RE = re.compile(r"bdsk-url-(\d+)$", re.IGNORECASE)
 
-#: Per-entry-type field whitelist for `fields="minimal"`.
+#: Per-entry-type field whitelist for `fields="minimal"`. The
+#: `eprint`/`archiveprefix`/`primaryclass` fields of an `article`
+#: give a "published, with preprint" reference under eprint-aware
+#: styles like REVTeX (and are ignored by classic styles).
 _MINIMAL_FIELDS = {
     "article": (
         "author",
@@ -97,6 +151,10 @@ _MINIMAL_FIELDS = {
         "pages",
         "volume",
         "number",
+        "eprint",
+        "archiveprefix",
+        "archive",
+        "primaryclass",
     ),
     "inproceedings": (
         "author",
@@ -128,6 +186,38 @@ _MINIMAL_FIELDS = {
 #: `unpublished`, ...). Not tuned per type -- just enough for a minimal
 #: citation.
 _MINIMAL_FALLBACK = ("author", "title", "year")
+
+#: The fields of a minimal `preprint="misc"` export of a
+#: preprint-only entry: the structured eprint fields plus the DOI
+#: (and any stored `url`, the hyperlink of last resort for archives
+#: whose identifiers a style would mislink -- REVTeX's eprint links
+#: always point at arxiv.org). A stored `note` (typically a status
+#: like "submitted to Phys. Rev. A") is kept: styles render it after
+#: the reference.
+_PREPRINT_MISC_FIELDS = (
+    "author",
+    "title",
+    "eprint",
+    "archiveprefix",
+    "archive",
+    "primaryclass",
+    "doi",
+    "url",
+    "note",
+    "year",
+)
+
+#: The fields of a minimal `preprint="article"` export of a
+#: preprint-only entry: the pseudo-journal, hyperlinked via `url`
+#: (plus any stored status `note`).
+_PREPRINT_ARTICLE_FIELDS = (
+    "author",
+    "title",
+    "journal",
+    "url",
+    "note",
+    "year",
+)
 
 
 def _is_normal_field(key):
@@ -264,10 +354,190 @@ def _field_body(entry, field, unicode, expand_strings, strings, referenced):
     return f"{label} = {{{rendered}}}"
 
 
-def _render_entry(entry, fields, unicode, expand_strings, strings, referenced):
-    """Render a single `entry` (with a trailing newline)."""
-    lines = [f"@{entry.entry_type}{{{entry.key},\n"]
-    for field in _selected_fields(entry, fields):
+def _derived_preprint_values(entry, preprint):
+    """The derived values of the preprint-related fields of a
+    preprint-only entry, as a `dict`: the stored value where the
+    entry has the field, else the value derived from the
+    `(archive, identifier)` `preprint` -- `eprint` (identifier,
+    version suffix stripped), `archiveprefix` (the archive's
+    canonical spelling), `journal` (the canonical pseudo-journal),
+    and `url` (the DOI-resolver address for the entry's `doi`, else
+    the stored `url`, else the archive's page for the identifier;
+    `None` if there is no link at all)."""
+    archive, identifier = preprint
+    doi = str(entry.get("doi") or "").strip()
+    if doi:
+        url = f"https://doi.org/{doi}"
+    else:
+        url = str(entry.get("url") or "").strip() or _archive_url(
+            archive, identifier
+        )
+    return {
+        "eprint": str(entry.get("eprint") or "").strip()
+        or _strip_eprint_version(identifier),
+        "archiveprefix": str(entry.get("archiveprefix") or "").strip()
+        or archive.name,
+        # the link base for REVTeX's eprint machinery (None for
+        # arXiv, the styles' built-in default, and for archives
+        # without a `<base>/{id}` URL template)
+        "archive": _archive_base(archive),
+        "journal": f"{archive.name}:{identifier}",
+        "url": url,
+        # `@unpublished` requires a `note`; "preprint" is the neutral
+        # status text when the entry does not store one
+        "note": str(entry.get("note") or "").strip() or "preprint",
+    }
+
+
+def _preprint_selection(entry, preprint, mode, fields):
+    """The `(entry_type, field_list)` for exporting the preprint-only
+    `entry` (with `preprint` its `(archive, identifier)`) as `mode`
+    (`"misc"` or `"article"`), under a `"full"`/`"minimal"` `fields`
+    selection.
+
+    `"misc"`/minimal is the structured eprint form (author, title,
+    eprint, archiveprefix, archive, primaryclass, doi, year, plus a
+    stored url/note); `"unpublished"`/minimal is the same form as
+    `@unpublished`, with a `note` guaranteed (the stored one, or
+    "preprint" -- `note` is a required field of `@unpublished`);
+    `"article"`/minimal is the pseudo-journal form (author, title,
+    journal, url, note, year) with the DOI written as its resolver
+    URL. A `"full"` export keeps all other stored fields (including
+    the pseudo-journal, which every BibTeX style ignores on `misc`
+    and `unpublished` entries) and only ensures the derived fields:
+    `eprint`/`archiveprefix`, and -- for a non-arXiv archive with a
+    `<base>/{id}` URL template -- the `archive` link base; the
+    synthesized `note` is *minimal-only*, so that a full export
+    never round-trips it into a library. `"article"` replaces the
+    eprint fields by the pseudo-journal and the `url`.
+    """
+    derived = _derived_preprint_values(entry, preprint)
+
+    def synthetic(name):
+        value = derived[name]
+        if value is None:
+            return None
+        return Field(key=name, value="{" + value + "}")
+
+    def stored_or_synthetic(name):
+        field = entry._find_field(name)  # pylint: disable=protected-access
+        if field is not None:
+            return field
+        if name in derived:
+            return synthetic(name)
+        return None
+
+    if mode == "misc":
+        keep_names = _PREPRINT_MISC_FIELDS
+        drop = frozenset()
+        ensure = ("eprint", "archiveprefix", "archive")
+    elif mode == "unpublished":
+        keep_names = _PREPRINT_MISC_FIELDS
+        drop = frozenset()
+        ensure = ("eprint", "archiveprefix", "archive")
+        if fields == "minimal":
+            # the `note` is only guaranteed in *minimal* exports: a
+            # full export is the database-fidelity view, and must not
+            # round-trip a synthesized note into a library
+            ensure = ensure + ("note",)
+    else:  # mode == "article"
+        keep_names = _PREPRINT_ARTICLE_FIELDS
+        drop = frozenset(
+            (
+                "journal",
+                "url",
+                "doi",
+                "eprint",
+                "archiveprefix",
+                "primaryclass",
+            )
+        )
+        ensure = ("journal", "url")
+    if fields == "minimal":
+        selected = []
+        for name in keep_names:
+            if name in ensure:
+                # `"misc"`/`"unpublished"` keep a stored field
+                # verbatim; `"article"` always writes the *derived*
+                # journal/url (canonical spelling, DOI-resolver URL)
+                field = (
+                    synthetic(name)
+                    if mode == "article"
+                    else stored_or_synthetic(name)
+                )
+            elif entry.get(name):
+                # pylint: disable-next=protected-access
+                field = entry._find_field(name)
+            else:
+                field = None
+            if field is not None:
+                selected.append(field)
+        return mode, selected
+    # fields == "full"
+    selected = [
+        field
+        for field in _normal_fields(entry)
+        if field.key.lower() not in drop
+    ]
+    have = {field.key.lower() for field in selected}
+    for name in ensure:
+        if name not in have:
+            field = synthetic(name)
+            if field is not None:
+                selected.append(field)
+    return mode, bibdesk_field_order(selected) + _bdsk_fields(entry)
+
+
+def _published_archive_field(entry, selected):
+    """A synthetic `archive` field (the link base for REVTeX's
+    eprint machinery) for the full or minimal export of a
+    *published* entry whose selected `eprint` names a recognized
+    non-arXiv archive with a `<base>/{id}` URL template; `None`
+    when not applicable (no eprint selected, arXiv, unrecognized
+    archive, or an `archive` already stored)."""
+    names = {field.key.lower() for field in selected}
+    if "eprint" not in names or "archive" in names:
+        return None
+    prefix = str(entry.get("archiveprefix") or "").strip() or "arXiv"
+    archive = active.preprint_archives.get(prefix.lower())
+    if archive is None:
+        return None
+    base = _archive_base(archive)
+    if base is None:
+        return None
+    return Field(key="archive", value="{" + base + "}")
+
+
+def _render_entry(
+    entry, fields, unicode, expand_strings, strings, referenced, preprint
+):
+    """Render a single `entry` (with a trailing newline).
+
+    `preprint` (`"misc"`, `"unpublished"`, `"article"`, or
+    `"stored"`) selects the export form of a preprint-only entry;
+    explicit field lists and `"stored"` always render the stored
+    entry as-is."""
+    entry_type = entry.entry_type
+    selected = None
+    if preprint != "stored" and fields in ("full", "minimal"):
+        info = _entry_preprint(entry, active.preprint_archives)
+        if info is not None:
+            entry_type, selected = _preprint_selection(
+                entry, info, preprint, fields
+            )
+    if selected is None:
+        selected = _selected_fields(entry, fields)
+        if fields in ("full", "minimal") and preprint != "stored":
+            extra = _published_archive_field(entry, selected)
+            if extra is not None:
+                if fields == "full":
+                    selected = bibdesk_field_order(
+                        _normal_fields(entry) + [extra]
+                    ) + _bdsk_fields(entry)
+                else:
+                    selected.append(extra)
+    lines = [f"@{entry_type}{{{entry.key},\n"]
+    for field in selected:
         body = _field_body(
             entry, field, unicode, expand_strings, strings, referenced
         )
@@ -323,6 +593,7 @@ def export_entries(
     expand_strings=False,
     fields="full",
     outfile=None,
+    preprint=None,
 ):
     """Serialize `entries` (an iterable of `Entry`) to bibtex text.
 
@@ -334,6 +605,7 @@ def export_entries(
         expand_strings=False,
         fields="full",
         outfile=None,
+        preprint=None,
     )
     ```
 
@@ -364,17 +636,40 @@ def export_entries(
     * `outfile`: if given, a path (`str`/`pathlib.Path`) or an
       already-open text file object (anything with a `write` method;
       if already open, it is written to but not closed).
+    * `preprint`: the entry type a *preprint-only* entry (see the
+      module docstring) is exported as -- `"unpublished"` or
+      `"misc"` (the structured eprint forms) or `"article"` (the
+      pseudo-journal form), each with the derived fields described
+      in the module docstring, or `"stored"` for no transformation
+      at all (used internally by
+      {meth}`~bibdeskparser.Library.edit`). Defaults to the
+      `preprint_export` [configuration](configuration) setting
+      (`"unpublished"` unless configured). Explicit field lists are
+      always exported as stored, whatever `preprint` says.
 
     Multiple entries are separated by a single blank line; the returned
     (or written) text always ends with exactly one trailing newline.
     """
     fields = _check_fields(fields)
+    if preprint is None:
+        preprint = active.preprint_export
+    if preprint not in ("misc", "unpublished", "article", "stored"):
+        raise ValueError(
+            "preprint must be 'misc', 'unpublished', 'article', or "
+            f"'stored', not {preprint!r}"
+        )
     entries = list(entries)
     all_strings = {**STANDARD_MACROS, **(strings or {})}
     referenced = set()
     rendered = [
         _render_entry(
-            entry, fields, unicode, expand_strings, all_strings, referenced
+            entry,
+            fields,
+            unicode,
+            expand_strings,
+            all_strings,
+            referenced,
+            preprint,
         )
         for entry in entries
     ]

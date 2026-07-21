@@ -2334,6 +2334,18 @@ class Library(MutableMapping):
           `itemize`; `html` `<ul>`).
         * `"default"` (the default): like `"paragraphs"`, except a
           single `"html"` citation is not wrapped in `<p>...</p>`.
+
+        A *preprint-only* entry -- a `misc` or `unpublished`
+        entry with an `eprint` from a recognized preprint archive,
+        or any entry whose `journal` is a preprint pseudo-journal
+        like `arXiv:2205.15044` -- renders its preprint reference
+        (with the category tag from `primaryclass`, e.g.
+        `arXiv:2205.15044 [quant-ph]`) in the journal position,
+        linked to the DOI, the entry's first URL, or the archive's
+        page for the identifier. Any *other* entry's `eprint` is
+        rendered as a separate link into its preprint archive after
+        the journal reference (the "published, with preprint"
+        form).
         """
         strings = self._all_strings()
         entries = [_expand_macros(self[key], strings) for key in keys]
@@ -2346,6 +2358,7 @@ class Library(MutableMapping):
         expand_strings=False,
         fields="full",
         outfile=None,
+        preprint=None,
     ):
         """Export the entries with the given citation `keys` (at
         least one required) as bibtex text.
@@ -2371,6 +2384,45 @@ class Library(MutableMapping):
           bibliography), or a list of field names (in the given
           order; names not defined on an entry are omitted).
 
+        A *preprint-only* entry -- a `misc` or `unpublished`
+        entry with an `eprint` from a recognized preprint archive,
+        or any entry whose `journal` is a preprint pseudo-journal
+        like `arXiv:2205.15044` -- is exported in the form selected
+        by
+        `preprint`, independent of its stored form:
+
+        * `"unpublished"` (the default, via the `preprint_export`
+          [configuration](configuration) setting): an `@unpublished`
+          entry with the structured `eprint`/`archiveprefix` fields
+          (derived from the pseudo-journal if not stored) -- for
+          BibTeX styles that render the `eprint` field (REVTeX,
+          `elsarticle`, biblatex); under REVTeX, the eprint renders
+          in the journal position. A minimal export guarantees the
+          type's required `note` field (the stored `note`, or the
+          text "preprint").
+        * `"misc"`: the same structured form, as a `@misc` entry
+          (no required fields, no `note` handling).
+        * `"article"`: an `@article` whose `journal` is the
+          pseudo-journal and whose `url` is the DOI-resolver
+          address, without the `eprint`/`doi` fields -- for classic
+          styles (`plain`, `unsrt`, `IEEEtran`, ...) that would
+          silently drop an `eprint`.
+        * `"stored"`: no transformation.
+
+        For a non-arXiv archive with a `<base>/{id}` URL template
+        (HAL, bioRxiv, medRxiv), the structured forms also emit an
+        `archive` field holding the link base that REVTeX's styles
+        use for the rendered eprint; full and minimal exports of
+        *published* entries with such an `eprint` gain the same
+        field.
+
+        A minimal export of a preprint-only entry reduces to the
+        essential fields of the respective form; an explicit list of
+        field names is always exported as stored, and the stored
+        entry is never modified. See the
+        [preprints](preprints-convention) documentation for how
+        each form renders.
+
         The output layout is always the same (4-space indent,
         capitalized field names, a comma after every field); it is
         *not* the byte-exact layout of the `.bib` file on disk, and
@@ -2388,6 +2440,7 @@ class Library(MutableMapping):
             expand_strings=expand_strings,
             fields=fields,
             outfile=outfile,
+            preprint=preprint,
         )
 
     def edit(self, *keys, editor=None):
@@ -2424,7 +2477,14 @@ class Library(MutableMapping):
         """
         editing.edit_strings(self, editor=editor)
 
-    def import_bibtex(self, text, *, keep_keys=False, fix_uppercase=False):
+    def import_bibtex(
+        self,
+        text,
+        *,
+        keep_keys=False,
+        fix_uppercase=False,
+        keep_journals=False,
+    ):
         """Import the entries of the BibTeX snippet `text`, sanitized
         and normalized, into the library.
 
@@ -2439,10 +2499,33 @@ class Library(MutableMapping):
           added to the library as needed), or -- with a `UserWarning`
           -- a newly created macro named by the journal's lowercased
           initials (honoring `[initials.journal]` exceptions). A
-          literal `arXiv:...` pseudo-journal is the one exception: it
-          marks an arXiv preprint and stays literal, and the entry's
-          `eprint` and `archiveprefix` fields are derived from it if
-          missing.
+          pseudo-journal whose archive is *not* recognized is
+          rejected, since it must not be turned into a macro.
+        * A *preprint-only* entry -- one whose `journal` is a
+          preprint pseudo-journal like `arXiv:2205.15044` (any
+          archive from the `preprint_archives`
+          [configuration](configuration): arXiv, bioRxiv, medRxiv,
+          ChemRxiv, HAL, and SSRN by default), or a `misc` entry
+          with an `eprint` from a recognized archive (e.g. arXiv's
+          own BibTeX export) -- is normalized to its canonical
+          stored form: an `@unpublished` entry with the
+          pseudo-journal in the archive's canonical spelling
+          (`hal:` becomes `HAL:`; synthesized from the `eprint` if
+          absent), the `eprint` and `archiveprefix` fields derived
+          from the pseudo-journal if missing, and the `doi`
+          extracted from a `https://doi.org/...` value in the `url`
+          field (dropping that `url`) or, for arXiv, derived as
+          `10.48550/arXiv.<id>`. A `url` that merely restates the
+          archive's page for the identifier is dropped when the
+          entry carries a `doi`. A `note` is *never* synthesized: a
+          missing publication-status note is a signal to fill it in
+          by hand. See the [preprints](preprints-convention)
+          documentation.
+        * `keep_journals=True` skips both of the above: every
+          `journal` is preserved as-is, and the entry keeps its
+          incoming type (preprint-only entries are still recognized
+          for the `eprint`/`archiveprefix` derivation and the
+          citation key).
         * Capitalized words inside the `title` (assumed to be proper
           nouns) are wrapped in braces to protect their
           capitalization, unless the title looks like it is already
@@ -2450,6 +2533,10 @@ class Library(MutableMapping):
           `protected_words` are brace-protected in every title.
         * A `doi` is normalized to its bare, lowercase form (no
           `https://doi.org/` or `doi:` prefix).
+        * An `archive` field holding the link base derivable from
+          the entry's `eprint`/`archiveprefix` is dropped (exports
+          regenerate it), for preprint-only and published entries
+          alike.
         * For an `@article`, a `pages` range collapses to its first
           page, the fields `month`, `day`, `publisher`, `address`,
           `numpages`, and `issn` are dropped, and a `url` is dropped
@@ -2461,9 +2548,9 @@ class Library(MutableMapping):
           `%p1%c{journal}0%Y%u0` for an article (e.g.
           `GoerzPRA2014`), `%p1%c{booktitle}0%Y%u0` for
           inproceedings/incollection, and `%p1%Y%u0` for any other
-          type. ArXiv preprints always use `%p1%f{eprint}[.]` (e.g.
-          `Goerz2205.15044`). An incoming key that already matches
-          the format is kept.
+          type. Preprint-only entries (a recognized pseudo-journal)
+          always use `%p1%f{eprint}[.]` (e.g. `Goerz2205.15044`). An
+          incoming key that already matches the format is kept.
         * TeX-encoded accents (`Schr{\\"o}dinger`) are decoded to
           Unicode, exactly as if the values had been read from a
           `.bib` file (saving re-encodes them).
@@ -2473,6 +2560,9 @@ class Library(MutableMapping):
         are down-cased to name case/sentence case first; the result
         may need manual correction. `keep_keys=True` keeps the
         incoming citation keys instead of generating new ones.
+        `keep_journals=True` preserves every incoming `journal` field
+        as-is instead of converting it to an `@string` macro
+        reference.
 
         An entry whose `doi` or `eprint` is already in the library is
         rejected. `keywords`, `bdsk-url-N`, and `date-added` fields
@@ -2514,7 +2604,11 @@ class Library(MutableMapping):
         ```
         """
         return import_entries(
-            self, text, keep_keys=keep_keys, fix_uppercase=fix_uppercase
+            self,
+            text,
+            keep_keys=keep_keys,
+            fix_uppercase=fix_uppercase,
+            keep_journals=keep_journals,
         )
 
     def add(
@@ -2536,7 +2630,8 @@ class Library(MutableMapping):
           any string containing `arXiv` followed by an identifier
           (e.g. an `https://arxiv.org/abs/...` URL) -- fetched from
           the [arXiv API](https://info.arxiv.org/help/api/), added as
-          an `@article` preprint with a literal `arXiv:...` journal;
+          a preprint-only `@misc` entry with a literal `arXiv:...`
+          pseudo-journal and the structured eprint fields;
         * a DOI (`10.1103/PhysRevA.89.032334`), or a URL containing
           one (e.g. `https://doi.org/...` or most publisher article
           pages) -- fetched from

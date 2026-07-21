@@ -28,6 +28,15 @@ from .entry import (
     _split_keywords,
     _strip_enclosing,
 )
+from .identifiers import (
+    _archive_base,
+    _archive_url,
+    _doi_from_url,
+    _entry_preprint,
+    _preprint_journal,
+    _pseudo_journal,
+    _strip_eprint_version,
+)
 from .macros import (
     STANDARD_MACROS,
     MacroString,
@@ -48,13 +57,6 @@ __all__ = []
 # All members whose name does not start with an underscore must be listed
 # either in __all__ or in __private__
 __private__ = ["import_entries"]
-
-#: The literal pseudo-journal of an arXiv preprint, e.g.
-#: `journal = {arXiv:2205.15044}`. Such a journal stays a literal value
-#: (it is not converted to an `@string` macro).
-_ARXIV_JOURNAL_RX = re.compile(r"^arXiv:(\S+)$")
-
-_ARXIV_VERSION_RX = re.compile(r"v\d+$")
 
 #: A page range, with any of the dash conventions found in publisher
 #: data (hyphen, `--`, `---`, en-dash, em-dash).
@@ -111,13 +113,14 @@ _DEFAULT_KEY_SPECS = {
     "": "%p1%Y%u0",
 }
 
-#: The citation-key format for arXiv preprints (entries with a literal
-#: `arXiv:...` journal), e.g. `Goerz2205.15044`. The `[.]` argument
+#: The citation-key format for preprint-only entries (entries whose
+#: `journal` is a recognized preprint pseudo-journal like
+#: `arXiv:2205.15044`), e.g. `Goerz2205.15044`. The `[.]` argument
 #: maps the `/` of old-style arXiv identifiers (`quant-ph/0106057`) to
 #: a `.`. Applied regardless of any configured `[auto_key]` format: the
 #: format language has no conditionals, so a format configured for
 #: published articles would derive nonsense from the pseudo-journal.
-_ARXIV_KEY_SPEC = "%p1%f{eprint}[.]"
+_PREPRINT_KEY_SPEC = "%p1%f{eprint}[.]"
 
 
 # -- pure value normalization ------------------------------------------ #
@@ -361,6 +364,7 @@ def _stage_entry(
     notices,
     *,
     fix_uppercase,
+    keep_journals,
 ):
     """Sanitize and normalize one parsed entry into a staged
     {class}`Entry` (not yet added to any library).
@@ -408,13 +412,79 @@ def _stage_entry(
         if isinstance(value, ValueString):
             fields[lkey] = ValueString(" ".join(str(value).split()))
     journal = fields.get("journal")
-    arxiv_match = None
+    preprint = None
     if isinstance(journal, ValueString):
-        arxiv_match = _ARXIV_JOURNAL_RX.match(str(journal))
-    if arxiv_match:
-        arxiv_id = _ARXIV_VERSION_RX.sub("", arxiv_match.group(1))
-        fields.setdefault("eprint", ValueString(arxiv_id))
-        fields.setdefault("archiveprefix", ValueString("arXiv"))
+        preprint = _preprint_journal(str(journal), active.preprint_archives)
+    if preprint is None and entry_type in ("misc", "unpublished"):
+        # a `misc` or `unpublished` entry with an eprint from a
+        # recognized archive is a preprint-only entry, too (e.g.
+        # arXiv's own BibTeX export)
+        eprint = fields.get("eprint")
+        if isinstance(eprint, ValueString) and str(eprint).strip():
+            prefix = str(fields.get("archiveprefix") or "").strip() or "arXiv"
+            archive = active.preprint_archives.get(prefix.lower())
+            if archive is not None:
+                preprint = (archive, str(eprint).strip())
+    if preprint is not None:
+        archive, identifier = preprint
+        fields.setdefault(
+            "eprint", ValueString(_strip_eprint_version(identifier))
+        )
+        fields.setdefault("archiveprefix", ValueString(archive.name))
+        if not keep_journals:
+            # normalize to the canonical stored form of a
+            # preprint-only entry: `@unpublished`, with the
+            # pseudo-journal in the archive's canonical spelling
+            # (`hal:` -> `HAL:`) and the DOI extracted from a doi.org
+            # resolver URL
+            entry_type = "unpublished"
+            fields["journal"] = ValueString(f"{archive.name}:{identifier}")
+            url = fields.get("url")
+            if "doi" not in fields and isinstance(url, ValueString):
+                doi = _doi_from_url(str(url))
+                if doi is not None:
+                    fields["doi"] = ValueString(doi)
+                    del fields["url"]
+            if "doi" not in fields and archive.name.lower() == "arxiv":
+                # arXiv assigns the DOI 10.48550/arXiv.<id> to every
+                # preprint, so it is derivable from the identifier
+                base_id = _strip_eprint_version(str(fields["eprint"]))
+                fields["doi"] = ValueString(f"10.48550/arXiv.{base_id}")
+            url = fields.get("url")
+            if "doi" in fields and isinstance(url, ValueString):
+                # with the `doi` as the canonical link, a `url` that
+                # merely restates the archive's page for the
+                # identifier is derivable (render and exports
+                # regenerate it from the `eprint` when needed)
+                page = str(url).strip().lower()
+                if page.startswith("http://"):
+                    page = "https://" + page[len("http://") :]
+                derivable = set()
+                for ident in (
+                    identifier,
+                    _strip_eprint_version(identifier),
+                ):
+                    page_url = _archive_url(archive, ident)
+                    if page_url is not None:
+                        derivable.add(page_url.lower())
+                if page in derivable:
+                    del fields["url"]
+    stored_archive = fields.get("archive")
+    eprint = fields.get("eprint")
+    if (
+        isinstance(stored_archive, ValueString)
+        and isinstance(eprint, ValueString)
+        and str(eprint).strip()
+    ):
+        # an `archive` field holding the link base derivable from the
+        # `eprint`/`archiveprefix` is dropped (exports regenerate it),
+        # for preprint-only and published entries alike
+        prefix = str(fields.get("archiveprefix") or "").strip() or "arXiv"
+        eprint_archive = active.preprint_archives.get(prefix.lower())
+        if eprint_archive is not None:
+            base = _archive_base(eprint_archive)
+            if base is not None and str(stored_archive).strip() == base:
+                del fields["archive"]
     doi = fields.get("doi")
     if isinstance(doi, ValueString):
         fields["doi"] = ValueString(_normalize_doi(str(doi)))
@@ -429,16 +499,29 @@ def _stage_entry(
     journal = fields.get("journal")
     if isinstance(journal, MacroString):
         _plan_config_macro(str(journal), existing_strings, planned_strings)
-    elif isinstance(journal, ValueString) and not arxiv_match:
-        macro, problem, notice = _resolve_journal(
-            str(journal), existing_strings, planned_strings
-        )
-        if problem is not None:
-            problems.append(f"entry {label}: {problem}")
+    elif (
+        isinstance(journal, ValueString)
+        and preprint is None
+        and not keep_journals
+    ):
+        pseudo = _pseudo_journal(str(journal))
+        if pseudo is not None:
+            problems.append(
+                f"entry {label}: journal {str(journal)!r} looks like a "
+                f"preprint reference, but the archive {pseudo[0]!r} is "
+                "not recognized; add it to [preprint_archives] in the "
+                "configuration, or import with keep_journals"
+            )
         else:
-            fields["journal"] = MacroString(macro)
-            if notice is not None:
-                notices.append(notice)
+            macro, problem, notice = _resolve_journal(
+                str(journal), existing_strings, planned_strings
+            )
+            if problem is not None:
+                problems.append(f"entry {label}: {problem}")
+            else:
+                fields["journal"] = MacroString(macro)
+                if notice is not None:
+                    notices.append(notice)
     if fix_uppercase:
         for lkey in ("author", "editor"):
             value = fields.get(lkey)
@@ -512,7 +595,7 @@ def _duplicate_problems(library, staged):
     seen = {"doi": {}, "eprint": {}}
     normalize = {
         "doi": _normalize_doi,
-        "eprint": lambda value: _ARXIV_VERSION_RX.sub("", value.strip()),
+        "eprint": _strip_eprint_version,
     }
     for key, entry in library.items():
         for field, index in seen.items():
@@ -538,14 +621,15 @@ def _duplicate_problems(library, staged):
 
 
 def _key_format_spec(entry):
-    """The citation-key format string for a staged `entry`: the arXiv
-    preprint format for a literal `arXiv:...` journal, else the
-    configured `[auto_key]` format (resolved per-type), else the
-    built-in `_DEFAULT_KEY_SPECS`. Returns `(format_string, problem)`,
+    """The citation-key format string for a staged `entry`: the
+    preprint format for a preprint-only entry (a recognized
+    pseudo-journal like `arXiv:...`, or a `misc`/`unpublished`
+    entry with an eprint from a recognized archive), else the configured
+    `[auto_key]` format (resolved per-type), else the built-in
+    `_DEFAULT_KEY_SPECS`. Returns `(format_string, problem)`,
     exactly one of them not `None`."""
-    journal = entry.get("journal")
-    if journal is not None and _ARXIV_JOURNAL_RX.match(str(journal)):
-        return _ARXIV_KEY_SPEC, None
+    if _entry_preprint(entry, active.preprint_archives) is not None:
+        return _PREPRINT_KEY_SPEC, None
     spec = active.auto_key.format_spec
     if spec is None:
         spec = _DEFAULT_KEY_SPECS
@@ -614,7 +698,14 @@ def _final_key(entry, incoming_key, taken, keep_keys, strings):
 # -- the import entry point --------------------------------------------- #
 
 
-def import_entries(library, text, *, keep_keys=False, fix_uppercase=False):
+def import_entries(
+    library,
+    text,
+    *,
+    keep_keys=False,
+    fix_uppercase=False,
+    keep_journals=False,
+):
     """Parse the BibTeX snippet `text`, sanitize and normalize every
     entry in it, and add the entries to `library`; backs
     {meth}`bibdeskparser.Library.import_bibtex` (see there for the
@@ -647,6 +738,7 @@ def import_entries(library, text, *, keep_keys=False, fix_uppercase=False):
             planned_strings,
             notices,
             fix_uppercase=fix_uppercase,
+            keep_journals=keep_journals,
         )
         problems.extend(entry_problems)
         if entry is not None:

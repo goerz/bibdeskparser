@@ -10,7 +10,7 @@ Three output formats are supported (the `format` argument of
 {func}`render_entries` also takes a `style` argument controlling their
 layout (paragraphs, a numbered list, or an itemized list).
 
-The **published-in** segment has dedicated formatting for the
+The *published-in* segment has dedicated formatting for the
 following `Entry.entry_type` values:
 
 - `article`: `journal **volume**, pages (year)`, linked to the DOI (if
@@ -28,6 +28,19 @@ following `Entry.entry_type` values:
 Any other entry type (e.g. `misc`, `unpublished`) falls back to a
 minimal `(year)` (or `""` if there is no year); such types are expected
 to carry their full citation information in the `note` field instead.
+
+A *preprint-only* entry -- a `misc` (or `unpublished`) entry with
+an `eprint` from a recognized preprint archive, or any entry whose
+`journal` is a recognized preprint pseudo-journal like
+`arXiv:2401.00001` -- renders
+its preprint reference (with the category tag from `primaryclass`,
+e.g. `arXiv:2401.00001 [quant-ph]`) in the published-in position,
+linked to the DOI, the entry's first URL, or the archive's own page
+for the identifier, in that order of preference. For any *other*
+entry, the *eprint* segment links the `eprint` field into its
+preprint archive (named by the `archiveprefix` field, defaulting to
+arXiv), e.g. `arXiv:2401.00001 [quant-ph]` -- the "published, with
+preprint" rendering.
 
 ```python
 >>> from bibdeskparser.entry import Entry
@@ -50,6 +63,9 @@ to carry their full citation information in the `note` field instead.
 """
 
 import re
+
+from .config import active
+from .identifiers import _archive_url, _entry_preprint
 
 __all__ = []
 
@@ -310,8 +326,9 @@ def _format_title(entry, fmt):
 
     Linked to `entry.urls[0]` if present; for non-`article` entries,
     falls back to a `doi`-based link if there is no URL. `article`
-    entries never fall back to the DOI here, since `_format_published_in`
-    links the DOI to the journal info instead.
+    and preprint-only entries never fall back to the DOI here, since
+    `_format_published_in` links the DOI to the journal info/preprint
+    reference instead.
     """
     title = entry.get("title", "").strip()
     if not title:
@@ -321,7 +338,9 @@ def _format_title(entry, fmt):
     url = None
     if entry.urls:
         url = entry.urls[0]
-    elif entry.entry_type.lower() != "article":
+    elif entry.entry_type.lower() != "article" and (
+        _entry_preprint(entry, active.preprint_archives) is None
+    ):
         doi = entry.get("doi", "").strip()
         if doi:
             url = f"https://doi.org/{doi}"
@@ -359,6 +378,33 @@ def _format_month(entry):
         if lower in (abbr.lower(), full.lower()):
             return abbr
     return ""
+
+
+def _format_published_in_preprint(entry, fmt, preprint):
+    """Published-in for a preprint-only entry (either stored form):
+    the preprint reference `Archive:identifier` in the journal
+    position -- with the category tag from `primaryclass`
+    (`[quant-ph]`), like a rendered eprint -- linked to the DOI, the
+    entry's first URL, or the archive's own page for the identifier
+    -- in that order of preference -- with the year in parens."""
+    archive, identifier = preprint
+    year = entry.get("year", "").strip()
+    doi = entry.get("doi", "").strip()
+    if doi:
+        url = f"https://doi.org/{doi}"
+    elif entry.urls:
+        url = entry.urls[0]
+    else:
+        url = _archive_url(archive, identifier)
+    text = f"{archive.name}:{identifier}"
+    primaryclass = entry.get("primaryclass", "").strip()
+    if primaryclass:
+        text = f"{text} [{primaryclass}]"
+    segment = _link(text, url, fmt)
+    pieces = [
+        piece for piece in (segment, f"({year})" if year else "") if piece
+    ]
+    return " ".join(pieces)
 
 
 def _format_published_in_article(entry, fmt):
@@ -484,9 +530,13 @@ def _format_published_in_fallback(entry):
 
 
 def _format_published_in(entry, fmt):
-    """Format the "published-in" segment, dispatching on
-    `entry.entry_type` (see the module docstring for which types have
-    dedicated formatting)."""
+    """Format the "published-in" segment: the preprint reference for
+    a preprint-only entry, else dispatching on `entry.entry_type`
+    (see the module docstring for which types have dedicated
+    formatting)."""
+    preprint = _entry_preprint(entry, active.preprint_archives)
+    if preprint is not None:
+        return _format_published_in_preprint(entry, fmt, preprint)
     etype = entry.entry_type.lower()
     if etype == "article":
         return _format_published_in_article(entry, fmt)
@@ -502,16 +552,32 @@ def _format_published_in(entry, fmt):
 
 
 def _format_eprint(entry, fmt):
-    """Format the `eprint` field as an arXiv link, e.g.
-    `"arXiv:2401.00001 [quant-ph]"`."""
+    """Format the `eprint` field as a link into its preprint archive,
+    e.g. `"arXiv:2401.00001 [quant-ph]"`.
+
+    The archive is named by the `archiveprefix` field (arXiv if
+    absent); a recognized archive (see the `preprint_archives`
+    [configuration](configuration)) supplies the canonical prefix
+    spelling and the link target, an unrecognized one renders
+    verbatim, without a link. Returns `""` for a preprint-only
+    entry: there, the published-in segment already shows the
+    preprint reference."""
     eprint = entry.get("eprint", "").strip()
     if not eprint:
         return ""
-    text = f"arXiv:{eprint}"
+    if _entry_preprint(entry, active.preprint_archives) is not None:
+        return ""
+    prefix = entry.get("archiveprefix", "").strip() or "arXiv"
+    archive = active.preprint_archives.get(prefix.lower())
+    if archive is None:
+        name, url = prefix, None
+    else:
+        name, url = archive.name, _archive_url(archive, eprint)
+    text = f"{name}:{eprint}"
     primaryclass = entry.get("primaryclass", "").strip()
     if primaryclass:
         text = f"{text} [{primaryclass}]"
-    return _link(text, f"https://arxiv.org/abs/{eprint}", fmt)
+    return _link(text, url, fmt)
 
 
 def _format_note(entry):

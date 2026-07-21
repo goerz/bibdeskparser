@@ -1,0 +1,400 @@
+\documentclass[onecolumn, amsmath, amssymb, aps, pra]{revtex4-2}
+
+\usepackage[colorlinks=true,linkcolor=blue,allcolors=blue]{hyperref}
+
+% Verbatim display of the .bib source of each variant
+\usepackage{fancyvrb}
+\fvset{fontsize=\small, xleftmargin=1em}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\title{How BibTeX entry variants for preprints render under REVTeX}
+\date{\today}
+\author{Michael Goerz}
+\maketitle
+
+This document compares how different ways of writing the \emph{same}
+references in a \texttt{.bib} file render in the bibliography of a typical
+REVTeX document (\texttt{revtex4-2} with the default \texttt{apsrev4-2}
+bibliography style, \texttt{hyperref} loaded). The references are an arXiv
+\emph{preprint-only} paper (Wilhelm et al., arXiv:2003.10132), a HAL
+preprint-only paper (Turinici, HAL:hal-00640217), and a \emph{published}
+paper for which a preprint exists (Koch et al., EPJ Quantum Technol.\ 9, 19
+(2022); arXiv:2205.12110). The variants are the forms that
+\texttt{bibdeskparser} stores and exports, arXiv's own BibTeX export, and
+two instructive anti-patterns. Each variant shows its \texttt{.bib} source,
+followed by the citation it produces; compare the numbered entries in the
+bibliography at the end. This document is part of the
+\texttt{bibdeskparser} documentation; see the ``Preprints'' page there for
+the discussion.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Preprint-only entry (arXiv)}
+
+\subsection{P1: The stored form (\texttt{@unpublished} with
+pseudo-journal, eprint fields, DOI, and status
+note)~\cite{WilhelmStored}}
+
+How \texttt{bibdeskparser} (and BibDesk) store a preprint-only entry, and
+what any full export writes. This is the form to copy verbatim into an
+external \texttt{.bib} file: BibTeX ignores the \texttt{journal} field of
+an \texttt{@unpublished} entry, so the pseudo-journal (which serves
+BibDesk's table view and \texttt{bibdeskparser}'s own rendering) is
+invisible here. The \texttt{note} records the publication status
+(``preprint only'', ``submitted to Phys.\ Rev.\ A'', ``lecture notes'');
+\texttt{bibdeskparser} never fills it in automatically -- a missing note is
+the signal to do so by hand.
+
+\begin{Verbatim}
+@unpublished{WilhelmStored,
+    Author = {Wilhelm, Frank K. and ...},
+    Title = {An introduction into optimal control for quantum technologies},
+    Journal = {arXiv:2003.10132},
+    Eprint = {2003.10132},
+    Archiveprefix = {arXiv},
+    Primaryclass = {quant-ph},
+    Doi = {10.48550/arxiv.2003.10132},
+    Note = {lecture notes},
+    Year = {2020},
+}
+\end{Verbatim}
+
+\subsection{P2: The minimal \texttt{--preprint unpublished} export (the
+default)~\cite{WilhelmUnpublished}}
+
+What \verb|bibdeskparser export --minimal| produces: as P1, without the
+pseudo-journal. For an entry without a stored note, the required
+\texttt{note} is synthesized as ``preprint'' (in minimal exports only).
+
+\begin{Verbatim}
+@unpublished{WilhelmUnpublished,
+    ... same fields as P1, without Journal ...
+}
+\end{Verbatim}
+
+\subsection{P3: The minimal \texttt{--preprint misc}
+export~\cite{WilhelmMisc}}
+
+The same structured fields as a \texttt{@misc} entry (\texttt{@misc} has
+no required fields, so a note is kept but never synthesized).
+
+\begin{Verbatim}
+@misc{WilhelmMisc,
+    ... same fields as P2, as @misc ...
+}
+\end{Verbatim}
+
+\subsection{P4: The minimal \texttt{--preprint article}
+export~\cite{WilhelmArticle}}
+
+The pseudo-journal in the journal position, hyperlinked via the
+DOI-resolver address in \texttt{url}; no eprint/doi fields. This is the
+form for classic styles (\texttt{plain}, \texttt{unsrt},
+\texttt{IEEEtran}, ...), which would silently drop an \texttt{eprint}.
+
+\begin{Verbatim}
+@article{WilhelmArticle,
+    Author = {Wilhelm, Frank K. and ...},
+    Title = {An introduction into optimal control for quantum technologies},
+    Journal = {arXiv:2003.10132},
+    Url = {https://doi.org/10.48550/arxiv.2003.10132},
+    Note = {lecture notes},
+    Year = {2020},
+}
+\end{Verbatim}
+
+\subsection{P5: arXiv's own BibTeX export
+(\texttt{@misc})~\cite{WilhelmArxivExport}}
+
+Verbatim what the ``Export BibTeX citation'' button on the arXiv abstract
+page produces (\texttt{bibdeskparser import} accepts this form and
+normalizes it to P1, deriving the DOI; only the \texttt{note} is left
+to fill in by hand).
+
+\begin{Verbatim}
+@misc{WilhelmArxivExport,
+      title={An introduction into optimal control for quantum technologies},
+      author={Frank K. Wilhelm and Susanna Kirchhoff and Shai Machnes
+              and Nicolas Wittler and Dominique Sugny},
+      year={2020},
+      eprint={2003.10132},
+      archivePrefix={arXiv},
+      primaryClass={quant-ph},
+      url={https://arxiv.org/abs/2003.10132},
+}
+\end{Verbatim}
+
+\subsection{P6: Anti-pattern -- the legacy \texttt{@article} storage
+form, copied verbatim~\cite{WilhelmLegacyArticle}}
+
+The same fields as P1, but on an \texttt{@article} (the recognized legacy
+storage form). Copied \emph{verbatim} into a REVTeX document instead of
+going through \texttt{export}, the journal field is no longer ignored, and
+the identifier renders three times.
+
+\begin{Verbatim}
+@article{WilhelmLegacyArticle,
+    ... same fields as P1, as @article, without Note ...
+}
+\end{Verbatim}
+
+\subsection{P7: Anti-pattern -- \texttt{@article} with pseudo-journal
+and a \texttt{doi} field~\cite{WilhelmArticleDoi}}
+
+Why the \texttt{--preprint article} export (P4) writes the DOI as a
+\texttt{url} instead of a \texttt{doi} field: for an \texttt{@article}
+without \texttt{volume}/\texttt{pages}, \texttt{apsrev4-x} prints the DOI
+as visible text instead of using it as a link target.
+
+\begin{Verbatim}
+@article{WilhelmArticleDoi,
+    Author = {Wilhelm, Frank K. and ...},
+    Title = {An introduction into optimal control for quantum technologies},
+    Journal = {arXiv:2003.10132},
+    Doi = {10.48550/arxiv.2003.10132},
+    Year = {2020},
+}
+\end{Verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Preprint-only entry (HAL) and the \texttt{archive} field}
+
+REVTeX's eprint machinery builds the link text from
+\texttt{archivePrefix} and \texttt{eprint}, but its link \emph{target} as
+\texttt{<archive>/<eprint>}, where the \texttt{archive} field defaults to
+arXiv's \texttt{https://arxiv.org/abs}. For a non-arXiv preprint, the
+default is wrong; \texttt{bibdeskparser} exports therefore emit the
+\texttt{archive} field with the correct link base (derived from the
+archive's URL template in the \texttt{preprint\_archives} configuration).
+
+\subsection{H1: The minimal \texttt{--preprint unpublished} export (the
+default)~\cite{TuriniciUnpublished}}
+
+\begin{Verbatim}
+@unpublished{TuriniciUnpublished,
+    Author = {Turinici, Gabriel},
+    Title = {Quantum control},
+    Eprint = {hal-00640217},
+    Archiveprefix = {HAL},
+    Archive = {https://hal.science},
+    Url = {https://hal.science/hal-00640217},
+    Note = {published in the Encyclopedia of Applied and
+            Computational Mathematics, Springer, 2015,
+            \url{https://doi.org/10.1007/978-3-540-70529-1_269}},
+    Year = {2012},
+}
+\end{Verbatim}
+
+\subsection{H2: The minimal \texttt{--preprint misc}
+export~\cite{TuriniciMisc}}
+
+\begin{Verbatim}
+@misc{TuriniciMisc,
+    ... same fields as H1, as @misc ...
+}
+\end{Verbatim}
+
+\subsection{H3: The minimal \texttt{--preprint article}
+export~\cite{TuriniciArticle}}
+
+\begin{Verbatim}
+@article{TuriniciArticle,
+    Author = {Turinici, Gabriel},
+    Title = {Quantum control},
+    Journal = {HAL:hal-00640217},
+    Url = {https://hal.science/hal-00640217},
+    Note = {published in the Encyclopedia of Applied and
+            Computational Mathematics, Springer, 2015,
+            \url{https://doi.org/10.1007/978-3-540-70529-1_269}},
+    Year = {2012},
+}
+\end{Verbatim}
+
+\subsection{H4: Anti-pattern -- as H1, but without the \texttt{archive}
+field~\cite{TuriniciNoArchive}}
+
+What every eprint-carrying form renders like for a non-arXiv archive
+\emph{without} the \texttt{archive} field: the link points at
+\texttt{arxiv.org/abs/hal-00640217}.
+
+\begin{Verbatim}
+@unpublished{TuriniciNoArchive,
+    ... same fields as H1, without Archive ...
+}
+\end{Verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Published paper with a preprint}
+
+\subsection{J1: Journal reference with the structured eprint
+fields~\cite{KochFull}}
+
+How \texttt{bibdeskparser} stores a published paper with a preprint, and
+what both full and minimal exports write.
+
+\begin{Verbatim}
+@article{KochFull,
+    Author = {Koch, Christiane P. and ...},
+    Title = {Quantum optimal control in quantum technologies. ...},
+    Journal = epjqt,
+    Eprint = {2205.12110},
+    Archiveprefix = {arXiv},
+    Doi = {10.1140/epjqt/s40507-022-00138-x},
+    Pages = {19},
+    Volume = {9},
+    Year = {2022},
+}
+\end{Verbatim}
+
+\subsection{J2: The same entry without the eprint
+fields~\cite{KochNoEprint}}
+
+What the bibliography loses by dropping \texttt{eprint}/%
+\texttt{archiveprefix}: the free-copy link for readers behind a paywall.
+
+\begin{Verbatim}
+@article{KochNoEprint,
+    ... as J1, without Eprint/Archiveprefix ...
+}
+\end{Verbatim}
+
+\subsection{J3: A published paper with a HAL preprint, as
+exported~\cite{SauvagePRXQ}}
+
+Full and minimal exports of published entries also append the
+\texttt{archive} link base when the \texttt{eprint} names a non-arXiv
+archive.
+
+\begin{Verbatim}
+@article{SauvagePRXQ,
+    Author = {Sauvage, Fr{\'e}d{\'e}ric and Mintert, Florian},
+    Title = {Optimal Quantum Control with Poor Statistics},
+    Journal = {PRX Quantum},
+    Year = {2020},
+    Doi = {10.1103/prxquantum.1.020322},
+    Pages = {020322},
+    Volume = {1},
+    Number = {2},
+    Eprint = {hal-03612955},
+    Archiveprefix = {HAL},
+    Archive = {https://hal.science},
+}
+\end{Verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Observations}
+
+In the table below, $\langle\ldots\rangle$ marks the extent of a hyperlink
+in the rendered entry (follow the links in the bibliography itself to
+verify), and ``id'' abbreviates the identifier of the respective
+reference. Authors and title precede each rendering.
+
+\begin{center}
+\begin{tabular}{lp{0.62\textwidth}}
+\hline
+P1~\cite{WilhelmStored} &
+  $\langle$arXiv:id [quant-ph]$\rangle_{\rm arXiv}$ (2020), lecture
+  notes --- identifier in the venue position, category tag, status \\
+P2~\cite{WilhelmUnpublished} &
+  identical to P1 (the pseudo-journal is ignored) \\
+P3~\cite{WilhelmMisc} &
+  $\langle$title$\rangle_{\rm DOI}$ (2020), lecture notes,
+  $\langle$arXiv:id [quant-ph]$\rangle_{\rm arXiv}$
+  --- DOI-linked title; eprint trails after the year \\
+P4~\cite{WilhelmArticle} &
+  $\langle$arXiv:id (2020)$\rangle_{\rm DOI}$, lecture notes
+  --- venue-position identifier under \emph{every} style \\
+P5~\cite{WilhelmArxivExport} &
+  $\langle$title$\rangle_{\rm arXiv}$ (2020),
+  $\langle$arXiv:id [quant-ph]$\rangle_{\rm arXiv}$
+  --- like P3, but no DOI and no status \\
+P6~\cite{WilhelmLegacyArticle} &
+  arXiv:id $\langle$10.48550/arxiv.id$\rangle_{\rm DOI}$ (2020),
+  $\langle$arXiv:id [quant-ph]$\rangle_{\rm arXiv}$
+  --- identifier shown \emph{three} times, raw DOI visible \\
+P7~\cite{WilhelmArticleDoi} &
+  arXiv:id $\langle$10.48550/arxiv.id$\rangle_{\rm DOI}$ (2020)
+  --- raw DOI visible next to the pseudo-journal \\
+\hline
+H1~\cite{TuriniciUnpublished} &
+  $\langle$HAL:hal-00640217$\rangle_{\rm HAL}$ (2012),
+  $\langle$Note$\rangle_{\rm DOI}$ --- eprint link correct,
+  thanks to \texttt{archive} \\
+H2~\cite{TuriniciMisc} &
+  $\langle$title$\rangle_{\rm HAL}$ (2012), $\langle$Note$\rangle_{\rm DOI}$,
+  $\langle$HAL:hal-00640217$\rangle_{\rm HAL}$
+  --- all links correct \\
+H3~\cite{TuriniciArticle} &
+  $\langle$HAL:hal-00640217 (2012)$\rangle_{\rm HAL}$,
+  $\langle$Note$\rangle_{\rm DOI}$ --- both links correct \\
+H4~\cite{TuriniciNoArchive} &
+  $\langle$HAL:hal-00640217$\rangle_{\rm broken}$ (2012),
+  $\langle$Note$\rangle_{\rm DOI}$ --- without
+  \texttt{archive}, the eprint link points at \texttt{arxiv.org} \\
+\hline
+J1~\cite{KochFull} &
+  $\langle$EPJ Quantum Technol.\ \textbf{9}, 19
+  (2022)$\rangle_{\rm DOI}$, $\langle$arXiv:id$\rangle_{\rm arXiv}$
+  --- journal reference \emph{and} free-copy link \\
+J2~\cite{KochNoEprint} &
+  as J1, but \emph{without} the arXiv link \\
+J3~\cite{SauvagePRXQ} &
+  $\langle$PRX Quantum \textbf{1}, 020322 (2020)$\rangle_{\rm DOI}$,
+  $\langle$HAL:hal-03612955$\rangle_{\rm HAL}$
+  --- the free-copy link is correct, thanks to \texttt{archive} \\
+\hline
+\end{tabular}
+\end{center}
+
+Key observations, specific to \texttt{apsrev4-2} (2019-01-14) with
+\texttt{hyperref}:
+
+\begin{enumerate}
+\item The stored \texttt{@unpublished} form (P1) can be copied verbatim
+  into a document: it renders exactly like the minimal export (P2),
+  because BibTeX ignores the \texttt{journal} field of an
+  \texttt{@unpublished} entry. The eprint renders hyperlinked in the
+  venue position, with the category tag and the status note -- the best
+  REVTeX rendering of a preprint. The legacy \texttt{@article} storage
+  form (P6) can \emph{not} be copied verbatim; \texttt{bibdeskparser
+  export} normalizes either stored form.
+\item \texttt{note} is a \emph{required} field of \texttt{@unpublished}:
+  BibTeX warns ``empty note'' for every entry without one. Recording the
+  publication status there (``preprint only'', ``submitted to Phys.\
+  Rev.\ A'', ``lecture notes'') is therefore doubly useful; minimal
+  exports synthesize ``preprint'' when an entry stores none.
+\item The three export forms are complementary. \texttt{unpublished}
+  (P1/P2, H1) and \texttt{misc} (P3, H2) rely on the style rendering the
+  \texttt{eprint} field --- which REVTeX, \texttt{elsarticle}, and
+  biblatex do, but \texttt{plain}, \texttt{unsrt}, \texttt{abbrv}, and
+  \texttt{IEEEtran} do \emph{not} (under those, only the note text
+  survives, and the identifier is lost). \texttt{article} (P4, H3)
+  renders the identifier in the journal position under \emph{every}
+  style, at the cost of the native eprint formatting (no category tag).
+\item For an \texttt{@article} without \texttt{volume}/\texttt{pages},
+  the \texttt{doi} field is printed as \emph{visible text} (P6, P7)
+  rather than becoming the link target of the journal reference, as it
+  does when \texttt{volume}/\texttt{pages} are present (J1, J3). The
+  \texttt{article} export form therefore writes the DOI as a
+  \texttt{url}, which wraps the journal name and year in the hyperlink
+  (P4, H3).
+\item The link target of REVTeX's rendered eprint is
+  \texttt{<archive>/<eprint>}, with the \texttt{archive} field
+  defaulting to \texttt{https://arxiv.org/abs}. For a non-arXiv archive
+  that default is a broken link (H4); emitting the correct base in
+  \texttt{archive} fixes the eprint link everywhere it appears (H1, H2,
+  J3). The \texttt{url} field cannot compensate on
+  \texttt{@unpublished}, where it is ignored.
+\item Keeping the structured \texttt{eprint} fields on a
+  \emph{published} entry costs nothing and adds the hyperlinked
+  identifier after the journal reference (J1/J3 vs.\ J2) --- the link
+  that stays accessible to readers without a journal subscription.
+  \texttt{bibdeskparser}'s minimal export therefore includes them
+  (and every export adds the \texttt{archive} base where needed, J3).
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliography{refs}
+
+\end{document}

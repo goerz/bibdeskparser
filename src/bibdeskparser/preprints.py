@@ -45,9 +45,12 @@ __private__ = [
 
 #: The result of `find_preprint` (and of `Library.add_preprint`, which
 #: sets `applied`); see the `Library.add_preprint` docstring for the
-#: meaning of each field.
+#: meaning of each field. Only a search match carries a non-empty
+#: `primaryclass` (the matched preprint's arXiv primary category).
 PreprintResult = namedtuple(
-    "PreprintResult", ["eprint", "match", "ratio", "note", "applied"]
+    "PreprintResult",
+    ["eprint", "match", "ratio", "note", "applied", "primaryclass"],
+    defaults=("",),
 )
 
 #: Title-similarity ratio accepted on its own.
@@ -338,7 +341,9 @@ def find_preprint(*, title, author=None, doi=None, year=None):
     matched arXiv identifier (`""` if none), `match` is `"doi"`,
     `"title"`, or `"title+author"` for a match, `"none"` for a clean
     no-match, or `"error"` when the search could not run (network/API
-    failure, or no usable title); network problems never raise.
+    failure, or no usable title); network problems never raise. For a
+    match, `primaryclass` is the preprint's arXiv primary category
+    (e.g. `"quant-ph"`), `""` otherwise.
     """
     if not title or not _norm_title(title):
         return PreprintResult("", "error", 0.0, "no-title", False)
@@ -361,4 +366,7 @@ def find_preprint(*, title, author=None, doi=None, year=None):
         if reason:
             note = f"{reason}; {note}"
         return PreprintResult("", "none", ratio, note, False)
-    return PreprintResult(_short_id(result), reason, ratio, "", False)
+    primaryclass = getattr(result, "primary_category", "") or ""
+    return PreprintResult(
+        _short_id(result), reason, ratio, "", False, primaryclass
+    )

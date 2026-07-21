@@ -174,6 +174,8 @@ here into a subdirectory next to the `.bib` file:
 (Conversely, `auto_file_location=""` forces a plain attach even with
 `file_automatically = true`.)
 
+(howto-string-macros)=
+
 ## How to define or rename a `@string` macro (journal abbreviation)
 
 Define a macro through
@@ -534,9 +536,7 @@ fill them in bulk, and review what remains
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing abstract
-TuriniciHAL00640217
 SauvagePRXQ2020
-Vecheck2022.09.09.507322
 KatrukhaNC2017
 $ bibdeskparser add_abstract tests/Refs/refs.bib \
     SauvagePRXQ2020 Vecheck2022.09.09.507322
@@ -568,7 +568,8 @@ passes stay fast and idempotent.
 
 {py:meth}`Library.add_preprint <bibdeskparser.library.Library.add_preprint>`
 searches arXiv for the preprint of an existing entry and records its identifier in
-the entry's `eprint` field (along with `archiveprefix = arXiv`):
+the entry's `eprint` field (along with `archiveprefix = arXiv` and
+the preprint's primary category in `primaryclass`):
 
 ```python
 result = bib.add_preprint("WinckelIP2008")
@@ -584,8 +585,6 @@ entries whose preprint status is unknown and fill them in bulk
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
-TuriniciHAL00640217
-Vecheck2022.09.09.507322
 $ bibdeskparser add_preprint tests/Refs/refs.bib --mark-empty \
     WinckelIP2008 Vecheck2022.09.09.507322
 WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]
@@ -620,6 +619,121 @@ $ bibdeskparser add_preprint tests/Refs/refs.bib WinckelIP2008 \
 The search respects the arXiv API's rate limit of one request every
 three seconds, so filling in a large library takes time -- let it
 run.
+
+(howto-preprints)=
+
+## How to manage preprint-only publications
+
+`bibdeskparser` stores a preprint-only work as an `@unpublished`
+entry that carries the structured
+`eprint`/`archiveprefix`/`primaryclass` fields, a *pseudo-journal*
+like `arXiv:2205.15044`, `bioRxiv:2022.09.09.507322`, or
+`HAL:hal-00640217`, a `doi`, and a publication-status `note` -- see
+[](preprints) for this convention and the reasoning behind it.
+
+To add a preprint from arXiv, pass its identifier (or its
+`arxiv.org` URL) to [`add`](cli-add), which fetches the metadata and
+creates the entry in this form:
+
+```console
+$ bibdeskparser add tests/Refs/refs.bib 2212.12602
+Goerz2212.12602
+```
+
+For any preprint server, [`import`](cli-import) recognizes a
+preprint-only entry in incoming BibTeX -- by its pseudo-journal, or
+as a `misc`/`unpublished` entry with an `eprint` (e.g. arXiv's own
+"Export BibTeX citation") -- and normalizes it into the same form
+(`@unpublished` type, canonical archive spelling, derived
+`eprint`/`archiveprefix`/`doi` fields):
+
+```console
+$ bibdeskparser import tests/Refs/refs.bib --stdin << 'EOF'
+@article{naceur,
+    Author = {Naceur, Younes and Balada Gaggioli, Llorenç},
+    Title = {Reachability and optimal-time certificates for quantum control},
+    Journal = {HAL:hal-05667276},
+    Url = {https://hal.science/hal-05667276},
+    Year = {2026},
+}
+EOF
+Naceurhal-05667276
+```
+
+An archive that `bibdeskparser` does not recognize is rejected (the
+journal must not be turned into an `@string` macro); add it to the
+[`[preprint_archives]` configuration table](config-preprint-archives),
+or use `--keep-journals` to keep every incoming `journal` (and entry
+type) untouched.
+
+Record the publication status in the `note` field -- "preprint
+only", "submitted to Phys. Rev. A", "lecture notes". The note is
+never filled in automatically; an entry without one shows up as
+incomplete in BibDesk (`note` is a required field of
+`@unpublished`), which is your signal to set it:
+
+```console
+$ bibdeskparser set_field tests/Refs/refs.bib Naceurhal-05667276 note \
+    "preprint only"
+```
+
+To cite preprints from LaTeX, export them in the form that
+matches the document's bibliography style (`--preprint`, defaulting
+to the [`preprint_export` setting](config-preprint-export)): the
+structured `unpublished` (default) or `misc` forms for styles that
+render the `eprint` field (REVTeX, `elsarticle`, biblatex), or the
+`article` form for classic styles (`plain`, `unsrt`, `IEEEtran`,
+...) that would drop it:
+
+```console
+$ bibdeskparser export tests/Refs/refs.bib Wilhelm2003.10132 --minimal
+@unpublished{Wilhelm2003.10132,
+    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},
+    Title = {An introduction into optimal control for quantum technologies},
+    Eprint = {2003.10132},
+    Archiveprefix = {arXiv},
+    Primaryclass = {quant-ph},
+    Doi = {10.48550/arxiv.2003.10132},
+    Note = {preprint only},
+    Year = {2020},
+}
+$ bibdeskparser export tests/Refs/refs.bib Wilhelm2003.10132 --minimal \
+    --preprint article
+@article{Wilhelm2003.10132,
+    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},
+    Title = {An introduction into optimal control for quantum technologies},
+    Journal = {arXiv:2003.10132},
+    Url = {https://doi.org/10.48550/arxiv.2003.10132},
+    Note = {preprint only},
+    Year = {2020},
+}
+```
+
+For a preprint on a non-arXiv archive, the structured forms also
+emit the `archive` field, so that REVTeX's eprint link points at the
+right server (see [the `archive` field](preprints-archive-field)).
+The [`render`](cli-render) command shows the preprint reference in
+the journal position, hyperlinked, with the status note appended:
+
+```console
+$ bibdeskparser render tests/Refs/refs.bib TuriniciHAL00640217
+G. Turinici. [*Quantum control*](https://hal.science/hal-00640217). [HAL:hal-00640217](https://hal.science/hal-00640217) (2012), lecture notes.
+```
+
+When a preprint gets published, update the entry in place: make
+it an `@article`, replace the pseudo-journal with the real journal
+(an `@string` macro, see [above](howto-string-macros)), add the
+`volume`, `pages`, and published `doi`, and remove (or update) the
+status `note`. The retained `eprint`/`archiveprefix` fields automatically
+start rendering and exporting as the "published, with preprint"
+link.
+
+Then generate the key the published article should have
+(`bibdeskparser rekey`).
+
+Conversely, [`add_preprint`](howto-add-preprint) fills in the
+`eprint` field for already-published entries, so that readers behind
+a paywall get a link to the free copy.
 
 ## How to import BibTeX entries from a publisher or another library
 
@@ -794,7 +908,9 @@ are included, so the file is self-contained (pass
 macro's value and omit the definitions).
 
 Note how the entries' `abstract` and `keywords`, and the `article`
-entry's linked file, are all dropped:
+entry's linked file, are all dropped (the `eprint` fields are kept:
+they render as a "published, with preprint" link under styles like
+REVTeX, and are ignored by classic styles; see [](preprints)):
 
 ```python
 >>> bib.export(
@@ -811,6 +927,8 @@ entry's linked file, are all dropped:
     Doi = {10.1103/physreva.79.021603},
     Pages = {021603},
     Volume = {79},
+    Eprint = {0806.3877},
+    Archiveprefix = {arXiv},
 }
 <BLANKLINE>
 @unpublished{Evans1983,

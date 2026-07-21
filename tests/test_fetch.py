@@ -313,6 +313,7 @@ def _arxiv_result():
         ],
         published=datetime.datetime(2022, 5, 30, tzinfo=datetime.timezone.utc),
         summary=ABSTRACT,
+        primary_category="quant-ph",
     )
 
 
@@ -320,11 +321,12 @@ def test_arxiv(monkeypatch):
     searches = _mock_arxiv(monkeypatch, [_arxiv_result()])
     text = fetch.fetch_bibtex("https://arxiv.org/abs/2205.15044")
     assert searches == [["2205.15044"]]
-    assert "@article{Fetched," in text
+    assert "@unpublished{Fetched," in text
     assert "author = {Goerz, Michael H. and Carrasco, Sebastián C.}," in text
     assert "journal = {arXiv:2205.15044}," in text
     assert "eprint = {2205.15044}," in text
     assert "archiveprefix = {arXiv}," in text
+    assert "primaryclass = {quant-ph}," in text
     assert "year = {2022}," in text
     assert "url = {https://doi.org/10.48550/arXiv.2205.15044}," in text
 

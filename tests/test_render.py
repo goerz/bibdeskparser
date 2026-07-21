@@ -5,6 +5,7 @@ from pathlib import Path
 import bibtexparser
 import pytest
 
+import bibdeskparser.config as config
 from bibdeskparser import ValueString
 from bibdeskparser.entry import Entry
 from bibdeskparser.middleware import parse_stack
@@ -21,6 +22,15 @@ from bibdeskparser.render import (
 )
 
 REFS_BIB = Path(__file__).parent / "Refs" / "refs.bib"
+
+
+@pytest.fixture(autouse=True)
+def _reset_config():
+    """Reset the process-global configuration around every test
+    (rendering reads the `preprint_archives` setting)."""
+    config.active.reset()
+    yield
+    config.active.reset()
 
 
 def _load_refs():
@@ -533,6 +543,191 @@ def test_format_eprint_absent():
     assert _format_eprint(entry, "markdown") == ""
 
 
+def test_format_eprint_hal():
+    """A HAL `archiveprefix` names and links the HAL archive, with the
+    prefix canonicalized (`hal` -> `HAL`)."""
+    entry = _make_entry(
+        "article", "k", eprint="hal-03612955", archiveprefix="hal"
+    )
+    assert _format_eprint(entry, "markdown") == (
+        "[HAL:hal-03612955](https://hal.science/hal-03612955)"
+    )
+
+
+def test_format_eprint_unknown_archive():
+    """An unrecognized `archiveprefix` renders verbatim, unlinked."""
+    entry = _make_entry(
+        "article", "k", eprint="X5129", archiveprefix="EarthArXiv"
+    )
+    assert _format_eprint(entry, "markdown") == "EarthArXiv:X5129"
+
+
+def test_format_eprint_no_url_template():
+    """An archive without identifier-based URLs (ChemRxiv) names the
+    archive but produces no link."""
+    entry = _make_entry(
+        "article",
+        "k",
+        eprint="10.26434/chemrxiv-2021-h5g1x",
+        archiveprefix="chemrxiv",
+    )
+    assert _format_eprint(entry, "markdown") == (
+        "ChemRxiv:10.26434/chemrxiv-2021-h5g1x"
+    )
+
+
+def test_format_eprint_omitted_for_preprint_only():
+    """A preprint-only entry (either stored form) omits the separate
+    eprint segment: the preprint reference renders in the journal
+    position instead."""
+    entry = _make_entry(
+        "article",
+        "k",
+        journal="arXiv:1234.5678",
+        eprint="1234.5678",
+        archiveprefix="arXiv",
+    )
+    assert _format_eprint(entry, "markdown") == ""
+    entry = _make_entry("misc", "k", eprint="1234.5678", archiveprefix="arXiv")
+    assert _format_eprint(entry, "markdown") == ""
+
+
+def test_format_eprint_kept_for_published():
+    """A published article with an eprint keeps the eprint segment
+    (the "published, with preprint" form)."""
+    entry = _make_entry(
+        "article",
+        "k",
+        journal="Phys. Rev. A",
+        volume="99",
+        eprint="1234.5678",
+        archiveprefix="arXiv",
+    )
+    assert _format_eprint(entry, "markdown") == (
+        "[arXiv:1234.5678](https://arxiv.org/abs/1234.5678)"
+    )
+
+
+def test_format_eprint_kept_for_thesis():
+    """A thesis deposited on a preprint server is not preprint-only
+    (only `misc` counts): its eprint renders as a separate segment."""
+    entry = _make_entry(
+        "phdthesis",
+        "k",
+        eprint="tel-00007910v2",
+        archiveprefix="hal",
+    )
+    assert _format_eprint(entry, "markdown") == (
+        "[HAL:tel-00007910v2](https://hal.science/tel-00007910v2)"
+    )
+
+
+# -- preprint-only entries ---------------------------------------------- #
+
+
+def test_render_preprint_only_arxiv(refs):
+    """A preprint-only arXiv entry (stored as `@unpublished`): the
+    preprint reference renders in the journal position, with the
+    category tag from `primaryclass`, linked to the DOI, with the
+    status note appended; no separate eprint link."""
+    entry = refs["Wilhelm2003.10132"]
+    assert entry.entry_type == "unpublished"
+    rendered = render_entry(entry)
+    assert rendered == (
+        "F. K. Wilhelm, S. Kirchhoff, S. Machnes, N. Wittler and "
+        "D. Sugny. [*An introduction into optimal control for quantum "
+        "technologies*](https://arxiv.org/abs/2003.10132), "
+        "[arXiv:2003.10132 [quant-ph]]"
+        "(https://doi.org/10.48550/arxiv.2003.10132) (2020), "
+        "preprint only."
+    )
+
+
+def test_render_preprint_only_legacy_article():
+    """A preprint-only entry in the legacy `@article` form renders
+    identically to the `@misc` form."""
+    fields = {
+        "author": "Doe, Jane",
+        "title": "A Title",
+        "journal": "arXiv:1234.5678",
+        "eprint": "1234.5678",
+        "archiveprefix": "arXiv",
+        "doi": "10.48550/arxiv.1234.5678",
+        "year": "2024",
+    }
+    as_article = Entry("article", "k", fields=dict(fields))
+    as_misc = Entry("misc", "k", fields=dict(fields))
+    assert render_entry(as_article) == render_entry(as_misc)
+
+
+def test_render_preprint_only_misc_without_journal():
+    """A `@misc` entry with only the eprint fields (e.g. imported
+    from arXiv's own BibTeX export) renders its preprint reference in
+    the journal position."""
+    entry = _make_entry(
+        "misc",
+        "k",
+        author="Doe, Jane",
+        title="A Title",
+        eprint="1234.5678",
+        archiveprefix="arXiv",
+        year="2024",
+    )
+    assert render_entry(entry) == (
+        "J. Doe. *A Title*, "
+        "[arXiv:1234.5678](https://arxiv.org/abs/1234.5678) (2024)."
+    )
+
+
+def test_render_preprint_only_hal_url_fallback(refs):
+    """A preprint-only HAL entry without a DOI: the pseudo-journal
+    links to the entry's first URL, and the status note appends."""
+    rendered = render_entry(refs["TuriniciHAL00640217"])
+    assert rendered == (
+        "G. Turinici. [*Quantum control*]"
+        "(https://hal.science/hal-00640217). "
+        "[HAL:hal-00640217](https://hal.science/hal-00640217) (2012), "
+        "lecture notes."
+    )
+
+
+def test_render_preprint_only_archive_url_fallback():
+    """A preprint-only entry without DOI or URL: the preprint
+    reference links to the archive's page for the identifier."""
+    entry = _make_entry(
+        "misc",
+        "k",
+        author="Doe, Jane",
+        title="A Title",
+        journal="arXiv:1234.5678",
+        eprint="1234.5678",
+        archiveprefix="arXiv",
+        year="2024",
+    )
+    assert render_entry(entry) == (
+        "J. Doe. *A Title*, "
+        "[arXiv:1234.5678](https://arxiv.org/abs/1234.5678) (2024)."
+    )
+
+
+def test_render_preprint_only_biorxiv(refs):
+    """A preprint-only bioRxiv entry, linked via its DOI."""
+    rendered = render_entry(refs["Vecheck2022.09.09.507322"])
+    assert "bioRxiv:2022.09.09.507322" in rendered
+    assert "https://doi.org/10.1101/2022.09.09.507322" in rendered
+    assert rendered.count("2022.09.09.507322") == 2  # journal + link only
+
+
+def test_render_published_with_hal_eprint(refs):
+    """A published article with a HAL eprint: journal from the macro,
+    plus a correctly linked `HAL:...` eprint segment."""
+    entry = refs["SauvagePRXQ2020"]
+    rendered = render_entry(entry)
+    assert "HAL:hal-03612955" in rendered
+    assert "https://hal.science/hal-03612955" in rendered
+    assert "arXiv" not in rendered
+
+
 # -- _join_parts punctuation rules -------------------------------------- #
 
 
@@ -659,3 +854,25 @@ def test_render_entries_invalid_style():
     entry = _make_entry("article", "k", title="T")
     with pytest.raises(ValueError, match="style must be one of"):
         render_entries([entry], style="bogus")
+
+
+def test_render_preprint_only_unpublished():
+    """An `@unpublished` entry with an eprint is preprint-only: the
+    preprint reference renders in the journal position, and a status
+    note appends."""
+    entry = _make_entry(
+        "unpublished",
+        "k",
+        author="Doe, Jane",
+        title="A Title",
+        eprint="1234.5678",
+        archiveprefix="arXiv",
+        note="submitted to Phys. Rev. A",
+        doi="10.48550/arxiv.1234.5678",
+        year="2024",
+    )
+    assert render_entry(entry) == (
+        "J. Doe. *A Title*, "
+        "[arXiv:1234.5678](https://doi.org/10.48550/arxiv.1234.5678) "
+        "(2024), submitted to Phys. Rev. A."
+    )

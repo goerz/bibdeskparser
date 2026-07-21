@@ -158,8 +158,6 @@ case-insensitively.
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
-TuriniciHAL00640217
-Vecheck2022.09.09.507322
 ```
 
 ### `duplicate_keys`
@@ -517,6 +515,8 @@ Shapiro2012.pdf
 
 ## Rendering and exporting
 
+(cli-render)=
+
 ### `render KEY...`
 
 Render a formatted citation for one or more entries, via
@@ -525,6 +525,12 @@ selects the output format (`markdown`, the default, `tex`, or `html`);
 `--style` selects the layout of multiple citations relative to one
 another (`default`, `paragraphs`, `numbered list`, or
 `itemized list`).
+
+A [preprint-only entry](preprints) renders its preprint reference
+in the journal position, linked to the DOI, the entry's first URL,
+or the archive's page for the identifier; any other entry's
+`eprint` renders as a separate link into its preprint archive
+(e.g. `arXiv:2205.15044`) after the journal reference.
 
 ```console
 $ bibdeskparser render tests/Refs/refs.bib GoerzA2023 --format tex
@@ -553,6 +559,20 @@ pairs control the output:
   default, every field is included (with file attachments and URLs
   as plain paths/URLs; the `date-added`/`date-modified` bookkeeping
   fields are omitted).
+
+A [preprint-only entry](preprints) is exported in the form selected
+by `--preprint`, whatever its stored form: `unpublished` (the
+structured `eprint`-field form with the required `note` guaranteed
+in minimal exports -- the stored note, or "preprint"; the default,
+via the [`preprint_export` setting](config-preprint-export)),
+`misc` (the same structured form as `@misc`), `article` (the
+pseudo-journal form, hyperlinked via `url`, for classic styles that
+would drop an `eprint`), or `stored` (no transformation). The
+structured forms emit the
+[`archive` link base](preprints-archive-field) for non-arXiv
+preprints, as do full and minimal exports of published entries
+with a non-arXiv `eprint`. An explicit `--field` list always
+exports the stored fields.
 
 `--outfile PATH` writes to a file instead of printing to stdout.
 
@@ -671,13 +691,22 @@ the journal becomes an `@string` macro reference -- resolved against
 the library's macros and the
 [`[journal_macros]` configuration](config-journal-macros), or newly
 created, with a warning, from the journal's lowercased initials
-(literal `arXiv:...` pseudo-journals excepted); proper nouns in
-sentence-case titles and all configured `protected_words` are
-brace-protected; DOIs are normalized; for articles, page ranges
-collapse to the first page and non-essential fields are dropped.
-Citation keys are regenerated from the
+(`--keep-journals` preserves every journal as-is instead); proper
+nouns in sentence-case titles and all configured `protected_words`
+are brace-protected; DOIs are normalized; for articles, page ranges
+collapse to the first page and non-essential fields are dropped. A
+[preprint-only entry](preprints) -- one with a pseudo-journal like
+`arXiv:2205.15044` (any archive from the
+[`[preprint_archives]` configuration](config-preprint-archives)),
+or a `misc`/`unpublished` entry with an `eprint`, like arXiv's own
+BibTeX export -- is normalized to its canonical stored form:
+`@unpublished`, with the pseudo-journal in the archive's canonical
+spelling and derived `eprint`/`archiveprefix`/`doi` fields (the
+publication-status `note` is never filled in automatically). A
+pseudo-journal with an *unrecognized* archive prefix is rejected,
+unless `--keep-journals` is given. Citation keys are regenerated from the
 [`[auto_key]` format](config-auto-key) if configured, else as e.g.
-`GoerzPRA2014` (articles) or `Goerz2205.15044` (arXiv preprints);
+`GoerzPRA2014` (articles) or `Goerz2205.15044` (preprints);
 `--keep-keys` keeps the incoming keys instead. `--fix-uppercase`
 repairs all-uppercase names/titles found in some publisher data.
 
@@ -710,8 +739,10 @@ source and add it to the library as a new, sanitized entry, via
 
 * an **arXiv identifier** (`2205.15044`, `quant-ph/0106057`), or any
   string containing one (e.g. an `arxiv.org` URL), is fetched from
-  the arXiv API and added as an `@article` preprint with a literal
-  `journal = {arXiv:...}`, `eprint`, and `archiveprefix`;
+  the arXiv API and added as a [preprint-only](preprints)
+  `@unpublished` entry with a pseudo-journal
+  `journal = {arXiv:...}` and the structured
+  `eprint`/`archiveprefix`/`primaryclass` fields;
 * a **DOI**, or a URL containing one (e.g. most publisher article
   pages), is fetched from [Crossref](https://www.crossref.org);
 * anything else (free text with spaces) is a **Crossref
@@ -825,7 +856,9 @@ Find and store the matching arXiv preprint for the given entries, via
 arXiv API is searched for a preprint matching the entry (by title and
 first author, precise queries first) and, on a confident match, its
 identifier is stored in the entry's `eprint` field, along with
-`archiveprefix = arXiv`. A result is accepted only when
+`archiveprefix = arXiv` and the preprint's primary category (e.g.
+`quant-ph`) in the `primaryclass` field. A result is accepted only
+when
 
 * its arXiv DOI equals the entry's `doi` field (the strongest
   signal), or
@@ -838,7 +871,7 @@ names that year -- a guard against unrelated papers sharing a generic
 title. Such a `postdated-unverified` candidate is only reported;
 after reviewing it, apply it explicitly with `--eprint ID` (a single
 `KEY` only, no network access; a leading `arXiv:` prefix and a
-version suffix are stripped).
+version suffix are stripped, and no `primaryclass` is stored).
 
 The `eprint` field encodes the entry's audit state: *absent* means
 the preprint status is unknown (`keys --missing eprint`), *empty*
@@ -854,9 +887,10 @@ error) the entry is never modified, so a re-run picks it up.
 
 The command prints a per-key report; `--dry-run` prints it without
 modifying the `.bib` file, and `--json` maps each key to
-`{eprint, match, ratio, note, applied}`. Requires network access
-(except with `--eprint`) and respects the arXiv API's rate limit of
-one request every three seconds, so large runs take time.
+`{eprint, match, ratio, note, applied, primaryclass}`. Requires
+network access (except with `--eprint`) and respects the arXiv API's
+rate limit of one request every three seconds, so large runs take
+time.
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
@@ -1097,6 +1131,8 @@ by piping the edited text to `--stdin`. Neither command ever blocks
 without a terminal: invoked with no TTY on stdin and with neither
 `--stdin` nor an explicit `--editor`, they fail immediately with a
 usage error rather than hanging on `$EDITOR`.
+
+(cli-edit)=
 
 ### `edit KEY...`
 

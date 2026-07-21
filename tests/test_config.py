@@ -577,6 +577,78 @@ def test_journal_macros_validation(tmp_path, monkeypatch):
         config.active.load(bib_dir=tmp_path)
 
 
+def test_preprint_archives_defaults():
+    config.active.reset()
+    archives = config.active.preprint_archives
+    assert set(archives) == {
+        "arxiv",
+        "biorxiv",
+        "medrxiv",
+        "chemrxiv",
+        "hal",
+        "ssrn",
+    }
+    assert archives["arxiv"].name == "arXiv"
+    assert archives["arxiv"].url == "https://arxiv.org/abs/{id}"
+    assert archives["chemrxiv"].url == ""  # no identifier-based URLs
+
+
+def test_preprint_archives_parsing(tmp_path, monkeypatch):
+    """Configured archives extend the built-ins; a case-insensitive
+    name match overrides a built-in archive."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(
+        tmp_path,
+        "[preprint_archives]\n"
+        'Zenodo = "https://zenodo.org/records/{id}"\n'
+        'EarthArXiv = ""\n'
+        'ARXIV = "https://arxiv.org/pdf/{id}"\n',
+    )
+    config.active.load(bib_dir=tmp_path)
+    archives = config.active.preprint_archives
+    assert archives["zenodo"].name == "Zenodo"
+    assert archives["zenodo"].url == "https://zenodo.org/records/{id}"
+    assert archives["eartharxiv"].url == ""
+    assert archives["arxiv"].name == "ARXIV"  # built-in overridden
+    assert archives["arxiv"].url == "https://arxiv.org/pdf/{id}"
+    assert archives["hal"].name == "HAL"  # built-ins still present
+    config.active.reset()
+    assert config.active.preprint_archives["arxiv"].name == "arXiv"
+
+
+def test_preprint_archives_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "preprint_archives = 1\n")
+    with pytest.raises(
+        ValueError, match=r"\[preprint_archives\] must be a table"
+    ):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[preprint_archives]\n"Earth ArXiv" = ""\n')
+    with pytest.raises(ValueError, match="invalid archive name"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[preprint_archives]\nZenodo = 1\n")
+    with pytest.raises(ValueError, match="URL template"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[preprint_archives]\nZenodo = "https://zenodo.org/"\n')
+    with pytest.raises(ValueError, match="URL template"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_preprint_export(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    config.active.reset()
+    assert config.active.preprint_export == "unpublished"
+    for value in ("article", "misc"):
+        _write(tmp_path, f'preprint_export = "{value}"\n')
+        config.active.load(bib_dir=tmp_path)
+        assert config.active.preprint_export == value
+    config.active.reset()
+    assert config.active.preprint_export == "unpublished"
+    _write(tmp_path, 'preprint_export = "stored"\n')
+    with pytest.raises(ValueError, match="preprint_export must be"):
+        config.active.load(bib_dir=tmp_path)
+
+
 def test_protected_words_parsing(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
     _write(tmp_path, 'protected_words = ["Rydberg", " NMR "]\n')

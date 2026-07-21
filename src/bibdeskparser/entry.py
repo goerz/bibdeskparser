@@ -739,7 +739,13 @@ class Entry(MutableMapping):
 
         Whenever a non-empty `eprint` is stored, an
         `archiveprefix = arXiv` field is added alongside it (unless
-        the entry already has an `archiveprefix`).
+        the entry already has an `archiveprefix`). A search match
+        additionally stores the preprint's arXiv primary category
+        (e.g. `quant-ph`) in the `primaryclass` field, replacing any
+        existing value (which, with `overwrite=True`, described the
+        replaced identifier); an explicitly given identifier stores
+        no `primaryclass`, since without network access the category
+        is unknown.
 
         The `eprint` field encodes the entry's audit state, mirroring
         how {meth}`add_abstract` treats the `abstract` field: a field
@@ -762,16 +768,17 @@ class Entry(MutableMapping):
         `"existing"`, unless `overwrite=True`; the empty marker does
         not require `overwrite`.
 
-        Returns a named tuple `(eprint, match, ratio, note,
-        applied)`: the stored (or existing) arXiv identifier (`""` if
-        none), how it was matched (`"doi"`, `"title"`, or
+        Returns a named tuple `(eprint, match, ratio, note, applied,
+        primaryclass)`: the stored (or existing) arXiv identifier
+        (`""` if none), how it was matched (`"doi"`, `"title"`, or
         `"title+author"` for a search match, in decreasing order of
         strength; `"explicit"` for a given identifier; `"none"` for a
         clean no-match; `"error"` when the search could not run;
         `"existing"` when the entry was skipped), the title-similarity
         ratio of the best search result (`None` when no search ran),
-        a short diagnostic trace (`note`), and whether the entry was
-        modified (`applied`). On a `"error"` result (network/API
+        a short diagnostic trace (`note`), whether the entry was
+        modified (`applied`), and the primary category of a search
+        match (`""` otherwise). On a `"error"` result (network/API
         failure, or an entry without a title) the entry is never
         modified -- in particular, no empty marker is stored -- so a
         re-run picks it up.
@@ -816,22 +823,29 @@ class Entry(MutableMapping):
             year=str(self.get("year") or "") or None,
         )
         if result.eprint:
-            self._store_eprint(result.eprint)
+            self._store_eprint(result.eprint, result.primaryclass)
             return result._replace(applied=True)
         if result.match == "none" and mark_empty:
             self["eprint"] = ValueString("")
             if str(self.get("archiveprefix") or "").lower() == "arxiv":
                 del self["archiveprefix"]
+            if "primaryclass" in self:
+                del self["primaryclass"]
             return result._replace(applied=True)
         return result
 
-    def _store_eprint(self, value):
+    def _store_eprint(self, value, primaryclass=""):
         """Store the non-empty arXiv identifier `value`, maintaining
         the invariant that a non-empty `eprint` is accompanied by an
-        `archiveprefix`."""
+        `archiveprefix`. A non-empty `primaryclass` (the primary
+        category reported by the arXiv API for a search match)
+        replaces any existing `primaryclass`, which described a
+        previous identifier."""
         self["eprint"] = ValueString(value)
         if not str(self.get("archiveprefix") or ""):
             self["archiveprefix"] = ValueString("arXiv")
+        if primaryclass:
+            self["primaryclass"] = ValueString(primaryclass)
 
     # -- structured names ---------------------------------------------- #
 
