@@ -11,12 +11,14 @@ from bibdeskparser.entry import Entry
 from bibdeskparser.middleware import parse_stack
 from bibdeskparser.render import (
     _bold,
+    _detex,
     _format_authors,
     _format_eprint,
     _format_pages,
     _italic,
     _join_parts,
     _link,
+    _mono,
     render_entries,
     render_entry,
 )
@@ -387,6 +389,61 @@ def test_render_title_strips_protection_braces(refs):
     assert "}" not in rendered
 
 
+# -- TeX markup in stored field values ---------------------------------- #
+
+
+@pytest.mark.parametrize("fmt", ["markdown", "html"])
+@pytest.mark.parametrize(
+    "key", ["GoerzSPP2019", "GoerzPhd2015", "SciPy", "jax"]
+)
+def test_render_no_raw_tex_commands(refs, key, fmt):
+    """TeX markup in stored fields (`\\url`, `\\href`, `\\texttt`,
+    `\\textit`) must not appear verbatim in markdown/html output."""
+    rendered = render_entry(refs[key], format=fmt)
+    for command in ("\\url", "\\href", "\\texttt", "\\textit"):
+        assert command not in rendered
+
+
+def test_render_note_tex_commands_markdown(refs):
+    """`\\url` and `\\href` in a note render as markdown links, and
+    `\\texttt` as a code span."""
+    rendered = render_entry(refs["GoerzPhd2015"])
+    assert "[https://michaelgoerz.net](https://michaelgoerz.net)" in rendered
+    assert "[Github](https://github.com/goerz/dissertation)" in rendered
+    rendered = render_entry(refs["GoerzSPP2019"])
+    assert "The `krotov` Python package" in rendered
+
+
+def test_render_note_tex_commands_html(refs):
+    """`\\url` and `\\textit` in a note render as HTML markup."""
+    rendered = render_entry(refs["SciPy"], format="html")
+    assert '<a href="https://scipy.org">https://scipy.org</a>' in rendered
+    rendered = render_entry(refs["DevoretLH1995"], format="html")
+    assert "<i>Les Houches Summer School</i>" in rendered
+
+
+@pytest.mark.parametrize("fmt", ["markdown", "html"])
+def test_render_texttt_title(refs, fmt):
+    """`\\texttt{JAX}` in a title renders as monospace markup; in
+    particular, the protection-brace stripping must not mangle it
+    into `\\textttJAX`."""
+    rendered = render_entry(refs["jax"], format=fmt)
+    if fmt == "markdown":
+        assert "*`JAX`: composable transformations" in rendered
+    else:
+        assert "<i><code>JAX</code>: composable transformations" in rendered
+
+
+def test_render_tex_format_keeps_tex_markup(refs):
+    """For tex output, TeX commands in stored fields pass through
+    verbatim (including their braces)."""
+    rendered = render_entry(refs["jax"], format="tex")
+    assert "\\texttt{JAX}: composable transformations" in rendered
+    rendered = render_entry(refs["GoerzPhd2015"], format="tex")
+    assert "\\url{https://michaelgoerz.net}" in rendered
+    assert "\\href{https://github.com/goerz/dissertation}{Github}" in rendered
+
+
 @pytest.mark.parametrize(
     "key, snippets",
     [
@@ -513,6 +570,42 @@ def test_format_pages_absent():
     """No `pages` field: pages segment is empty."""
     entry = _make_entry("article", "k")
     assert _format_pages(entry) == ""
+
+
+def test_detex_nested_commands():
+    """Commands nested in a `\\href` label are converted recursively."""
+    assert _detex(r"\href{https://x.org}{\texttt{code}}", "markdown") == (
+        "[`code`](https://x.org)"
+    )
+
+
+def test_detex_escapes_and_nonbreaking_space():
+    """Escaped characters lose their backslash and `~` becomes a
+    space in markdown/html output; tex output is untouched."""
+    assert _detex(r"Vieweg \& Teubner", "markdown") == "Vieweg & Teubner"
+    assert _detex(r"Vol.~5.2", "html") == "Vol. 5.2"
+    assert _detex(r"Vieweg \& Teubner, Vol.~5.2", "tex") == (
+        r"Vieweg \& Teubner, Vol.~5.2"
+    )
+
+
+def test_detex_unknown_command_verbatim():
+    """An unrecognized command passes through verbatim, with its
+    braced argument intact even under `drop_braces`."""
+    text = r"in \textsc{Small Caps} and {Protected} text"
+    assert _detex(text, "markdown") == text
+    assert _detex(text, "markdown", drop_braces=True) == (
+        r"in \textsc{Small Caps} and Protected text"
+    )
+
+
+def test_detex_malformed_verbatim():
+    """Unbalanced braces or a missing `\\href` label pass through
+    verbatim."""
+    assert _detex(r"\texttt{oops", "markdown") == r"\texttt{oops"
+    assert _detex(r"see \href{https://x.org} now", "markdown") == (
+        r"see \href{https://x.org} now"
+    )
 
 
 def test_format_eprint_with_primaryclass():
@@ -830,6 +923,19 @@ def test_italic(fmt, expected):
 def test_bold(fmt, expected):
     """`_bold` formats text per format."""
     assert _bold("text", fmt) == expected
+
+
+@pytest.mark.parametrize(
+    "fmt, expected",
+    [
+        ("markdown", "`text`"),
+        ("tex", "\\texttt{text}"),
+        ("html", "<code>text</code>"),
+    ],
+)
+def test_mono(fmt, expected):
+    """`_mono` formats text per format."""
+    assert _mono("text", fmt) == expected
 
 
 # -- format validation --------------------------------------------------- #
