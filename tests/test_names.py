@@ -1,5 +1,7 @@
 """Tests for `bibdeskparser.names`."""
 
+import pytest
+
 from bibdeskparser.names import structured_names
 
 
@@ -59,3 +61,12 @@ def test_single_name():
     (name,) = structured_names("Einstein, Albert")
     assert name.last == ["Einstein"]
     assert name.first == ["Albert"]
+
+
+def test_unparseable_name():
+    """An unparseable value raises a descriptive `ValueError`
+    (`bibtexparser`'s `InvalidNameError`)."""
+    with pytest.raises(ValueError, match="Too many commas"):
+        structured_names("Doe, John, Jr, X, Y")
+    with pytest.raises(ValueError, match="Unterminated opening brace"):
+        structured_names("Bad {Name")

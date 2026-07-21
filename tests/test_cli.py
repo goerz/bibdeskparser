@@ -15,6 +15,7 @@ from bibdeskparser import Library
 from bibdeskparser.cli import main
 
 REFS_DIR = Path(__file__).parent / "Refs"
+FAIL_CHECKS_DIR = Path(__file__).parent / "test_cli_fail_checks"
 
 
 @pytest.fixture(autouse=True)
@@ -53,6 +54,29 @@ def fixture_dupfile(tmp_path):
     for pdf in REFS_DIR.glob("*.pdf"):
         shutil.copy(pdf, tmp_path)
     return Path(shutil.copy(REFS_DIR / "with_duplicates.bib", tmp_path))
+
+
+@pytest.fixture(name="checkfile")
+def fixture_checkfile(tmp_path):
+    """A copy of `test_cli_fail_checks/problems.bib` in `tmp_path`: a
+    library that fails every audit of the `check` command except the parse
+    audit (see the `brokenfile` fixture), with one entry per problem,
+    named after it (`MissingDoi2026`, `LiteralJournal2026`,
+    `UndefinedMacro2026`, `BadNames2026`, `Duplicate2026`), plus an
+    unused `@string` macro (`unusedjrnl`) and the two *passing*
+    entries `EmptyDoi2026` (an empty doi marks the entry as verified
+    to have none) and `Preprint2026` (a preprint-only entry, exempt
+    from the doi and journal audits)."""
+    return Path(shutil.copy(FAIL_CHECKS_DIR / "problems.bib", tmp_path))
+
+
+@pytest.fixture(name="brokenfile")
+def fixture_brokenfile(tmp_path):
+    """A copy of `test_cli_fail_checks/broken_block.bib` in
+    `tmp_path`: a library with one clean entry (`Good2026`) and one
+    block that fails to parse (`Broken2026`, with a duplicate `title`
+    field)."""
+    return Path(shutil.copy(FAIL_CHECKS_DIR / "broken_block.bib", tmp_path))
 
 
 @pytest.fixture(name="runner")
@@ -713,6 +737,132 @@ def test_duplicate_keys_json(runner, dupfile):
 def test_duplicate_keys_none(runner, bibfile):
     result = _run(runner, "duplicate_keys", bibfile)
     assert result.output == ""
+
+
+def test_check_pass(runner, bibfile):
+    n = len(_load(bibfile))
+    result = _run(runner, "check", bibfile)
+    assert result.output == f"PASS ({n} entries checked)\n"
+
+
+def test_check_pass_json(runner, bibfile):
+    n = len(_load(bibfile))
+    result = _run(runner, "check", bibfile, "--json")
+    data = json.loads(result.output)
+    assert data == {"passed": True, "entries_checked": n, "problems": []}
+
+
+def test_check_problems(runner, checkfile):
+    result = runner.invoke(main, ["check", str(checkfile)])
+    assert result.exit_code == 1
+    lines = result.output.splitlines()
+    assert lines[0] == "Duplicate2026: duplicate citation key"
+    assert lines[1] == "MissingDoi2026: missing doi"
+    assert lines[2] == (
+        "LiteralJournal2026: journal is the literal string "
+        "'Some Journal', not an @string macro reference"
+    )
+    assert lines[3] == (
+        "UndefinedMacro2026: journal references undefined @string "
+        "macro 'nosuchjournal'"
+    )
+    assert lines[4].startswith(
+        "BadNames2026: author does not parse as names: "
+    )
+    assert "Too many commas" in lines[4]
+    assert lines[5] == "unused @string macro 'unusedjrnl'"
+    assert lines[6] == "FAIL (6 problems, 7 entries checked)"
+    assert len(lines) == 7
+
+
+def test_check_problems_json(runner, checkfile):
+    result = runner.invoke(main, ["check", str(checkfile), "--json"])
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["passed"] is False
+    assert data["entries_checked"] == 7
+    assert [(p["check"], p["key"]) for p in data["problems"]] == [
+        ("duplicate_keys", "Duplicate2026"),
+        ("doi", "MissingDoi2026"),
+        ("journal", "LiteralJournal2026"),
+        ("journal", "UndefinedMacro2026"),
+        ("names", "BadNames2026"),
+        ("unused_strings", None),
+    ]
+    assert all("message" in p for p in data["problems"])
+
+
+def test_check_per_key(runner, checkfile):
+    result = runner.invoke(main, ["check", str(checkfile), "MissingDoi2026"])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "MissingDoi2026: missing doi",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+    result = runner.invoke(
+        main,
+        ["check", str(checkfile), "LiteralJournal2026", "MissingDoi2026"],
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "LiteralJournal2026: journal is the literal string "
+        "'Some Journal', not an @string macro reference",
+        "MissingDoi2026: missing doi",
+        "FAIL (2 problems, 2 entries checked)",
+    ]
+
+
+def test_check_per_key_passing_entries(runner, checkfile):
+    # The empty doi of EmptyDoi2026 marks it as verified to have no
+    # doi, Preprint2026 is exempt from the doi and journal audits as
+    # a preprint-only entry, and the unused-macros audit (which the
+    # never-referenced 'unusedjrnl' macro would fail) is skipped in
+    # per-key mode.
+    result = _run(runner, "check", checkfile, "EmptyDoi2026", "Preprint2026")
+    assert result.output == "PASS (2 entries checked)\n"
+
+
+def test_check_duplicate_key(runner, dupfile):
+    n = len(_load(dupfile))
+    result = runner.invoke(main, ["check", str(dupfile)])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "GoerzSPP2019: duplicate citation key",
+        f"FAIL (1 problem, {n} entries checked)",
+    ]
+
+
+def test_check_duplicate_key_per_key(runner, dupfile):
+    result = runner.invoke(main, ["check", str(dupfile), "GoerzSPP2019"])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "GoerzSPP2019: duplicate citation key",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+    result = _run(runner, "check", dupfile, "GoerzJPB2011")
+    assert result.output == "PASS (1 entry checked)\n"
+
+
+def test_check_parse_problem(runner, brokenfile):
+    result = runner.invoke(main, ["check", str(brokenfile)])
+    assert result.exit_code == 1
+    lines = result.output.splitlines()
+    assert len(lines) == 2
+    assert "could not be parsed" in lines[0]
+    assert "Duplicate field" in lines[0]
+    assert lines[1] == "FAIL (1 problem, 1 entry checked)"
+    # A key filter never silences the parse audit, and the raw load
+    # warning is not additionally shown.
+    result = runner.invoke(main, ["check", str(brokenfile), "Good2026"])
+    assert result.exit_code == 1
+    assert "could not be parsed" in result.output
+    assert result.stderr == ""
+
+
+def test_check_unknown_key(runner, bibfile):
+    result = runner.invoke(main, ["check", str(bibfile), "NoSuchKey"])
+    assert result.exit_code == 1
+    assert "unknown citation key 'NoSuchKey'" in result.stderr
 
 
 def test_timestamp(runner, bibfile):

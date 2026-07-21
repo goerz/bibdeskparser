@@ -98,7 +98,9 @@ underlying library -- an unknown citation key or group name, an
 invalid value, a missing file, or a
 {exc}`~bibdeskparser.StaleFileError` when the `.bib` file changed on
 disk while being edited -- prints a one-line `Error: <message>` on
-stderr and exits with code 1, without a traceback.
+stderr and exits with code 1, without a traceback. The
+[`check`](cli-check) command additionally exits with code 1, after
+printing its report, when any audit finds a problem.
 
 ## Creating a library
 
@@ -170,6 +172,55 @@ array of strings.
 $ bibdeskparser duplicate_keys tests/Refs/with_duplicates.bib
 GoerzSPP2019
 ```
+
+(cli-check)=
+
+### `check [KEY...]`
+
+Run the standing audits and report every problem found, one per line,
+followed by a `PASS`/`FAIL` summary line; the exit code is 0 if all
+audits pass and 1 otherwise. A read-only pass/fail gate for the
+library, e.g. after a batch of edits.
+
+```console
+$ bibdeskparser check tests/Refs/refs.bib
+PASS (61 entries checked)
+$ bibdeskparser check tests/test_cli_fail_checks/problems.bib
+Duplicate2026: duplicate citation key
+MissingDoi2026: missing doi
+LiteralJournal2026: journal is the literal string 'Some Journal', not an @string macro reference
+UndefinedMacro2026: journal references undefined @string macro 'nosuchjournal'
+BadNames2026: author does not parse as names: Cannot split the following name `Doe, John, Jr, X, Y` into parts: Too many commas
+unused @string macro 'unusedjrnl'
+FAIL (6 problems, 7 entries checked)
+```
+
+The audits: the file parses cleanly (no skipped blocks); no citation
+key occurs more than once; every `article` that is not a
+[preprint](preprints) has a `doi` (a defined-but-empty `doi` marks an
+entry verified to have none, and passes); every `journal` field
+references a defined `@string` macro (a literal journal value is a
+problem, unless it is a recognized preprint pseudo-journal like
+`arXiv:2205.15044`); every `author` and `editor` field parses as
+names; and every `@string` macro defined in the file is referenced by
+some entry.
+
+With `KEY...`, only the given entries are audited: the doi, journal,
+and names audits cover just those entries, the duplicate-key audit
+reports only the given keys, and the unused-macros audit is skipped;
+problems parsing the file itself are always reported. An unknown key
+is an error.
+
+```console
+$ bibdeskparser check tests/test_cli_fail_checks/problems.bib EmptyDoi2026 Preprint2026
+PASS (2 entries checked)
+```
+
+With `--json`: an object `{"passed": ..., "entries_checked": ...,
+"problems": [...]}`, where each problem is an object with `check`
+(the audit that failed: `parse`, `duplicate_keys`, `doi`, `journal`,
+`names`, or `unused_strings`), `key` (the citation key, or `null` for
+a problem not tied to an entry), and `message`.
 
 (cli-show)=
 
