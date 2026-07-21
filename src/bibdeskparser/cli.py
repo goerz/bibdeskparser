@@ -21,6 +21,7 @@ from pathlib import Path
 import click
 
 from . import __version__, config
+from .checks import collect_problems
 from .editing import strings_bib_text
 from .library import Library, StaleFileError
 from .macros import MacroString, ValueString
@@ -45,6 +46,7 @@ __private__ = [
     "keywords",
     "strings",
     "duplicate_keys",
+    "check",
     "timestamp",
     "path",
     "config_path",
@@ -295,6 +297,7 @@ def _examples(*lines):
         "bibdeskparser export Preskill2018  # entry as BibTeX",
         "bibdeskparser export Preskill2018 --minimal --expand-strings",
         "bibdeskparser render Preskill2018  # formatted citation",
+        "bibdeskparser check  # run the standing audits (exit 0/1)",
         "bibdeskparser add 10.1103/PhysRevA.89.032334  # by DOI",
         "pbpaste | bibdeskparser import --stdin",
     )
@@ -308,12 +311,12 @@ def main():
     named by the `default_bib_file` key of a discovered
     `bibdeskparser.toml` is used instead.
 
-    Read-only commands (`author`, `config_path`, `duplicate_keys`,
-    `editor`, `eval_format_spec`, `fields`, `files`, `get_field`,
-    `groups`, `keys`, `keywords`, `path`, `search`, `show`, `strings`,
-    `timestamp`, `urls`) print to stdout and accept `--json` for
-    machine-readable output; `render` and `export` are read-only as
-    well. The other commands modify the
+    Read-only commands (`author`, `check`, `config_path`,
+    `duplicate_keys`, `editor`, `eval_format_spec`, `fields`, `files`,
+    `get_field`, `groups`, `keys`, `keywords`, `path`, `search`,
+    `show`, `strings`, `timestamp`, `urls`) print to stdout and accept
+    `--json` for machine-readable output; `render` and `export` are
+    read-only as well. The other commands modify the
     `.bib` file in place and print nothing on success (except `rekey`
     without NEW_KEY and `rename_file` without NEW, which print the
     generated key or file path, as does `add_file` when it auto-files;
@@ -327,7 +330,9 @@ def main():
     *not* exist yet.
     On any error they print `Error: <message>` to stderr and exit
     non-zero (2 for bad usage, 1 for a library error such as an unknown
-    key or a `.bib` file changed on disk since it was read). Run
+    key or a `.bib` file changed on disk since it was read). The
+    `check` command additionally exits 1, after printing its report,
+    when any audit finds a problem. Run
     `bibdeskparser COMMAND --help` for a command's arguments.
     """
 
@@ -1022,6 +1027,94 @@ def duplicate_keys(bibfile, as_json):
     """List citation keys that occur more than once, one per line."""
     data = list(Library(bibfile).duplicate_keys)
     _emit(data, as_json, "\n".join(data))
+
+
+@main.command(
+    name="check",
+    cls=_BibCommand,
+    short_help="Run the standing audits (a read-only pass/fail gate).",
+    epilog=_examples(
+        "bibdeskparser check",
+        "bibdeskparser check --json",
+        "bibdeskparser check Key1 Key2  # gate after editing these",
+    ),
+)
+@click.argument("citekeys", metavar="[KEY...]", nargs=-1)
+@_json_option
+@click.pass_obj
+def check(bibfile, citekeys, as_json):
+    """Run the standing audits and report every problem found, then
+    exit 0 if all pass and 1 otherwise: a read-only pass/fail gate,
+    e.g. after a batch of edits.
+
+    The audits: the file parses cleanly (no skipped blocks); no
+    citation key occurs more than once; every article that is not a
+    preprint has a doi (a defined-but-empty doi marks an entry
+    verified to have none, and passes); every journal field
+    references a *defined* @string macro (a literal journal value is
+    a problem, unless it is a recognized preprint pseudo-journal like
+    'arXiv:2205.15044'); every author and editor field parses as
+    names; and every @string macro defined in the file is referenced
+    by some entry.
+
+    With KEY..., only the given entries are audited (an unknown key
+    is an error): the doi, journal, and names audits cover just those
+    entries, the duplicate-key audit reports only the given keys, and
+    the unused-macros audit is skipped; problems parsing the file
+    itself are always reported.
+
+    Each problem prints as one line, 'KEY: <problem>' for a problem
+    tied to an entry, followed by a 'PASS (N entries checked)' or
+    'FAIL (N problems, M entries checked)' summary line. With --json:
+    {"passed": ..., "entries_checked": ..., "problems": [{"check":
+    ..., "key": ..., "message": ...}]}, where "check" names the audit
+    ("parse", "duplicate_keys", "doi", "journal", "names", or
+    "unused_strings") and "key" is null for a problem not tied to an
+    entry.
+    """
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        lib = Library(bibfile)
+    _check_keys(lib, citekeys)
+    for warning in caught:
+        message = str(warning.message)
+        # The load warnings for duplicate keys and unparseable blocks
+        # (see `Library.__init__`) are covered by the duplicate_keys
+        # and parse audits; any other load warning (e.g. distinct
+        # macros expanding to the same value) passes through, without
+        # failing the gate.
+        if "duplicate citation keys" in message:
+            continue
+        if "could not be parsed" in message:
+            continue
+        click.echo(f"Warning: {message}", err=True)
+    problems = collect_problems(lib, keys=citekeys or None)
+    n_entries = len(dict.fromkeys(citekeys)) if citekeys else len(lib)
+    entries = "entry" if n_entries == 1 else "entries"
+    if as_json:
+        data = {
+            "passed": not problems,
+            "entries_checked": n_entries,
+            "problems": [problem._asdict() for problem in problems],
+        }
+        click.echo(json.dumps(data, indent=2, ensure_ascii=False))
+    else:
+        for problem in problems:
+            if problem.key is not None:
+                click.echo(f"{problem.key}: {problem.message}")
+            else:
+                click.echo(problem.message)
+        if problems:
+            n_problems = len(problems)
+            plural = "problem" if n_problems == 1 else "problems"
+            click.echo(
+                f"FAIL ({n_problems} {plural}, "
+                f"{n_entries} {entries} checked)"
+            )
+        else:
+            click.echo(f"PASS ({n_entries} {entries} checked)")
+    if problems:
+        sys.exit(1)
 
 
 @main.command(

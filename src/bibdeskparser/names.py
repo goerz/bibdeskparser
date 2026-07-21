@@ -54,7 +54,9 @@ def structured_names(value, allow_inplace_modification=True):
     Returns a `list` of `bibtexparser.middlewares.names.NameParts`, each
     with `.first`, `.von`, `.last`, `.jr` attributes (each a `list` of
     strings), in the order the names appear in `value`. Returns `[]` if
-    `value` is empty or `None`.
+    `value` is empty or `None`. Raises `bibtexparser`'s
+    `InvalidNameError` (a subclass of {exc}`ValueError`) if `value`
+    cannot be split into names (e.g. a name with too many commas).
 
     This is a **read-only derived view**: BibDesk stores `author` and
     `editor` as flat Unicode strings and only derives a structured
@@ -93,4 +95,9 @@ def structured_names(value, allow_inplace_modification=True):
         SplitNameParts(allow_inplace_modification=allow_inplace_modification),
     ):
         library = middleware.transform(library)
+    if library.failed_blocks:
+        # The name middlewares do not raise on an unparseable name;
+        # they replace the entry with a `MiddlewareErrorBlock` that
+        # carries the original `InvalidNameError`.
+        raise library.failed_blocks[0].error
     return library.entries[0].fields_dict["author"].value
