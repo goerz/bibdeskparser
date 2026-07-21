@@ -821,6 +821,18 @@ def test_render_published_with_hal_eprint(refs):
     assert "arXiv" not in rendered
 
 
+def test_render_published_with_biorxiv_eprint(refs):
+    """A published article with a bioRxiv eprint: the eprint segment
+    names bioRxiv (canonicalized from `archiveprefix = {biorxiv}`)
+    and links to biorxiv.org, not arxiv.org."""
+    entry = refs["KatrukhaNC2017"]
+    assert entry["archiveprefix"].lower() == "biorxiv"
+    rendered = render_entry(entry)
+    assert "bioRxiv:089284" in rendered
+    assert "https://www.biorxiv.org/content/10.1101/089284" in rendered
+    assert "arXiv" not in rendered
+
+
 # -- _join_parts punctuation rules -------------------------------------- #
 
 
