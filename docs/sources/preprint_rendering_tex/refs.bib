@@ -1,0 +1,214 @@
+%% Variations of the same references -- an arXiv preprint-only paper
+%% (Wilhelm et al., arXiv:2003.10132), a HAL preprint-only paper
+%% (Turinici, HAL:hal-00640217), and a published paper with a
+%% preprint (Koch et al., EPJ Quantum Technol. 9, 19 (2022),
+%% arXiv:2205.12110) -- to compare how each variant renders under
+%% REVTeX (apsrev4-2). Cited by preprints.tex; the rendered PDF is
+%% part of the bibdeskparser documentation.
+
+@string{epjqt = {EPJ Quantum Technol.}}
+
+
+%% ==================================================================
+%% Preprint-only (arXiv): Wilhelm et al., arXiv:2003.10132
+%% ==================================================================
+
+%% (P1) The entry as stored in a bibdeskparser/BibDesk database, and
+%% as written by any full export (or `export --preprint stored`).
+%% BibDesk-internal fields (bdsk-file-1, date-added, ...) omitted;
+%% BibTeX ignores them, as it ignores the pseudo-journal on an
+%% `unpublished` entry.
+@unpublished{WilhelmStored,
+    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},
+    Title = {An introduction into optimal control for quantum technologies},
+    Journal = {arXiv:2003.10132},
+    Eprint = {2003.10132},
+    Archiveprefix = {arXiv},
+    Primaryclass = {quant-ph},
+    Doi = {10.48550/arxiv.2003.10132},
+    Note = {lecture notes},
+    Year = {2020},
+}
+
+%% (P2) The minimal `export --preprint unpublished` form (the
+%% default): the structured eprint fields, DOI, and the status note
+%% (the stored one; "preprint" would be synthesized for an entry
+%% without one, since `note` is a required field of `unpublished`).
+@unpublished{WilhelmUnpublished,
+    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},
+    Title = {An introduction into optimal control for quantum technologies},
+    Eprint = {2003.10132},
+    Archiveprefix = {arXiv},
+    Primaryclass = {quant-ph},
+    Doi = {10.48550/arxiv.2003.10132},
+    Note = {lecture notes},
+    Year = {2020},
+}
+
+%% (P3) The minimal `export --preprint misc` form: the same
+%% structured fields as a `misc` entry (a stored note is kept, but
+%% never synthesized -- `misc` has no required fields).
+@misc{WilhelmMisc,
+    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},
+    Title = {An introduction into optimal control for quantum technologies},
+    Eprint = {2003.10132},
+    Archiveprefix = {arXiv},
+    Primaryclass = {quant-ph},
+    Doi = {10.48550/arxiv.2003.10132},
+    Note = {lecture notes},
+    Year = {2020},
+}
+
+%% (P4) The minimal `export --preprint article` form: the
+%% pseudo-journal in the journal position, hyperlinked via the
+%% DOI-resolver address in `url`.
+@article{WilhelmArticle,
+    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},
+    Title = {An introduction into optimal control for quantum technologies},
+    Journal = {arXiv:2003.10132},
+    Url = {https://doi.org/10.48550/arxiv.2003.10132},
+    Note = {lecture notes},
+    Year = {2020},
+}
+
+%% (P5) The misc entry exactly as exported by arXiv itself ("Export
+%% BibTeX citation" on the abstract page); `bibdeskparser import`
+%% accepts this form and normalizes it to P1, deriving the DOI (only
+%% the `note` is left to fill in by hand).
+@misc{WilhelmArxivExport,
+        title={An introduction into optimal control for quantum technologies},
+        author={Frank K. Wilhelm and Susanna Kirchhoff and Shai Machnes and Nicolas Wittler and Dominique Sugny},
+        year={2020},
+        eprint={2003.10132},
+        archivePrefix={arXiv},
+        primaryClass={quant-ph},
+        url={https://arxiv.org/abs/2003.10132},
+}
+
+%% (P6) The legacy `article` storage form, copied verbatim (instead
+%% of going through `export`): the pseudo-journal is no longer
+%% ignored, and the identifier renders three times.
+@article{WilhelmLegacyArticle,
+    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},
+    Title = {An introduction into optimal control for quantum technologies},
+    Journal = {arXiv:2003.10132},
+    Eprint = {2003.10132},
+    Archiveprefix = {arXiv},
+    Primaryclass = {quant-ph},
+    Doi = {10.48550/arxiv.2003.10132},
+    Year = {2020},
+}
+
+%% (P7) An article with the pseudo-journal and a `doi` field (but no
+%% `url`): why the article export form writes the DOI as a `url`
+%% instead.
+@article{WilhelmArticleDoi,
+    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},
+    Title = {An introduction into optimal control for quantum technologies},
+    Journal = {arXiv:2003.10132},
+    Doi = {10.48550/arxiv.2003.10132},
+    Year = {2020},
+}
+
+
+%% ==================================================================
+%% Preprint-only (HAL): Turinici, HAL:hal-00640217
+%% ==================================================================
+
+%% (H1) The minimal `export --preprint unpublished` form (the
+%% default) of a HAL entry: the `archive` field carries the link
+%% base that REVTeX's eprint machinery would otherwise default to
+%% arxiv.org.
+@unpublished{TuriniciUnpublished,
+    Author = {Turinici, Gabriel},
+    Title = {Quantum control},
+    Eprint = {hal-00640217},
+    Archiveprefix = {HAL},
+    Archive = {https://hal.science},
+    Url = {https://hal.science/hal-00640217},
+    Note = {published in the Encyclopedia of Applied and Computational Mathematics, Springer, 2015, \url{https://doi.org/10.1007/978-3-540-70529-1_269}},
+    Year = {2012},
+}
+
+%% (H2) The minimal `export --preprint misc` form.
+@misc{TuriniciMisc,
+    Author = {Turinici, Gabriel},
+    Title = {Quantum control},
+    Eprint = {hal-00640217},
+    Archiveprefix = {HAL},
+    Archive = {https://hal.science},
+    Url = {https://hal.science/hal-00640217},
+    Note = {published in the Encyclopedia of Applied and Computational Mathematics, Springer, 2015, \url{https://doi.org/10.1007/978-3-540-70529-1_269}},
+    Year = {2012},
+}
+
+%% (H3) The minimal `export --preprint article` form.
+@article{TuriniciArticle,
+    Author = {Turinici, Gabriel},
+    Title = {Quantum control},
+    Journal = {HAL:hal-00640217},
+    Url = {https://hal.science/hal-00640217},
+    Note = {published in the Encyclopedia of Applied and Computational Mathematics, Springer, 2015, \url{https://doi.org/10.1007/978-3-540-70529-1_269}},
+    Year = {2012},
+}
+
+%% (H4) As H1, but *without* the `archive` field: REVTeX's built-in
+%% link base is arXiv's, so the only link is broken.
+@unpublished{TuriniciNoArchive,
+    Author = {Turinici, Gabriel},
+    Title = {Quantum control},
+    Eprint = {hal-00640217},
+    Archiveprefix = {HAL},
+    Url = {https://hal.science/hal-00640217},
+    Note = {published in the Encyclopedia of Applied and Computational Mathematics, Springer, 2015, \url{https://doi.org/10.1007/978-3-540-70529-1_269}},
+    Year = {2012},
+}
+
+
+%% ==================================================================
+%% Published with preprint: Koch et al.,
+%% EPJ Quantum Technol. 9, 19 (2022); arXiv:2205.12110
+%% ==================================================================
+
+%% (J1) The entry as stored (journal macro, DOI, and the structured
+%% eprint fields); minimal exports keep the eprint fields.
+@article{KochFull,
+    Author = {Koch, Christiane P. and Boscain, Ugo and Calarco, Tommaso and Dirr, Gunther and Filipp, Stefan and Glaser, Steffen J. and Kosloff, Ronnie and Montangero, Simone and Schulte-Herbr{\"u}ggen, Thomas and Sugny, Dominique and Wilhelm, Frank K.},
+    Title = {Quantum optimal control in quantum technologies. Strategic report on current status, visions and goals for research in {Europe}},
+    Journal = epjqt,
+    Eprint = {2205.12110},
+    Archiveprefix = {arXiv},
+    Doi = {10.1140/epjqt/s40507-022-00138-x},
+    Pages = {19},
+    Volume = {9},
+    Year = {2022},
+}
+
+%% (J2) The same entry without the eprint fields: what a bibliography
+%% loses by dropping them.
+@article{KochNoEprint,
+    Author = {Koch, Christiane P. and Boscain, Ugo and Calarco, Tommaso and Dirr, Gunther and Filipp, Stefan and Glaser, Steffen J. and Kosloff, Ronnie and Montangero, Simone and Schulte-Herbr{\"u}ggen, Thomas and Sugny, Dominique and Wilhelm, Frank K.},
+    Title = {Quantum optimal control in quantum technologies. Strategic report on current status, visions and goals for research in {Europe}},
+    Journal = {EPJ Quantum Technol.},
+    Year = {2022},
+    Doi = {10.1140/epjqt/s40507-022-00138-x},
+    Pages = {19},
+    Volume = {9},
+}
+
+%% (J3) A published paper whose preprint is on HAL, as written by a
+%% full or minimal export: the synthesized `archive` field makes the
+%% eprint link correct.
+@article{SauvagePRXQ,
+    Author = {Sauvage, Fr{\'e}d{\'e}ric and Mintert, Florian},
+    Title = {Optimal Quantum Control with Poor Statistics},
+    Journal = {PRX Quantum},
+    Year = {2020},
+    Doi = {10.1103/prxquantum.1.020322},
+    Pages = {020322},
+    Volume = {1},
+    Number = {2},
+    Eprint = {hal-03612955},
+    Archiveprefix = {HAL},
+    Archive = {https://hal.science},
+}

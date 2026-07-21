@@ -207,7 +207,18 @@ DOCUMENTED_TYPES = {
     },
     "misc": {
         "required": (),
-        "optional": ("title", "howpublished", "author", "month", "year"),
+        # `journal` is not a classic BibTeX field for `misc` (every
+        # style ignores it there), but the recommended storage form
+        # for a preprint-only entry is `@misc` with a pseudo-journal
+        # like `journal = {arXiv:2205.15044}`.
+        "optional": (
+            "title",
+            "howpublished",
+            "author",
+            "month",
+            "year",
+            "journal",
+        ),
     },
     "periodical": {
         "required": ("author", "title", "journal"),
@@ -235,7 +246,11 @@ DOCUMENTED_TYPES = {
     },
     "unpublished": {
         "required": ("author", "note", "title"),
-        "optional": ("month", "year"),
+        # `journal` is not a classic BibTeX field for `unpublished`
+        # (every style ignores it there), but the canonical storage
+        # form for a preprint-only entry is `@unpublished` with a
+        # pseudo-journal like `journal = {arXiv:2205.15044}`.
+        "optional": ("month", "year", "journal"),
     },
     "url": {
         "required": (),
@@ -280,6 +295,7 @@ UNIVERSAL_FIELDS = frozenset(
         "eprintclass",
         "archiveprefix",
         "primaryclass",
+        "archive",
     )
 )
 

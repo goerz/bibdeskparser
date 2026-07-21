@@ -36,6 +36,7 @@ class FakeResult:
         short_id="2205.15044v1",
         year=None,
         journal_ref=None,
+        primary_category="quant-ph",
     ):
         self.title = title
         self.authors = [SimpleNamespace(name=name) for name in authors]
@@ -43,6 +44,7 @@ class FakeResult:
         self._short_id = short_id
         self.published = None if year is None else SimpleNamespace(year=year)
         self.journal_ref = journal_ref
+        self.primary_category = primary_category
 
     def get_short_id(self):
         return self._short_id
@@ -278,9 +280,22 @@ def test_find_preprint_match(monkeypatch):
         title=TITLE, author="Goerz, Michael H.", year="2022"
     )
     assert result == PreprintResult(
-        "2205.15044", "title", pytest.approx(1.0), "", False
+        "2205.15044", "title", pytest.approx(1.0), "", False, "quant-ph"
     )
     assert searches == [(TITLE, "goerz")]
+
+
+def test_find_preprint_match_without_category(monkeypatch):
+    """A result without a primary category yields an empty
+    `primaryclass`."""
+    monkeypatch.setattr(
+        preprints,
+        "_search",
+        lambda title, lastname: [FakeResult(TITLE, primary_category=None)],
+    )
+    result = preprints.find_preprint(title=TITLE)
+    assert result.eprint == "2205.15044"
+    assert result.primaryclass == ""
 
 
 def test_find_preprint_no_results(monkeypatch):
@@ -353,7 +368,7 @@ def _forbid_find(monkeypatch):
     monkeypatch.setattr(preprints, "find_preprint", find_preprint)
 
 
-FOUND_RESULT = PreprintResult("2205.15044", "doi", 1.0, "", False)
+FOUND_RESULT = PreprintResult("2205.15044", "doi", 1.0, "", False, "quant-ph")
 NONE_RESULT = PreprintResult("", "none", 0.55, "best-ratio=0.55", False)
 ERROR_RESULT = PreprintResult("", "error", 0.0, "arxiv-error(X: y)", False)
 
@@ -373,6 +388,7 @@ def test_add_preprint_stores_match(monkeypatch):
     assert result.applied is True
     assert lib["Key2020"]["eprint"] == "2205.15044"
     assert lib["Key2020"]["archiveprefix"] == "arXiv"
+    assert lib["Key2020"]["primaryclass"] == "quant-ph"
     assert calls == [
         {
             "title": "A Title",
@@ -401,11 +417,33 @@ def test_add_preprint_existing_skipped(monkeypatch):
 
 
 def test_add_preprint_overwrite(monkeypatch):
+    """`overwrite` replaces the eprint *and* the `primaryclass` that
+    described the replaced identifier."""
     _mock_find(monkeypatch, FOUND_RESULT)
-    lib = _library_with_entry({"title": "A Title", "eprint": "1103.6050"})
+    lib = _library_with_entry(
+        {
+            "title": "A Title",
+            "eprint": "1103.6050",
+            "primaryclass": "math.OC",
+        }
+    )
     result = lib.add_preprint("Key2020", overwrite=True)
     assert result.applied is True
     assert lib["Key2020"]["eprint"] == "2205.15044"
+    assert lib["Key2020"]["primaryclass"] == "quant-ph"
+
+
+def test_add_preprint_match_without_category_keeps_class(monkeypatch):
+    """A match that reports no category leaves an existing
+    `primaryclass` alone."""
+    _mock_find(
+        monkeypatch, PreprintResult("2205.15044", "doi", 1.0, "", False)
+    )
+    lib = _library_with_entry({"title": "A Title", "primaryclass": "quant-ph"})
+    result = lib.add_preprint("Key2020")
+    assert result.applied is True
+    assert lib["Key2020"]["eprint"] == "2205.15044"
+    assert lib["Key2020"]["primaryclass"] == "quant-ph"
 
 
 def test_add_preprint_empty_marker_researched(monkeypatch):
@@ -433,6 +471,25 @@ def test_add_preprint_mark_empty(monkeypatch):
     assert result.applied is True
     assert lib["Key2020"]["eprint"] == ""
     assert "archiveprefix" not in lib["Key2020"]
+
+
+def test_add_preprint_mark_empty_clears_primaryclass(monkeypatch):
+    """The empty marker clears a stale `primaryclass` (which described
+    the emptied eprint), like the stale `archiveprefix`."""
+    _mock_find(monkeypatch, NONE_RESULT)
+    lib = _library_with_entry(
+        {
+            "title": "A Title",
+            "eprint": "1103.6050",
+            "archiveprefix": "arXiv",
+            "primaryclass": "quant-ph",
+        }
+    )
+    result = lib.add_preprint("Key2020", overwrite=True, mark_empty=True)
+    assert result.applied is True
+    assert lib["Key2020"]["eprint"] == ""
+    assert "archiveprefix" not in lib["Key2020"]
+    assert "primaryclass" not in lib["Key2020"]
 
 
 def test_add_preprint_mark_empty_config(monkeypatch):
@@ -463,6 +520,8 @@ def test_add_preprint_explicit(monkeypatch):
     assert result == PreprintResult("2205.15044", "explicit", None, "", True)
     assert lib["Key2020"]["eprint"] == "2205.15044"
     assert lib["Key2020"]["archiveprefix"] == "arXiv"
+    # no network access, so the category is unknown
+    assert "primaryclass" not in lib["Key2020"]
 
 
 def test_add_preprint_explicit_invalid(monkeypatch):

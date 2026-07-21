@@ -29,6 +29,7 @@ howto
 :caption: Explanation
 
 BibDesk's .bib Format <bibdesk_format>
+preprints
 ```
 
 ```{toctree}

@@ -144,13 +144,14 @@ def _bibtex_from_arxiv(arxiv_id, include_abstract=False):
         for author in result.authors
     )
     return _entry_text(
-        "article",
+        "unpublished",
         {
             "author": author or None,
             "title": result.title,
             "journal": f"arXiv:{arxiv_id}",
             "eprint": base_id,
             "archiveprefix": "arXiv",
+            "primaryclass": result.primary_category or None,
             "year": result.published.year,
             "url": f"https://doi.org/10.48550/arXiv.{base_id}",
             "abstract": (

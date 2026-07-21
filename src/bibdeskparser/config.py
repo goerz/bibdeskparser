@@ -28,6 +28,7 @@ import warnings
 from pathlib import Path
 
 from . import entrytypes, specifiers
+from .identifiers import _BUILTIN_ARCHIVES, _Archive
 from .macros import is_valid_macro_name, normalize_macro_name
 
 try:
@@ -75,6 +76,8 @@ _KNOWN_TOP_LEVEL_KEYS = frozenset(
         "add_preprint",
         "initials",
         "journal_macros",
+        "preprint_archives",
+        "preprint_export",
         "protected_words",
     )
 )
@@ -748,6 +751,52 @@ def _parse_journal_macros(raw):
     return journal_macros
 
 
+def _parse_preprint_archives(raw):
+    """Read the optional `[preprint_archives]` table from `raw`.
+
+    The table maps a preprint archive name (in its canonical
+    spelling, e.g. `Zenodo`) to a URL template for the online
+    location of a preprint, with `{id}` standing for the identifier
+    (or `""` for an archive without identifier-based URLs). Returns
+    the built-in archives (see
+    `bibdeskparser.identifiers._BUILTIN_ARCHIVES`) extended -- or, on
+    a case-insensitive name match, overridden -- by the configured
+    ones, as a `dict` mapping the lowercased archive prefix to an
+    `_Archive`."""
+    table = raw.get("preprint_archives", {})
+    if not isinstance(table, dict):
+        raise ValueError("[preprint_archives] must be a table")
+    archives = dict(_BUILTIN_ARCHIVES)
+    for name, url in table.items():
+        # The prefix of a pseudo-journal is a single `\w+` word.
+        if not name or not all(c.isalnum() or c == "_" for c in name):
+            raise ValueError(
+                "[preprint_archives] contains an invalid archive "
+                f"name: {name!r}"
+            )
+        if not isinstance(url, str) or (url and "{id}" not in url):
+            raise ValueError(
+                f"[preprint_archives] {name} must be a URL template "
+                "containing '{id}' (or an empty string)"
+            )
+        archives[name.lower()] = _Archive(name, url)
+    return archives
+
+
+def _parse_preprint_export(raw):
+    """Read the optional `preprint_export` key from `raw`: the entry
+    type -- `"unpublished"` (the default), `"misc"`, or `"article"`
+    -- that {meth}`~bibdeskparser.Library.export` writes for a
+    preprint-only entry."""
+    value = raw.get("preprint_export", "unpublished")
+    if value not in ("misc", "unpublished", "article"):
+        raise ValueError(
+            "preprint_export must be 'misc', 'unpublished', or "
+            f"'article', not {value!r}"
+        )
+    return value
+
+
 def _parse_protected_words(raw):
     """Read the optional `protected_words` key from `raw`.
 
@@ -819,6 +868,22 @@ class Config:
       an `@string` macro -- a `dict` mapping a macro name to a tuple
       of journal names (the first being the canonical value of the
       macro, the rest aliases).
+    * `preprint_archives`: the preprint archives recognized in a
+      `journal` pseudo-journal like `arXiv:2205.15044` -- a `dict`
+      mapping the lowercased archive prefix to a named tuple
+      `(name, url)` of the archive's canonical spelling and its URL
+      template (`{id}` standing for the identifier; `""` for no
+      identifier-based URLs). Defaults to the built-in archives
+      (arXiv, bioRxiv, medRxiv, ChemRxiv, HAL, and SSRN); the
+      `[preprint_archives]` table of the configuration extends or
+      overrides them.
+    * `preprint_export` (default `"unpublished"`): the entry type
+      -- `"unpublished"`, `"misc"`, or `"article"` -- that
+      {meth}`~bibdeskparser.Library.export` writes for a
+      *preprint-only* entry (one whose `journal` is a recognized
+      preprint pseudo-journal, or a `misc`/`unpublished` entry with
+      an `eprint` from a recognized archive); the default for the `preprint`
+      argument of {meth}`~bibdeskparser.Library.export`.
     * `protected_words` (default `[]`): words (or phrases) that
       {meth}`~bibdeskparser.Library.import_bibtex` always wraps in
       braces inside a `title` to protect their capitalization.
@@ -858,6 +923,8 @@ class Config:
         self.add_preprint = AddPreprint()
         self.initials = {}
         self.journal_macros = {}
+        self.preprint_archives = dict(_BUILTIN_ARCHIVES)
+        self.preprint_export = "unpublished"
         self.protected_words = []
         self.documented_types = {
             entry_type: {
@@ -908,6 +975,8 @@ class Config:
         add_preprint = _parse_add_preprint(raw)
         initials = _parse_initials(raw)
         journal_macros = _parse_journal_macros(raw)
+        preprint_archives = _parse_preprint_archives(raw)
+        preprint_export = _parse_preprint_export(raw)
         protected_words = _parse_protected_words(raw)
         tables = _build(raw)
         self.verify_types = tables["verify_types"]
@@ -925,6 +994,8 @@ class Config:
         self.add_preprint = add_preprint
         self.initials = initials
         self.journal_macros = journal_macros
+        self.preprint_archives = preprint_archives
+        self.preprint_export = preprint_export
         self.protected_words = protected_words
         return path
 

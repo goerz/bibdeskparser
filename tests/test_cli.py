@@ -832,6 +832,52 @@ def test_export_field(runner, bibfile):
     assert "Journal" not in result.output
 
 
+def test_export_preprint_modes(runner, bibfile):
+    """--preprint selects the export form of a preprint-only entry."""
+    result = _run(runner, "export", bibfile, "Wilhelm2003.10132", "--minimal")
+    # default: unpublished, with the stored status note
+    assert "@unpublished{Wilhelm2003.10132," in result.output
+    assert "Eprint = {2003.10132}," in result.output
+    assert "Note = {preprint only}," in result.output
+    assert "Journal" not in result.output
+    result = _run(
+        runner,
+        "export",
+        bibfile,
+        "Wilhelm2003.10132",
+        "--minimal",
+        "--preprint",
+        "misc",
+    )
+    assert "@misc{Wilhelm2003.10132," in result.output
+    result = _run(
+        runner,
+        "export",
+        bibfile,
+        "Wilhelm2003.10132",
+        "--minimal",
+        "--preprint",
+        "article",
+    )
+    assert "@article{Wilhelm2003.10132," in result.output
+    assert "Journal = {arXiv:2003.10132}," in result.output
+    assert (
+        "Url = {https://doi.org/10.48550/arxiv.2003.10132}," in result.output
+    )
+    assert "Eprint" not in result.output
+    result = _run(
+        runner,
+        "export",
+        bibfile,
+        "Wilhelm2003.10132",
+        "--preprint",
+        "stored",
+    )
+    assert "@unpublished{Wilhelm2003.10132," in result.output
+    assert "Journal = {arXiv:2003.10132}," in result.output
+    assert "Eprint = {2003.10132}," in result.output
+
+
 def test_export_minimal_field_mutually_exclusive(runner, bibfile):
     result = runner.invoke(
         main,
@@ -1992,6 +2038,39 @@ def test_import_keep_keys(runner, bibfile):
     assert result.stdout == "PhysRevLett.113.140401\n"
 
 
+def test_import_keep_journals(runner, bibfile):
+    """`--keep-journals` preserves a literal journal that would
+    otherwise resolve to an `@string` macro."""
+    result = runner.invoke(
+        main,
+        ["import", str(bibfile), "--stdin", "--keep-journals"],
+        input=IMPORT_SNIPPET,
+    )
+    assert result.exit_code == 0, result.output + result.stderr
+    key = result.stdout.strip()
+    text = bibfile.read_text(encoding="utf-8")
+    assert f"@article{{{key}" in text
+    assert "journal = {Phys. Rev. Lett.}" in text
+
+
+def test_import_unrecognized_archive(runner, bibfile):
+    """A pseudo-journal with an unknown archive prefix is rejected,
+    with a hint at `[preprint_archives]` and `--keep-journals`."""
+    text = IMPORT_SNIPPET.replace("{Phys. Rev. Lett.}", "{EarthArXiv:X5129}")
+    result = runner.invoke(
+        main, ["import", str(bibfile), "--stdin"], input=text
+    )
+    assert result.exit_code == 1
+    assert "'EarthArXiv' is not recognized" in result.stderr
+    assert "[preprint_archives]" in result.stderr
+    result = runner.invoke(
+        main,
+        ["import", str(bibfile), "--stdin", "--keep-journals"],
+        input=text,
+    )
+    assert result.exit_code == 0, result.output + result.stderr
+
+
 def test_import_unique_suffix(runner, bibfile):
     """A key collision with the library gets a unique suffix."""
     text = IMPORT_SNIPPET.replace(
@@ -2240,14 +2319,17 @@ def test_add_abstract_unknown_key(runner, bibfile):
 
 def _mock_find_preprint(monkeypatch, results):
     """Mock `preprints.find_preprint` to pop per-call results from the
-    `results` list; records the call kwargs."""
+    `results` list -- `(eprint, match, ratio, note)` tuples, with an
+    optional fifth `primaryclass` element; records the call kwargs."""
     from bibdeskparser.preprints import PreprintResult
 
     calls = []
 
     def find_preprint(**kwargs):
         calls.append(kwargs)
-        return PreprintResult(*results.pop(0), applied=False)
+        eprint, match, ratio, note, *rest = results.pop(0)
+        primaryclass = rest[0] if rest else ""
+        return PreprintResult(eprint, match, ratio, note, False, primaryclass)
 
     monkeypatch.setattr("bibdeskparser.preprints.find_preprint", find_preprint)
     return calls
@@ -2261,15 +2343,19 @@ def _forbid_find_preprint(monkeypatch):
 
 
 def test_add_preprint_stores(runner, bibfile, monkeypatch):
-    calls = _mock_find_preprint(monkeypatch, [("2510.12345", "doi", 1.0, "")])
+    calls = _mock_find_preprint(
+        monkeypatch, [("2510.12345", "doi", 1.0, "", "math.OC")]
+    )
     result = _run(runner, "add_preprint", bibfile, "WinckelIP2008")
     assert result.stdout == (
-        "WinckelIP2008: stored eprint 2510.12345 (match=doi, ratio=1.00)\n"
+        "WinckelIP2008: stored eprint 2510.12345 [math.OC] "
+        "(match=doi, ratio=1.00)\n"
     )
     assert calls[0]["doi"] == "10.1088/0266-5611/24/3/034007"
     lib = _load(bibfile)
     assert lib["WinckelIP2008"]["eprint"] == "2510.12345"
     assert lib["WinckelIP2008"]["archiveprefix"] == "arXiv"
+    assert lib["WinckelIP2008"]["primaryclass"] == "math.OC"
 
 
 def test_add_preprint_skips_existing(runner, bibfile, monkeypatch):
@@ -2394,7 +2480,7 @@ def test_add_preprint_json(runner, bibfile, monkeypatch):
     _mock_find_preprint(
         monkeypatch,
         [
-            ("2510.12345", "title+author", 0.95, ""),
+            ("2510.12345", "title+author", 0.95, "", "math.OC"),
             ("", "none", 0.4, "best-ratio=0.40"),
         ],
     )
@@ -2413,6 +2499,7 @@ def test_add_preprint_json(runner, bibfile, monkeypatch):
         "ratio": 0.95,
         "note": "",
         "applied": True,
+        "primaryclass": "math.OC",
     }
     assert data["GoerzPhd2015"]["applied"] is False
     lib = _load(bibfile)
@@ -2524,3 +2611,23 @@ def test_negative_flag_forms_accepted(runner, bibfile, monkeypatch):
     )
     result = _run(runner, "show", bibfile, "GoerzNJP2014", "--no-skip-missing")
     assert "GoerzNJP2014" in result.stdout
+
+
+def test_export_preprint_unpublished(runner, bibfile):
+    """--preprint unpublished writes @unpublished with a guaranteed
+    note (the stored note here; TuriniciHAL00640217 also gets the
+    HAL `archive` link base)."""
+    result = _run(
+        runner,
+        "export",
+        bibfile,
+        "TuriniciHAL00640217",
+        "--minimal",
+        "--preprint",
+        "unpublished",
+    )
+    assert "@unpublished{TuriniciHAL00640217," in result.output
+    assert "Note = {lecture notes}," in result.output
+    assert "Eprint = {hal-00640217}," in result.output
+    assert "Archive = {https://hal.science}," in result.output
+    assert "Journal" not in result.output

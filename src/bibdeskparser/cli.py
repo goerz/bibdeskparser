@@ -1117,7 +1117,14 @@ def config_path(bibfile, as_json):
 )
 @click.pass_obj
 def render(bibfile, citekeys, format_, style):
-    """Render a citation for the entries with the given keys."""
+    """Render a citation for the entries with the given keys.
+
+    A preprint-only entry (a `misc` or `unpublished` entry with an
+    eprint, or any entry with a pseudo-journal like
+    `arXiv:2205.15044`) renders its
+    preprint reference in the journal position, hyperlinked; any
+    other entry's eprint renders as a separate link after the
+    journal reference."""
     lib = Library(bibfile)
     _check_keys(lib, citekeys)
     _echo_block(lib.render(*citekeys, format=format_, style=style))
@@ -1182,11 +1189,34 @@ def render(bibfile, citekeys, format_, style):
     default=None,
     help="Write to this file instead of printing to stdout.",
 )
+@click.option(
+    "--preprint",
+    type=click.Choice(["unpublished", "misc", "article", "stored"]),
+    default=None,
+    help=(
+        "The entry type a preprint-only entry is exported as: "
+        "'unpublished' or 'misc' (structured eprint fields; for "
+        "styles that render eprint, like REVTeX; 'unpublished' "
+        "guarantees the required note field, using the stored note "
+        "or 'preprint') or 'article' (pseudo-journal linked via "
+        "url; for classic styles that would drop an eprint), each "
+        "with the appropriately derived fields; 'stored' exports "
+        "the entry as stored. Defaults to the preprint_export "
+        "configuration setting ('unpublished' unless configured)."
+    ),
+)
 @click.pass_obj
 # click passes all parameters by keyword
 # pylint: disable-next=too-many-positional-arguments
 def export(
-    bibfile, citekeys, unicode_, expand_strings, field_args, minimal, outfile
+    bibfile,
+    citekeys,
+    unicode_,
+    expand_strings,
+    field_args,
+    minimal,
+    outfile,
+    preprint,
 ):
     """Export the entries with the given keys as bibtex text.
 
@@ -1198,7 +1228,12 @@ def export(
     self-contained. --no-unicode exports the TeX-encoded values as
     stored in the .bib file; --expand-strings replaces macro
     references by their values (no @string definitions then);
-    --minimal or --field restrict which fields are exported."""
+    --minimal or --field restrict which fields are exported. A
+    preprint-only entry (a `misc` or `unpublished` entry with an
+    eprint, or any entry with a pseudo-journal like
+    `arXiv:2205.15044`) is exported in
+    the form selected by --preprint, whatever its stored form; an
+    explicit --field list always exports the stored fields."""
     if minimal and field_args:
         raise click.UsageError("--minimal and --field are mutually exclusive")
     fields = (
@@ -1212,6 +1247,7 @@ def export(
         expand_strings=expand_strings,
         fields=fields,
         outfile=outfile,
+        preprint=preprint,
     )
     if text is not None:
         _echo_block(text)
@@ -2076,11 +2112,21 @@ def _fix_uppercase_option(help_suffix, default=False):
         "Keep the incoming citation keys instead of generating new " "ones."
     ),
 )
+@click.option(
+    "--keep-journals/--no-keep-journals",
+    default=False,
+    help=(
+        "Preserve the incoming journal fields as-is instead of "
+        "converting them to @string macro references."
+    ),
+)
 @_fix_uppercase_option("publisher data")
 @click.pass_obj
 # click passes all parameters by keyword
 # pylint: disable-next=too-many-positional-arguments
-def import_bibtex(bibfile, source, use_stdin, url, keep_keys, fix_uppercase):
+def import_bibtex(
+    bibfile, source, use_stdin, url, keep_keys, keep_journals, fix_uppercase
+):
     """Import the entries of a BibTeX snippet -- read from FILE, from
     standard input (--stdin), or from a URL (--url); exactly one of
     the three -- into the library, and print their citation keys
@@ -2089,19 +2135,28 @@ def import_bibtex(bibfile, source, use_stdin, url, keep_keys, fix_uppercase):
     Every entry is sanitized: the journal becomes an `@string` macro
     reference (an existing macro matched by value, one configured in
     `[journal_macros]`, or a newly created one -- with a warning on
-    stderr -- named by the journal's lowercased initials; a literal
-    `arXiv:...` journal marks a preprint and stays literal, deriving
-    `eprint`/`archiveprefix`), proper nouns in a sentence-case title
+    stderr -- named by the journal's lowercased initials; disable
+    with --keep-journals), proper nouns in a sentence-case title
     (and all configured `protected_words`) are brace-protected, the
     DOI is normalized to its bare lowercase form, and, for articles,
     a page range collapses to its first page and non-essential fields
     (`month`, `publisher`, `numpages`, `issn`, a `url` shadowed by
-    the DOI, ...) are dropped. Citation keys are regenerated (see
-    --keep-keys) from the configured `[auto_key]` format, else as
-    e.g. `GoerzPRA2014` (articles) or `Goerz2205.15044` (arXiv
-    preprints). An entry whose DOI or eprint is already in the
-    library is rejected. If anything about the snippet is not
-    acceptable, all problems are reported and nothing is imported.
+    the DOI, ...) are dropped. A preprint-only entry -- one with a
+    pseudo-journal like `arXiv:2205.15044` (also `bioRxiv:`, `HAL:`,
+    ..., per the `[preprint_archives]` configuration), or a
+    `misc`/`unpublished` entry with an eprint, like arXiv's own
+    BibTeX export -- is normalized to an `@unpublished` entry
+    carrying the pseudo-journal (in canonical spelling) plus derived
+    `eprint`/`archiveprefix`/`doi` fields (a publication-status
+    `note` is never synthesized: fill it in by hand); an
+    unrecognized archive prefix is an error unless --keep-journals
+    is given. Citation keys are regenerated (see --keep-keys) from
+    the
+    configured `[auto_key]` format, else as e.g. `GoerzPRA2014`
+    (articles) or `Goerz2205.15044` (preprints). An entry whose DOI
+    or eprint is already in the library is rejected. If anything
+    about the snippet is not acceptable, all problems are reported
+    and nothing is imported.
 
     Note that the library itself is always the *first* argument
     ending in `.bib`: importing from a `.bib` file requires naming
@@ -2128,7 +2183,10 @@ def import_bibtex(bibfile, source, use_stdin, url, keep_keys, fix_uppercase):
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         citekeys = lib.import_bibtex(
-            text, keep_keys=keep_keys, fix_uppercase=fix_uppercase
+            text,
+            keep_keys=keep_keys,
+            fix_uppercase=fix_uppercase,
+            keep_journals=keep_journals,
         )
     for warning in caught:
         click.echo(f"Warning: {warning.message}", err=True)
@@ -2407,7 +2465,8 @@ def add_preprint(
     field, a near-exact title match, or a good title match
     corroborated by the first author's last name -- store its
     identifier in the entry's eprint field, along with
-    archiveprefix = arXiv. A title-based match that postdates the
+    archiveprefix = arXiv and the preprint's primary category (e.g.
+    quant-ph) as primaryclass. A title-based match that postdates the
     entry's year is rejected unless the result's journal reference
     corroborates the year; such a 'postdated-unverified' candidate is
     reported for review and can be applied explicitly with --eprint.
@@ -2416,10 +2475,11 @@ def add_preprint(
     searched-no-preprint marker, see --mark-empty) is re-searched.
 
     Prints a per-key report; with --json, the report maps each KEY to
-    {eprint, match, ratio, note, applied}. Modifies the .bib file in
-    place (unless --dry-run is given); requires network access
-    (except with --eprint) and respects the arXiv API's rate limit of
-    one request every three seconds, so large runs take time.
+    {eprint, match, ratio, note, applied, primaryclass}. Modifies the
+    .bib file in place (unless --dry-run is given); requires network
+    access (except with --eprint) and respects the arXiv API's rate
+    limit of one request every three seconds, so large runs take
+    time.
     """
     if eprint is not None and len(citekeys) > 1:
         raise click.UsageError("--eprint requires a single KEY")
@@ -2454,8 +2514,9 @@ def _echo_preprint_result(key, result, err=False):
     elif result.match == "explicit":
         click.echo(f"{key}: stored eprint {result.eprint}", err=err)
     elif result.eprint:
+        tag = f" [{result.primaryclass}]" if result.primaryclass else ""
         click.echo(
-            f"{key}: stored eprint {result.eprint} "
+            f"{key}: stored eprint {result.eprint}{tag} "
             f"(match={result.match}, ratio={result.ratio:.2f})",
             err=err,
         )

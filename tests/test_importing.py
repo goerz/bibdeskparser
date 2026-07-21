@@ -1,7 +1,9 @@
 """Tests for `Library.import_bibtex` (the `importing` module)."""
 
+import shutil
 import warnings
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
@@ -208,7 +210,7 @@ def test_snippet_string_conflicting_redefinition_is_an_error():
         bib.import_bibtex(text)
 
 
-# -- arXiv preprints ----------------------------------------------------- #
+# -- preprints (pseudo-journals) ----------------------------------------- #
 
 
 ARXIV = """
@@ -223,14 +225,89 @@ ARXIV = """
 
 
 def test_arxiv_preprint():
+    """A pseudo-journal `@article` is normalized to the canonical
+    stored form: `@misc`, with derived `eprint`/`archiveprefix`, and
+    the DOI extracted from the doi.org resolver URL."""
     bib = Library()
     (key,) = bib.import_bibtex(ARXIV)
     assert key == "Goerz2205.15044"
     entry = bib[key]
+    assert entry.entry_type == "unpublished"
     assert entry["journal"] == ValueString("arXiv:2205.15044")
     assert entry["eprint"] == "2205.15044"
     assert entry["archiveprefix"] == "arXiv"
-    assert entry["url"] == "https://doi.org/10.48550/arXiv.2205.15044"
+    assert entry["doi"] == "10.48550/arxiv.2205.15044"
+    assert entry.get("url") is None
+
+
+def test_arxiv_own_export():
+    """arXiv's own `@misc` BibTeX export (structured eprint fields,
+    no journal) is recognized as preprint-only and lands on the full
+    canonical stored form: the pseudo-journal is synthesized, the
+    arXiv DOI is derived, the redundant abstract-page `url` is
+    dropped, and the preprint citation key applies."""
+    bib = Library()
+    text = """
+    @misc{goerz2022quantumoptimalcontrolsemiautomatic,
+        title={Quantum optimal control via semi-automatic differentiation},
+        author={Michael H. Goerz and Sebasti{\\'a}n C. Carrasco},
+        year={2022},
+        eprint={2205.15044},
+        archivePrefix={arXiv},
+        primaryClass={quant-ph},
+        url={https://arxiv.org/abs/2205.15044},
+    }
+    """
+    (key,) = bib.import_bibtex(text)
+    assert key == "Goerz2205.15044"
+    entry = bib[key]
+    assert entry.entry_type == "unpublished"
+    assert entry["journal"] == ValueString("arXiv:2205.15044")
+    assert entry["eprint"] == "2205.15044"
+    assert entry["archiveprefix"] == "arXiv"
+    assert entry["primaryclass"] == "quant-ph"
+    assert entry["doi"] == "10.48550/arxiv.2205.15044"
+    assert entry.get("url") is None
+
+
+def test_arxiv_doi_derived():
+    """An arXiv preprint-only entry without any `url` gets the DOI
+    `10.48550/arXiv.<id>` that arXiv assigns to every preprint
+    (version suffix stripped, lowercased like every DOI)."""
+    bib = Library()
+    text = ARXIV.replace(
+        "    Url = {https://doi.org/10.48550/arXiv.2205.15044},\n", ""
+    ).replace("arXiv:2205.15044}", "arXiv:2205.15044v2}")
+    (key,) = bib.import_bibtex(text)
+    assert bib[key]["doi"] == "10.48550/arxiv.2205.15044"
+
+
+def test_derivable_url_dropped_only_with_doi():
+    """A `url` that merely restates the archive's page for the
+    identifier is dropped when the entry carries a `doi` (the
+    canonical link); any other `url` is kept."""
+    text = """
+    @article{Vecheck2022.09.09.507322,
+        Author = {Vecheck, Amy M. and Usselman, Robert J.},
+        Title = {Quantum Biology in Cellular Migration},
+        Doi = {10.1101/2022.09.09.507322},
+        Journal = {bioRxiv:2022.09.09.507322},
+        Url = {http://www.biorxiv.org/content/10.1101/2022.09.09.507322},
+        Year = {2022},
+    }
+    """
+    bib = Library()
+    (key,) = bib.import_bibtex(text)
+    assert bib[key].get("url") is None
+    bib = Library()
+    (key,) = bib.import_bibtex(
+        text.replace(
+            "Url = {http://www.biorxiv.org/content/10.1101/"
+            "2022.09.09.507322}",
+            "Url = {https://example.com/preprint}",
+        )
+    )
+    assert bib[key]["url"] == "https://example.com/preprint"
 
 
 def test_arxiv_version_stripped_from_eprint():
@@ -259,6 +336,200 @@ def test_arxiv_existing_eprint_not_overwritten():
     )
     (key,) = bib.import_bibtex(text)
     assert bib[key]["eprint"] == "2205.15044v1"
+
+
+HAL = """
+@article{TuriniciHAL00640217,
+    Author = {Turinici, Gabriel},
+    Title = {Quantum control},
+    Journal = {HAL:hal-00640217},
+    Url = {https://hal.science/hal-00640217},
+    Year = {2012},
+}
+"""
+
+
+def test_hal_preprint():
+    bib = Library()
+    (key,) = bib.import_bibtex(HAL, keep_keys=True)
+    entry = bib[key]
+    assert entry.entry_type == "unpublished"
+    assert entry["journal"] == ValueString("HAL:hal-00640217")
+    assert entry["eprint"] == "hal-00640217"
+    assert entry["archiveprefix"] == "HAL"
+    # no DOI derivation for HAL, and without a `doi` the deposit's
+    # stable URL is the canonical link: it is kept
+    assert entry.get("doi") is None
+    assert entry["url"] == "https://hal.science/hal-00640217"
+
+
+def test_biorxiv_preprint():
+    bib = Library()
+    text = """
+    @article{Vecheck2022.09.09.507322,
+        Author = {Vecheck, Amy M. and Usselman, Robert J.},
+        Title = {Quantum Biology in Cellular Migration},
+        Doi = {10.1101/2022.09.09.507322},
+        Journal = {bioRxiv:2022.09.09.507322},
+        Year = {2022},
+    }
+    """
+    (key,) = bib.import_bibtex(text)
+    entry = bib[key]
+    assert key == "Vecheck2022.09.09.507322"
+    assert entry["journal"] == ValueString("bioRxiv:2022.09.09.507322")
+    assert entry["eprint"] == "2022.09.09.507322"
+    assert entry["archiveprefix"] == "bioRxiv"
+
+
+def test_derivable_archive_dropped_preprint():
+    """An `archive` field that matches the link base derivable from
+    `eprint`/`archiveprefix` is dropped on import (exports regenerate
+    it); any other value is kept."""
+    bib = Library()
+    text = HAL.replace(
+        "Year = {2012},",
+        "Year = {2012},\n    Archive = {https://hal.science},",
+    )
+    (key,) = bib.import_bibtex(text, keep_keys=True)
+    assert bib[key].get("archive") is None
+    bib = Library()
+    text = HAL.replace(
+        "Year = {2012},",
+        "Year = {2012},\n    Archive = {https://hal.archives-ouvertes.fr},",
+    )
+    (key,) = bib.import_bibtex(text, keep_keys=True)
+    assert bib[key]["archive"] == "https://hal.archives-ouvertes.fr"
+
+
+def test_derivable_archive_dropped_published():
+    """The derivable-`archive` dropping also applies to a *published*
+    article with a non-arXiv `eprint` (whose full export regenerates
+    the field), so export/import round trips stay clean."""
+    text = """
+    @article{SauvagePRXQ2020,
+        Author = {Sauvage, Fr{\\'e}d{\\'e}ric and Mintert, Florian},
+        Title = {Optimal Quantum Control with Poor Statistics},
+        Journal = {PRX Quantum},
+        Volume = {1},
+        Pages = {020322},
+        Doi = {10.1103/prxquantum.1.020322},
+        Eprint = {hal-03612955},
+        Archiveprefix = {HAL},
+        Archive = {https://hal.science},
+        Year = {2020},
+    }
+    """
+    bib = Library()
+    with pytest.warns(UserWarning, match="created new @string macro"):
+        (key,) = bib.import_bibtex(text, keep_keys=True)
+    entry = bib[key]
+    assert entry.entry_type == "article"
+    assert entry["eprint"] == "hal-03612955"
+    assert entry.get("archive") is None
+
+
+def test_archive_prefix_canonicalized():
+    """A recognized archive prefix is normalized to its canonical
+    spelling (`hal:` -> `HAL:`); the identifier is untouched."""
+    bib = Library()
+    text = HAL.replace("HAL:hal-00640217", "hal:hal-00640217v3")
+    (key,) = bib.import_bibtex(text, keep_keys=True)
+    entry = bib[key]
+    assert entry["journal"] == ValueString("HAL:hal-00640217v3")
+    assert entry["eprint"] == "hal-00640217"  # version stripped
+
+
+def test_configured_archive():
+    bib = Library()
+    config.active.preprint_archives = {
+        **config.active.preprint_archives,
+        "zenodo": config._Archive("Zenodo", "https://zenodo.org/records/{id}"),
+    }
+    text = HAL.replace("HAL:hal-00640217", "Zenodo:1234567")
+    (key,) = bib.import_bibtex(text, keep_keys=True)
+    entry = bib[key]
+    assert entry["journal"] == ValueString("Zenodo:1234567")
+    assert entry["eprint"] == "1234567"
+    assert entry["archiveprefix"] == "Zenodo"
+
+
+def test_unrecognized_archive_is_an_error():
+    bib = Library()
+    text = HAL.replace("HAL:hal-00640217", "EarthArXiv:X5129")
+    with pytest.raises(ValueError, match="archive 'EarthArXiv' is not"):
+        bib.import_bibtex(text)
+    assert len(bib) == 0
+
+
+def test_url_journal_is_an_error():
+    """A URL pasted into the `journal` field must not become an
+    `@string` macro."""
+    bib = Library()
+    text = HAL.replace("HAL:hal-00640217", "https://example.com/paper")
+    with pytest.raises(ValueError, match="archive 'https' is not"):
+        bib.import_bibtex(text)
+
+
+# -- keep_journals ------------------------------------------------------- #
+
+
+def test_keep_journals_literal_preserved():
+    bib = _library_with_pra()
+    text = ARTICLE.replace("{Phys. Rev. A}", "{Physical Review A}")
+    (key,) = bib.import_bibtex(text, keep_journals=True)
+    assert bib[key]["journal"] == ValueString("Physical Review A")
+    assert "physical review a" not in {
+        value.lower() for value in bib.strings.values()
+    }
+
+
+def test_keep_journals_macro_reference_preserved():
+    bib = _library_with_pra()
+    (key,) = bib.import_bibtex(ARTICLE, keep_journals=True)
+    # macro matched by value is still a conversion; keep_journals
+    # keeps the literal value instead
+    assert bib[key]["journal"] == ValueString("Phys. Rev. A")
+    text = ARTICLE.replace("{Phys. Rev. A}", "pra").replace(
+        "{10.1103/PhysRevA.89.032334}", "{10.1103/other}"
+    )
+    (key2,) = bib.import_bibtex(text, keep_journals=True)
+    assert bib[key2]["journal"] == MacroString("pra")
+
+
+def test_keep_journals_config_macro_still_planned():
+    """A bare macro reference still pulls in its `[journal_macros]`
+    definition under `keep_journals` (the reference must resolve)."""
+    bib = Library()
+    config.active.journal_macros = {"pra": ("Phys. Rev. A",)}
+    text = ARTICLE.replace("{Phys. Rev. A}", "pra")
+    (key,) = bib.import_bibtex(text, keep_journals=True)
+    assert bib[key]["journal"] == MacroString("pra")
+    assert bib.strings["pra"] == "Phys. Rev. A"
+
+
+def test_keep_journals_pseudo_journal_as_is():
+    """`keep_journals` skips the prefix canonicalization and the
+    `@misc` conversion, but keeps the `eprint`/`archiveprefix`
+    derivation and the preprint key."""
+    bib = Library()
+    text = ARXIV.replace("arXiv:2205.15044", "arxiv:2205.15044")
+    (key,) = bib.import_bibtex(text, keep_journals=True)
+    entry = bib[key]
+    assert key == "Goerz2205.15044"
+    assert entry.entry_type == "article"
+    assert entry["journal"] == ValueString("arxiv:2205.15044")
+    assert entry["eprint"] == "2205.15044"
+    assert entry["archiveprefix"] == "arXiv"
+    assert entry["url"] == "https://doi.org/10.48550/arXiv.2205.15044"
+
+
+def test_keep_journals_unrecognized_archive_ok():
+    bib = Library()
+    text = HAL.replace("HAL:hal-00640217", "EarthArXiv:X5129")
+    (key,) = bib.import_bibtex(text, keep_keys=True, keep_journals=True)
+    assert bib[key]["journal"] == ValueString("EarthArXiv:X5129")
+    assert bib[key].get("eprint") is None
 
 
 # -- sanitization ------------------------------------------------------- #
@@ -791,3 +1062,81 @@ def test_comments_ignored():
     text = "%% Comment line\n@comment{BibDesk Static Groups{...}}\n" + ARTICLE
     (key,) = bib.import_bibtex(text)
     assert key == "GoerzPRA2014"
+
+
+def test_refs_bib_full_round_trip(tmp_path):
+    """Exporting all of `tests/Refs/refs.bib` and importing it into a
+    fresh library preserves every `journal` field -- including the
+    preprint pseudo-journals (`arXiv:...`, `HAL:...`, `bioRxiv:...`)
+    and the macro references."""
+    refs_dir = Path(__file__).parent / "Refs"
+    work = tmp_path / "Refs"
+    shutil.copytree(refs_dir, work)
+    src = Library(str(work / "refs.bib"))
+    exported = src.export(*src.keys())
+    target_file = work / "roundtrip.bib"
+    target_file.write_text("", encoding="utf-8")
+    dst = Library(str(target_file))
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        keys = dst.import_bibtex(exported, keep_keys=True)
+    # no pseudo-journal may have been turned into an @string macro
+    assert not any(
+        "created new @string macro" in str(w.message) for w in caught
+    )
+    assert set(keys) == set(src.keys())
+    for key in src.keys():
+        assert dst[key].get("journal") == src[key].get("journal"), key
+        # the omitted eprint/archiveprefix of preprint-only entries
+        # are re-derived on import (and newly derived for entries
+        # that did not have them, e.g. `TuriniciHAL00640217`)
+        for field in ("eprint", "archiveprefix"):
+            src_value = src[key].get(field)
+            if src_value is not None:
+                assert dst[key].get(field) == src_value, key
+        # the synthesized `archive` link base of the export must not
+        # round-trip into the library
+        assert dst[key].get("archive") == src[key].get("archive"), key
+    assert dict(dst.strings) == dict(src.strings)
+
+
+def test_article_export_round_trip():
+    """A `preprint="article"` export (pseudo-journal + DOI-resolver
+    URL) imports back into the canonical stored form, with the `doi`
+    recovered from the URL."""
+    src = Library()
+    (key,) = src.import_bibtex(ARXIV)
+    exported = src.export(key, fields="minimal", preprint="article")
+    assert "@article{" in exported
+    assert "Url = {https://doi.org/10.48550/arxiv.2205.15044}" in exported
+    dst = Library()
+    (new_key,) = dst.import_bibtex(exported, keep_keys=True)
+    entry = dst[new_key]
+    assert entry.entry_type == "unpublished"
+    assert entry["journal"] == ValueString("arXiv:2205.15044")
+    assert entry["eprint"] == "2205.15044"
+    assert entry["doi"] == "10.48550/arxiv.2205.15044"
+    assert entry.get("url") is None
+
+
+def test_unpublished_preprint_normalized():
+    """An `@unpublished` entry with an eprint is preprint-only: the
+    pseudo-journal is synthesized and the status `note` is
+    preserved."""
+    bib = Library()
+    text = """
+    @unpublished{wilhelm2020,
+        Author = {Wilhelm, Frank K. and Kirchhoff, Susanna},
+        Title = {An introduction into optimal control},
+        Eprint = {2003.10132},
+        Archiveprefix = {arXiv},
+        Note = {submitted to Phys. Rev. A},
+        Year = {2020},
+    }
+    """
+    (key,) = bib.import_bibtex(text)
+    entry = bib[key]
+    assert key == "Wilhelm2003.10132"
+    assert entry.entry_type == "unpublished"
+    assert entry["journal"] == ValueString("arXiv:2003.10132")
+    assert entry["note"] == "submitted to Phys. Rev. A"

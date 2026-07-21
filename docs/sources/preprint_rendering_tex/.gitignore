@@ -1,0 +1,9 @@
+# LaTeX build artifacts (rebuild with: latexmk -pdf preprints.tex)
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+preprintsNotes.bib

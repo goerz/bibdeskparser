@@ -284,8 +284,9 @@ lowercased initials.
 When entries are imported ({py:meth}`~bibdeskparser.Library.import_bibtex`,
 {py:meth}`~bibdeskparser.Library.add`, and the corresponding
 {ref}`CLI commands <cli-import>`), every journal name is replaced by
-an `@string` macro reference. A journal that does not match the value
-of a macro already in the library is looked up in the
+an `@string` macro reference ([preprint
+pseudo-journals](preprints) excepted). A journal that does not match
+the value of a macro already in the library is looked up in the
 `[journal_macros]` table, which maps a macro name to the journal name
 it stands for:
 
@@ -310,6 +311,70 @@ created* macro (named by its lowercased initials, honoring
 consistent across libraries. The table is exposed as
 `Library.config.journal_macros`, a `dict` mapping each macro name to
 a tuple of journal names.
+
+(config-preprint-archives)=
+
+## The `[preprint_archives]` table: recognized preprint servers
+
+The archives that may appear in a [preprint
+pseudo-journal](preprints) like `journal = {arXiv:2205.15044}`. The
+built-in archives are arXiv, bioRxiv, medRxiv, ChemRxiv, HAL, and
+SSRN; the table adds further archives (or, on a case-insensitive
+name match, overrides a built-in one), mapping the archive's
+canonical spelling to a URL template for the online location of a
+preprint, with `{id}` standing for the identifier:
+
+```toml
+[preprint_archives]
+Zenodo = "https://zenodo.org/records/{id}"
+EarthArXiv = ""
+```
+
+An empty template declares an archive without identifier-based URLs
+(like the built-in ChemRxiv, whose identifiers are DOIs): the archive
+is recognized, but rendering falls back to the entry's `doi`/URL for
+the hyperlink.
+
+The recognized archives determine which entries count as
+[preprint-only](preprints): on [import](cli-import), such entries
+are normalized to the canonical `@unpublished` form (an
+*unrecognized* pseudo-journal prefix is rejected); on
+[export](cli-export), they are written in the form selected by
+`--preprint`; and when [rendering](cli-render), the preprint
+reference is hyperlinked through the archive's URL template when
+there is no DOI or URL.
+
+The URL template also determines the
+[`archive` field](preprints-archive-field) that exports emit for
+non-arXiv preprints (the link base REVTeX uses for rendered
+eprints): whenever the template has the form `<base>/{id}`, the
+`<base>` part becomes the `archive` value. The table is exposed as
+`Library.config.preprint_archives`, a `dict` mapping each lowercased
+archive prefix to a named tuple `(name, url)`.
+
+(config-preprint-export)=
+
+## The `preprint_export` option
+
+The entry type that {py:meth}`~bibdeskparser.Library.export` (and
+the `export` CLI command) writes for a [preprint-only
+entry](preprints): `"unpublished"` (the default) or `"misc"` for
+the structured `eprint`-field forms, understood by REVTeX,
+`elsarticle`, and biblatex (`"unpublished"` guarantees the type's
+required `note` field in minimal exports -- the stored note, or
+"preprint"), or `"article"` for the pseudo-journal form, which
+renders under every classic BibTeX style:
+
+```toml
+preprint_export = "article"
+```
+
+This is only the *default* for the `preprint` argument of
+{py:meth}`~bibdeskparser.Library.export` (`--preprint` on the
+command line), which also accepts `"stored"` for no transformation
+at all. The setting never affects the *stored* entry or an explicit
+`export --field` list. It is exposed as
+`Library.config.preprint_export`.
 
 ## The `protected_words` list
 
@@ -451,6 +516,9 @@ universal = ["mytag"]
 [journal_macros]             # journal spellings not matching the library
 jcp = ["J. Chem. Phys.", "The Journal of Chemical Physics"]
 jpb = ["J. Phys. B", "J. Phys. B: At. Mol. Opt. Phys."]
+
+[preprint_archives]          # preprint servers beyond the built-ins
+Zenodo = "https://zenodo.org/records/{id}"
 
 [add_abstract]               # defaults for the add_abstract command
 min_confidence = "high"

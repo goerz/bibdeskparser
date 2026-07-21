@@ -609,7 +609,10 @@ def edit_entries(entries, library=None, editor=None):
             if library_path is not None
             else None
         )
-    text = export_entries(entries, strings=strings)
+    # The editor buffer must show the entry exactly as stored: a
+    # field missing from the buffer is *deleted* on merge, so the
+    # preprint-only export transformation must not apply here.
+    text = export_entries(entries, strings=strings, preprint="stored")
     path = _write_temp_file(text)
     try:
         while True:
