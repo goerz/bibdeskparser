@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Package API &mdash; BibDeskParser 0.4.0 documentation</title>
+  <title>Package API &mdash; BibDeskParser 0.5.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=6c02275b"></script>
+      <script src="../../_static/documentation_options.js?v=1dd76d02"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.4.0
+    v0.5.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -250,162 +250,8 @@ dictionary interface:</p>
 <a class="reference internal" href="#bibdeskparser.Entry.groups" title="bibdeskparser.Entry.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>, the main difference being that <code class="docutils literal notranslate"><span class="pre">groups</span></code> are stored
 at the <a class="reference internal" href="#bibdeskparser.Library" title="bibdeskparser.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a> level only: entries that are not part of a
 <code class="docutils literal notranslate"><span class="pre">Library</span></code> cannot have <code class="docutils literal notranslate"><span class="pre">groups</span></code>.</p>
-<p><a class="reference internal" href="#bibdeskparser.Entry.add_abstract" title="bibdeskparser.Entry.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a> and <a class="reference internal" href="#bibdeskparser.Entry.add_preprint" title="bibdeskparser.Entry.add_preprint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_preprint()</span></code></a> enrich the entry
-from online sources, filling the <code class="docutils literal notranslate"><span class="pre">abstract</span></code> field and the
-<code class="docutils literal notranslate"><span class="pre">eprint</span></code> field (the matching arXiv preprint), respectively. Both
-are mirrored by like-named <a class="reference internal" href="#bibdeskparser.Library" title="bibdeskparser.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a> methods; for an entry
-in a library, prefer <a class="reference internal" href="#bibdeskparser.Library.add_abstract" title="bibdeskparser.Library.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.add_abstract()</span></code></a>, which also
-locates the entry’s attached PDF as an additional abstract
-source (see <a class="reference internal" href="#bibdeskparser.Entry.add_abstract" title="bibdeskparser.Entry.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a> on why the entry cannot do that
-itself).</p>
 <p><a class="reference internal" href="#bibdeskparser.Entry.copy" title="bibdeskparser.Entry.copy"><code class="xref py py-meth docutils literal notranslate"><span class="pre">copy()</span></code></a> returns an independent copy of the entry: a faithful
 snapshot of its current fields, but not a member of any <code class="docutils literal notranslate"><span class="pre">Library</span></code>.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="bibdeskparser.Entry.add_abstract">
-<span class="sig-name descname"><span class="pre">add_abstract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mark_empty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/entry.html#Entry.add_abstract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Entry.add_abstract" title="Link to this definition"></a></dt>
-<dd><p>Fetch the entry’s abstract from the best available source
-and store it in the <code class="docutils literal notranslate"><span class="pre">abstract</span></code> field.</p>
-<p>Candidate abstracts are gathered from
-<a class="reference external" href="https://www.crossref.org">Crossref</a> (the publisher’s
-deposit, via the entry’s <code class="docutils literal notranslate"><span class="pre">doi</span></code>), from the text of the PDF
-given as <code class="docutils literal notranslate"><span class="pre">pdf_path</span></code> (extracted with the
-<a class="reference external" href="https://poppler.freedesktop.org">poppler</a> <code class="docutils literal notranslate"><span class="pre">pdftotext</span></code>
-command-line tool, which must be on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>; this source is
-skipped otherwise), from the <a class="reference external" href="https://info.arxiv.org/help/api/">arXiv
-API</a> (via the entry’s
-<code class="docutils literal notranslate"><span class="pre">eprint</span></code>, or an arXiv identifier contained in the citation
-key), and from <a class="reference external" href="https://www.semanticscholar.org">Semantic
-Scholar</a> as a last resort.
-Every candidate is cleaned to plain-unicode prose (LaTeX/JATS
-math markup to unicode, ligature and hyphenation repair,
-publisher copyright trailers stripped) and validated with
-heuristic garble checks. The candidates are then combined
-into a single result with a <em>confidence</em> level:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;high&quot;</span></code>: an online abstract identified by the entry’s
-<code class="docutils literal notranslate"><span class="pre">doi</span></code>/<code class="docutils literal notranslate"><span class="pre">eprint</span></code> (and agreeing with the PDF text, where both
-exist – the identifier guarantees the paper, the agreement
-guards against a wrong or garbled deposit), or an
-unambiguous PDF extraction;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;medium&quot;</span></code>: a single unconfirmed source: only the PDF text,
-or an online lookup via an arXiv identifier merely guessed
-from the citation key;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;low&quot;</span></code>: the PDF text and an online source <em>disagree</em>. The
-PDF text is reported (it belongs to the given file), but
-one of the two sources probably grabbed the wrong text –
-review manually;</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code>: no valid abstract found anywhere.</p></li>
-</ul>
-<p><code class="docutils literal notranslate"><span class="pre">pdf_path</span></code> is the resolved filesystem path of a PDF of the
-paper (<code class="docutils literal notranslate"><span class="pre">None</span></code> to skip the PDF source). An <code class="docutils literal notranslate"><span class="pre">Entry</span></code> cannot
-locate its own attached PDFs: the paths in <a class="reference internal" href="#bibdeskparser.Entry.files" title="bibdeskparser.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">files</span></code></a> are
-relative to the library’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file, which only the
-<a class="reference internal" href="#bibdeskparser.Library" title="bibdeskparser.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a> knows. For an entry in a library, call
-<a class="reference internal" href="#bibdeskparser.Library.add_abstract" title="bibdeskparser.Library.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.add_abstract()</span></code></a> instead, which finds the entry’s
-first attached PDF automatically and passes it here.</p>
-<p>The fetched abstract is stored in the entry only if its
-confidence is at least <code class="docutils literal notranslate"><span class="pre">min_confidence</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;high&quot;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">&quot;medium&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;low&quot;</span></code>). With <code class="docutils literal notranslate"><span class="pre">mark_empty=True</span></code>, a <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code>
-result stores an <em>empty</em> <code class="docutils literal notranslate"><span class="pre">abstract</span></code> field instead of leaving
-the field undefined, marking the entry as audited (<code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--empty</span> <span class="pre">abstract</span></code> in the command line, as opposed to <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--missing</span> <span class="pre">abstract</span></code>). Both arguments default to the
-<code class="docutils literal notranslate"><span class="pre">[add_abstract]</span></code> table of the
-<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a>
-(<code class="docutils literal notranslate"><span class="pre">config.add_abstract.min_confidence</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;high&quot;</span></code> unless
-configured, and <code class="docutils literal notranslate"><span class="pre">config.add_abstract.mark_empty</span></code>, <code class="docutils literal notranslate"><span class="pre">False</span></code>
-unless configured).</p>
-<p>If the entry already has a non-empty abstract, nothing is
-fetched and the existing text is returned with source
-<code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code>, unless <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>. An entry whose
-<code class="docutils literal notranslate"><span class="pre">abstract</span></code> field is present but <em>empty</em> (the audited marker)
-does not require <code class="docutils literal notranslate"><span class="pre">overwrite</span></code>.</p>
-<p>Returns a named tuple <code class="docutils literal notranslate"><span class="pre">(abstract,</span> <span class="pre">source,</span> <span class="pre">confidence,</span> <span class="pre">note,</span> <span class="pre">applied)</span></code>: the abstract text (<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> if none was found), the
-source it came from (<code class="docutils literal notranslate"><span class="pre">&quot;crossref&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;pdf&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;arxiv&quot;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">&quot;semanticscholar&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code>), the
-confidence level, a short diagnostic trace of the source
-selection (<code class="docutils literal notranslate"><span class="pre">note</span></code>), and whether the entry was modified
-(<code class="docutils literal notranslate"><span class="pre">applied</span></code>).</p>
-<p>Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> for an invalid <code class="docutils literal notranslate"><span class="pre">min_confidence</span></code>.
-Network problems never raise: an unreachable source is
-skipped (see <code class="docutils literal notranslate"><span class="pre">note</span></code>). Requires network access for the online
-sources.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="bibdeskparser.Entry.add_preprint">
-<span class="sig-name descname"><span class="pre">add_preprint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mark_empty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/entry.html#Entry.add_preprint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Entry.add_preprint" title="Link to this definition"></a></dt>
-<dd><p>Record the entry’s arXiv preprint in its <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field –
-an explicitly given identifier, or one found by searching
-arXiv (the only supported preprint server).</p>
-<p>With <code class="docutils literal notranslate"><span class="pre">eprint</span></code> given (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;2205.15044&quot;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">&quot;quant-ph/0106057&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;arXiv:2205.15044&quot;</span></code>), the identifier
-is validated and normalized (prefix and version suffix
-stripped) and stored without any network access – the caller
-asserts the match, e.g. after manually reviewing a candidate
-the search rejected.</p>
-<p>With <code class="docutils literal notranslate"><span class="pre">eprint=None</span></code>, the <a class="reference external" href="https://info.arxiv.org/help/api/">arXiv
-API</a> is searched for the
-entry, by title and first author, precise queries first. A
-result is accepted only when it confidently matches the
-entry: its arXiv DOI equals the entry’s <code class="docutils literal notranslate"><span class="pre">doi</span></code>, its title is a
-near-exact match, or a good title match is corroborated by
-the first author’s last name. A title-based match whose arXiv
-submission postdates the entry’s <code class="docutils literal notranslate"><span class="pre">year</span></code> by more than a year
-is rejected unless its journal reference names that year
-(guarding against unrelated papers sharing a generic title);
-such a rejected candidate is reported in the result’s <code class="docutils literal notranslate"><span class="pre">note</span></code>
-as <code class="docutils literal notranslate"><span class="pre">postdated-unverified(...)</span></code> and can, after review, be
-applied by passing its identifier as <code class="docutils literal notranslate"><span class="pre">eprint</span></code>. The search
-uses only the entry’s own fields, so it works the same for an
-entry that is not (yet) in a <a class="reference internal" href="#bibdeskparser.Library" title="bibdeskparser.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a>.</p>
-<p>Whenever a non-empty <code class="docutils literal notranslate"><span class="pre">eprint</span></code> is stored, an
-<code class="docutils literal notranslate"><span class="pre">archiveprefix</span> <span class="pre">=</span> <span class="pre">arXiv</span></code> field is added alongside it (unless
-the entry already has an <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>). A search match
-additionally stores the preprint’s arXiv primary category
-(e.g. <code class="docutils literal notranslate"><span class="pre">quant-ph</span></code>) in the <code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> field, replacing any
-existing value (which, with <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>, described the
-replaced identifier); an explicitly given identifier stores
-no <code class="docutils literal notranslate"><span class="pre">primaryclass</span></code>, since without network access the category
-is unknown.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field encodes the entry’s audit state, mirroring
-how <a class="reference internal" href="#bibdeskparser.Entry.add_abstract" title="bibdeskparser.Entry.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a> treats the <code class="docutils literal notranslate"><span class="pre">abstract</span></code> field: a field
-that is <em>absent</em> means the preprint status is unknown
-(<code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--missing</span> <span class="pre">eprint</span></code> in the command line); an <em>empty</em>
-field means a search ran cleanly and found no preprint
-(<code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--empty</span> <span class="pre">eprint</span></code>); a non-empty field holds the known
-identifier. With <code class="docutils literal notranslate"><span class="pre">mark_empty=True</span></code> (defaulting to the
-<code class="docutils literal notranslate"><span class="pre">[add_preprint]</span></code> table of the
-<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a>,
-<code class="docutils literal notranslate"><span class="pre">config.add_preprint.mark_empty</span></code>, <code class="docutils literal notranslate"><span class="pre">False</span></code> unless configured),
-a clean no-match stores that empty marker, so that repeated
-fill-in runs – selecting entries with
-<code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--missing</span> <span class="pre">eprint</span></code> – do not re-query arXiv for entries
-already searched. A no-match is not proof that no preprint
-exists (matching can fail), so re-audit the empty markers
-occasionally by passing the <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--empty</span> <span class="pre">eprint</span></code> entries. If
-the entry already has a <em>non-empty</em> <code class="docutils literal notranslate"><span class="pre">eprint</span></code>, nothing is
-searched and the existing identifier is returned with match
-<code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code>, unless <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>; the empty marker does
-not require <code class="docutils literal notranslate"><span class="pre">overwrite</span></code>.</p>
-<p>Returns a named tuple <code class="docutils literal notranslate"><span class="pre">(eprint,</span> <span class="pre">match,</span> <span class="pre">ratio,</span> <span class="pre">note,</span> <span class="pre">applied,</span> <span class="pre">primaryclass)</span></code>: the stored (or existing) arXiv identifier
-(<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> if none), how it was matched (<code class="docutils literal notranslate"><span class="pre">&quot;doi&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;title&quot;</span></code>, or
-<code class="docutils literal notranslate"><span class="pre">&quot;title+author&quot;</span></code> for a search match, in decreasing order of
-strength; <code class="docutils literal notranslate"><span class="pre">&quot;explicit&quot;</span></code> for a given identifier; <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> for a
-clean no-match; <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code> when the search could not run;
-<code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code> when the entry was skipped), the title-similarity
-ratio of the best search result (<code class="docutils literal notranslate"><span class="pre">None</span></code> when no search ran),
-a short diagnostic trace (<code class="docutils literal notranslate"><span class="pre">note</span></code>), whether the entry was
-modified (<code class="docutils literal notranslate"><span class="pre">applied</span></code>), and the primary category of a search
-match (<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> otherwise). On a <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code> result (network/API
-failure, or an entry without a title) the entry is never
-modified – in particular, no empty marker is stored – so a
-re-run picks it up.</p>
-<p>Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> if an explicitly given <code class="docutils literal notranslate"><span class="pre">eprint</span></code> is
-not a valid arXiv identifier. Network problems never raise.
-The search respects the arXiv API’s rate limit (one request
-every three seconds, shared across all searches in the
-process), so budget time accordingly for large batch runs.</p>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Entry.add_url">
 <span class="sig-name descname"><span class="pre">add_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/entry.html#Entry.add_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Entry.add_url" title="Link to this definition"></a></dt>
@@ -583,8 +429,9 @@ error.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Library</span></code> is itself a <code class="docutils literal notranslate"><span class="pre">dict</span></code>-like mapping of citation key to
 <a class="reference internal" href="#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a>; see <a class="reference internal" href="#bibdeskparser.Library.entries" title="bibdeskparser.Library.entries"><code class="xref py py-attr docutils literal notranslate"><span class="pre">entries</span></code></a>. <a class="reference internal" href="#bibdeskparser.Library.keys" title="bibdeskparser.Library.keys"><code class="xref py py-meth docutils literal notranslate"><span class="pre">keys()</span></code></a> returns the
-citation keys as a <code class="docutils literal notranslate"><span class="pre">tuple</span></code>, optionally filtered by entry type
-and by which fields are present, missing, or empty.</p></li>
+citation keys as a <code class="docutils literal notranslate"><span class="pre">tuple</span></code>, optionally filtered by entry type,
+by which fields are present or missing, and by static-group
+membership.</p></li>
 <li><p><a class="reference internal" href="#bibdeskparser.Library.path" title="bibdeskparser.Library.path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">path</span></code></a>: the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file the library was loaded from or last
 saved to (read-only; <code class="docutils literal notranslate"><span class="pre">None</span></code> for an unsaved from-scratch library).</p></li>
 <li><p><a class="reference internal" href="#bibdeskparser.Library.timestamp" title="bibdeskparser.Library.timestamp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">timestamp</span></code></a>: the save time from the header comment, updated
@@ -648,15 +495,16 @@ sanitized and normalized. <a class="reference internal" href="#bibdeskparser.Lib
 for an arXiv identifier, DOI, or free-form query from the
 appropriate online source and imports it as a new entry.
 <a class="reference internal" href="#bibdeskparser.Library.add_abstract" title="bibdeskparser.Library.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a> fetches an entry’s abstract from the best
-available source and stores it in the <code class="docutils literal notranslate"><span class="pre">abstract</span></code> field, and
-<a class="reference internal" href="#bibdeskparser.Library.add_preprint" title="bibdeskparser.Library.add_preprint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_preprint()</span></code></a> records an entry’s matching arXiv preprint
-(given explicitly, or found by searching arXiv) in the <code class="docutils literal notranslate"><span class="pre">eprint</span></code>
-field. Both delegate to the corresponding <a class="reference internal" href="#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a>
-methods; <code class="docutils literal notranslate"><span class="pre">add_preprint</span></code> (like the URL methods) is a pure
-convenience delegate, while <code class="docutils literal notranslate"><span class="pre">add_abstract</span></code> first locates the
-entry’s first attached PDF – an additional abstract source
-that requires the library’s directory to resolve, and is
-therefore only available through the <code class="docutils literal notranslate"><span class="pre">Library</span></code> method.</p></li>
+available source (including the entry’s first attached PDF) and
+stores it in the <code class="docutils literal notranslate"><span class="pre">abstract</span></code> field, <a class="reference internal" href="#bibdeskparser.Library.add_preprint" title="bibdeskparser.Library.add_preprint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_preprint()</span></code></a>
+records an entry’s matching arXiv preprint (given explicitly,
+or found by searching arXiv) in the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field, and
+<a class="reference internal" href="#bibdeskparser.Library.add_doi" title="bibdeskparser.Library.add_doi"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_doi()</span></code></a> records an entry’s DOI (given explicitly,
+recorded on arXiv for the entry’s <code class="docutils literal notranslate"><span class="pre">eprint</span></code>, or found by
+searching Crossref) in the <code class="docutils literal notranslate"><span class="pre">doi</span></code> field. All three maintain the
+configured known-missing groups, recording which entries are
+verified to have no abstract, preprint, or DOI (see the
+<code class="docutils literal notranslate"><span class="pre">[known_missing]</span></code> table of the configuration).</p></li>
 </ul>
 <p>The process-global configuration (see the
 <a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a> reference page) is exposed as the
@@ -780,11 +628,11 @@ source, identified by the same DOI or arXiv identifier, it is
 high-confidence by construction – the <code class="docutils literal notranslate"><span class="pre">min_confidence</span></code>
 threshold of <a class="reference internal" href="#bibdeskparser.Library.add_abstract" title="bibdeskparser.Library.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a> does not apply here. An
 abstract that fails validation – or a source that provides
-none – is silently omitted (never stored as an empty
-“audited” marker: only <a class="reference internal" href="#bibdeskparser.Library.add_abstract" title="bibdeskparser.Library.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a>, which consults
-more sources, completes an audit), so the new entry remains
-matched by <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--missing</span> <span class="pre">abstract</span></code> for a later
-<a class="reference internal" href="#bibdeskparser.Library.add_abstract" title="bibdeskparser.Library.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a> pass.</p>
+none – is silently omitted, so the new entry remains matched
+by <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--missing</span> <span class="pre">abstract</span></code> for a later <a class="reference internal" href="#bibdeskparser.Library.add_abstract" title="bibdeskparser.Library.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a>
+pass; <code class="docutils literal notranslate"><span class="pre">add</span></code> itself never records a verified absence in a
+known-missing group (only <a class="reference internal" href="#bibdeskparser.Library.add_abstract" title="bibdeskparser.Library.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a>, which
+consults more sources, completes that audit).</p>
 <p>With <code class="docutils literal notranslate"><span class="pre">add_preprint=True</span></code>, <a class="reference internal" href="#bibdeskparser.Library.add_preprint" title="bibdeskparser.Library.add_preprint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_preprint()</span></code></a> is called for
 the new entry (with its configured defaults, see there),
 searching arXiv for a matching preprint and recording it in
@@ -800,27 +648,170 @@ other modification, the new entry only becomes permanent with
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Library.add_abstract">
-<span class="sig-name descname"><span class="pre">add_abstract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mark_empty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.add_abstract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.add_abstract" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">add_abstract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.add_abstract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.add_abstract" title="Link to this definition"></a></dt>
 <dd><p>Fetch the abstract of entry <code class="docutils literal notranslate"><span class="pre">key</span></code> from the best available
 source and store it in the entry’s <code class="docutils literal notranslate"><span class="pre">abstract</span></code> field.</p>
-<p>Delegates to <a class="reference internal" href="#bibdeskparser.Entry.add_abstract" title="bibdeskparser.Entry.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Entry.add_abstract()</span></code></a> (see there for the
-sources, the confidence levels, the <code class="docutils literal notranslate"><span class="pre">min_confidence</span></code>,
-<code class="docutils literal notranslate"><span class="pre">overwrite</span></code>, and <code class="docutils literal notranslate"><span class="pre">mark_empty</span></code> arguments, and the returned
-named tuple), after locating the entry’s first attached PDF
-and passing it as the <code class="docutils literal notranslate"><span class="pre">pdf_path</span></code>. Unlike <a class="reference internal" href="#bibdeskparser.Library.add_url" title="bibdeskparser.Library.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a> and
-<a class="reference internal" href="#bibdeskparser.Library.add_preprint" title="bibdeskparser.Library.add_preprint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_preprint()</span></code></a>, this is <em>more</em> than a convenience
-delegate: the PDF source is available only through the
-<code class="docutils literal notranslate"><span class="pre">Library</span></code>, because the paths in
-<a class="reference internal" href="#bibdeskparser.Entry.files" title="bibdeskparser.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Entry.files</span></code></a> are relative to the library’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file,
-which the entry itself does not know. Always prefer this
-method over calling <a class="reference internal" href="#bibdeskparser.Entry.add_abstract" title="bibdeskparser.Entry.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Entry.add_abstract()</span></code></a> directly for an
-entry that is in a library. Like any other modification, the
-change only becomes permanent with <a class="reference internal" href="#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>.</p>
-<p>Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> if <code class="docutils literal notranslate"><span class="pre">key</span></code> is not in the library and
-<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> for an invalid <code class="docutils literal notranslate"><span class="pre">min_confidence</span></code>. Network
-problems never raise: an unreachable source is skipped (see
-the result’s <code class="docutils literal notranslate"><span class="pre">note</span></code>). Requires network access for the online
-sources.</p>
+<p>Candidate abstracts are gathered from
+<a class="reference external" href="https://www.crossref.org">Crossref</a> (the publisher’s
+deposit, via the entry’s <code class="docutils literal notranslate"><span class="pre">doi</span></code>), from the text of the entry’s
+first attached PDF (extracted with the
+<a class="reference external" href="https://poppler.freedesktop.org">poppler</a> <code class="docutils literal notranslate"><span class="pre">pdftotext</span></code>
+command-line tool, which must be on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>; this source is
+skipped otherwise), from the <a class="reference external" href="https://info.arxiv.org/help/api/">arXiv
+API</a> (via the entry’s
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code>, or an arXiv identifier contained in the citation
+key), and from <a class="reference external" href="https://www.semanticscholar.org">Semantic
+Scholar</a> as a last resort.
+Every candidate is cleaned to plain-unicode prose (LaTeX/JATS
+math markup to unicode, ligature and hyphenation repair,
+publisher copyright trailers stripped) and validated with
+heuristic garble checks. The candidates are then combined
+into a single result with a <em>confidence</em> level:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;high&quot;</span></code>: an online abstract identified by the entry’s
+<code class="docutils literal notranslate"><span class="pre">doi</span></code>/<code class="docutils literal notranslate"><span class="pre">eprint</span></code> (and agreeing with the PDF text, where both
+exist – the identifier guarantees the paper, the agreement
+guards against a wrong or garbled deposit), or an
+unambiguous PDF extraction;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;medium&quot;</span></code>: a single unconfirmed source: only the PDF text,
+or an online lookup via an arXiv identifier merely guessed
+from the citation key;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;low&quot;</span></code>: the PDF text and an online source <em>disagree</em>. The
+PDF text is reported (it belongs to the given file), but
+one of the two sources probably grabbed the wrong text –
+review manually;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code>: no valid abstract found anywhere.</p></li>
+</ul>
+<p>The fetched abstract is stored in the entry only if its
+confidence is at least <code class="docutils literal notranslate"><span class="pre">min_confidence</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;high&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;medium&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;low&quot;</span></code>; defaulting to the <code class="docutils literal notranslate"><span class="pre">[add_abstract]</span></code>
+table of the <a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a>,
+<code class="docutils literal notranslate"><span class="pre">config.add_abstract.min_confidence</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;high&quot;</span></code> unless
+configured). If the entry already has a non-empty abstract,
+nothing is fetched and the existing text is returned with
+source <code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code>, unless <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>.</p>
+<p>With a known-missing group configured for <code class="docutils literal notranslate"><span class="pre">abstract</span></code> (the
+<code class="docutils literal notranslate"><span class="pre">[known_missing]</span></code> table of the configuration), the group
+records which entries are verified to have no findable
+abstract, and the method operates in one of two modes. By
+default (routine fill-in), an entry that is a member is
+skipped without any search (source <code class="docutils literal notranslate"><span class="pre">&quot;known-missing&quot;</span></code>); a
+search that runs cleanly against every source and finds
+nothing adds the entry to the group (creating the group on
+first use); and storing an abstract removes the entry from
+the group again – so repeated fill-in passes never re-query
+the sources for an entry already searched. With
+<code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>, the membership is ignored and the search
+re-runs: an explicit re-audit, for when an abstract may have
+become available since the last check; select exactly the
+group members with <a class="reference internal" href="#bibdeskparser.Library.keys" title="bibdeskparser.Library.keys"><code class="xref py py-meth docutils literal notranslate"><span class="pre">keys()</span></code></a> (<code class="docutils literal notranslate"><span class="pre">group=&quot;No</span> <span class="pre">Abstract&quot;</span></code>). A
+re-audited entry that still yields nothing simply stays in
+the group. A search during which any source failed (source
+<code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code>: an unreachable API, or an attached PDF that could
+not be read) never marks the entry, so a re-run picks it up.
+Without the configuration, none of this bookkeeping happens.</p>
+<p>Returns a named tuple <code class="docutils literal notranslate"><span class="pre">(abstract,</span> <span class="pre">source,</span> <span class="pre">confidence,</span> <span class="pre">note,</span> <span class="pre">applied)</span></code>: the abstract text (<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> if none was found), the
+source it came from (<code class="docutils literal notranslate"><span class="pre">&quot;crossref&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;pdf&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;arxiv&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;semanticscholar&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">&quot;known-missing&quot;</span></code>), the confidence level, a short diagnostic
+trace of the source selection (<code class="docutils literal notranslate"><span class="pre">note</span></code>), and whether the
+library was modified – the entry’s <code class="docutils literal notranslate"><span class="pre">abstract</span></code> field, or its
+known-missing group membership (<code class="docutils literal notranslate"><span class="pre">applied</span></code>).</p>
+<p>Like any other modification, changes only become permanent
+with <a class="reference internal" href="#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>. Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> if <code class="docutils literal notranslate"><span class="pre">key</span></code> is not in
+the library and <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> for an invalid
+<code class="docutils literal notranslate"><span class="pre">min_confidence</span></code>. Network problems never raise: an
+unreachable source is skipped (see <code class="docutils literal notranslate"><span class="pre">note</span></code>). Requires network
+access for the online sources.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bibdeskparser.Library.add_doi">
+<span class="sig-name descname"><span class="pre">add_doi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.add_doi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.add_doi" title="Link to this definition"></a></dt>
+<dd><p>Record the DOI of entry <code class="docutils literal notranslate"><span class="pre">key</span></code> in its <code class="docutils literal notranslate"><span class="pre">doi</span></code> field – an
+explicitly given DOI, or one found online.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">doi</span></code> given (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;10.1103/PhysRevA.89.032334&quot;</span></code>, a
+<code class="docutils literal notranslate"><span class="pre">doi:</span></code>-prefixed value, or a <code class="docutils literal notranslate"><span class="pre">https://doi.org/...</span></code> resolver
+address), the DOI is validated and normalized (prefix or
+resolver address stripped, lowercased – DOIs are defined to
+be case-insensitive) and stored without any network access –
+the caller asserts the match, e.g. after manually reviewing a
+candidate the search rejected.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">doi=None</span></code>, the DOI is looked up online, from two
+sources. If the entry has an arXiv <code class="docutils literal notranslate"><span class="pre">eprint</span></code>, the <a class="reference external" href="https://info.arxiv.org/help/api/">arXiv
+API</a> is consulted first:
+the DOI that arXiv records for the identifier names the
+published version of exactly this paper (an arXiv-issued
+<code class="docutils literal notranslate"><span class="pre">10.48550/...</span></code> DataCite DOI, which merely restates the arXiv
+identifier, does not count as a DOI on record). Otherwise –
+no <code class="docutils literal notranslate"><span class="pre">eprint</span></code>, or no DOI recorded on arXiv –
+<a class="reference external" href="https://www.crossref.org">Crossref</a> is searched for the
+entry, by title and first author. A search result is accepted
+only when it confidently matches the entry: its title is a
+near-exact match, or a good title match is corroborated by
+the first author’s last name. A title-based match whose
+publication year differs from the entry’s <code class="docutils literal notranslate"><span class="pre">year</span></code> by more than
+one is rejected (guarding against unrelated papers sharing a
+generic title), reported in the result’s <code class="docutils literal notranslate"><span class="pre">note</span></code> as
+<code class="docutils literal notranslate"><span class="pre">year-mismatch(...)</span></code>; and an amendment record – an erratum,
+corrigendum, retraction, comment, or reply, whose title
+embeds the original title – never matches an entry that is
+not itself such an amendment. A rejected candidate can, after
+review, be applied by passing its DOI as <code class="docutils literal notranslate"><span class="pre">doi</span></code>.</p>
+<p>A <em>preprint-only</em> entry (see the
+<a class="reference internal" href="../../preprints.html#preprints-convention"><span class="std std-ref">preprints</span></a> documentation) is skipped
+without any lookup (match <code class="docutils literal notranslate"><span class="pre">&quot;preprint&quot;</span></code>): the search
+would find the DOI of the <em>published version</em>, which does not
+belong on a preprint reference. To record it deliberately,
+pass it as <code class="docutils literal notranslate"><span class="pre">doi</span></code> – but consider replacing the entry with the
+published version (via <a class="reference internal" href="#bibdeskparser.Library.add" title="bibdeskparser.Library.add"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add()</span></code></a>) instead.</p>
+<p>If the entry already has a non-empty <code class="docutils literal notranslate"><span class="pre">doi</span></code>, nothing is
+searched and the existing DOI is returned with match
+<code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code>, unless <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>.</p>
+<p>With a known-missing group configured for <code class="docutils literal notranslate"><span class="pre">doi</span></code> (the
+<code class="docutils literal notranslate"><span class="pre">[known_missing]</span></code> table of the
+<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a>), the group records which
+entries are verified to have no DOI, and the method operates
+in one of two modes. By default (routine fill-in), a member
+entry is skipped without any lookup (match
+<code class="docutils literal notranslate"><span class="pre">&quot;known-missing&quot;</span></code>); a lookup that runs cleanly and finds no
+DOI adds the entry to the group (creating the group on first
+use); and storing a DOI (a match, or an explicitly given
+<code class="docutils literal notranslate"><span class="pre">doi</span></code>) removes the entry from the group again – so repeated
+fill-in passes never re-query the sources for an entry
+already searched. With <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>, the membership is
+ignored and the lookup re-runs: an explicit re-audit.
+Membership means “searched, nothing found at the time”, not
+“does not exist” – the earlier match may have failed, or a
+DOI may have been registered since the last check – so
+re-audit periodically, selecting exactly the group members
+with <a class="reference internal" href="#bibdeskparser.Library.keys" title="bibdeskparser.Library.keys"><code class="xref py py-meth docutils literal notranslate"><span class="pre">keys()</span></code></a> (<code class="docutils literal notranslate"><span class="pre">group=&quot;No</span> <span class="pre">DOI&quot;</span></code>). A re-audited entry with
+another clean no-match simply stays in the group; a match
+stores the DOI and unmarks. A failed lookup (match <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code>)
+never marks the entry, so a re-run picks it up. Membership
+also makes the <code class="docutils literal notranslate"><span class="pre">check</span></code> command accept an <code class="docutils literal notranslate"><span class="pre">article</span></code> without a
+<code class="docutils literal notranslate"><span class="pre">doi</span></code>. Without the configuration, none of this bookkeeping
+happens.</p>
+<p>Returns a named tuple <code class="docutils literal notranslate"><span class="pre">(doi,</span> <span class="pre">match,</span> <span class="pre">ratio,</span> <span class="pre">note,</span> <span class="pre">applied)</span></code>:
+the stored (or existing) DOI (<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> if none), how it was found
+(<code class="docutils literal notranslate"><span class="pre">&quot;eprint&quot;</span></code> for the DOI recorded on arXiv for the entry’s
+eprint; <code class="docutils literal notranslate"><span class="pre">&quot;title&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;title+author&quot;</span></code> for a Crossref search
+match, in decreasing order of strength; <code class="docutils literal notranslate"><span class="pre">&quot;explicit&quot;</span></code> for a
+given DOI; <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> for a clean no-match; <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code> when the
+lookup could not run to completion – network/API failure, or
+an entry without a title; <code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;known-missing&quot;</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">&quot;preprint&quot;</span></code> when the entry was skipped), the title-similarity
+ratio of the best Crossref result (<code class="docutils literal notranslate"><span class="pre">None</span></code> when no search
+ran), a short diagnostic trace (<code class="docutils literal notranslate"><span class="pre">note</span></code>), and whether the
+library was modified – the entry’s <code class="docutils literal notranslate"><span class="pre">doi</span></code> field, or its
+known-missing group membership (<code class="docutils literal notranslate"><span class="pre">applied</span></code>).</p>
+<p>Like any other modification, changes only become permanent
+with <a class="reference internal" href="#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>. Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> if <code class="docutils literal notranslate"><span class="pre">key</span></code> is not in
+the library and <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> if an explicitly given
+<code class="docutils literal notranslate"><span class="pre">doi</span></code> is not a valid DOI. Network problems never raise. An
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code> lookup respects the arXiv API’s rate limit (one
+request every three seconds, shared with <a class="reference internal" href="#bibdeskparser.Library.add_preprint" title="bibdeskparser.Library.add_preprint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_preprint()</span></code></a>
+searches), so budget time accordingly for large batch runs.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -878,21 +869,84 @@ saved first, so that relative paths are well-defined).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Library.add_preprint">
-<span class="sig-name descname"><span class="pre">add_preprint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mark_empty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.add_preprint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.add_preprint" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">add_preprint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.add_preprint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.add_preprint" title="Link to this definition"></a></dt>
 <dd><p>Record the arXiv preprint of entry <code class="docutils literal notranslate"><span class="pre">key</span></code> in its <code class="docutils literal notranslate"><span class="pre">eprint</span></code>
 field – an explicitly given identifier, or one found by
-searching arXiv.</p>
-<p>Delegates to <a class="reference internal" href="#bibdeskparser.Entry.add_preprint" title="bibdeskparser.Entry.add_preprint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Entry.add_preprint()</span></code></a> (see there for the
-matching rules, the <code class="docutils literal notranslate"><span class="pre">eprint</span></code>, <code class="docutils literal notranslate"><span class="pre">overwrite</span></code>, and <code class="docutils literal notranslate"><span class="pre">mark_empty</span></code>
-arguments, the audit-state semantics of the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field,
-and the returned named tuple). The search uses only the
-entry’s own fields, so – like <a class="reference internal" href="#bibdeskparser.Library.add_url" title="bibdeskparser.Library.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a>, and unlike
-<a class="reference internal" href="#bibdeskparser.Library.add_abstract" title="bibdeskparser.Library.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_abstract()</span></code></a> – this is a pure convenience delegate.
-Like any other modification, the change only becomes
-permanent with <a class="reference internal" href="#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>.</p>
-<p>Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> if <code class="docutils literal notranslate"><span class="pre">key</span></code> is not in the library and
-<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> if an explicitly given <code class="docutils literal notranslate"><span class="pre">eprint</span></code> is not a
-valid arXiv identifier. Network problems never raise.</p>
+searching arXiv (the only supported preprint server).</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">eprint</span></code> given (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;2205.15044&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;quant-ph/0106057&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;arXiv:2205.15044&quot;</span></code>), the
+identifier is validated and normalized (prefix and version
+suffix stripped) and stored without any network access – the
+caller asserts the match, e.g. after manually reviewing a
+candidate the search rejected.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">eprint=None</span></code>, the <a class="reference external" href="https://info.arxiv.org/help/api/">arXiv
+API</a> is searched for the
+entry, by title and first author, precise queries first. A
+result is accepted only when it confidently matches the
+entry: its arXiv DOI equals the entry’s <code class="docutils literal notranslate"><span class="pre">doi</span></code>, its title is a
+near-exact match, or a good title match is corroborated by
+the first author’s last name. A title-based match whose arXiv
+submission postdates the entry’s <code class="docutils literal notranslate"><span class="pre">year</span></code> by more than a year
+is rejected unless its journal reference names that year
+(guarding against unrelated papers sharing a generic title);
+such a rejected candidate is reported in the result’s <code class="docutils literal notranslate"><span class="pre">note</span></code>
+as <code class="docutils literal notranslate"><span class="pre">postdated-unverified(...)</span></code> and can, after review, be
+applied by passing its identifier as <code class="docutils literal notranslate"><span class="pre">eprint</span></code>.</p>
+<p>Whenever a non-empty <code class="docutils literal notranslate"><span class="pre">eprint</span></code> is stored, an
+<code class="docutils literal notranslate"><span class="pre">archiveprefix</span> <span class="pre">=</span> <span class="pre">arXiv</span></code> field is added alongside it (unless
+the entry already has an <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>). A search match
+additionally stores the preprint’s arXiv primary category
+(e.g. <code class="docutils literal notranslate"><span class="pre">quant-ph</span></code>) in the <code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> field, replacing any
+existing value (which, with <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>, described the
+replaced identifier); an explicitly given identifier stores
+no <code class="docutils literal notranslate"><span class="pre">primaryclass</span></code>, since without network access the category
+is unknown.</p>
+<p>If the entry already has a non-empty <code class="docutils literal notranslate"><span class="pre">eprint</span></code>, nothing is
+searched and the existing identifier is returned with match
+<code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code>, unless <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>.</p>
+<p>With a known-missing group configured for <code class="docutils literal notranslate"><span class="pre">eprint</span></code> (the
+<code class="docutils literal notranslate"><span class="pre">[known_missing]</span></code> table of the
+<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a>), the group records which
+entries are verified to have no preprint, and the method
+operates in one of two modes. By default (routine fill-in),
+a member entry is skipped without any search (match
+<code class="docutils literal notranslate"><span class="pre">&quot;known-missing&quot;</span></code>); a search that runs cleanly and finds no
+preprint adds the entry to the group (creating the group on
+first use); and storing an identifier (a search match, or an
+explicitly given <code class="docutils literal notranslate"><span class="pre">eprint</span></code>) removes the entry from the group
+again – so repeated fill-in passes never re-query arXiv for
+an entry already searched. With <code class="docutils literal notranslate"><span class="pre">overwrite=True</span></code>, the
+membership is ignored and the search re-runs: an explicit
+re-audit. Membership means “searched, nothing found at the
+time”, not “does not exist” – the earlier match may have
+failed, or a preprint may have been posted since the last
+check – so re-audit periodically, selecting exactly the
+group members with <a class="reference internal" href="#bibdeskparser.Library.keys" title="bibdeskparser.Library.keys"><code class="xref py py-meth docutils literal notranslate"><span class="pre">keys()</span></code></a> (<code class="docutils literal notranslate"><span class="pre">group=&quot;No</span> <span class="pre">Eprint&quot;</span></code>). A
+re-audited entry with another clean no-match simply stays in
+the group; a match stores the identifier and unmarks. A
+failed search (match <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code>) never marks the entry, so a
+re-run picks it up. Without the configuration, none of this
+bookkeeping happens.</p>
+<p>Returns a named tuple <code class="docutils literal notranslate"><span class="pre">(eprint,</span> <span class="pre">match,</span> <span class="pre">ratio,</span> <span class="pre">note,</span> <span class="pre">applied,</span> <span class="pre">primaryclass)</span></code>: the stored (or existing) arXiv identifier
+(<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> if none), how it was matched (<code class="docutils literal notranslate"><span class="pre">&quot;doi&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;title&quot;</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">&quot;title+author&quot;</span></code> for a search match, in decreasing order of
+strength; <code class="docutils literal notranslate"><span class="pre">&quot;explicit&quot;</span></code> for a given identifier; <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> for a
+clean no-match; <code class="docutils literal notranslate"><span class="pre">&quot;error&quot;</span></code> when the search could not run –
+network/API failure, or an entry without a title;
+<code class="docutils literal notranslate"><span class="pre">&quot;existing&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;known-missing&quot;</span></code> when the entry was
+skipped), the title-similarity ratio of the best search
+result (<code class="docutils literal notranslate"><span class="pre">None</span></code> when no search ran), a short diagnostic trace
+(<code class="docutils literal notranslate"><span class="pre">note</span></code>), whether the library was modified – the entry’s
+fields, or its known-missing group membership (<code class="docutils literal notranslate"><span class="pre">applied</span></code>),
+and the primary category of a search match (<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> otherwise).</p>
+<p>Like any other modification, changes only become permanent
+with <a class="reference internal" href="#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>. Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> if <code class="docutils literal notranslate"><span class="pre">key</span></code> is not in
+the library and <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> if an explicitly given
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code> is not a valid arXiv identifier. Network problems
+never raise. The search respects the arXiv API’s rate limit
+(one request every three seconds, shared across all searches
+in the process), so budget time accordingly for large batch
+runs.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1147,9 +1201,13 @@ macro configured in the <code class="docutils literal notranslate"><span class="
 <a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a> (its <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definition is
 added to the library as needed), or – with a <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>
 – a newly created macro named by the journal’s lowercased
-initials (honoring <code class="docutils literal notranslate"><span class="pre">[initials.journal]</span></code> exceptions). A
-pseudo-journal whose archive is <em>not</em> recognized is
-rejected, since it must not be turned into a macro.</p></li>
+initials (honoring <code class="docutils literal notranslate"><span class="pre">[initials.journal]</span></code> exceptions). When
+the derived name is taken by a macro whose value matches
+the journal name word by word as an abbreviation (e.g.
+<code class="docutils literal notranslate"><span class="pre">prl</span> <span class="pre">=</span> <span class="pre">&quot;Phys.</span> <span class="pre">Rev.</span> <span class="pre">Lett.&quot;</span></code> for an incoming <code class="docutils literal notranslate"><span class="pre">Physical</span> <span class="pre">Review</span> <span class="pre">Letters</span></code>), that macro is reused, also with a
+<code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>. A pseudo-journal whose archive is <em>not</em>
+recognized is rejected, since it must not be turned into a
+macro.</p></li>
 <li><p>A <em>preprint-only</em> entry – one whose <code class="docutils literal notranslate"><span class="pre">journal</span></code> is a
 preprint pseudo-journal like <code class="docutils literal notranslate"><span class="pre">arXiv:2205.15044</span></code> (any
 archive from the <code class="docutils literal notranslate"><span class="pre">preprint_archives</span></code>
@@ -1252,30 +1310,46 @@ modification, an import only becomes permanent with
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Library.keys">
-<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">empty</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.keys" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">not_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.keys" title="Link to this definition"></a></dt>
 <dd><p>Citation keys of the entries, as a <code class="docutils literal notranslate"><span class="pre">tuple</span></code>, optionally
 filtered.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">keys</span> <span class="o">=</span> <span class="n">library</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span>
-    <span class="n">types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">has</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">missing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">empty</span><span class="o">=</span><span class="kc">None</span>
+    <span class="n">types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">has</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">missing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">not_group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">with_files</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 <p>Without arguments, all citation keys, in library order. The
 keyword arguments narrow the result; each accepts a single
-name or an iterable of names, matched case-insensitively:</p>
+name or an iterable of names. Type and field names are
+matched case-insensitively, group names exactly:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">types</span></code>: keep only entries whose <a class="reference internal" href="#bibdeskparser.Entry.entry_type" title="bibdeskparser.Entry.entry_type"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Entry.entry_type</span></code></a>
 is one of the given types.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">has</span></code>: keep only entries where every given field is defined
 with a non-empty value.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">missing</span></code>: keep only entries where none of the given fields
-is defined.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">empty</span></code>: keep only entries where every given field is
-defined, but with an empty (or whitespace-only) value.</p></li>
+has a non-empty value.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">group</span></code>: keep only entries that are members of every given
+static group (see <a class="reference internal" href="#bibdeskparser.Library.groups" title="bibdeskparser.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">not_group</span></code>: keep only entries that are members of none of
+the given static groups.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">with_files</span></code>: a tri-state filter on file attachments (the
+<code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> fields, see <a class="reference internal" href="#bibdeskparser.Entry.files" title="bibdeskparser.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Entry.files</span></code></a>). <code class="docutils literal notranslate"><span class="pre">None</span></code> (the
+default) does not filter; <code class="docutils literal notranslate"><span class="pre">True</span></code> keeps only entries with at
+least one attachment; <code class="docutils literal notranslate"><span class="pre">False</span></code> keeps only entries with none.</p></li>
 </ul>
-<p>For any field, exactly one of the three field predicates
-holds: a field that is defined but empty is neither “missing”
-nor “has”.</p>
+<p>For any field, exactly one of <code class="docutils literal notranslate"><span class="pre">has</span></code> and <code class="docutils literal notranslate"><span class="pre">missing</span></code> holds. A
+field that is defined with an empty (or whitespace-only)
+value counts as missing, since BibDesk deletes empty fields
+when it saves a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file (see
+<a class="reference internal" href="../../bibdesk_format.html#bibdesk-empty-fields"><span class="std std-ref">Empty fields</span></a>).</p>
+<p>Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> for a group name (in <code class="docutils literal notranslate"><span class="pre">group</span></code> or
+<code class="docutils literal notranslate"><span class="pre">not_group</span></code>) that does not exist in the library.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">Library</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2026&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
@@ -1287,6 +1361,15 @@ nor “has”.</p>
 <span class="go">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">has</span><span class="o">=</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="n">missing</span><span class="o">=</span><span class="s2">&quot;doi&quot;</span><span class="p">)</span>
 <span class="go">(&#39;Key2026&#39;,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">with_files</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># no attachment yet</span>
+<span class="go">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">with_files</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="go">(&#39;Key2026&#39;,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;My Papers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Key2026&quot;</span><span class="p">,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;My Papers&quot;</span><span class="p">)</span>
+<span class="go">(&#39;Key2026&#39;,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">not_group</span><span class="o">=</span><span class="s2">&quot;My Papers&quot;</span><span class="p">)</span>
+<span class="go">()</span>
 
 </pre></div>
 </div>
@@ -1812,7 +1895,7 @@ of the stored values (<code class="docutils literal notranslate"><span class="pr
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 22, 2026.
+      <span class="lastupdated">Last updated on Jul 24, 2026.
       </span></p>
   </div>
 

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BibDesk’s .bib Format &mdash; BibDeskParser 0.4.0 documentation</title>
+  <title>BibDesk’s .bib Format &mdash; BibDeskParser 0.5.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=6c02275b"></script>
+      <script src="_static/documentation_options.js?v=1dd76d02"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.4.0
+    v0.5.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -73,6 +73,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#bibdesk-static-groups">BibDesk Static Groups</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#bibdesk-smart-groups">BibDesk Smart Groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#empty-fields">Empty fields</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#keywords">Keywords</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#unicode-and-tex-escaped-characters">Unicode and TeX-escaped characters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#duplicate-citation-keys">Duplicate citation keys</a></li>
@@ -275,7 +276,10 @@ that BibDesk uses to re-locate a moved or renamed file, preserved so
 BibDesk keeps working after <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> has touched the entry.
 <code class="docutils literal notranslate"><span class="pre">entry.files</span></code> always reflects the <em>stored</em> relative path, not a live
 lookup, so it does not change if the file is moved outside of
-<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> (or by BibDesk itself, resolving a bookmark).</p>
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> (or by BibDesk itself, resolving a bookmark). To audit
+the stored paths against what is actually on disk, use
+<a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span> <span class="pre">--files</span></code></span></a>, which reports links that no longer
+resolve or whose spelling differs only in case from the file on disk.</p>
 </section>
 <section id="linked-urls-bdsk-url-n-fields">
 <h2>Linked URLs (<code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code> fields)<a class="headerlink" href="#linked-urls-bdsk-url-n-fields" title="Link to this heading"></a></h2>
@@ -385,7 +389,7 @@ undefined unless the <code class="docutils literal notranslate"><span class="pre
 </section>
 </section>
 <section id="bibdesk-static-groups">
-<h2>BibDesk Static Groups<a class="headerlink" href="#bibdesk-static-groups" title="Link to this heading"></a></h2>
+<span id="id1"></span><h2>BibDesk Static Groups<a class="headerlink" href="#bibdesk-static-groups" title="Link to this heading"></a></h2>
 <p>BibDesk lets you organize entries into user-curated “static” groups
 (as opposed to smart groups, which are just saved searches). These are
 recorded in a single <code class="docutils literal notranslate"><span class="pre">&#64;comment</span></code> block at the end of the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file,
@@ -515,6 +519,48 @@ analogous <code class="docutils literal notranslate"><span class="pre">BibDesk</
 blocks, and are likewise preserved verbatim without being
 interpreted.</p>
 </section>
+<section id="empty-fields">
+<span id="bibdesk-empty-fields"></span><h2>Empty fields<a class="headerlink" href="#empty-fields" title="Link to this heading"></a></h2>
+<p>A field with an empty value, like <code class="docutils literal notranslate"><span class="pre">doi</span> <span class="pre">=</span> <span class="pre">{}</span></code>, is valid BibTeX, and
+BibDesk parses it without complaint. It does not survive, though:
+whenever BibDesk saves a library, its serializer silently omits every
+field whose value is empty, so the field is deleted from the <code class="docutils literal notranslate"><span class="pre">.bib</span></code>
+file the next time the user saves in BibDesk, without any warning. An
+empty field therefore cannot carry durable information.</p>
+<p>That rules out a marker convention that would otherwise be natural: an
+<em>empty</em> field meaning “this information was searched for and verified
+not to exist” (say, an article confirmed to have no DOI), as opposed
+to an <em>absent</em> field meaning “never checked”. Any tool sharing a
+<code class="docutils literal notranslate"><span class="pre">.bib</span></code> file with BibDesk would lose those markers on the first save.
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> consequently treats a defined-but-empty field as
+missing everywhere – in <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--missing</span></code>, in the fetching commands,
+and in the audits – and the <code class="docutils literal notranslate"><span class="pre">check</span></code> command flags every empty field
+as a problem, since whatever it was meant to record is about to
+disappear.</p>
+<p>The verified status “searched, this info does not exist” is recorded
+as membership in a <em>known-missing group</em> instead: a regular
+<a class="reference internal" href="#bibdesk-static-groups"><span class="std std-ref">static group</span></a>, named per field in the
+<code class="docutils literal notranslate"><span class="pre">[known_missing]</span></code> table of <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code>
+(<a class="reference internal" href="config.html#config-known-missing"><span class="std std-ref">configuration</span></a>), e.g. <code class="docutils literal notranslate"><span class="pre">&quot;No</span> <span class="pre">Abstract&quot;</span></code> for
+<code class="docutils literal notranslate"><span class="pre">abstract</span></code>. Unlike an empty field, a static group survives every
+BibDesk save; BibDesk itself keeps its membership intact when
+citation keys change and when entries are deleted; the marker never
+travels into exported or shared entries, since it is not part of the
+entry; and membership can be inspected and changed directly in
+BibDesk’s group sidebar, by drag and drop. With the table configured,
+<code class="docutils literal notranslate"><span class="pre">add_abstract</span></code> and <code class="docutils literal notranslate"><span class="pre">add_preprint</span></code> maintain the groups declared for
+<code class="docutils literal notranslate"><span class="pre">abstract</span></code> and <code class="docutils literal notranslate"><span class="pre">eprint</span></code> automatically (recording clean no-finds,
+skipping members, unmarking when a value is stored), <code class="docutils literal notranslate"><span class="pre">check</span></code> accepts
+an <code class="docutils literal notranslate"><span class="pre">article</span></code> without a <code class="docutils literal notranslate"><span class="pre">doi</span></code> when the entry is in the group
+configured for <code class="docutils literal notranslate"><span class="pre">doi</span></code> and reports any entry whose membership in a
+declared group contradicts a non-empty value in that field, and
+<code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--group</span></code> selects the members. Groups declared for other fields
+are maintained by hand and get the contradiction audit; the
+<a class="reference internal" href="config.html#config-known-missing"><span class="std std-ref">configuration reference</span></a> spells out what a
+declaration does per field. The how-to recipes for
+<a class="reference internal" href="howto.html#howto-add-abstract"><span class="std std-ref">abstracts</span></a> and
+<a class="reference internal" href="howto.html#howto-add-preprint"><span class="std std-ref">preprints</span></a> show the full workflow.</p>
+</section>
 <section id="keywords">
 <h2>Keywords<a class="headerlink" href="#keywords" title="Link to this heading"></a></h2>
 <p>BibTeX’s conventional <code class="docutils literal notranslate"><span class="pre">keywords</span></code> field – a comma-separated list of
@@ -640,7 +686,7 @@ noisy diffs or clobbering data BibDesk would have preserved.</p>
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 22, 2026.
+      <span class="lastupdated">Last updated on Jul 24, 2026.
       </span></p>
   </div>
 

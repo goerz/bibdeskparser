@@ -50,24 +50,6 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 :parser: myst
 ```
 
-````{py:method} add_abstract(*, min_confidence=None, overwrite=False, mark_empty=None, pdf_path=None)
-:canonical: bibdeskparser.entry.Entry.add_abstract
-
-```{autodoc2-docstring} bibdeskparser.entry.Entry.add_abstract
-:parser: myst
-```
-
-````
-
-````{py:method} add_preprint(eprint=None, *, overwrite=False, mark_empty=None)
-:canonical: bibdeskparser.entry.Entry.add_preprint
-
-```{autodoc2-docstring} bibdeskparser.entry.Entry.add_preprint
-:parser: myst
-```
-
-````
-
 ````{py:method} add_url(url)
 :canonical: bibdeskparser.entry.Entry.add_url
 
@@ -214,10 +196,19 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} add_abstract(key, *, min_confidence=None, overwrite=False, mark_empty=None)
+````{py:method} add_abstract(key, *, min_confidence=None, overwrite=False)
 :canonical: bibdeskparser.library.Library.add_abstract
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.add_abstract
+:parser: myst
+```
+
+````
+
+````{py:method} add_doi(key, doi=None, *, overwrite=False)
+:canonical: bibdeskparser.library.Library.add_doi
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add_doi
 :parser: myst
 ```
 
@@ -232,7 +223,7 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} add_preprint(key, eprint=None, *, overwrite=False, mark_empty=None)
+````{py:method} add_preprint(key, eprint=None, *, overwrite=False)
 :canonical: bibdeskparser.library.Library.add_preprint
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.add_preprint
@@ -349,7 +340,7 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} keys(*, types=None, has=None, missing=None, empty=None)
+````{py:method} keys(*, types=None, has=None, missing=None, group=None, not_group=None, with_files=None)
 :canonical: bibdeskparser.library.Library.keys
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.keys

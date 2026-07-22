@@ -24,10 +24,12 @@ invocations, guided by the `--help` output alone (see
 $ bibdeskparser <command> [BIBFILE] <args> <options>
 ```
 
-Run `bibdeskparser --help` for the list of commands,
+Run `bibdeskparser --help` for the full list of commands,
 `bibdeskparser <command> --help` for the arguments and options of a
 specific command, and `bibdeskparser --version` for the installed
-version.
+version. `bibdeskparser --usage` (or `bibdeskparser` with no command)
+prints a short usage summary listing just the command names, without
+the full `--help` output.
 
 Every command operates on a single `.bib` file, given as the first
 argument after the command name. An argument counts as the `BIBFILE`
@@ -53,11 +55,15 @@ assign to and delete from {py:attr}`~bibdeskparser.Library.strings`,
 `del` on the library itself, and
 `fields`/`get_field`/`set_field`/`delete_field` correspond to
 iterating over, indexing, assigning to, and `del` on a single
-{class}`~bibdeskparser.Entry` (its fields). Commands that read one
-entry's derived data -- `author`, `editor`, `files`, `urls`,
-`groups KEY`, `keywords KEY` -- correspond to the same-named
-{class}`~bibdeskparser.Entry` properties, and `set_type` assigns
-{py:attr}`~bibdeskparser.Entry.entry_type`. The one command with no
+{class}`~bibdeskparser.Entry` (its fields). Commands that read entries'
+derived data -- `author`, `editor`, `files`, `urls`, `groups`,
+`keywords` -- correspond to the same-named
+{class}`~bibdeskparser.Entry` properties (`files`, `urls`, `groups`,
+and `keywords` take any number of keys and key their output by citation
+key; `groups --index` / `keywords --index` read the inverse
+{py:attr}`~bibdeskparser.Library.groups` /
+{py:attr}`~bibdeskparser.Library.keywords` mappings), and `set_type`
+assigns {py:attr}`~bibdeskparser.Entry.entry_type`. The one command with no
 API counterpart is [`config_path`](cli-config-path), which reports
 the discovered configuration file.
 
@@ -70,8 +76,10 @@ print the generated key or file path, as does
 [`import`](cli-import)/[`add`](cli-add), which print the citation
 keys of the added entries (`add --dry-run` only prints the fetched
 entry, without modifying the file).
-[`add_abstract`](cli-add-abstract) prints a per-key report of the
-fetched abstracts (with `--dry-run`, without modifying the file).
+[`add_abstract`](cli-add-abstract),
+[`add_preprint`](cli-add-preprint), and [`add_doi`](cli-add-doi)
+print a per-key report of the fetched abstracts, arXiv identifiers,
+and DOIs (with `--dry-run`, without modifying the file).
 
 ## JSON output
 
@@ -125,7 +133,7 @@ is started with `create` and then filled with entries:
 <!-- notest -->
 ```console
 $ bibdeskparser create new.bib
-$ bibdeskparser import new.bib entries.bib
+$ bibdeskparser import new.bib --file entries.bib
 ```
 
 With a `default_bib_file` configured in `bibdeskparser.toml` (see
@@ -133,6 +141,8 @@ With a `default_bib_file` configured in `bibdeskparser.toml` (see
 argument creates that file, bootstrapping the configured library.
 
 ## Inspecting
+
+(cli-keys)=
 
 ### `keys`
 
@@ -151,17 +161,43 @@ MATLAB:2014
 Without options, every entry is listed. Filter options narrow the
 list: an entry is listed if it matches one of the (repeatable)
 `--type TYPE` values (if any are given) and satisfies every
-`--has FIELD`, `--missing FIELD`, and `--empty FIELD` filter. For any
-field, exactly one of the three field predicates holds: `--has`
-requires the field to be defined with a non-empty value, `--missing`
-requires it to not be defined at all, and `--empty` requires it to be
-defined, but with an empty value -- a defined-but-empty field is
-neither "missing" nor "has". Types and field names are matched
-case-insensitively.
+`--has FIELD`, `--missing FIELD`, `--group NAME`, and
+`--not-group NAME` filter. For any field, exactly one of `--has` and
+`--missing` holds: `--has` requires the field to be defined with a
+non-empty value, `--missing` matches everything else. In particular,
+a field that is defined with an empty value counts as missing, since
+BibDesk deletes empty fields when it saves a `.bib` file (see
+[Empty fields](bibdesk-empty-fields)). Types and field names are
+matched case-insensitively.
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
+```
+
+The `--group` filter keeps only the members of the given
+[static group](bibdesk-static-groups), `--not-group` excludes them (both
+repeatable). Group names are matched case-sensitively, and an unknown
+group name is an error rather than an empty result, so a typo cannot
+silently select nothing (or everything, for `--not-group`).
+
+```console
+$ bibdeskparser keys tests/Refs/refs.bib --type book --group Diploma
+Tannor2007
+```
+
+The paired `--with-files`/`--without-files` flag filters on file
+attachments (the [`files`](cli-files) command): `--with-files` keeps
+only entries with at least one attachment, `--without-files` only
+those with none. The default is to not filter on attachments. This is
+the way to find entries that still need a PDF attached.
+
+```console
+$ bibdeskparser keys tests/Refs/refs.bib --type article --without-files
+ImamogluPRE2015
+Luc-KoenigEPJD2004
+SauvagePRXQ2020
+KatrukhaNC2017
 ```
 
 ### `duplicate_keys`
@@ -190,39 +226,103 @@ PASS (61 entries checked)
 $ bibdeskparser check tests/test_cli_fail_checks/problems.bib
 Duplicate2026: duplicate citation key
 MissingDoi2026: missing doi
+EmptyDoi2026: missing doi
+EmptyDoi2026: empty field 'doi' (BibDesk deletes empty fields on save)
 LiteralJournal2026: journal is the literal string 'Some Journal', not an @string macro reference
 UndefinedMacro2026: journal references undefined @string macro 'nosuchjournal'
 BadNames2026: author does not parse as names: Cannot split the following name `Doe, John, Jr, X, Y` into parts: Too many commas
 unused @string macro 'unusedjrnl'
-FAIL (6 problems, 7 entries checked)
+FAIL (8 problems, 7 entries checked)
 ```
 
 The audits: the file parses cleanly (no skipped blocks); no citation
 key occurs more than once; every `article` that is not a
-[preprint](preprints) has a `doi` (a defined-but-empty `doi` marks an
-entry verified to have none, and passes); every `journal` field
-references a defined `@string` macro (a literal journal value is a
-problem, unless it is a recognized preprint pseudo-journal like
-`arXiv:2205.15044`); every `author` and `editor` field parses as
-names; and every `@string` macro defined in the file is referenced by
-some entry.
+[preprint](preprints) has a `doi`; no entry has a defined-but-empty
+field (BibDesk deletes empty fields when it saves, so the field would
+silently disappear -- see [Empty fields](bibdesk-empty-fields)); no
+entry sits in a [known-missing group](config-known-missing) for a
+field it actually has; every `journal` field references a defined
+`@string` macro (a literal journal value is a problem, unless it is a
+recognized preprint pseudo-journal like `arXiv:2205.15044`); every
+`author` and `editor` field parses as names, each first name having
+only parts that can be initialized (a hyphen-separated segment that
+does not begin with a letter after TeX-to-unicode conversion -- a
+nickname like `` `Eunice' `` copied into the author list, or a stray
+hyphen that detaches an initial, as in `Meyer, H -D` or `Meyer, H- D`
+-- would otherwise corrupt [`render`](cli-render)'s initials); and
+every `@string` macro defined in the file is referenced by some entry.
 
-With `KEY...`, only the given entries are audited: the doi, journal,
-and names audits cover just those entries, the duplicate-key audit
-reports only the given keys, and the unused-macros audit is skipped;
-problems parsing the file itself are always reported. An unknown key
-is an error.
+An `article` verified to have no `doi` passes the doi audit if it is
+a member of the known-missing group configured for `doi` in the
+`[known_missing]` table of `bibdeskparser.toml`; the known-missing
+audits do nothing without that configuration. The
+[`add_doi`](cli-add-doi) command fills in missing DOIs and maintains
+that group.
+
+With `KEY...`, only the given entries are audited: the per-entry
+audits cover just those entries, the duplicate-key audit reports only
+the given keys, and the unused-macros audit is skipped; problems
+parsing the file itself are always reported. An unknown key is an
+error.
 
 ```console
-$ bibdeskparser check tests/test_cli_fail_checks/problems.bib EmptyDoi2026 Preprint2026
-PASS (2 entries checked)
+$ bibdeskparser check tests/test_cli_fail_checks/problems.bib Preprint2026
+PASS (1 entry checked)
+```
+
+With `--files`, an additional per-entry audit reports every linked
+attachment (`bdsk-file` path) that does not resolve to a real path on
+disk, relative to the `.bib` directory. It is off by default because
+attachments may legitimately live only on another machine, and a
+fresh clone of a library whose PDFs are not under version control
+would fail wholesale. The audit walks each stored path one component
+at a time, matching case exactly, so it also reports a link whose
+spelling differs only in case from the file on disk -- invisible on a
+case-insensitive filesystem (macOS) but broken on a case-sensitive
+one (a collaborator's machine or a Linux CI job). It is therefore
+stricter than the plain existence check behind the warning a
+write-in-place command prints for a missing link: `check --files` can
+FAIL a library that would be written without any such warning.
+
+```console
+$ bibdeskparser check tests/Refs/refs.bib --files
+PASS (61 entries checked)
+$ bibdeskparser check tests/test_cli_fail_checks/deadfiles.bib --files
+Dead2020: linked file does not exist: 'Dead2020.pdf'
+Case2020: linked file 'case2020.pdf' exists only as 'Case2020.pdf' (case mismatch)
+FAIL (2 problems, 2 entries checked)
+```
+
+With `--key-format`, an additional per-entry audit reports every
+citation key that does not match its expected auto-key format: every
+key that [`eval_format_spec`](cli-eval-format-spec) (or
+[`rekey`](cli-rekey) without `NEW_KEY`) would regenerate differently.
+A preprint-only entry is audited against the arXiv preprint format;
+every other entry against the configured
+[`[auto_key]` format](config-auto-key). Pass `--format-spec PATTERN`
+to audit against that pattern instead of the configured one; it
+implies `--key-format` and cannot be combined with `--no-key-format`.
+A key already matching the format evaluates to itself, so a
+disambiguated sibling like `CollidingPRA2015a` still conforms; an
+entry lacking a field the format requires cannot be evaluated and is
+reported as such. If no usable format is available (no `--format-spec`
+and no configured `[auto_key]` format, or a `--format-spec` that does
+not compile), a single message is reported rather than one failure per
+entry.
+
+```console
+$ bibdeskparser check tests/test_cli_fail_checks/keyformat.bib --format-spec "%p1%c{journal}0%Y%u0"
+Deviation2015: does not match the citation-key format (would be 'DeviationPRA2015')
+Unevaluable2015: cannot evaluate citation-key format: the format '%p1%c{journal}0%Y%u0' requires the missing field(s) journal
+FAIL (2 problems, 6 entries checked)
 ```
 
 With `--json`: an object `{"passed": ..., "entries_checked": ...,
 "problems": [...]}`, where each problem is an object with `check`
-(the audit that failed: `parse`, `duplicate_keys`, `doi`, `journal`,
-`names`, or `unused_strings`), `key` (the citation key, or `null` for
-a problem not tied to an entry), and `message`.
+(the audit that failed: `parse`, `duplicate_keys`, `doi`,
+`empty_fields`, `known_missing`, `journal`, `names`,
+`unused_strings`, `files`, or `key_format`), `key` (the citation key,
+or `null` for a problem not tied to an entry), and `message`.
 
 (cli-show)=
 
@@ -358,37 +458,70 @@ $ bibdeskparser author tests/Refs/refs.bib KochJPCM2016 --json
 
 (cli-files)=
 
-### `files KEY`
+### `files [KEY...]`
 
-List the file attachments of an entry (the `bdsk-file-N` fields),
-one per line, in numeric order; see
-{py:attr}`~bibdeskparser.Entry.files`. By default, each attachment is
-printed as an absolute path; with `--relative`, as stored in the
-`.bib` file, relative to its directory. An entry without attachments
-prints nothing. With `--json`: an array of strings.
+List file attachments (the `bdsk-file-N` fields), in numeric order
+within each entry; see {py:attr}`~bibdeskparser.Entry.files`. By
+default, each attachment is printed as an absolute path; with
+`--relative`, as stored in the `.bib` file, relative to its directory.
+
+The output is a map from each citation key to its attachments
+(`KEY: path, path` per line; a `{key: [paths]}` object with `--json`).
+With one or more `KEY` arguments, exactly those entries appear, an
+entry with no attachment mapped to an empty list:
 
 ```console
-$ bibdeskparser files tests/Refs/refs.bib GoerzJPB2011 --relative
+$ bibdeskparser files tests/Refs/refs.bib GoerzPRA2014 Shapiro2012 --relative
+GoerzPRA2014: GoerzPRA2014.pdf
+Shapiro2012: 
+```
+
+With no key, the map covers the whole library, listing only the
+entries that have at least one attachment:
+
+```console
+$ bibdeskparser files tests/Refs/refs.bib --relative --json
+{
+  "BrifNJP2010": [
+    "BrifNJP2010.pdf"
+  ],
+  ...
+}
+```
+
+With `--flat`, the attachment paths are printed instead as a bare list,
+one per line (a JSON array with `--json`), combined across the selected
+entries with duplicates removed. So `files --flat` is every file the
+library references, the reverse index for reconciling the library
+against a folder of PDFs; find the entries still missing one with
+[`keys --without-files`](cli-keys). The order of the list is
+unspecified.
+
+```console
+$ bibdeskparser files tests/Refs/refs.bib GoerzJPB2011 --relative --flat
 GoerzJPB2011.pdf
 ```
 
-Attachments are modified with [`add_file`](cli-add-file),
-`replace_file`, `unlink_file`, and [`rename_file`](cli-rename-file).
+An unknown key is an error. Attachments are modified with
+[`add_file`](cli-add-file), `replace_file`, `unlink_file`, and
+[`rename_file`](cli-rename-file).
 
 (cli-urls)=
 
-### `urls KEY`
+### `urls [KEY...]`
 
-List the URLs linked to an entry (the `bdsk-url-N` fields), one per
-line, in numeric order; see {py:attr}`~bibdeskparser.Entry.urls`. An
-entry without linked URLs prints nothing. With `--json`: an array of
-strings. Linked URLs are modified with `add_url`, `replace_url`, and
-`remove_url`.
+List the URLs linked to entries (the `bdsk-url-N` fields), in numeric
+order within each entry; see {py:attr}`~bibdeskparser.Entry.urls`. The
+output shape matches [`files`](cli-files): a map from each citation key
+to its list of URLs (`KEY: url, url` per line; a `{key: [urls]}` object
+with `--json`), covering the requested keys or -- with no key -- every
+entry in the library that has at least one linked URL. `--flat` prints
+just the URLs as a bare list instead. Linked URLs are modified with
+`add_url`, `replace_url`, and `remove_url`.
 
 ```console
-$ bibdeskparser urls tests/Refs/refs.bib TomzaPRA2012
-http://link.aps.org/doi/10.1103/PhysRevA.86.043424
-http://dx.doi.org/10.1103/PhysRevA.86.043424
+$ bibdeskparser urls tests/Refs/refs.bib KochJPCM2016
+KochJPCM2016: http://dx.doi.org/10.1088/0953-8984/28/21/213001
 ```
 
 ### `search QUERY`
@@ -419,49 +552,63 @@ $ bibdeskparser search tests/Refs/refs.bib "Schroedinger" --field title
 WP_Schroedinger
 ```
 
-### `groups [KEY]`
+(cli-groups)=
 
-Without `KEY`, list all static groups and the keys they contain. See
-{py:attr}`~bibdeskparser.Library.groups`. With `--json`: an object
-mapping each group name to an array of keys.
+### `groups [KEY...]`
+
+List the [static groups](bibdesk-static-groups) each entry belongs to.
+The output shape matches [`files`](cli-files): a map from each citation
+key to its list of group names (see
+{py:attr}`~bibdeskparser.Entry.groups`), covering the requested keys or
+-- with no key -- every entry that is in at least one group.
 
 ```console
-$ bibdeskparser groups tests/Refs/refs.bib
+$ bibdeskparser groups tests/Refs/refs.bib GoerzQ2022
+GoerzQ2022: My Papers
+```
+
+`--flat` prints just the group names as a bare list. `--index` instead
+prints the inverse map, from each static group to the citation keys it
+contains (see {py:attr}`~bibdeskparser.Library.groups`); it takes no
+`KEY` and lists every group, including empty ones:
+
+```console
+$ bibdeskparser groups tests/Refs/refs.bib --index
 Diploma: Tannor2007, NielsenChuangCh10QEC, Evans1983, LapertPRA09
 My Papers: GoerzDiploma2010, GoerzJPB2011, GoerzNJP2014, GoerzPRA2014, GoerzPhd2015, GoerzPRA2015, GoerzEPJQT2015, GoerzNPJQI2017, GoerzQST2018, GoerzSPP2019, GoerzSPIEO2021, GoerzQ2022, GoerzA2023
 ```
 
-With `KEY`, list the names of the groups that entry belongs to, one
-per line ({py:attr}`~bibdeskparser.Entry.groups`; with `--json`: an
-array of strings):
+Group membership is modified with `add_to_group`, `remove_from_group`,
+`set_group`, and `delete_group`.
+
+(cli-keywords)=
+
+### `keywords [KEY...]`
+
+List the keywords each entry is tagged with. The output shape matches
+[`files`](cli-files): a map from each citation key to its list of
+keywords (see {py:attr}`~bibdeskparser.Entry.keywords`), covering the
+requested keys or -- with no key -- every entry that has at least one
+keyword.
 
 ```console
-$ bibdeskparser groups tests/Refs/refs.bib GoerzQ2022
-My Papers
+$ bibdeskparser keywords tests/Refs/refs.bib LapertPRA09
+LapertPRA09: Filtering, OCT
 ```
 
-### `keywords [KEY]`
-
-Without `KEY`, list all keywords and the keys of the entries using
-them. See {py:attr}`~bibdeskparser.Library.keywords`. With `--json`:
-an object mapping each keyword to an array of keys.
+`--flat` prints just the keywords as a bare list. `--index` instead
+prints the inverse map, from each keyword to the citation keys tagged
+with it (see {py:attr}`~bibdeskparser.Library.keywords`); it takes no
+`KEY`:
 
 ```console
-$ bibdeskparser keywords tests/Refs/refs.bib
+$ bibdeskparser keywords tests/Refs/refs.bib --index
 OCT: BrifNJP2010, KochJPCM2016, SolaAAMOP2018, MorzhinRMS2019, ...
 Coherent Control: BrifNJP2010, Shapiro2012, SolaAAMOP2018, ...
 ...
 ```
 
-With `KEY`, list the keywords of that entry, one per line
-({py:attr}`~bibdeskparser.Entry.keywords`; with `--json`: an array of
-strings):
-
-```console
-$ bibdeskparser keywords tests/Refs/refs.bib LapertPRA09
-Filtering
-OCT
-```
+Keywords are modified with `add_to_keyword` and `remove_from_keyword`.
 
 (cli-strings)=
 
@@ -510,6 +657,45 @@ is omitted. See {py:attr}`~bibdeskparser.Library.path`. With
 ```console
 $ bibdeskparser path
 /Users/mg/Refs/refs.bib
+```
+
+(cli-config)=
+
+### `config`
+
+Print the *resolved* configuration: the built-in defaults merged with
+whatever a discovered `bibdeskparser.toml` sets. Where
+[`config_path`](cli-config-path) reports only the file in effect,
+`config` shows the effective value of every setting, including the
+ones the file omits (`auto_key.clean`, `preprint_export`, the
+built-in `preprint_archives`, ...), and the built-in defaults in full
+when no file is found at all.
+
+The default text output is TOML-shaped, mirroring what a
+`bibdeskparser.toml` would contain to reproduce the resolved tunable
+state (an unset value, or an `[auto_key]`/`[auto_file]` table without
+a `format_spec`, is omitted). Pass `--no-types` to restrict the dump
+to those user-tunable settings; by default it also lists the resolved
+entry-type/field data model (`documented_types`,
+`recognized_entry_types`, `universal_fields`, `known_fields`). With
+`--json`, the complete state as an object, unset values as `null`.
+
+A `BIBFILE` fixes the config-discovery directory (checked before
+`$BIBDESKPARSER_CONFIG` and the XDG location; see
+[Configuration](configuration)); without one, discovery starts in the
+current directory. Unlike the other commands, `config` needs no
+`.bib` file and never fails for a missing configuration file.
+
+```console
+$ bibdeskparser config --no-types
+verify_types = true
+verify_fields = true
+preprint_export = "unpublished"
+protected_words = []
+...
+[preprint_archives]
+arXiv = "https://arxiv.org/abs/{id}"
+...
 ```
 
 (cli-config-path)=
@@ -716,6 +902,13 @@ reference ({class}`~bibdeskparser.MacroString`), failing for a
 names. A warning is printed on stderr for a field that is not
 appropriate for the entry type.
 
+An empty `VALUE` is an error: BibDesk deletes empty fields when it
+saves the `.bib` file, so an empty value cannot carry information
+(see [Empty fields](bibdesk-empty-fields)). Use
+[`delete_field`](cli-set-field) to remove a field; to record that an
+entry is verified not to have the information, add it to a
+[known-missing group](config-known-missing) instead.
+
 ### `delete_field KEY FIELDNAME`
 
 Delete one field from an entry. Corresponds to
@@ -732,11 +925,11 @@ $ bibdeskparser delete_field tests/Refs/refs.bib GoerzJPB2011 note
 
 (cli-import)=
 
-### `import [FILE]`
+### `import`
 
-Import the entries of a BibTeX snippet -- read from `FILE`, from
-standard input (`--stdin`), or downloaded from a URL (`--url URL`);
-exactly one of the three -- into the library, via
+Import the entries of a BibTeX snippet -- read from a file
+(`--file FILE`), from standard input (`--stdin`), or downloaded from a
+URL (`--url URL`); exactly one of the three -- into the library, via
 {py:meth}`~bibdeskparser.Library.import_bibtex`, and print their
 citation keys. The snippet may be anything from a single
 publisher-provided entry to a complete `.bib` file (including
@@ -773,7 +966,7 @@ reporting all problems at once, with the `.bib` file untouched.
 
 <!-- notest -->
 ```console
-$ bibdeskparser import tests/Refs/refs.bib entries.bib
+$ bibdeskparser import tests/Refs/refs.bib --file entries.bib
 BaumgratzPRL2014
 $ pbpaste | bibdeskparser import tests/Refs/refs.bib --stdin
 GrapeJMR2005
@@ -781,10 +974,9 @@ $ bibdeskparser import tests/Refs/refs.bib --url https://example.com/more.bib
 MotzoiPRL2009
 ```
 
-Note that the *first* argument ending in `.bib` names the library, so
-importing from a `.bib` file requires naming the library explicitly
-(`import tests/Refs/refs.bib entries.bib`), even with a configured
-`default_bib_file`.
+A positional argument ending in `.bib` always names the library, like
+every other command; give the import source with `--file` (so
+`--file` is required even with a configured `default_bib_file`).
 
 (cli-add)=
 
@@ -849,7 +1041,7 @@ $ bibdeskparser add tests/Refs/refs.bib --dry-run 10.22331/q-2022-01-24-629
 ...
 ```
 
-## Abstracts and preprints
+## Abstracts, preprints, and DOIs
 
 (cli-add-abstract)=
 
@@ -879,16 +1071,32 @@ The command prints a per-key report. A candidate that was *not*
 stored is reported in full, so it can be reviewed and applied
 manually with [`set_field`](cli-set-field). Entries that already have
 a non-empty abstract are skipped (`--overwrite` refetches and
-replaces them); an entry whose abstract is present but *empty* does
-not need `--overwrite`. With `--mark-empty`, an entry for which no
-valid abstract is found anywhere gets an *empty* `abstract` field,
-marking it as audited: such entries are matched by
-`keys --empty abstract`, no longer by `keys --missing abstract`.
-`--min-confidence` and `--mark-empty` default to the
-[`[add_abstract]` configuration table](config-add). Requires network
-access; `--dry-run` prints the report without modifying the `.bib`
-file, and `--json` maps each key to
-`{abstract, source, confidence, note, applied}`.
+replaces them).
+
+With a [known-missing group](config-known-missing) configured for
+`abstract`, the command has two modes. By default (routine fill-in),
+group members are skipped as verified to have no findable abstract,
+without any search; a search that runs cleanly against every source
+and finds nothing adds the entry to the group (creating it on first
+use); and storing an abstract removes the entry from the group, so
+repeated fill-in passes never re-search entries already audited.
+With `--overwrite`, the membership is ignored and the search re-runs:
+an explicit re-audit, for when an abstract may have become available
+since the last check, run over exactly the group members
+(`add_abstract --overwrite $(bibdeskparser keys --group "No
+Abstract")`); an entry that still yields nothing simply stays in the
+group. A search during which any source failed never marks the
+entry.
+
+`--min-confidence` defaults to the
+[`[add_abstract]` configuration table](config-add). Requires
+network access; `--dry-run` prints the report without modifying the
+`.bib` file (the report then says `would store`), and `--json` maps
+each key to `{abstract, source, confidence, note, applied}`
+(`source` may also be `none`, `error`, `existing`, or
+`known-missing`; `applied` says whether the library was modified,
+counting group membership -- under `--dry-run`, what a real run
+would store).
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing abstract
@@ -929,33 +1137,139 @@ after reviewing it, apply it explicitly with `--eprint ID` (a single
 `KEY` only, no network access; a leading `arXiv:` prefix and a
 version suffix are stripped, and no `primaryclass` is stored).
 
-The `eprint` field encodes the entry's audit state: *absent* means
-the preprint status is unknown (`keys --missing eprint`), *empty*
-means a search ran cleanly and found no preprint
-(`keys --empty eprint`), non-empty holds the identifier. With
-`--mark-empty` (defaulting to the
-[`[add_preprint]` configuration table](config-add)), a clean
-no-match stores that empty marker, so repeated fill-in runs skip the
-entry. Entries that already have a non-empty `eprint` are skipped
-(`--overwrite` re-searches and replaces); the empty marker is
-re-searched without `--overwrite`. On a failed search (network/API
-error) the entry is never modified, so a re-run picks it up.
+Entries that already have a non-empty `eprint` are skipped
+(`--overwrite` re-searches and replaces).
+
+With a [known-missing group](config-known-missing) configured for
+`eprint`, the command has two modes. By default (routine fill-in,
+e.g. over `keys --missing eprint`), group members are skipped as
+verified to have no preprint, without contacting arXiv; a search
+that runs cleanly and finds no preprint adds the entry to the group
+(creating it on first use); and storing an identifier (a match, or
+an explicit `--eprint`) removes the entry from the group, so
+repeated fill-in passes never re-query arXiv for entries already
+searched. With `--overwrite`, the membership is ignored and the
+search re-runs: an explicit re-audit. Membership means "searched,
+nothing found at the time", not "does not exist" -- the earlier
+match may have failed, or a preprint may have been posted since the
+last check -- so re-audit periodically, over exactly the group
+members:
+
+```console
+$ bibdeskparser add_preprint tests/Refs/refs.bib --overwrite \
+    $(bibdeskparser keys tests/Refs/refs.bib --group "No Eprint")
+```
+
+A re-audited entry with another clean no-match simply stays in the
+group; a new match stores the identifier and removes the entry from
+the group. On a failed search (network/API error) the entry is never
+modified, and in particular never marked, so a re-run picks it up.
 
 The command prints a per-key report; `--dry-run` prints it without
-modifying the `.bib` file, and `--json` maps each key to
-`{eprint, match, ratio, note, applied, primaryclass}`. Requires
-network access (except with `--eprint`) and respects the arXiv API's
-rate limit of one request every three seconds, so large runs take
-time.
+modifying the `.bib` file (the report then says `would store`), and
+`--json` maps each key to
+`{eprint, match, ratio, note, applied, primaryclass}` (`match` may
+also be `none`, `error`, `existing`, or `known-missing`; `applied`
+says whether the library was modified, counting group membership --
+under `--dry-run`, what a real run would store).
+Requires network access (except with `--eprint`) and respects the
+arXiv API's rate limit of one request every three seconds, so large
+runs take time.
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
-$ bibdeskparser add_preprint tests/Refs/refs.bib --mark-empty \
+$ bibdeskparser add_preprint tests/Refs/refs.bib \
     WinckelIP2008 Vecheck2022.09.09.507322
-WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]
-Vecheck2022.09.09.507322: no preprint found (stored empty marker) [best-ratio=0.31]
+WinckelIP2008: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.42]
+Vecheck2022.09.09.507322: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.31]
 ```
+
+The report above assumes a known-missing group declared for `eprint`
+in `bibdeskparser.toml`; without one, the two lines end at the
+`[best-ratio=...]` note and nothing is recorded.
+
+(cli-add-doi)=
+
+### `add_doi KEY...`
+
+Find and store the DOI for the given entries, via
+{py:meth}`~bibdeskparser.Library.add_doi`. For each `KEY`, the DOI is
+looked up online, from two sources. If the entry has an arXiv
+`eprint`, the arXiv API is consulted first: the DOI recorded there
+names the published version of exactly this paper (an arXiv-issued
+`10.48550/...` DataCite DOI, which merely restates the arXiv
+identifier, does not count as a DOI on record). Otherwise, Crossref
+is searched for the entry by title and first author, and a result is
+accepted only when
+
+* its title is a near-exact match, or
+* a good title match is corroborated by the first author's last name.
+
+A title-based match whose publication year differs from the entry's
+`year` by more than one is rejected -- a guard against unrelated
+papers sharing a generic title. Such a `year-mismatch` candidate is
+only reported; after reviewing it, apply it explicitly with
+`--doi DOI` (a single `KEY` only, no network access; a leading `doi:`
+prefix or `https://doi.org/` resolver address is stripped). An
+amendment record -- an erratum, corrigendum, retraction, comment, or
+reply, whose title embeds the original title -- never matches an
+entry that is not itself such an amendment. The found DOI is stored
+in the entry's `doi` field, in its bare lowercase form (DOIs are
+defined to be case-insensitive).
+
+Entries that already have a non-empty `doi` are skipped
+(`--overwrite` re-searches and replaces). A
+[preprint-only](preprints) entry is skipped without any lookup: the
+search would find the DOI of the *published version*, which does not
+belong on a preprint reference (store it deliberately with `--doi`,
+or replace the entry with the published version via
+[`add`](cli-add)).
+
+With a [known-missing group](config-known-missing) configured for
+`doi`, the command has two modes. By default (routine fill-in, e.g.
+over `keys --missing doi`), group members are skipped as verified to
+have no DOI, without any lookup; a lookup that runs cleanly and finds
+nothing adds the entry to the group (creating it on first use); and
+storing a DOI (a match, or an explicit `--doi`) removes the entry
+from the group, so repeated fill-in passes never re-query the sources
+for entries already searched. With `--overwrite`, the membership is
+ignored and the lookup re-runs: an explicit re-audit, for when a DOI
+may have been registered since the last check, over exactly the group
+members:
+
+```console
+$ bibdeskparser add_doi tests/Refs/refs.bib --overwrite \
+    $(bibdeskparser keys tests/Refs/refs.bib --group "No DOI")
+```
+
+A re-audited entry with another clean no-match simply stays in the
+group; a new match stores the DOI and removes the entry from the
+group. On a failed lookup (network/API error) the entry is never
+modified, and in particular never marked, so a re-run picks it up.
+Membership in the group also makes the [`check`](cli-check) command
+accept an `article` without a `doi`.
+
+The command prints a per-key report; `--dry-run` prints it without
+modifying the `.bib` file (the report then says `would store`), and
+`--json` maps each key to
+`{doi, match, ratio, note, applied}` (`match` is `eprint`, `title`,
+`title+author`, or `explicit` for a stored DOI, and may also be
+`none`, `error`, `existing`, `known-missing`, or `preprint`;
+`applied` says whether the library was modified, counting group
+membership -- under `--dry-run`, what a real run would store). Requires network access (except with `--doi`); an
+`eprint` lookup respects the arXiv API's rate limit of one request
+every three seconds.
+
+```console
+$ bibdeskparser add_doi tests/Refs/refs.bib GoerzPhd2015 GoerzDiploma2010
+GoerzPhd2015: no doi found (marked known missing in group 'No DOI') [best-ratio=0.55]
+GoerzDiploma2010: no doi found (marked known missing in group 'No DOI') [best-ratio=0.47]
+```
+
+The report above assumes a known-missing group declared for `doi` in
+`bibdeskparser.toml`; without one, the two lines end at the
+`[best-ratio=...]` note and nothing is recorded.
 
 ## Groups
 

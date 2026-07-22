@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.entry &mdash; BibDeskParser 0.4.0 documentation</title>
+  <title>bibdeskparser.entry &mdash; BibDeskParser 0.5.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=6c02275b"></script>
+      <script src="../../_static/documentation_options.js?v=1dd76d02"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.4.0
+    v0.5.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -146,6 +146,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.bdskfile</span><span class="w"> </span><span class="kn">import</span> <span class="n">BibDeskFile</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">active</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.identifiers</span><span class="w"> </span><span class="kn">import</span> <span class="n">_entry_preprint</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.macros</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">MacroString</span><span class="p">,</span>
     <span class="n">ValueString</span><span class="p">,</span>
@@ -285,15 +286,6 @@
 <span class="sd">    {attr}`groups`, the main difference being that `groups` are stored</span>
 <span class="sd">    at the {class}`Library` level only: entries that are not part of a</span>
 <span class="sd">    `Library` cannot have `groups`.</span>
-
-<span class="sd">    {meth}`add_abstract` and {meth}`add_preprint` enrich the entry</span>
-<span class="sd">    from online sources, filling the `abstract` field and the</span>
-<span class="sd">    `eprint` field (the matching arXiv preprint), respectively. Both</span>
-<span class="sd">    are mirrored by like-named {class}`Library` methods; for an entry</span>
-<span class="sd">    in a library, prefer {meth}`Library.add_abstract`, which also</span>
-<span class="sd">    locates the entry&#39;s attached PDF as an additional abstract</span>
-<span class="sd">    source (see {meth}`add_abstract` on why the entry cannot do that</span>
-<span class="sd">    itself).</span>
 
 <span class="sd">    {meth}`copy` returns an independent copy of the entry: a faithful</span>
 <span class="sd">    snapshot of its current fields, but not a member of any `Library`.</span>
@@ -737,89 +729,15 @@
 
     <span class="c1"># -- online enrichment (abstracts, preprints) ----------------------- #</span>
 
-<div class="viewcode-block" id="Entry.add_abstract">
-<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_abstract">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_abstract</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="o">*</span><span class="p">,</span>
-        <span class="n">min_confidence</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">mark_empty</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">pdf_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_abstract</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">min_confidence</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pdf_path</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch the entry&#39;s abstract from the best available source</span>
-<span class="sd">        and store it in the `abstract` field.</span>
-
-<span class="sd">        Candidate abstracts are gathered from</span>
-<span class="sd">        [Crossref](https://www.crossref.org) (the publisher&#39;s</span>
-<span class="sd">        deposit, via the entry&#39;s `doi`), from the text of the PDF</span>
-<span class="sd">        given as `pdf_path` (extracted with the</span>
-<span class="sd">        [poppler](https://poppler.freedesktop.org) `pdftotext`</span>
-<span class="sd">        command-line tool, which must be on `PATH`; this source is</span>
-<span class="sd">        skipped otherwise), from the [arXiv</span>
-<span class="sd">        API](https://info.arxiv.org/help/api/) (via the entry&#39;s</span>
-<span class="sd">        `eprint`, or an arXiv identifier contained in the citation</span>
-<span class="sd">        key), and from [Semantic</span>
-<span class="sd">        Scholar](https://www.semanticscholar.org) as a last resort.</span>
-<span class="sd">        Every candidate is cleaned to plain-unicode prose (LaTeX/JATS</span>
-<span class="sd">        math markup to unicode, ligature and hyphenation repair,</span>
-<span class="sd">        publisher copyright trailers stripped) and validated with</span>
-<span class="sd">        heuristic garble checks. The candidates are then combined</span>
-<span class="sd">        into a single result with a *confidence* level:</span>
-
-<span class="sd">        * `&quot;high&quot;`: an online abstract identified by the entry&#39;s</span>
-<span class="sd">          `doi`/`eprint` (and agreeing with the PDF text, where both</span>
-<span class="sd">          exist -- the identifier guarantees the paper, the agreement</span>
-<span class="sd">          guards against a wrong or garbled deposit), or an</span>
-<span class="sd">          unambiguous PDF extraction;</span>
-<span class="sd">        * `&quot;medium&quot;`: a single unconfirmed source: only the PDF text,</span>
-<span class="sd">          or an online lookup via an arXiv identifier merely guessed</span>
-<span class="sd">          from the citation key;</span>
-<span class="sd">        * `&quot;low&quot;`: the PDF text and an online source *disagree*. The</span>
-<span class="sd">          PDF text is reported (it belongs to the given file), but</span>
-<span class="sd">          one of the two sources probably grabbed the wrong text --</span>
-<span class="sd">          review manually;</span>
-<span class="sd">        * `&quot;none&quot;`: no valid abstract found anywhere.</span>
-
-<span class="sd">        `pdf_path` is the resolved filesystem path of a PDF of the</span>
-<span class="sd">        paper (`None` to skip the PDF source). An `Entry` cannot</span>
-<span class="sd">        locate its own attached PDFs: the paths in {attr}`files` are</span>
-<span class="sd">        relative to the library&#39;s `.bib` file, which only the</span>
-<span class="sd">        {class}`Library` knows. For an entry in a library, call</span>
-<span class="sd">        {meth}`Library.add_abstract` instead, which finds the entry&#39;s</span>
-<span class="sd">        first attached PDF automatically and passes it here.</span>
-
-<span class="sd">        The fetched abstract is stored in the entry only if its</span>
-<span class="sd">        confidence is at least `min_confidence` (`&quot;high&quot;`,</span>
-<span class="sd">        `&quot;medium&quot;`, or `&quot;low&quot;`). With `mark_empty=True`, a `&quot;none&quot;`</span>
-<span class="sd">        result stores an *empty* `abstract` field instead of leaving</span>
-<span class="sd">        the field undefined, marking the entry as audited (`keys</span>
-<span class="sd">        --empty abstract` in the command line, as opposed to `keys</span>
-<span class="sd">        --missing abstract`). Both arguments default to the</span>
-<span class="sd">        `[add_abstract]` table of the</span>
-<span class="sd">        [configuration](configuration)</span>
-<span class="sd">        (`config.add_abstract.min_confidence`, `&quot;high&quot;` unless</span>
-<span class="sd">        configured, and `config.add_abstract.mark_empty`, `False`</span>
-<span class="sd">        unless configured).</span>
-
-<span class="sd">        If the entry already has a non-empty abstract, nothing is</span>
-<span class="sd">        fetched and the existing text is returned with source</span>
-<span class="sd">        `&quot;existing&quot;`, unless `overwrite=True`. An entry whose</span>
-<span class="sd">        `abstract` field is present but *empty* (the audited marker)</span>
-<span class="sd">        does not require `overwrite`.</span>
-
-<span class="sd">        Returns a named tuple `(abstract, source, confidence, note,</span>
-<span class="sd">        applied)`: the abstract text (`&quot;&quot;` if none was found), the</span>
-<span class="sd">        source it came from (`&quot;crossref&quot;`, `&quot;pdf&quot;`, `&quot;arxiv&quot;`,</span>
-<span class="sd">        `&quot;semanticscholar&quot;`, `&quot;none&quot;`, or `&quot;existing&quot;`), the</span>
-<span class="sd">        confidence level, a short diagnostic trace of the source</span>
-<span class="sd">        selection (`note`), and whether the entry was modified</span>
-<span class="sd">        (`applied`).</span>
-
-<span class="sd">        Raises {exc}`ValueError` for an invalid `min_confidence`.</span>
-<span class="sd">        Network problems never raise: an unreachable source is</span>
-<span class="sd">        skipped (see `note`). Requires network access for the online</span>
-<span class="sd">        sources.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Backing implementation of `Library.add_abstract`: pure</span>
+<span class="sd">        fetch-and-store, without the known-missing group bookkeeping</span>
+<span class="sd">        (an `Entry` holds no reference to its library). `pdf_path` is</span>
+<span class="sd">        the resolved filesystem path of a PDF of the paper, or `None`</span>
+<span class="sd">        to skip the PDF source; see `Library.add_abstract` for the</span>
+<span class="sd">        source-selection, confidence, and result semantics.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Imported lazily: the abstracts module pulls in the network</span>
         <span class="c1"># dependencies and pylatexenc, needed nowhere else.</span>
@@ -827,8 +745,6 @@
 
         <span class="k">if</span> <span class="n">min_confidence</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">min_confidence</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">add_abstract</span><span class="o">.</span><span class="n">min_confidence</span>
-        <span class="k">if</span> <span class="n">mark_empty</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">mark_empty</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">add_abstract</span><span class="o">.</span><span class="n">mark_empty</span>
         <span class="k">if</span> <span class="n">min_confidence</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;high&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;min_confidence must be &#39;high&#39;, &#39;medium&#39;, or &#39;low&#39;, &quot;</span>
@@ -853,100 +769,19 @@
         <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">abstract</span> <span class="ow">and</span> <span class="n">rank</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">confidence</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">rank</span><span class="p">(</span><span class="n">min_confidence</span><span class="p">):</span>
             <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;abstract&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">abstract</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">abstract</span> <span class="ow">and</span> <span class="n">mark_empty</span><span class="p">:</span>
-            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;abstract&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">result</span></div>
+        <span class="k">return</span> <span class="n">result</span>
 
-
-<div class="viewcode-block" id="Entry.add_preprint">
-<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_preprint">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_preprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eprint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mark_empty</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Record the entry&#39;s arXiv preprint in its `eprint` field --</span>
-<span class="sd">        an explicitly given identifier, or one found by searching</span>
-<span class="sd">        arXiv (the only supported preprint server).</span>
-
-<span class="sd">        With `eprint` given (e.g. `&quot;2205.15044&quot;`,</span>
-<span class="sd">        `&quot;quant-ph/0106057&quot;`, or `&quot;arXiv:2205.15044&quot;`), the identifier</span>
-<span class="sd">        is validated and normalized (prefix and version suffix</span>
-<span class="sd">        stripped) and stored without any network access -- the caller</span>
-<span class="sd">        asserts the match, e.g. after manually reviewing a candidate</span>
-<span class="sd">        the search rejected.</span>
-
-<span class="sd">        With `eprint=None`, the [arXiv</span>
-<span class="sd">        API](https://info.arxiv.org/help/api/) is searched for the</span>
-<span class="sd">        entry, by title and first author, precise queries first. A</span>
-<span class="sd">        result is accepted only when it confidently matches the</span>
-<span class="sd">        entry: its arXiv DOI equals the entry&#39;s `doi`, its title is a</span>
-<span class="sd">        near-exact match, or a good title match is corroborated by</span>
-<span class="sd">        the first author&#39;s last name. A title-based match whose arXiv</span>
-<span class="sd">        submission postdates the entry&#39;s `year` by more than a year</span>
-<span class="sd">        is rejected unless its journal reference names that year</span>
-<span class="sd">        (guarding against unrelated papers sharing a generic title);</span>
-<span class="sd">        such a rejected candidate is reported in the result&#39;s `note`</span>
-<span class="sd">        as `postdated-unverified(...)` and can, after review, be</span>
-<span class="sd">        applied by passing its identifier as `eprint`. The search</span>
-<span class="sd">        uses only the entry&#39;s own fields, so it works the same for an</span>
-<span class="sd">        entry that is not (yet) in a {class}`Library`.</span>
-
-<span class="sd">        Whenever a non-empty `eprint` is stored, an</span>
-<span class="sd">        `archiveprefix = arXiv` field is added alongside it (unless</span>
-<span class="sd">        the entry already has an `archiveprefix`). A search match</span>
-<span class="sd">        additionally stores the preprint&#39;s arXiv primary category</span>
-<span class="sd">        (e.g. `quant-ph`) in the `primaryclass` field, replacing any</span>
-<span class="sd">        existing value (which, with `overwrite=True`, described the</span>
-<span class="sd">        replaced identifier); an explicitly given identifier stores</span>
-<span class="sd">        no `primaryclass`, since without network access the category</span>
-<span class="sd">        is unknown.</span>
-
-<span class="sd">        The `eprint` field encodes the entry&#39;s audit state, mirroring</span>
-<span class="sd">        how {meth}`add_abstract` treats the `abstract` field: a field</span>
-<span class="sd">        that is *absent* means the preprint status is unknown</span>
-<span class="sd">        (`keys --missing eprint` in the command line); an *empty*</span>
-<span class="sd">        field means a search ran cleanly and found no preprint</span>
-<span class="sd">        (`keys --empty eprint`); a non-empty field holds the known</span>
-<span class="sd">        identifier. With `mark_empty=True` (defaulting to the</span>
-<span class="sd">        `[add_preprint]` table of the</span>
-<span class="sd">        [configuration](configuration),</span>
-<span class="sd">        `config.add_preprint.mark_empty`, `False` unless configured),</span>
-<span class="sd">        a clean no-match stores that empty marker, so that repeated</span>
-<span class="sd">        fill-in runs -- selecting entries with</span>
-<span class="sd">        `keys --missing eprint` -- do not re-query arXiv for entries</span>
-<span class="sd">        already searched. A no-match is not proof that no preprint</span>
-<span class="sd">        exists (matching can fail), so re-audit the empty markers</span>
-<span class="sd">        occasionally by passing the `keys --empty eprint` entries. If</span>
-<span class="sd">        the entry already has a *non-empty* `eprint`, nothing is</span>
-<span class="sd">        searched and the existing identifier is returned with match</span>
-<span class="sd">        `&quot;existing&quot;`, unless `overwrite=True`; the empty marker does</span>
-<span class="sd">        not require `overwrite`.</span>
-
-<span class="sd">        Returns a named tuple `(eprint, match, ratio, note, applied,</span>
-<span class="sd">        primaryclass)`: the stored (or existing) arXiv identifier</span>
-<span class="sd">        (`&quot;&quot;` if none), how it was matched (`&quot;doi&quot;`, `&quot;title&quot;`, or</span>
-<span class="sd">        `&quot;title+author&quot;` for a search match, in decreasing order of</span>
-<span class="sd">        strength; `&quot;explicit&quot;` for a given identifier; `&quot;none&quot;` for a</span>
-<span class="sd">        clean no-match; `&quot;error&quot;` when the search could not run;</span>
-<span class="sd">        `&quot;existing&quot;` when the entry was skipped), the title-similarity</span>
-<span class="sd">        ratio of the best search result (`None` when no search ran),</span>
-<span class="sd">        a short diagnostic trace (`note`), whether the entry was</span>
-<span class="sd">        modified (`applied`), and the primary category of a search</span>
-<span class="sd">        match (`&quot;&quot;` otherwise). On a `&quot;error&quot;` result (network/API</span>
-<span class="sd">        failure, or an entry without a title) the entry is never</span>
-<span class="sd">        modified -- in particular, no empty marker is stored -- so a</span>
-<span class="sd">        re-run picks it up.</span>
-
-<span class="sd">        Raises {exc}`ValueError` if an explicitly given `eprint` is</span>
-<span class="sd">        not a valid arXiv identifier. Network problems never raise.</span>
-<span class="sd">        The search respects the arXiv API&#39;s rate limit (one request</span>
-<span class="sd">        every three seconds, shared across all searches in the</span>
-<span class="sd">        process), so budget time accordingly for large batch runs.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_preprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eprint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Backing implementation of `Library.add_preprint`: pure</span>
+<span class="sd">        fetch-and-store, without the known-missing group bookkeeping</span>
+<span class="sd">        (an `Entry` holds no reference to its library); see</span>
+<span class="sd">        `Library.add_preprint` for the matching-rule and result</span>
+<span class="sd">        semantics.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Imported lazily: the preprints module pulls in the network</span>
         <span class="c1"># dependencies, needed nowhere else.</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">preprints</span>  <span class="c1"># pylint: disable=import-outside-toplevel</span>
 
-        <span class="k">if</span> <span class="n">mark_empty</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">mark_empty</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">add_preprint</span><span class="o">.</span><span class="n">mark_empty</span>
         <span class="n">existing</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eprint&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">eprint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">value</span> <span class="o">=</span> <span class="n">preprints</span><span class="o">.</span><span class="n">normalize_eprint</span><span class="p">(</span><span class="n">eprint</span><span class="p">)</span>
@@ -977,15 +812,62 @@
         <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">eprint</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_store_eprint</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">eprint</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">primaryclass</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">match</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span> <span class="ow">and</span> <span class="n">mark_empty</span><span class="p">:</span>
-            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;eprint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;archiveprefix&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;arxiv&quot;</span><span class="p">:</span>
-                <span class="k">del</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;archiveprefix&quot;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s2">&quot;primaryclass&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
-                <span class="k">del</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;primaryclass&quot;</span><span class="p">]</span>
-            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">result</span></div>
+        <span class="k">return</span> <span class="n">result</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_doi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doi</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Backing implementation of `Library.add_doi`: pure</span>
+<span class="sd">        fetch-and-store, without the known-missing group bookkeeping</span>
+<span class="sd">        (an `Entry` holds no reference to its library); see</span>
+<span class="sd">        `Library.add_doi` for the matching-rule and result</span>
+<span class="sd">        semantics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Imported lazily: the dois module pulls in the network</span>
+        <span class="c1"># dependencies, needed nowhere else.</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">dois</span>  <span class="c1"># pylint: disable=import-outside-toplevel</span>
+
+        <span class="n">existing</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;doi&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">doi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">dois</span><span class="o">.</span><span class="n">normalize_doi</span><span class="p">(</span><span class="n">doi</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">existing</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">dois</span><span class="o">.</span><span class="n">DoiResult</span><span class="p">(</span>
+                    <span class="n">doi</span><span class="o">=</span><span class="n">existing</span><span class="p">,</span>
+                    <span class="n">match</span><span class="o">=</span><span class="s2">&quot;existing&quot;</span><span class="p">,</span>
+                    <span class="n">ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">note</span><span class="o">=</span><span class="s2">&quot;entry already has a doi (overwrite to replace)&quot;</span><span class="p">,</span>
+                    <span class="n">applied</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;doi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">dois</span><span class="o">.</span><span class="n">DoiResult</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;explicit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">existing</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">dois</span><span class="o">.</span><span class="n">DoiResult</span><span class="p">(</span>
+                <span class="n">doi</span><span class="o">=</span><span class="n">existing</span><span class="p">,</span>
+                <span class="n">match</span><span class="o">=</span><span class="s2">&quot;existing&quot;</span><span class="p">,</span>
+                <span class="n">ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">note</span><span class="o">=</span><span class="s2">&quot;entry already has a doi (overwrite to replace)&quot;</span><span class="p">,</span>
+                <span class="n">applied</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_entry_preprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">active</span><span class="o">.</span><span class="n">preprint_archives</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># `existing` carries a stored DOI through (reachable with</span>
+            <span class="c1"># `overwrite=True`): the result&#39;s `doi` always reflects</span>
+            <span class="c1"># the entry&#39;s actual value.</span>
+            <span class="k">return</span> <span class="n">dois</span><span class="o">.</span><span class="n">DoiResult</span><span class="p">(</span>
+                <span class="n">doi</span><span class="o">=</span><span class="n">existing</span><span class="p">,</span>
+                <span class="n">match</span><span class="o">=</span><span class="s2">&quot;preprint&quot;</span><span class="p">,</span>
+                <span class="n">ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">note</span><span class="o">=</span><span class="s2">&quot;preprint-only entry (a search would find the &quot;</span>
+                <span class="s2">&quot;published version)&quot;</span><span class="p">,</span>
+                <span class="n">applied</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">dois</span><span class="o">.</span><span class="n">find_doi</span><span class="p">(</span>
+            <span class="n">title</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">author</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;author&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">year</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;year&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">eprint</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eprint&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">doi</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;doi&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">doi</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_store_eprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">primaryclass</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Store the non-empty arXiv identifier `value`, maintaining</span>
@@ -1078,7 +960,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 22, 2026.
+      <span class="lastupdated">Last updated on Jul 24, 2026.
       </span></p>
   </div>
 

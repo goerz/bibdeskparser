@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How-to Guides &mdash; BibDeskParser 0.4.0 documentation</title>
+  <title>How-to Guides &mdash; BibDeskParser 0.5.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=6c02275b"></script>
+      <script src="_static/documentation_options.js?v=1dd76d02"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.4.0
+    v0.5.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -61,6 +61,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">How-to Guides</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-manage-file-attachments">How to manage file attachments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-auto-file-attachments">How to auto-file attachments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-reconcile-attachments-against-a-folder-of-pdfs">How to reconcile attachments against a folder of PDFs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-define-or-rename-a-string-macro-journal-abbreviation">How to define or rename a <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro (journal abbreviation)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-organize-entries-into-groups">How to organize entries into groups</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-tag-entries-with-keywords">How to tag entries with keywords</a></li>
@@ -70,6 +71,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#how-to-add-a-reference-from-a-doi-arxiv-id-or-search-query">How to add a reference from a DOI, arXiv ID, or search query</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-fill-in-missing-abstracts">How to fill in missing abstracts</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-fill-in-missing-arxiv-identifiers">How to fill in missing arXiv identifiers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-fill-in-missing-dois">How to fill in missing DOIs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-manage-preprint-only-publications">How to manage preprint-only publications</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-import-bibtex-entries-from-a-publisher-or-another-library">How to import BibTeX entries from a publisher or another library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-edit-an-entry-in-your-text-editor">How to edit an entry in your text editor</a></li>
@@ -313,6 +315,39 @@ here into a subdirectory next to the <code class="docutils literal notranslate">
 <p>(Conversely, <code class="docutils literal notranslate"><span class="pre">auto_file_location=&quot;&quot;</span></code> forces a plain attach even with
 <code class="docutils literal notranslate"><span class="pre">file_automatically</span> <span class="pre">=</span> <span class="pre">true</span></code>.)</p>
 </section>
+<section id="how-to-reconcile-attachments-against-a-folder-of-pdfs">
+<span id="howto-reconcile-attachments"></span><h2>How to reconcile attachments against a folder of PDFs<a class="headerlink" href="#how-to-reconcile-attachments-against-a-folder-of-pdfs" title="Link to this heading"></a></h2>
+<p>Two questions come up when a library and its folder of PDFs drift
+apart: which entries still lack a PDF, and which PDFs on disk no entry
+links. Both are read-only CLI queries.</p>
+<p>List the entries with no attachment with
+<a class="reference internal" href="cli.html#cli-keys"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--without-files</span></code></span></a> (<code class="docutils literal notranslate"><span class="pre">--with-files</span></code> gives the
+complement):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--without-files
+<span class="go">Shapiro2012</span>
+<span class="go">...</span>
+</pre></div>
+</div>
+<p>The reverse index – every file the library references – is
+<a class="reference internal" href="cli.html#cli-files"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">files</span> <span class="pre">--flat</span></code></span></a>, which prints the paths of all attachments
+as a plain list. Use <code class="docutils literal notranslate"><span class="pre">--relative</span></code>, so the paths match the names stored
+in the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file and compare directly against a directory listing:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>files<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--relative<span class="w"> </span>--flat<span class="w"> </span>--json
+<span class="go">[</span>
+<span class="go">  &quot;BrifNJP2010.pdf&quot;,</span>
+<span class="go">  ...</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>Diffing that set against the folder is a job for the shell or a short
+script. For example, the PDFs on disk that no entry links (orphans):</p>
+<!-- notest -->
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>comm<span class="w"> </span>-23<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>&lt;<span class="o">(</span>ls<span class="w"> </span>tests/Refs/*.pdf<span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>-n1<span class="w"> </span>basename<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="o">)</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>&lt;<span class="o">(</span>bibdeskparser<span class="w"> </span>files<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--relative<span class="w"> </span>--flat<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="o">)</span>
+</pre></div>
+</div>
+</section>
 <section id="how-to-define-or-rename-a-string-macro-journal-abbreviation">
 <span id="howto-string-macros"></span><h2>How to define or rename a <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro (journal abbreviation)<a class="headerlink" href="#how-to-define-or-rename-a-string-macro-journal-abbreviation" title="Link to this heading"></a></h2>
 <p>Define a macro through
@@ -380,6 +415,11 @@ or renamed with
 update the group data as well. <code class="docutils literal notranslate"><span class="pre">add_to_group</span></code> requires the group to
 exist already (create it first, e.g. with an empty tuple), and all
 assigned keys must belong to entries in the library.</p>
+<p>Groups also back the <em>known-missing</em> bookkeeping of the
+<a class="reference internal" href="#howto-add-abstract"><span class="std std-ref">abstract</span></a> and <a class="reference internal" href="#howto-add-preprint"><span class="std std-ref">preprint</span></a>
+recipes: a group declared in the <code class="docutils literal notranslate"><span class="pre">[known_missing]</span></code> configuration
+records which entries are verified not to have a given field (see
+<a class="reference internal" href="bibdesk_format.html#bibdesk-empty-fields"><span class="std std-ref">Empty fields</span></a>).</p>
 </section>
 <section id="how-to-tag-entries-with-keywords">
 <h2>How to tag entries with keywords<a class="headerlink" href="#how-to-tag-entries-with-keywords" title="Link to this heading"></a></h2>
@@ -658,7 +698,7 @@ fact. To make either behavior the default, set it once in the
 </div>
 </section>
 <section id="how-to-fill-in-missing-abstracts">
-<h2>How to fill in missing abstracts<a class="headerlink" href="#how-to-fill-in-missing-abstracts" title="Link to this heading"></a></h2>
+<span id="howto-add-abstract"></span><h2>How to fill in missing abstracts<a class="headerlink" href="#how-to-fill-in-missing-abstracts" title="Link to this heading"></a></h2>
 <p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_abstract" title="bibdeskparser.library.Library.add_abstract"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.add_abstract</span></code></a>
 fetches the abstract of an existing entry – from Crossref (via the entry’s
 <code class="docutils literal notranslate"><span class="pre">doi</span></code>), the entry’s attached PDF (requires the
@@ -693,12 +733,34 @@ bar with <code class="docutils literal notranslate"><span class="pre">--min-conf
 <span class="w">    </span>abstract<span class="w"> </span><span class="s2">&quot;Quantum biology examines quantum effects in living cells ...&quot;</span>
 </pre></div>
 </div>
-<p>For an entry whose abstract genuinely cannot be found, store an
-<em>empty</em> abstract as an “audited” marker – either explicitly
-(<code class="docutils literal notranslate"><span class="pre">set_field</span> <span class="pre">KEY</span> <span class="pre">abstract</span> <span class="pre">&quot;&quot;</span></code>) or with <code class="docutils literal notranslate"><span class="pre">add_abstract</span> <span class="pre">--mark-empty</span></code>.
-The entry then no longer shows up in <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--missing</span> <span class="pre">abstract</span></code> (it is
-matched by <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--empty</span> <span class="pre">abstract</span></code> instead), so repeated fill-in
-passes stay fast and idempotent.</p>
+<p>For an entry whose abstract genuinely cannot be found, record the
+verified absence as membership in a <em>known-missing group</em>: a regular
+<a class="reference internal" href="bibdesk_format.html#bibdesk-static-groups"><span class="std std-ref">BibDesk static group</span></a>, declared in the
+<code class="docutils literal notranslate"><span class="pre">[known_missing]</span></code> table of <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code>
+(<a class="reference internal" href="config.html#config-known-missing"><span class="std std-ref">configuration</span></a>):</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[known_missing]</span>
+<span class="n">abstract</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;No Abstract&quot;</span>
+</pre></div>
+</div>
+<p>With the group declared, <code class="docutils literal notranslate"><span class="pre">add_abstract</span></code> maintains it automatically: a
+search that runs cleanly and finds nothing adds the entry to the
+group (creating the group on first use), group members are skipped by
+later runs (so repeated fill-in passes stay fast and idempotent), and
+storing an abstract removes the entry from the group again. To
+re-audit the group members on explicit demand (an abstract may have
+become available since the last check), pass <code class="docutils literal notranslate"><span class="pre">--overwrite</span></code> and select
+exactly them, as shown for preprints in the next recipe. An entry
+can also be marked by hand, with <code class="docutils literal notranslate"><span class="pre">add_to_group</span></code> or by drag and drop
+in BibDesk:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_group<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="s2">&quot;No Abstract&quot;</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_to_group<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="s2">&quot;No Abstract&quot;</span><span class="w"> </span>KatrukhaNC2017
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--group<span class="w"> </span><span class="s2">&quot;No Abstract&quot;</span>
+<span class="go">KatrukhaNC2017</span>
+</pre></div>
+</div>
+<p>An <em>empty</em> <code class="docutils literal notranslate"><span class="pre">abstract</span></code> field cannot serve as the marker: BibDesk
+deletes empty fields whenever it saves the library, while a static
+group survives (see <a class="reference internal" href="bibdesk_format.html#bibdesk-empty-fields"><span class="std std-ref">Empty fields</span></a>).</p>
 </section>
 <section id="how-to-fill-in-missing-arxiv-identifiers">
 <span id="howto-add-preprint"></span><h2>How to fill in missing arXiv identifiers<a class="headerlink" href="#how-to-fill-in-missing-arxiv-identifiers" title="Link to this heading"></a></h2>
@@ -717,24 +779,35 @@ entries whose preprint status is unknown and fill them in bulk
 (<a class="reference internal" href="cli.html#cli-add-preprint"><span class="std std-ref">CLI reference</span></a>):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--type<span class="w"> </span>article<span class="w"> </span>--missing<span class="w"> </span>eprint
 <span class="go">WinckelIP2008</span>
-<span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_preprint<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--mark-empty<span class="w"> </span><span class="se">\</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_preprint<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>WinckelIP2008<span class="w"> </span>Vecheck2022.09.09.507322
-<span class="go">WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]</span>
-<span class="go">Vecheck2022.09.09.507322: no preprint found (stored empty marker) [best-ratio=0.31]</span>
+<span class="go">WinckelIP2008: no preprint found (marked known missing in group &#39;No Eprint&#39;) [best-ratio=0.42]</span>
+<span class="go">Vecheck2022.09.09.507322: no preprint found (marked known missing in group &#39;No Eprint&#39;) [best-ratio=0.31]</span>
 </pre></div>
 </div>
-<p>With <code class="docutils literal notranslate"><span class="pre">--mark-empty</span></code> (or <code class="docutils literal notranslate"><span class="pre">mark_empty</span> <span class="pre">=</span> <span class="pre">true</span></code> in the
-<a class="reference internal" href="config.html#config-add"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[add_preprint]</span></code> configuration table</span></a>), an entry for
-which no preprint is found gets an <em>empty</em> <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field. Like the
-empty-abstract marker of the previous recipe, this records “searched,
-nothing found”: the entry moves from <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--missing</span> <span class="pre">eprint</span></code> to
-<code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--empty</span> <span class="pre">eprint</span></code>, so repeated fill-in passes do not re-query
-arXiv for it. Since a non-match can also be a matching failure,
-re-audit those markers occasionally:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_preprint<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="k">$(</span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>tests/Refs/refs.bib<span class="w"> </span>--empty<span class="w"> </span>eprint<span class="k">)</span>
+<p>The report above assumes a known-missing group declared for <code class="docutils literal notranslate"><span class="pre">eprint</span></code>
+in <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code>, like the one of the previous recipe
+(<a class="reference internal" href="config.html#config-known-missing"><span class="std std-ref">configuration</span></a>):</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[known_missing]</span>
+<span class="n">eprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;No Eprint&quot;</span>
 </pre></div>
 </div>
+<p>An entry for which the search runs cleanly and finds nothing is then
+added to the group, and group members are skipped by every later
+run, so repeated fill-in passes (“find the preprint for everything
+that is missing one”) never re-query arXiv for them. Membership
+records “searched, nothing found at the time”, which is not the same
+as “does not exist”: the match may have failed, or the preprint may
+have been posted since the last check. Re-auditing those entries
+therefore happens only on explicit demand, by passing <code class="docutils literal notranslate"><span class="pre">--overwrite</span></code>
+and selecting exactly the group members:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_preprint<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--overwrite<span class="w"> </span><span class="se">\</span>
+<span class="gp">    $</span><span class="o">(</span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--group<span class="w"> </span><span class="s2">&quot;No Eprint&quot;</span><span class="o">)</span>
+</pre></div>
+</div>
+<p>A re-audited entry with another clean no-match simply stays in the
+group; a new match stores the identifier and removes the entry from
+the group.</p>
 <p>A match that the search rejects as <code class="docutils literal notranslate"><span class="pre">postdated-unverified</span></code> (an arXiv
 submission years after the entry’s publication, without a
 corroborating journal reference) is only reported; if reviewing it
@@ -747,6 +820,59 @@ late), record it explicitly, which needs no network access:</p>
 <p>The search respects the arXiv API’s rate limit of one request every
 three seconds, so filling in a large library takes time – let it
 run.</p>
+</section>
+<section id="how-to-fill-in-missing-dois">
+<span id="howto-add-doi"></span><h2>How to fill in missing DOIs<a class="headerlink" href="#how-to-fill-in-missing-dois" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_doi" title="bibdeskparser.library.Library.add_doi"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.add_doi</span></code></a>
+looks up the DOI of an existing entry and records it in the entry’s
+<code class="docutils literal notranslate"><span class="pre">doi</span></code> field:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">bib</span><span class="o">.</span><span class="n">add_doi</span><span class="p">(</span><span class="s2">&quot;DevoretLH1995&quot;</span><span class="p">)</span>
+<span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If the entry has an arXiv <code class="docutils literal notranslate"><span class="pre">eprint</span></code>, the DOI that arXiv records for
+the identifier is used directly (it names the published version of
+exactly this paper); otherwise Crossref is searched, and a result is
+stored only on a confident match: a near-exact title match, or a
+good title match corroborated by the first author (see the
+<a class="reference internal" href="cli.html#cli-add-doi"><span class="std std-ref">CLI reference</span></a> for the exact guards). On the
+command line, fill in every <code class="docutils literal notranslate"><span class="pre">article</span></code> that is missing a DOI – the
+same entries the missing-doi audit of <a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span></code></span></a> reports:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_doi<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="se">\</span>
+<span class="gp">    $</span><span class="o">(</span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--type<span class="w"> </span>article<span class="w"> </span>--missing<span class="w"> </span>doi<span class="o">)</span>
+</pre></div>
+</div>
+<p>The lookup is not limited to articles – books and book chapters
+have DOIs, too, and theses sometimes do. As with abstracts and
+preprints, declare a known-missing group in <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code>
+(<a class="reference internal" href="config.html#config-known-missing"><span class="std std-ref">configuration</span></a>), so that a clean search that
+finds nothing is recorded and never repeated:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[known_missing]</span>
+<span class="n">doi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;No DOI&quot;</span>
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_doi<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GoerzPhd2015<span class="w"> </span>GoerzDiploma2010
+<span class="go">GoerzPhd2015: no doi found (marked known missing in group &#39;No DOI&#39;) [best-ratio=0.55]</span>
+<span class="go">GoerzDiploma2010: no doi found (marked known missing in group &#39;No DOI&#39;) [best-ratio=0.47]</span>
+</pre></div>
+</div>
+<p>Membership in the group also makes the missing-doi audit of <code class="docutils literal notranslate"><span class="pre">check</span></code>
+accept the entry, and re-auditing the members happens only on
+explicit demand, exactly as in the previous two recipes
+(<code class="docutils literal notranslate"><span class="pre">add_doi</span> <span class="pre">--overwrite</span></code> over <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--group</span> <span class="pre">&quot;No</span> <span class="pre">DOI&quot;</span></code>).</p>
+<p>A candidate that the search rejects – a <code class="docutils literal notranslate"><span class="pre">year-mismatch</span></code>, or a good
+title match without an author match – shows up in the report’s
+<code class="docutils literal notranslate"><span class="pre">[...]</span></code> note; if reviewing it confirms it really is this work’s DOI,
+record it explicitly, which needs no network access:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_doi<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GoerzDiploma2010<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--doi<span class="w"> </span><span class="m">10</span>.5555/12345678
+<span class="go">GoerzDiploma2010: stored doi 10.5555/12345678</span>
+</pre></div>
+</div>
+<p>A <a class="reference internal" href="preprints.html"><span class="doc std std-doc">preprint-only</span></a> entry is skipped: a search would turn
+up the DOI of the <em>published version</em>, which does not belong on a
+preprint reference. If the work has in fact been published, update
+the entry to the published version instead (see the next recipe).</p>
 </section>
 <section id="how-to-manage-preprint-only-publications">
 <span id="howto-preprints"></span><h2>How to manage preprint-only publications<a class="headerlink" href="#how-to-manage-preprint-only-publications" title="Link to this heading"></a></h2>
@@ -860,7 +986,7 @@ adds the entries:</p>
 <p>On the command line, <code class="docutils literal notranslate"><span class="pre">import</span></code> reads from a file, stdin, or a URL
 (<a class="reference internal" href="cli.html#cli-import"><span class="std std-ref">CLI reference</span></a>):</p>
 <!-- notest -->
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>entries.bib
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--file<span class="w"> </span>entries.bib
 <span class="gp">$ </span>pbpaste<span class="w"> </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--stdin
 <span class="gp">$ </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--url<span class="w"> </span>https://example.com/refs.bib
 </pre></div>
@@ -1045,7 +1171,7 @@ REVTeX, and are ignored by classic styles; see <a class="reference internal" hre
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 22, 2026.
+      <span class="lastupdated">Last updated on Jul 24, 2026.
       </span></p>
   </div>
 

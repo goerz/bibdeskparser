@@ -174,6 +174,47 @@ here into a subdirectory next to the `.bib` file:
 (Conversely, `auto_file_location=""` forces a plain attach even with
 `file_automatically = true`.)
 
+(howto-reconcile-attachments)=
+
+## How to reconcile attachments against a folder of PDFs
+
+Two questions come up when a library and its folder of PDFs drift
+apart: which entries still lack a PDF, and which PDFs on disk no entry
+links. Both are read-only CLI queries.
+
+List the entries with no attachment with
+[`keys --without-files`](cli-keys) (`--with-files` gives the
+complement):
+
+```console
+$ bibdeskparser keys tests/Refs/refs.bib --without-files
+Shapiro2012
+...
+```
+
+The reverse index -- every file the library references -- is
+[`files --flat`](cli-files), which prints the paths of all attachments
+as a plain list. Use `--relative`, so the paths match the names stored
+in the `.bib` file and compare directly against a directory listing:
+
+```console
+$ bibdeskparser files tests/Refs/refs.bib --relative --flat --json
+[
+  "BrifNJP2010.pdf",
+  ...
+]
+```
+
+Diffing that set against the folder is a job for the shell or a short
+script. For example, the PDFs on disk that no entry links (orphans):
+
+<!-- notest -->
+```console
+$ comm -23 \
+    <(ls tests/Refs/*.pdf | xargs -n1 basename | sort) \
+    <(bibdeskparser files tests/Refs/refs.bib --relative --flat | sort)
+```
+
 (howto-string-macros)=
 
 ## How to define or rename a `@string` macro (journal abbreviation)
@@ -248,6 +289,12 @@ or renamed with
 update the group data as well. `add_to_group` requires the group to
 exist already (create it first, e.g. with an empty tuple), and all
 assigned keys must belong to entries in the library.
+
+Groups also back the *known-missing* bookkeeping of the
+[abstract](howto-add-abstract) and [preprint](howto-add-preprint)
+recipes: a group declared in the `[known_missing]` configuration
+records which entries are verified not to have a given field (see
+[Empty fields](bibdesk-empty-fields)).
 
 ## How to tag entries with keywords
 
@@ -513,6 +560,8 @@ add_abstract = true
 add_preprint = true
 ```
 
+(howto-add-abstract)=
+
 ## How to fill in missing abstracts
 
 {py:meth}`Library.add_abstract <bibdeskparser.library.Library.add_abstract>`
@@ -555,12 +604,38 @@ $ bibdeskparser set_field tests/Refs/refs.bib Vecheck2022.09.09.507322 \
     abstract "Quantum biology examines quantum effects in living cells ..."
 ```
 
-For an entry whose abstract genuinely cannot be found, store an
-*empty* abstract as an "audited" marker -- either explicitly
-(`set_field KEY abstract ""`) or with `add_abstract --mark-empty`.
-The entry then no longer shows up in `keys --missing abstract` (it is
-matched by `keys --empty abstract` instead), so repeated fill-in
-passes stay fast and idempotent.
+For an entry whose abstract genuinely cannot be found, record the
+verified absence as membership in a *known-missing group*: a regular
+[BibDesk static group](bibdesk-static-groups), declared in the
+`[known_missing]` table of `bibdeskparser.toml`
+([configuration](config-known-missing)):
+
+```toml
+[known_missing]
+abstract = "No Abstract"
+```
+
+With the group declared, `add_abstract` maintains it automatically: a
+search that runs cleanly and finds nothing adds the entry to the
+group (creating the group on first use), group members are skipped by
+later runs (so repeated fill-in passes stay fast and idempotent), and
+storing an abstract removes the entry from the group again. To
+re-audit the group members on explicit demand (an abstract may have
+become available since the last check), pass `--overwrite` and select
+exactly them, as shown for preprints in the next recipe. An entry
+can also be marked by hand, with `add_to_group` or by drag and drop
+in BibDesk:
+
+```console
+$ bibdeskparser set_group tests/Refs/refs.bib "No Abstract"
+$ bibdeskparser add_to_group tests/Refs/refs.bib "No Abstract" KatrukhaNC2017
+$ bibdeskparser keys tests/Refs/refs.bib --group "No Abstract"
+KatrukhaNC2017
+```
+
+An *empty* `abstract` field cannot serve as the marker: BibDesk
+deletes empty fields whenever it saves the library, while a static
+group survives (see [Empty fields](bibdesk-empty-fields)).
 
 (howto-add-preprint)=
 
@@ -585,25 +660,39 @@ entries whose preprint status is unknown and fill them in bulk
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
-$ bibdeskparser add_preprint tests/Refs/refs.bib --mark-empty \
+$ bibdeskparser add_preprint tests/Refs/refs.bib \
     WinckelIP2008 Vecheck2022.09.09.507322
-WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]
-Vecheck2022.09.09.507322: no preprint found (stored empty marker) [best-ratio=0.31]
+WinckelIP2008: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.42]
+Vecheck2022.09.09.507322: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.31]
 ```
 
-With `--mark-empty` (or `mark_empty = true` in the
-[`[add_preprint]` configuration table](config-add)), an entry for
-which no preprint is found gets an *empty* `eprint` field. Like the
-empty-abstract marker of the previous recipe, this records "searched,
-nothing found": the entry moves from `keys --missing eprint` to
-`keys --empty eprint`, so repeated fill-in passes do not re-query
-arXiv for it. Since a non-match can also be a matching failure,
-re-audit those markers occasionally:
+The report above assumes a known-missing group declared for `eprint`
+in `bibdeskparser.toml`, like the one of the previous recipe
+([configuration](config-known-missing)):
+
+```toml
+[known_missing]
+eprint = "No Eprint"
+```
+
+An entry for which the search runs cleanly and finds nothing is then
+added to the group, and group members are skipped by every later
+run, so repeated fill-in passes ("find the preprint for everything
+that is missing one") never re-query arXiv for them. Membership
+records "searched, nothing found at the time", which is not the same
+as "does not exist": the match may have failed, or the preprint may
+have been posted since the last check. Re-auditing those entries
+therefore happens only on explicit demand, by passing `--overwrite`
+and selecting exactly the group members:
 
 ```console
-$ bibdeskparser add_preprint tests/Refs/refs.bib $(bibdeskparser keys \
-    tests/Refs/refs.bib --empty eprint)
+$ bibdeskparser add_preprint tests/Refs/refs.bib --overwrite \
+    $(bibdeskparser keys tests/Refs/refs.bib --group "No Eprint")
 ```
+
+A re-audited entry with another clean no-match simply stays in the
+group; a new match stores the identifier and removes the entry from
+the group.
 
 A match that the search rejects as `postdated-unverified` (an arXiv
 submission years after the entry's publication, without a
@@ -619,6 +708,71 @@ $ bibdeskparser add_preprint tests/Refs/refs.bib WinckelIP2008 \
 The search respects the arXiv API's rate limit of one request every
 three seconds, so filling in a large library takes time -- let it
 run.
+
+(howto-add-doi)=
+
+## How to fill in missing DOIs
+
+{py:meth}`Library.add_doi <bibdeskparser.library.Library.add_doi>`
+looks up the DOI of an existing entry and records it in the entry's
+`doi` field:
+
+```python
+result = bib.add_doi("DevoretLH1995")
+bib.save()
+```
+
+If the entry has an arXiv `eprint`, the DOI that arXiv records for
+the identifier is used directly (it names the published version of
+exactly this paper); otherwise Crossref is searched, and a result is
+stored only on a confident match: a near-exact title match, or a
+good title match corroborated by the first author (see the
+{ref}`CLI reference <cli-add-doi>` for the exact guards). On the
+command line, fill in every `article` that is missing a DOI -- the
+same entries the missing-doi audit of [`check`](cli-check) reports:
+
+```console
+$ bibdeskparser add_doi tests/Refs/refs.bib \
+    $(bibdeskparser keys tests/Refs/refs.bib --type article --missing doi)
+```
+
+The lookup is not limited to articles -- books and book chapters
+have DOIs, too, and theses sometimes do. As with abstracts and
+preprints, declare a known-missing group in `bibdeskparser.toml`
+([configuration](config-known-missing)), so that a clean search that
+finds nothing is recorded and never repeated:
+
+```toml
+[known_missing]
+doi = "No DOI"
+```
+
+```console
+$ bibdeskparser add_doi tests/Refs/refs.bib GoerzPhd2015 GoerzDiploma2010
+GoerzPhd2015: no doi found (marked known missing in group 'No DOI') [best-ratio=0.55]
+GoerzDiploma2010: no doi found (marked known missing in group 'No DOI') [best-ratio=0.47]
+```
+
+Membership in the group also makes the missing-doi audit of `check`
+accept the entry, and re-auditing the members happens only on
+explicit demand, exactly as in the previous two recipes
+(`add_doi --overwrite` over `keys --group "No DOI"`).
+
+A candidate that the search rejects -- a `year-mismatch`, or a good
+title match without an author match -- shows up in the report's
+`[...]` note; if reviewing it confirms it really is this work's DOI,
+record it explicitly, which needs no network access:
+
+```console
+$ bibdeskparser add_doi tests/Refs/refs.bib GoerzDiploma2010 \
+    --doi 10.5555/12345678
+GoerzDiploma2010: stored doi 10.5555/12345678
+```
+
+A [preprint-only](preprints) entry is skipped: a search would turn
+up the DOI of the *published version*, which does not belong on a
+preprint reference. If the work has in fact been published, update
+the entry to the published version instead (see the next recipe).
 
 (howto-preprints)=
 
@@ -752,7 +906,7 @@ On the command line, `import` reads from a file, stdin, or a URL
 
 <!-- notest -->
 ```console
-$ bibdeskparser import tests/Refs/refs.bib entries.bib
+$ bibdeskparser import tests/Refs/refs.bib --file entries.bib
 $ pbpaste | bibdeskparser import tests/Refs/refs.bib --stdin
 $ bibdeskparser import tests/Refs/refs.bib --url https://example.com/refs.bib
 ```
