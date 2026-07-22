@@ -1,0 +1,1102 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bibdeskparser.entry &mdash; BibDeskParser 0.4.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" href="../../_static/mycss.css" type="text/css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=6c02275b"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/docs-versions-menu.js?v=2187e224"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+  <a href="../../index.html" class="icon icon-home">
+    BibDeskParser
+  </a>
+
+  <div class="version">
+    v0.4.0
+  </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../readme.html#development">Development</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../howto.html">How-to Guides</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../bibdesk_format.html">BibDesk's .bib Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../preprints.html">Preprints</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">BibDeskParser</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>bibdeskparser.entry</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for bibdeskparser.entry</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The `Entry` class.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">urllib.parse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">MutableMapping</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">bibtexparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">model</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.bdskfile</span><span class="w"> </span><span class="kn">import</span> <span class="n">BibDeskFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">active</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.macros</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MacroString</span><span class="p">,</span>
+    <span class="n">ValueString</span><span class="p">,</span>
+    <span class="n">is_valid_macro_name</span><span class="p">,</span>
+    <span class="n">normalize_macro_name</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.names</span><span class="w"> </span><span class="kn">import</span> <span class="n">structured_names</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.texmap</span><span class="w"> </span><span class="kn">import</span> <span class="n">detexify</span><span class="p">,</span> <span class="n">skip_texify</span><span class="p">,</span> <span class="n">texify</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Entry&quot;</span><span class="p">]</span>
+
+<span class="c1"># All members whose name does not start with an underscore must be listed</span>
+<span class="c1"># either in __all__ or in __private__</span>
+<span class="n">__private__</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1">#: `strptime`/`strftime` format of the `date-added`/`date-modified`</span>
+<span class="c1">#: fields, e.g. `&quot;2026-07-04 09:04:26 -0400&quot;`.</span>
+<span class="n">_DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S %z&quot;</span>
+
+<span class="n">_DATE_KEYS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">((</span><span class="s2">&quot;date-added&quot;</span><span class="p">,</span> <span class="s2">&quot;date-modified&quot;</span><span class="p">))</span>
+
+<span class="n">_BDSK_FILE_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;bdsk-file-(\d+)$&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+<span class="n">_BDSK_URL_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;bdsk-url-(\d+)$&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_normal_key</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether `key` belongs to the `Entry` `dict` interface.</span>
+
+<span class="sd">    `False` for `date-added`, `date-modified`, and any `bdsk-` prefixed</span>
+<span class="sd">    key (case-insensitively); `True` for everything else, including</span>
+<span class="sd">    `keywords` (which is readable through the `dict` interface, but not</span>
+<span class="sd">    writable -- see `_check_writable`).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lkey</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">lkey</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_DATE_KEYS</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">lkey</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;bdsk-&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_split_keywords</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Split a comma-separated `keywords` field value into a list of</span>
+<span class="sd">    stripped, non-empty keywords.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">keyword</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">raw</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">keyword</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_strip_enclosing</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Strip one matching pair of `{...}`/`&quot;...&quot;` from `value`, if</span>
+<span class="sd">    present.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;{&quot;</span> <span class="ow">and</span> <span class="n">value</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;}&quot;</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&quot;&#39;</span> <span class="ow">and</span> <span class="n">value</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">value</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_date</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a `date-added`/`date-modified` field value.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">_strip_enclosing</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">_DATE_FORMAT</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Entry">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Entry</span><span class="p">(</span><span class="n">MutableMapping</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A single BibDesk `.bib` entry, element type of</span>
+<span class="sd">    {attr}`Library.entries`.</span>
+
+<span class="sd">    A new entry can be instantiated with</span>
+
+<span class="sd">    ```python</span>
+<span class="sd">    Entry(entry_type, key, fields=None)</span>
+<span class="sd">    ```</span>
+
+<span class="sd">    where the (case-insensitively handled) `entry_type` is one of the</span>
+<span class="sd">    [supported entry types](bib-entry-types), `key` is the citation</span>
+<span class="sd">    key, and `fields` is a mapping of field name to a `str`,</span>
+<span class="sd">    {class}`ValueString`, or {class}`MacroString`. The `fields` mapping</span>
+<span class="sd">    is applied field by field, the same way as `entry[field_key] =</span>
+<span class="sd">    value`. The `entry_type` is validated and lowercased (see</span>
+<span class="sd">    {attr}`entry_type`). The citation key is available as the</span>
+<span class="sd">    {attr}`key` property, which is read-only: an entry that is already</span>
+<span class="sd">    in a {class}`Library` is renamed via {meth}`Library.rekey`.</span>
+
+<span class="sd">    An `Entry` acts as a read-write dictionary for the fields in the</span>
+<span class="sd">    entry. The keys (field names) are case insensitive, normalized to</span>
+<span class="sd">    lowercase. The values are decoded unicode strings</span>
+<span class="sd">    ({class}`ValueString` for literal/braced values, {class}`MacroString`</span>
+<span class="sd">    for a bare `@string` macro reference) mapping one-to-one to the</span>
+<span class="sd">    &quot;raw&quot; values in the `.bib` file. The decoded strings exclude the</span>
+<span class="sd">    `{...}`/`&quot;...&quot;` delimiters. On write, they are automatically encoded</span>
+<span class="sd">    according to BibDesk&#39;s requirements (e.g., converting unicode back</span>
+<span class="sd">    to ascii-encoded accented characters).</span>
+
+<span class="sd">    Values can be assigned as plain `str`; they are automatically</span>
+<span class="sd">    recognized as literal text or a macro reference. Assigning a field</span>
+<span class="sd">    that is not appropriate for the entry type (see the [supported entry</span>
+<span class="sd">    types](bib-entry-types)) emits a `UserWarning`, and assigning an</span>
+<span class="sd">    unparseable `author`/`editor` value raises {exc}`ValueError`. The</span>
+<span class="sd">    type and field checks can be disabled or customized through a</span>
+<span class="sd">    configuration file (see the [configuration](configuration)).</span>
+
+<span class="sd">    The following raw field names are excluded from the dictionary</span>
+<span class="sd">    interface:</span>
+
+<span class="sd">    - `date-added`: Managed automatically, accessible (read-only) via</span>
+<span class="sd">      the {attr}`date_added` property.</span>
+<span class="sd">    - `date-modified`: Managed automatically, accessible (read-only) via</span>
+<span class="sd">      the {attr}`date_modified` property.</span>
+<span class="sd">    - `bdsk-file-N` fields. File attachments can be accessed via the</span>
+<span class="sd">      read-only {attr}`files` property and can be managed at the</span>
+<span class="sd">      {class}`Library` level via {meth}`Library.add_file`,</span>
+<span class="sd">      {meth}`Library.replace_file`, {meth}`Library.unlink_file`, and</span>
+<span class="sd">      {meth}`Library.rename_file`.</span>
+<span class="sd">    - `bdsk-url-N` fields. URLs can be accessed via the read-only</span>
+<span class="sd">      {attr}`urls` property, and can be managed via the `Entry` methods</span>
+<span class="sd">      {meth}`add_url`, {meth}`replace_url`, {meth}`remove_url`, as well</span>
+<span class="sd">      as {meth}`Library.add_url`, {meth}`Library.replace_url`, and</span>
+<span class="sd">      {meth}`Library.remove_url`.</span>
+
+<span class="sd">    The `keywords` field is readable through the dictionary interface</span>
+<span class="sd">    (`entry[&quot;keywords&quot;]` returns the comma-joined string, and</span>
+<span class="sd">    `&quot;keywords&quot;` appears in iteration and `len`), but it is *not*</span>
+<span class="sd">    writable that way: `entry[&quot;keywords&quot;] = ...` and `del</span>
+<span class="sd">    entry[&quot;keywords&quot;]` raise `KeyError`. The {attr}`keywords` tuple</span>
+<span class="sd">    property is read-only, too; keywords are edited only through the</span>
+<span class="sd">    owning {class}`Library`.</span>
+
+<span class="sd">    Some fields can also be accessed as _structured data_ via</span>
+<span class="sd">    properties, in addition to the &quot;flat&quot; strings accessible via the</span>
+<span class="sd">    dictionary interface:</span>
+
+<span class="sd">    - {attr}`author`: Structured view of the `author` field (read-only).</span>
+<span class="sd">    - {attr}`editor`: Same, but for the `editor` field.</span>
+<span class="sd">    - {attr}`keywords`: The entry&#39;s keywords (a tuple, read-only).</span>
+
+<span class="sd">    The {attr}`keywords` property has some similarity with</span>
+<span class="sd">    {attr}`groups`, the main difference being that `groups` are stored</span>
+<span class="sd">    at the {class}`Library` level only: entries that are not part of a</span>
+<span class="sd">    `Library` cannot have `groups`.</span>
+
+<span class="sd">    {meth}`add_abstract` and {meth}`add_preprint` enrich the entry</span>
+<span class="sd">    from online sources, filling the `abstract` field and the</span>
+<span class="sd">    `eprint` field (the matching arXiv preprint), respectively. Both</span>
+<span class="sd">    are mirrored by like-named {class}`Library` methods; for an entry</span>
+<span class="sd">    in a library, prefer {meth}`Library.add_abstract`, which also</span>
+<span class="sd">    locates the entry&#39;s attached PDF as an additional abstract</span>
+<span class="sd">    source (see {meth}`add_abstract` on why the entry cannot do that</span>
+<span class="sd">    itself).</span>
+
+<span class="sd">    {meth}`copy` returns an independent copy of the entry: a faithful</span>
+<span class="sd">    snapshot of its current fields, but not a member of any `Library`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry_type</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">entry_type</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">normalize_entry_type</span><span class="p">(</span><span class="n">entry_type</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Entry</span><span class="p">(</span><span class="n">entry_type</span><span class="o">=</span><span class="n">entry_type</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_groups</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">field_key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="n">fields</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="p">[</span><span class="n">field_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_touch</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_wrap</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model_entry</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Wrap an already-parsed `bibtexparser.model.Entry` (internal).</span>
+
+<span class="sd">        Unlike the constructor, this does not touch `model_entry`&#39;s</span>
+<span class="sd">        fields or dates: a freshly loaded entry is pristine</span>
+<span class="sd">        (unmodified, `_dirty` is `False`) until it is modified, and its</span>
+<span class="sd">        `entry_type` is *not* validated. Used by the library loader.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span> <span class="o">=</span> <span class="n">model_entry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_groups</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="c1"># -- internal helpers -------------------------------------------- #</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the `Field` matching `key` case-insensitively, or</span>
+<span class="sd">        `None`.&quot;&quot;&quot;</span>
+        <span class="n">lkey</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">lkey</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">field</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_writable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Raise `KeyError` if `key` is not writable via the `dict`</span>
+<span class="sd">        interface.&quot;&quot;&quot;</span>
+        <span class="n">lkey</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">lkey</span> <span class="ow">in</span> <span class="n">_DATE_KEYS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> is read-only; use the date_added/&quot;</span>
+                <span class="s2">&quot;date_modified properties&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">lkey</span> <span class="o">==</span> <span class="s2">&quot;keywords&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="s2">&quot;&#39;keywords&#39; is readable but not writable via the dict &quot;</span>
+                <span class="s2">&quot;interface; the Entry.keywords property is read-only, &quot;</span>
+                <span class="s2">&quot;too. Use the Library methods add_to_keyword/&quot;</span>
+                <span class="s2">&quot;remove_from_keyword&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">lkey</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;bdsk-&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> is not accessible via the dict interface; &quot;</span>
+                <span class="s2">&quot;use the urls property, or the Library methods for &quot;</span>
+                <span class="s2">&quot;file attachments (add_file etc.)&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_raw_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">rendered_value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the raw (encoded) value of `key`, preserving the</span>
+<span class="sd">        existing `Field` object (and its original key spelling) if one</span>
+<span class="sd">        exists, else appending a new field.&quot;&quot;&quot;</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">field</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">rendered_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">rendered_value</span><span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_touch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set `date-modified` (and `date-added`, if unset) to now, and</span>
+<span class="sd">        mark the entry modified (`_dirty`).&quot;&quot;&quot;</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">astimezone</span><span class="p">()</span>
+        <span class="n">rendered</span> <span class="o">=</span> <span class="s2">&quot;{&quot;</span> <span class="o">+</span> <span class="n">now</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">_DATE_FORMAT</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_raw_field</span><span class="p">(</span><span class="s2">&quot;date-modified&quot;</span><span class="p">,</span> <span class="n">rendered</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="s2">&quot;date-added&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_raw_field</span><span class="p">(</span><span class="s2">&quot;date-added&quot;</span><span class="p">,</span> <span class="n">rendered</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Decode a raw stored field value for `__getitem__`.</span>
+
+<span class="sd">        A literal/braced value (and the keyword and fallback branches)</span>
+<span class="sd">        is returned as a {class}`ValueString`; a bare `@string` macro</span>
+<span class="sd">        reference is returned as a {class}`MacroString`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;{&quot;</span> <span class="ow">and</span> <span class="n">value</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;}&quot;</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&quot;&#39;</span> <span class="ow">and</span> <span class="n">value</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">inner</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">inner</span> <span class="k">if</span> <span class="n">skip_texify</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">else</span> <span class="n">detexify</span><span class="p">(</span><span class="n">inner</span><span class="p">))</span>
+        <span class="c1"># A bare macro-shaped `keywords` value is *not* a macro</span>
+        <span class="c1"># reference: keywords are always literal text (BibDesk&#39;s own</span>
+        <span class="c1"># keyword machinery expands any macro and writes back a plain</span>
+        <span class="c1"># string on the first keyword edit).</span>
+        <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;keywords&quot;</span> <span class="ow">and</span> <span class="n">is_valid_macro_name</span><span class="p">(</span>
+            <span class="n">value</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">MacroString</span><span class="p">(</span><span class="n">normalize_macro_name</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+        <span class="c1"># bare and not a valid macro name: shouldn&#39;t normally happen for</span>
+        <span class="c1"># well-formed data, but be defensive and return it as-is</span>
+        <span class="k">return</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">value</span> <span class="k">if</span> <span class="n">skip_texify</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">else</span> <span class="n">detexify</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+    <span class="c1"># -- MutableMapping interface (normal fields only) ---------------- #</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">_is_normal_key</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decode</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_writable</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;field value must be a str, ValueString, or &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;MacroString, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">!r}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">active</span><span class="o">.</span><span class="n">field_is_appropriate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entry_type</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;field </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> is not appropriate for entry type &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">entry_type</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="ne">UserWarning</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;author&quot;</span><span class="p">,</span> <span class="s2">&quot;editor&quot;</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">structured_names</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;invalid </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> field: not parseable as names: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">MacroString</span><span class="p">):</span>
+            <span class="c1"># Force a bare macro reference, normalized to BibDesk&#39;s</span>
+            <span class="c1"># canonical (lowercase) form -- matching how `@string`</span>
+            <span class="c1"># definitions are stored (`Library.strings`), and so that</span>
+            <span class="c1"># the value round-trips back as a MacroString on read.</span>
+            <span class="c1"># Raises a clear ValueError for an invalid name.</span>
+            <span class="n">rendered</span> <span class="o">=</span> <span class="n">normalize_macro_name</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ValueString</span><span class="p">):</span>
+            <span class="c1"># Force a literal braced value.</span>
+            <span class="n">rendered</span> <span class="o">=</span> <span class="s2">&quot;{&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="n">text</span> <span class="k">if</span> <span class="n">skip_texify</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">else</span> <span class="n">texify</span><span class="p">(</span><span class="n">text</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
+        <span class="k">elif</span> <span class="n">is_valid_macro_name</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="c1"># A plain str that looks like a valid macro name is stored</span>
+            <span class="c1"># as a bare macro reference (matching how BibDesk would read</span>
+            <span class="c1"># it back). Wrap in ValueString to force literal text instead.</span>
+            <span class="n">rendered</span> <span class="o">=</span> <span class="n">text</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rendered</span> <span class="o">=</span> <span class="s2">&quot;{&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="n">text</span> <span class="k">if</span> <span class="n">skip_texify</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">else</span> <span class="n">texify</span><span class="p">(</span><span class="n">text</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_raw_field</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">rendered</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_touch</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_writable</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">_is_normal_key</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_touch</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">_is_normal_key</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">field</span><span class="o">.</span><span class="n">key</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
+            <span class="mi">1</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span> <span class="k">if</span> <span class="n">_is_normal_key</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># -- dates --------------------------------------------------------- #</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">date_added</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Timestamp of when the entry was constructed (read-only).</span>
+
+<span class="sd">        This is a {class}`datetime.datetime` representation of the raw</span>
+<span class="sd">        `date-added` field.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="s2">&quot;date-added&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_parse_date</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">date_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Timestamp of when the entry was last modified (read-only).</span>
+
+<span class="sd">        This is a {class}`datetime.datetime` representation of the</span>
+<span class="sd">        `date-modified` field.&quot;&quot;&quot;</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="s2">&quot;date-modified&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_parse_date</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="c1"># -- key / entry_type ------------------------------------------------ #</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The BibTeX citation key (read-only).</span>
+
+<span class="sd">        Set at construction time and immutable afterwards -- an</span>
+<span class="sd">        `Entry` cannot rename itself. An entry already in a</span>
+<span class="sd">        {class}`Library` is renamed through {meth}`Library.rekey`, which</span>
+<span class="sd">        keeps the library&#39;s key-based lookups consistent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">key</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">entry_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The BibTeX entry type, e.g. `&quot;article&quot;`.</span>
+
+<span class="sd">        Assigning validates the value against the [supported entry</span>
+<span class="sd">        types](bib-entry-types) and lowercases it, raising</span>
+<span class="sd">        {exc}`ValueError` for an unrecognized type (unless type</span>
+<span class="sd">        validation is disabled; see the [configuration](configuration)).</span>
+<span class="sd">        Validation applies only to assignment/construction; loading a</span>
+<span class="sd">        `.bib` file never validates the entry type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">entry_type</span>
+
+    <span class="nd">@entry_type</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">entry_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">entry_type</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">normalize_entry_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_touch</span><span class="p">()</span>
+
+    <span class="c1"># -- groups ------------------------------------------------------ #</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">groups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Names of the BibDesk static groups this entry belongs to</span>
+<span class="sd">        (a tuple, read-only).</span>
+
+<span class="sd">        Maintained by the owning `Library`: group data lives in the</span>
+<span class="sd">        library, and every mutation of it (`library.groups[name] =</span>
+<span class="sd">        ...`, `del library.groups[name]`, {meth}`Library.add_to_group`,</span>
+<span class="sd">        {meth}`Library.remove_from_group`) immediately refreshes this</span>
+<span class="sd">        property for every affected entry, so it is always consistent</span>
+<span class="sd">        with `library.groups`. `()` if the entry is not (yet) attached</span>
+<span class="sd">        to a `Library`, or is a member of no group.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_groups</span><span class="p">)</span>
+
+    <span class="c1"># -- keywords ------------------------------------------------------ #</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">keywords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The entry&#39;s keywords (a tuple, read-only).</span>
+
+<span class="sd">        Parsed on access from the stored `keywords` field (a</span>
+<span class="sd">        comma-separated list that is readable, but not writable,</span>
+<span class="sd">        through the `dict` interface). Keywords are edited through the</span>
+<span class="sd">        owning {class}`Library` ({meth}`Library.add_to_keyword`,</span>
+<span class="sd">        {meth}`Library.remove_from_keyword`, or the `Library.keywords`</span>
+<span class="sd">        mapping), which is what keeps that mapping and the entries</span>
+<span class="sd">        consistent. Unlike {attr}`groups`, keywords are stored in the</span>
+<span class="sd">        entry itself, so they are preserved by {meth}`copy` and</span>
+<span class="sd">        readable on a detached entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="s2">&quot;keywords&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">()</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_split_keywords</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_decode</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="p">)))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_keywords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keywords</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace the stored `keywords` field with the comma-joined</span>
+<span class="sd">        `keywords` (an iterable of strings), removing the field</span>
+<span class="sd">        entirely if `keywords` is empty, and `_touch`.</span>
+
+<span class="sd">        The public `keywords` property is read-only; this may only be</span>
+<span class="sd">        called by the owning `Library` (and by the `editing` module,</span>
+<span class="sd">        on the library&#39;s behalf), so that `Library.keywords` and the</span>
+<span class="sd">        entries can never disagree.&quot;&quot;&quot;</span>
+        <span class="n">keywords</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keywords</span><span class="p">)</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="s2">&quot;keywords&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keywords</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">texify</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">keywords</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_raw_field</span><span class="p">(</span><span class="s2">&quot;keywords&quot;</span><span class="p">,</span> <span class="s2">&quot;{&quot;</span> <span class="o">+</span> <span class="n">text</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">field</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span>  <span class="c1"># no keywords before or after: nothing to change</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_touch</span><span class="p">()</span>
+
+    <span class="c1"># -- files -------------------------------------------------------- #</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_bdsk_file_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;`(index, field)` pairs for all `bdsk-file-N` fields, sorted</span>
+<span class="sd">        by `index`.&quot;&quot;&quot;</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">_BDSK_FILE_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)),</span> <span class="n">field</span><span class="p">))</span>
+        <span class="n">items</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">items</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Relative paths of attached files (the `bdsk-file-N` fields),</span>
+<span class="sd">        in numeric order (1, 2, 3, ...); read-only.</span>
+
+<span class="sd">        The paths are relative to the directory of the library&#39;s</span>
+<span class="sd">        `.bib` file, which the entry itself does not know, so</span>
+<span class="sd">        attachments can only be modified through the owning</span>
+<span class="sd">        {class}`Library`: see {meth}`Library.add_file`,</span>
+<span class="sd">        {meth}`Library.replace_file`, {meth}`Library.unlink_file`, and</span>
+<span class="sd">        {meth}`Library.rename_file` (an entry must be added to a</span>
+<span class="sd">        library before files can be attached to it).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">relative_path</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_objects</span><span class="p">()]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_file_objects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The entry&#39;s attachments as `BibDeskFile` objects, in</span>
+<span class="sd">        `files` order (decoding raw field values as needed).&quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bdsk_file_fields</span><span class="p">():</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">BibDeskFile</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">BibDeskFile</span><span class="o">.</span><span class="n">from_field_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bdsk_files</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace all `bdsk-file-N` fields with `bdsk_files` (a list</span>
+<span class="sd">        of `BibDeskFile`), renumbering from 1, and `_touch`.</span>
+
+<span class="sd">        The public `files` property is read-only; this may only be</span>
+<span class="sd">        called by the owning `Library` (and by the `editing` module,</span>
+<span class="sd">        on the library&#39;s behalf), which resolves paths relative to</span>
+<span class="sd">        the library&#39;s `.bib` directory.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bdsk_file_fields</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">bdsk_file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bdsk_files</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;bdsk-file-</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">bdsk_file</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_touch</span><span class="p">()</span>
+
+    <span class="c1"># -- urls ---------------------------------------------------------- #</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_bdsk_url_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;`(index, field)` pairs for all `bdsk-url-N` fields, sorted</span>
+<span class="sd">        by `index`.&quot;&quot;&quot;</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">_BDSK_URL_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)),</span> <span class="n">field</span><span class="p">))</span>
+        <span class="n">items</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">items</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">urls</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;URLs of attached links (the `bdsk-url-N` fields), in numeric</span>
+<span class="sd">        order (1, 2, 3, ...), without their enclosing braces; a</span>
+<span class="sd">        read-only tuple.</span>
+
+<span class="sd">        Modify the linked URLs with {meth}`add_url`, {meth}`replace_url`,</span>
+<span class="sd">        and {meth}`remove_url` (or the corresponding</span>
+<span class="sd">        {meth}`Library.add_url`, {meth}`Library.replace_url`, and</span>
+<span class="sd">        {meth}`Library.remove_url`). Unlike file attachments, URLs are</span>
+<span class="sd">        self-contained, so these are `Entry` methods (no path</span>
+<span class="sd">        resolution relative to the library file is needed).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">_strip_enclosing</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bdsk_url_fields</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_url</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Raise `ValueError` unless `url` has both a scheme and a</span>
+<span class="sd">        host.&quot;&quot;&quot;</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">parse</span><span class="o">.</span><span class="n">urlparse</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">parsed</span><span class="o">.</span><span class="n">scheme</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">parsed</span><span class="o">.</span><span class="n">netloc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;not a valid URL: </span><span class="si">{</span><span class="n">url</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_urls</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">urls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace all `bdsk-url-N` fields with `urls` (an iterable of</span>
+<span class="sd">        URL strings), renumbering from 1, and `_touch`.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bdsk_url_fields</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">url</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">urls</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;bdsk-url-</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;{&quot;</span> <span class="o">+</span> <span class="n">url</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_touch</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Entry.add_url">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_url">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach `url` to the entry, appending a `bdsk-url-N` field.</span>
+
+<span class="sd">        `url` must include both a scheme and a host (e.g.</span>
+<span class="sd">        `https://example.com/paper.pdf`), or `ValueError` is raised.</span>
+<span class="sd">        Raises `ValueError` if `url` is already linked from the entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">url</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">url</span><span class="si">!r}</span><span class="s2"> is already linked from this entry&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_urls</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span> <span class="o">+</span> <span class="p">(</span><span class="n">url</span><span class="p">,))</span></div>
+
+
+<div class="viewcode-block" id="Entry.replace_url">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.replace_url">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">replace_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_url</span><span class="p">,</span> <span class="n">new_url</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace the linked `old_url` with `new_url`, keeping its</span>
+<span class="sd">        position in {attr}`urls`.</span>
+
+<span class="sd">        Raises `ValueError` if `old_url` is not linked from the entry,</span>
+<span class="sd">        if `new_url` is not a valid URL, or if `new_url` is already</span>
+<span class="sd">        linked from the entry (and differs from `old_url`).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">urls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span>
+        <span class="k">if</span> <span class="n">old_url</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">old_url</span><span class="si">!r}</span><span class="s2"> is not linked from this entry&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_url</span><span class="p">(</span><span class="n">new_url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_url</span> <span class="o">!=</span> <span class="n">old_url</span> <span class="ow">and</span> <span class="n">new_url</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">new_url</span><span class="si">!r}</span><span class="s2"> is already linked from this entry&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_urls</span><span class="p">(</span><span class="n">new_url</span> <span class="k">if</span> <span class="n">u</span> <span class="o">==</span> <span class="n">old_url</span> <span class="k">else</span> <span class="n">u</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Entry.remove_url">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.remove_url">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove `url` from the entry&#39;s linked URLs.</span>
+
+<span class="sd">        Raises `ValueError` if `url` is not linked from the entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">urls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span>
+        <span class="k">if</span> <span class="n">url</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">url</span><span class="si">!r}</span><span class="s2"> is not linked from this entry&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_urls</span><span class="p">(</span><span class="n">u</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">urls</span> <span class="k">if</span> <span class="n">u</span> <span class="o">!=</span> <span class="n">url</span><span class="p">)</span></div>
+
+
+    <span class="c1"># -- online enrichment (abstracts, preprints) ----------------------- #</span>
+
+<div class="viewcode-block" id="Entry.add_abstract">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_abstract">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_abstract</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">min_confidence</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">mark_empty</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">pdf_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch the entry&#39;s abstract from the best available source</span>
+<span class="sd">        and store it in the `abstract` field.</span>
+
+<span class="sd">        Candidate abstracts are gathered from</span>
+<span class="sd">        [Crossref](https://www.crossref.org) (the publisher&#39;s</span>
+<span class="sd">        deposit, via the entry&#39;s `doi`), from the text of the PDF</span>
+<span class="sd">        given as `pdf_path` (extracted with the</span>
+<span class="sd">        [poppler](https://poppler.freedesktop.org) `pdftotext`</span>
+<span class="sd">        command-line tool, which must be on `PATH`; this source is</span>
+<span class="sd">        skipped otherwise), from the [arXiv</span>
+<span class="sd">        API](https://info.arxiv.org/help/api/) (via the entry&#39;s</span>
+<span class="sd">        `eprint`, or an arXiv identifier contained in the citation</span>
+<span class="sd">        key), and from [Semantic</span>
+<span class="sd">        Scholar](https://www.semanticscholar.org) as a last resort.</span>
+<span class="sd">        Every candidate is cleaned to plain-unicode prose (LaTeX/JATS</span>
+<span class="sd">        math markup to unicode, ligature and hyphenation repair,</span>
+<span class="sd">        publisher copyright trailers stripped) and validated with</span>
+<span class="sd">        heuristic garble checks. The candidates are then combined</span>
+<span class="sd">        into a single result with a *confidence* level:</span>
+
+<span class="sd">        * `&quot;high&quot;`: an online abstract identified by the entry&#39;s</span>
+<span class="sd">          `doi`/`eprint` (and agreeing with the PDF text, where both</span>
+<span class="sd">          exist -- the identifier guarantees the paper, the agreement</span>
+<span class="sd">          guards against a wrong or garbled deposit), or an</span>
+<span class="sd">          unambiguous PDF extraction;</span>
+<span class="sd">        * `&quot;medium&quot;`: a single unconfirmed source: only the PDF text,</span>
+<span class="sd">          or an online lookup via an arXiv identifier merely guessed</span>
+<span class="sd">          from the citation key;</span>
+<span class="sd">        * `&quot;low&quot;`: the PDF text and an online source *disagree*. The</span>
+<span class="sd">          PDF text is reported (it belongs to the given file), but</span>
+<span class="sd">          one of the two sources probably grabbed the wrong text --</span>
+<span class="sd">          review manually;</span>
+<span class="sd">        * `&quot;none&quot;`: no valid abstract found anywhere.</span>
+
+<span class="sd">        `pdf_path` is the resolved filesystem path of a PDF of the</span>
+<span class="sd">        paper (`None` to skip the PDF source). An `Entry` cannot</span>
+<span class="sd">        locate its own attached PDFs: the paths in {attr}`files` are</span>
+<span class="sd">        relative to the library&#39;s `.bib` file, which only the</span>
+<span class="sd">        {class}`Library` knows. For an entry in a library, call</span>
+<span class="sd">        {meth}`Library.add_abstract` instead, which finds the entry&#39;s</span>
+<span class="sd">        first attached PDF automatically and passes it here.</span>
+
+<span class="sd">        The fetched abstract is stored in the entry only if its</span>
+<span class="sd">        confidence is at least `min_confidence` (`&quot;high&quot;`,</span>
+<span class="sd">        `&quot;medium&quot;`, or `&quot;low&quot;`). With `mark_empty=True`, a `&quot;none&quot;`</span>
+<span class="sd">        result stores an *empty* `abstract` field instead of leaving</span>
+<span class="sd">        the field undefined, marking the entry as audited (`keys</span>
+<span class="sd">        --empty abstract` in the command line, as opposed to `keys</span>
+<span class="sd">        --missing abstract`). Both arguments default to the</span>
+<span class="sd">        `[add_abstract]` table of the</span>
+<span class="sd">        [configuration](configuration)</span>
+<span class="sd">        (`config.add_abstract.min_confidence`, `&quot;high&quot;` unless</span>
+<span class="sd">        configured, and `config.add_abstract.mark_empty`, `False`</span>
+<span class="sd">        unless configured).</span>
+
+<span class="sd">        If the entry already has a non-empty abstract, nothing is</span>
+<span class="sd">        fetched and the existing text is returned with source</span>
+<span class="sd">        `&quot;existing&quot;`, unless `overwrite=True`. An entry whose</span>
+<span class="sd">        `abstract` field is present but *empty* (the audited marker)</span>
+<span class="sd">        does not require `overwrite`.</span>
+
+<span class="sd">        Returns a named tuple `(abstract, source, confidence, note,</span>
+<span class="sd">        applied)`: the abstract text (`&quot;&quot;` if none was found), the</span>
+<span class="sd">        source it came from (`&quot;crossref&quot;`, `&quot;pdf&quot;`, `&quot;arxiv&quot;`,</span>
+<span class="sd">        `&quot;semanticscholar&quot;`, `&quot;none&quot;`, or `&quot;existing&quot;`), the</span>
+<span class="sd">        confidence level, a short diagnostic trace of the source</span>
+<span class="sd">        selection (`note`), and whether the entry was modified</span>
+<span class="sd">        (`applied`).</span>
+
+<span class="sd">        Raises {exc}`ValueError` for an invalid `min_confidence`.</span>
+<span class="sd">        Network problems never raise: an unreachable source is</span>
+<span class="sd">        skipped (see `note`). Requires network access for the online</span>
+<span class="sd">        sources.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Imported lazily: the abstracts module pulls in the network</span>
+        <span class="c1"># dependencies and pylatexenc, needed nowhere else.</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstracts</span>  <span class="c1"># pylint: disable=import-outside-toplevel</span>
+
+        <span class="k">if</span> <span class="n">min_confidence</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">min_confidence</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">add_abstract</span><span class="o">.</span><span class="n">min_confidence</span>
+        <span class="k">if</span> <span class="n">mark_empty</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mark_empty</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">add_abstract</span><span class="o">.</span><span class="n">mark_empty</span>
+        <span class="k">if</span> <span class="n">min_confidence</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;high&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;min_confidence must be &#39;high&#39;, &#39;medium&#39;, or &#39;low&#39;, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;not </span><span class="si">{</span><span class="n">min_confidence</span><span class="si">!r}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="n">existing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;abstract&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">existing</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">abstracts</span><span class="o">.</span><span class="n">AbstractResult</span><span class="p">(</span>
+                <span class="n">abstract</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">existing</span><span class="p">),</span>
+                <span class="n">source</span><span class="o">=</span><span class="s2">&quot;existing&quot;</span><span class="p">,</span>
+                <span class="n">confidence</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
+                <span class="n">note</span><span class="o">=</span><span class="s2">&quot;entry already has an abstract (overwrite to refetch)&quot;</span><span class="p">,</span>
+                <span class="n">applied</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">abstracts</span><span class="o">.</span><span class="n">fetch_abstract</span><span class="p">(</span>
+            <span class="n">doi</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;doi&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">eprint</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eprint&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">,</span>
+            <span class="n">pdf_path</span><span class="o">=</span><span class="n">pdf_path</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">rank</span> <span class="o">=</span> <span class="n">abstracts</span><span class="o">.</span><span class="n">CONFIDENCE_LEVELS</span><span class="o">.</span><span class="n">index</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">abstract</span> <span class="ow">and</span> <span class="n">rank</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">confidence</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">rank</span><span class="p">(</span><span class="n">min_confidence</span><span class="p">):</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;abstract&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">abstract</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">abstract</span> <span class="ow">and</span> <span class="n">mark_empty</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;abstract&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="Entry.add_preprint">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_preprint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_preprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eprint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mark_empty</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Record the entry&#39;s arXiv preprint in its `eprint` field --</span>
+<span class="sd">        an explicitly given identifier, or one found by searching</span>
+<span class="sd">        arXiv (the only supported preprint server).</span>
+
+<span class="sd">        With `eprint` given (e.g. `&quot;2205.15044&quot;`,</span>
+<span class="sd">        `&quot;quant-ph/0106057&quot;`, or `&quot;arXiv:2205.15044&quot;`), the identifier</span>
+<span class="sd">        is validated and normalized (prefix and version suffix</span>
+<span class="sd">        stripped) and stored without any network access -- the caller</span>
+<span class="sd">        asserts the match, e.g. after manually reviewing a candidate</span>
+<span class="sd">        the search rejected.</span>
+
+<span class="sd">        With `eprint=None`, the [arXiv</span>
+<span class="sd">        API](https://info.arxiv.org/help/api/) is searched for the</span>
+<span class="sd">        entry, by title and first author, precise queries first. A</span>
+<span class="sd">        result is accepted only when it confidently matches the</span>
+<span class="sd">        entry: its arXiv DOI equals the entry&#39;s `doi`, its title is a</span>
+<span class="sd">        near-exact match, or a good title match is corroborated by</span>
+<span class="sd">        the first author&#39;s last name. A title-based match whose arXiv</span>
+<span class="sd">        submission postdates the entry&#39;s `year` by more than a year</span>
+<span class="sd">        is rejected unless its journal reference names that year</span>
+<span class="sd">        (guarding against unrelated papers sharing a generic title);</span>
+<span class="sd">        such a rejected candidate is reported in the result&#39;s `note`</span>
+<span class="sd">        as `postdated-unverified(...)` and can, after review, be</span>
+<span class="sd">        applied by passing its identifier as `eprint`. The search</span>
+<span class="sd">        uses only the entry&#39;s own fields, so it works the same for an</span>
+<span class="sd">        entry that is not (yet) in a {class}`Library`.</span>
+
+<span class="sd">        Whenever a non-empty `eprint` is stored, an</span>
+<span class="sd">        `archiveprefix = arXiv` field is added alongside it (unless</span>
+<span class="sd">        the entry already has an `archiveprefix`). A search match</span>
+<span class="sd">        additionally stores the preprint&#39;s arXiv primary category</span>
+<span class="sd">        (e.g. `quant-ph`) in the `primaryclass` field, replacing any</span>
+<span class="sd">        existing value (which, with `overwrite=True`, described the</span>
+<span class="sd">        replaced identifier); an explicitly given identifier stores</span>
+<span class="sd">        no `primaryclass`, since without network access the category</span>
+<span class="sd">        is unknown.</span>
+
+<span class="sd">        The `eprint` field encodes the entry&#39;s audit state, mirroring</span>
+<span class="sd">        how {meth}`add_abstract` treats the `abstract` field: a field</span>
+<span class="sd">        that is *absent* means the preprint status is unknown</span>
+<span class="sd">        (`keys --missing eprint` in the command line); an *empty*</span>
+<span class="sd">        field means a search ran cleanly and found no preprint</span>
+<span class="sd">        (`keys --empty eprint`); a non-empty field holds the known</span>
+<span class="sd">        identifier. With `mark_empty=True` (defaulting to the</span>
+<span class="sd">        `[add_preprint]` table of the</span>
+<span class="sd">        [configuration](configuration),</span>
+<span class="sd">        `config.add_preprint.mark_empty`, `False` unless configured),</span>
+<span class="sd">        a clean no-match stores that empty marker, so that repeated</span>
+<span class="sd">        fill-in runs -- selecting entries with</span>
+<span class="sd">        `keys --missing eprint` -- do not re-query arXiv for entries</span>
+<span class="sd">        already searched. A no-match is not proof that no preprint</span>
+<span class="sd">        exists (matching can fail), so re-audit the empty markers</span>
+<span class="sd">        occasionally by passing the `keys --empty eprint` entries. If</span>
+<span class="sd">        the entry already has a *non-empty* `eprint`, nothing is</span>
+<span class="sd">        searched and the existing identifier is returned with match</span>
+<span class="sd">        `&quot;existing&quot;`, unless `overwrite=True`; the empty marker does</span>
+<span class="sd">        not require `overwrite`.</span>
+
+<span class="sd">        Returns a named tuple `(eprint, match, ratio, note, applied,</span>
+<span class="sd">        primaryclass)`: the stored (or existing) arXiv identifier</span>
+<span class="sd">        (`&quot;&quot;` if none), how it was matched (`&quot;doi&quot;`, `&quot;title&quot;`, or</span>
+<span class="sd">        `&quot;title+author&quot;` for a search match, in decreasing order of</span>
+<span class="sd">        strength; `&quot;explicit&quot;` for a given identifier; `&quot;none&quot;` for a</span>
+<span class="sd">        clean no-match; `&quot;error&quot;` when the search could not run;</span>
+<span class="sd">        `&quot;existing&quot;` when the entry was skipped), the title-similarity</span>
+<span class="sd">        ratio of the best search result (`None` when no search ran),</span>
+<span class="sd">        a short diagnostic trace (`note`), whether the entry was</span>
+<span class="sd">        modified (`applied`), and the primary category of a search</span>
+<span class="sd">        match (`&quot;&quot;` otherwise). On a `&quot;error&quot;` result (network/API</span>
+<span class="sd">        failure, or an entry without a title) the entry is never</span>
+<span class="sd">        modified -- in particular, no empty marker is stored -- so a</span>
+<span class="sd">        re-run picks it up.</span>
+
+<span class="sd">        Raises {exc}`ValueError` if an explicitly given `eprint` is</span>
+<span class="sd">        not a valid arXiv identifier. Network problems never raise.</span>
+<span class="sd">        The search respects the arXiv API&#39;s rate limit (one request</span>
+<span class="sd">        every three seconds, shared across all searches in the</span>
+<span class="sd">        process), so budget time accordingly for large batch runs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Imported lazily: the preprints module pulls in the network</span>
+        <span class="c1"># dependencies, needed nowhere else.</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">preprints</span>  <span class="c1"># pylint: disable=import-outside-toplevel</span>
+
+        <span class="k">if</span> <span class="n">mark_empty</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mark_empty</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">add_preprint</span><span class="o">.</span><span class="n">mark_empty</span>
+        <span class="n">existing</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eprint&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">eprint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">preprints</span><span class="o">.</span><span class="n">normalize_eprint</span><span class="p">(</span><span class="n">eprint</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">existing</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">preprints</span><span class="o">.</span><span class="n">PreprintResult</span><span class="p">(</span>
+                    <span class="n">eprint</span><span class="o">=</span><span class="n">existing</span><span class="p">,</span>
+                    <span class="n">match</span><span class="o">=</span><span class="s2">&quot;existing&quot;</span><span class="p">,</span>
+                    <span class="n">ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">note</span><span class="o">=</span><span class="s2">&quot;entry already has an eprint (overwrite to replace)&quot;</span><span class="p">,</span>
+                    <span class="n">applied</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store_eprint</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">preprints</span><span class="o">.</span><span class="n">PreprintResult</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;explicit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">existing</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">preprints</span><span class="o">.</span><span class="n">PreprintResult</span><span class="p">(</span>
+                <span class="n">eprint</span><span class="o">=</span><span class="n">existing</span><span class="p">,</span>
+                <span class="n">match</span><span class="o">=</span><span class="s2">&quot;existing&quot;</span><span class="p">,</span>
+                <span class="n">ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">note</span><span class="o">=</span><span class="s2">&quot;entry already has an eprint (overwrite to replace)&quot;</span><span class="p">,</span>
+                <span class="n">applied</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">preprints</span><span class="o">.</span><span class="n">find_preprint</span><span class="p">(</span>
+            <span class="n">title</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">author</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;author&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">doi</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;doi&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">year</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;year&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">eprint</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store_eprint</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">eprint</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">primaryclass</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">match</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span> <span class="ow">and</span> <span class="n">mark_empty</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;eprint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;archiveprefix&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;arxiv&quot;</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;archiveprefix&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;primaryclass&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;primaryclass&quot;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">applied</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_store_eprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">primaryclass</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store the non-empty arXiv identifier `value`, maintaining</span>
+<span class="sd">        the invariant that a non-empty `eprint` is accompanied by an</span>
+<span class="sd">        `archiveprefix`. A non-empty `primaryclass` (the primary</span>
+<span class="sd">        category reported by the arXiv API for a search match)</span>
+<span class="sd">        replaces any existing `primaryclass`, which described a</span>
+<span class="sd">        previous identifier.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;eprint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;archiveprefix&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;archiveprefix&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="s2">&quot;arXiv&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">primaryclass</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;primaryclass&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">primaryclass</span><span class="p">)</span>
+
+    <span class="c1"># -- structured names ---------------------------------------------- #</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Structured view of the `author` field (read-only).</span>
+
+<span class="sd">        A `list` of `NameParts` (each with `.first`, `.von`, `.last`,</span>
+<span class="sd">        `.jr` attributes), or `[]` if the field is absent.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">structured_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;author&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">editor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Structured view of the `editor` field (read-only), like</span>
+<span class="sd">        {attr}`author`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">structured_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;editor&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Entry(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">entry_type</span><span class="si">!r}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">!r}</span><span class="s2">)&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_repr_pretty_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">cycle</span><span class="p">):</span>
+        <span class="c1"># IPython/Jupyter pretty-printing hook: a fuller, multi-line</span>
+        <span class="c1"># rendering (including fields) for interactive display, while</span>
+        <span class="c1"># __repr__ stays the compact, eval-able form.</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Entry(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">entry_type</span><span class="si">!r}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="si">!r}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">cycle</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="s2">&quot;, {...})&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">items</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">with</span> <span class="n">p</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">+</span> <span class="s2">&quot;, {&quot;</span><span class="p">,</span> <span class="s2">&quot;})&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">field_key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">breakable</span><span class="p">()</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">pretty</span><span class="p">(</span><span class="n">field_key</span><span class="p">)</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;: &quot;</span><span class="p">)</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">pretty</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="c1"># -- copying -------------------------------------------------------- #</span>
+
+<div class="viewcode-block" id="Entry.copy">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.copy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an independent copy of this entry.</span>
+
+<span class="sd">        Mutating the copy (or its fields) never affects the original.</span>
+<span class="sd">        The copy is not a member of any `Library` (its `groups` is</span>
+<span class="sd">        `()`) until you add it to one, and starts out marked unmodified:</span>
+<span class="sd">        its fields (including `date-added`, `date-modified`, and</span>
+<span class="sd">        `keywords`, which travels with the entry, unlike `groups`) are</span>
+<span class="sd">        copied verbatim from the original, so the copy is a faithful</span>
+<span class="sd">        snapshot of the original&#39;s current state, not a fresh, empty</span>
+<span class="sd">        entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_fields</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">Field</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span>
+        <span class="p">]</span>
+        <span class="n">new_entry</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Entry</span><span class="p">(</span>
+            <span class="n">entry_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">entry_type</span><span class="p">,</span>
+            <span class="n">key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">key</span><span class="p">,</span>
+            <span class="n">fields</span><span class="o">=</span><span class="n">new_fields</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Entry</span><span class="o">.</span><span class="n">_wrap</span><span class="p">(</span><span class="n">new_entry</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Michael Goerz.
+      <span class="lastupdated">Last updated on Jul 22, 2026.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
