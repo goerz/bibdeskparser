@@ -81,6 +81,7 @@ __private__ = [
     "add",
     "add_abstract",
     "add_preprint",
+    "add_doi",
 ]
 
 # Exceptions raised by the `Library` API for invalid user input; the
@@ -322,11 +323,11 @@ def main():
     generated key or file path, as does `add_file` when it auto-files;
     `import` and `add` print the citation keys of the added entries,
     and `add --dry-run` only prints the fetched entry, without
-    modifying the file; `add_abstract` and `add_preprint` print a
-    per-key report of the fetched abstracts/arXiv identifiers, with
-    `--dry-run` without modifying the file, and with a configured
-    [known_missing] table they also update the corresponding static
-    group memberships).
+    modifying the file; `add_abstract`, `add_preprint`, and `add_doi`
+    print a per-key report of the fetched abstracts/arXiv
+    identifiers/DOIs, with `--dry-run` without modifying the file,
+    and with a configured [known_missing] table they also update the
+    corresponding static group memberships).
     Every command requires the `.bib` file to exist, except `create`,
     which starts a new, empty library and requires that the file does
     *not* exist yet.
@@ -2695,3 +2696,142 @@ def _echo_preprint_result(key, result, err=False):
             )
         else:
             click.echo(f"{key}: no preprint found [{result.note}]", err=err)
+
+
+@main.command(
+    name="add_doi",
+    cls=_BibCommand,
+    short_help="Find and store missing DOIs for entries.",
+    epilog=_examples(
+        "bibdeskparser add_doi GoerzNJP2014",
+        "bibdeskparser add_doi $(bibdeskparser keys "
+        "--type article --missing doi)",
+        "bibdeskparser add_doi --overwrite $(bibdeskparser keys "
+        '--group "No DOI")',
+        "bibdeskparser add_doi Key2020 --doi 10.1103/PhysRevA.89.032334",
+    ),
+)
+@click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
+@click.option(
+    "--doi",
+    metavar="DOI",
+    default=None,
+    help=(
+        "Store this DOI explicitly instead of searching (allowed "
+        "with a single KEY only; no network access). A leading "
+        "'doi:' prefix or 'https://doi.org/' resolver address is "
+        "stripped, and the DOI is lowercased."
+    ),
+)
+@click.option(
+    "--overwrite/--no-overwrite",
+    default=False,
+    help=(
+        "Replace an existing non-empty doi instead of skipping the "
+        "entry; also re-search entries in the known-missing group "
+        "for 'doi' (explicit re-audit)."
+    ),
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Print the per-key report without modifying the .bib file.",
+)
+@_json_option
+@click.pass_obj
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def add_doi(bibfile, citekeys, doi, overwrite, dry_run, as_json):
+    """Find and store the DOI for the entries KEY...
+
+    For each KEY, look up the entry's DOI online: if the entry has an
+    arXiv eprint, the arXiv API is consulted first (the DOI recorded
+    there names the published version of exactly this paper);
+    otherwise Crossref is searched for the entry (by title and first
+    author) and, on a confident match -- a near-exact title match, or
+    a good title match corroborated by the first author's last name
+    -- the found DOI is stored in the entry's doi field (in its bare
+    lowercase form). A title-based match whose publication year
+    differs from the entry's year by more than one is rejected as a
+    likely title collision; such a 'year-mismatch' candidate is
+    reported for review and can be applied explicitly with --doi.
+    Errata, corrigenda, retractions, comments, and replies never
+    match an entry that is not itself such an amendment. Entries that
+    already have a non-empty doi are skipped (see --overwrite), and
+    preprint-only entries are skipped without any lookup (the search
+    would find the DOI of the published version, which does not
+    belong on a preprint reference; store it deliberately with --doi,
+    or replace the entry with the published version via the add
+    command).
+
+    With a known-missing group configured for 'doi' (the
+    [known_missing] table of bibdeskparser.toml), the command has two
+    modes. By default, entries in the group are skipped as verified
+    to have no DOI, without any lookup; a lookup that runs cleanly
+    and finds nothing adds the entry to the group (creating it on
+    first use); and storing a DOI removes the entry from the group --
+    so routine fill-in runs (e.g. over `keys --missing doi`) never
+    re-query the sources for entries already searched. With
+    --overwrite, the membership is ignored and the lookup re-runs: an
+    explicit re-audit, for when a DOI may have been registered since
+    the last check, typically over exactly the group members:
+    `add_doi --overwrite $(bibdeskparser keys --group "No DOI")`. An
+    entry with another clean no-match stays in the group. A failed
+    lookup never marks the entry. Group membership also makes the
+    check command accept an article without a doi. Without the
+    configuration, none of this bookkeeping happens.
+
+    Prints a per-key report; with --json, the report maps each KEY to
+    {doi, match, ratio, note, applied}. Modifies the .bib file in
+    place (unless --dry-run is given); requires network access
+    (except with --doi), and an eprint lookup respects the arXiv
+    API's rate limit of one request every three seconds.
+    """
+    if doi is not None and len(citekeys) > 1:
+        raise click.UsageError("--doi requires a single KEY")
+    lib = Library(bibfile)
+    _check_keys(lib, citekeys)
+    results = {}
+    for key in citekeys:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            result = lib.add_doi(key, doi, overwrite=overwrite)
+        for warning in caught:
+            click.echo(f"Warning: {warning.message}", err=True)
+        results[key] = result._asdict()
+        if not as_json:
+            _echo_doi_result(key, result)
+    if as_json:
+        click.echo(json.dumps(results, indent=2, ensure_ascii=False))
+    if not dry_run and any(r["applied"] for r in results.values()):
+        lib.save()
+
+
+def _echo_doi_result(key, result):
+    """One report line for an `add_doi` result."""
+    if result.match == "existing":
+        click.echo(
+            f"{key}: skipped (already has a doi; --overwrite to replace)"
+        )
+    elif result.match == "known-missing":
+        click.echo(f"{key}: skipped (known missing; --overwrite to re-search)")
+    elif result.match == "preprint":
+        click.echo(f"{key}: skipped (preprint-only entry) [{result.note}]")
+    elif result.match == "explicit":
+        click.echo(f"{key}: stored doi {result.doi}")
+    elif result.doi:
+        detail = f"match={result.match}"
+        if result.ratio is not None:
+            detail += f", ratio={result.ratio:.2f}"
+        click.echo(f"{key}: stored doi {result.doi} ({detail})")
+    elif result.match == "error":
+        click.echo(f"{key}: lookup failed [{result.note}]")
+    else:
+        if result.applied:
+            group = config.active.known_missing.get("doi")
+            click.echo(
+                f"{key}: no doi found (marked known missing in "
+                f"group {group!r}) [{result.note}]"
+            )
+        else:
+            click.echo(f"{key}: no doi found [{result.note}]")
