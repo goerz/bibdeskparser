@@ -3,6 +3,8 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [v0.4.0] - 2026-07-21
 
 * Fixed: `Library.render` (and the `render` CLI command) no longer drops the editors of an entry that has an `editor` but no `author` (e.g. an edited volume; a `proceedings` entry in particular can never have an author). The editors now render in the authors position, marked with an `(ed.)`/`(eds.)` suffix, e.g. `E. Andersson and P. Öhberg (eds.)`; the `edited by ...` piece of the published-in segment (for `inproceedings` and book-family entries) is correspondingly only rendered when the entry also has authors. [[#25], [#32]]
