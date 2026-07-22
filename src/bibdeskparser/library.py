@@ -211,18 +211,19 @@ def _expand_macros(entry, strings):
     return expanded
 
 
-def _field_state(entry, name):
-    """One of `"missing"`, `"empty"`, or `"has"` for field `name`.
+def _has_field(entry, name):
+    """Whether field `name` is defined on `entry` with a non-empty
+    (not whitespace-only) value.
 
-    A field is "missing" if not defined on the entry at all, "empty"
-    if defined with an empty (or whitespace-only) value, and "has"
-    otherwise.
+    A defined-but-empty field counts as missing everywhere, because
+    BibDesk deletes empty fields when it saves a `.bib` file, so an
+    empty value cannot carry information.
     """
     try:
         value = entry[name]
     except KeyError:
-        return "missing"
-    return "has" if str(value).strip() else "empty"
+        return False
+    return bool(str(value).strip())
 
 
 def _names(value):
@@ -563,8 +564,9 @@ class Library(MutableMapping):
 
     - `Library` is itself a `dict`-like mapping of citation key to
       {class}`Entry`; see {attr}`entries`. {meth}`keys` returns the
-      citation keys as a `tuple`, optionally filtered by entry type
-      and by which fields are present, missing, or empty.
+      citation keys as a `tuple`, optionally filtered by entry type,
+      by which fields are present or missing, and by static-group
+      membership.
     - {attr}`path`: the `.bib` file the library was loaded from or last
       saved to (read-only; `None` for an unsaved from-scratch library).
     - {attr}`timestamp`: the save time from the header comment, updated
@@ -628,15 +630,13 @@ class Library(MutableMapping):
       for an arXiv identifier, DOI, or free-form query from the
       appropriate online source and imports it as a new entry.
       {meth}`add_abstract` fetches an entry's abstract from the best
-      available source and stores it in the `abstract` field, and
-      {meth}`add_preprint` records an entry's matching arXiv preprint
-      (given explicitly, or found by searching arXiv) in the `eprint`
-      field. Both delegate to the corresponding {class}`Entry`
-      methods; `add_preprint` (like the URL methods) is a pure
-      convenience delegate, while `add_abstract` first locates the
-      entry's first attached PDF -- an additional abstract source
-      that requires the library's directory to resolve, and is
-      therefore only available through the `Library` method.
+      available source (including the entry's first attached PDF) and
+      stores it in the `abstract` field, and {meth}`add_preprint`
+      records an entry's matching arXiv preprint (given explicitly,
+      or found by searching arXiv) in the `eprint` field. Both
+      maintain the configured known-missing groups, recording which
+      entries are verified to have no abstract or preprint (see the
+      `[known_missing]` table of the configuration).
 
     The process-global configuration (see the
     [configuration](configuration) reference page) is exposed as the
@@ -1057,6 +1057,43 @@ class Library(MutableMapping):
         if remaining != current:
             self._set_group(name, remaining)
 
+    # -- known-missing groups -------------------------------------------- #
+
+    def _known_missing_group(self, field):
+        """The name of the known-missing group configured for
+        `field` in `config.known_missing`, or `None`."""
+        return active.known_missing.get(field)
+
+    def _is_known_missing(self, field, key):
+        """Whether entry `key` is a member of the known-missing group
+        configured for `field` (`False` when no group is configured,
+        or no group of that name exists)."""
+        group = self._known_missing_group(field)
+        if group is None:
+            return False
+        return key in self._group_data.get(group, ())
+
+    def _mark_known_missing(self, field, key):
+        """Add entry `key` to the known-missing group configured for
+        `field`, creating the group if needed. Returns whether the
+        membership actually changed (`False` when no group is
+        configured, or the key already was a member)."""
+        group = self._known_missing_group(field)
+        if group is None or key in self._group_data.get(group, ()):
+            return False
+        if group not in self._group_data:
+            self._set_group(group, ())
+        self.add_to_group(group, key)
+        return True
+
+    def _clear_known_missing(self, field, key):
+        """Remove entry `key` from the known-missing group configured
+        for `field`; a no-op when no group is configured, no group of
+        that name exists, or the key is not a member."""
+        group = self._known_missing_group(field)
+        if group is not None and group in self._group_data:
+            self.remove_from_group(group, key)
+
     # -- keywords ------------------------------------------------------- #
 
     @property
@@ -1206,32 +1243,52 @@ class Library(MutableMapping):
         {class}`Entry`."""
         return list(self._entries.values())
 
-    def keys(self, *, types=None, has=None, missing=None, empty=None):
+    def keys(
+        self,
+        *,
+        types=None,
+        has=None,
+        missing=None,
+        group=None,
+        not_group=None,
+    ):
         """Citation keys of the entries, as a `tuple`, optionally
         filtered.
 
         ```python
         keys = library.keys(
-            types=None, has=None, missing=None, empty=None
+            types=None,
+            has=None,
+            missing=None,
+            group=None,
+            not_group=None,
         )
         ```
 
         Without arguments, all citation keys, in library order. The
         keyword arguments narrow the result; each accepts a single
-        name or an iterable of names, matched case-insensitively:
+        name or an iterable of names. Type and field names are
+        matched case-insensitively, group names exactly:
 
         * `types`: keep only entries whose {attr}`Entry.entry_type`
           is one of the given types.
         * `has`: keep only entries where every given field is defined
           with a non-empty value.
         * `missing`: keep only entries where none of the given fields
-          is defined.
-        * `empty`: keep only entries where every given field is
-          defined, but with an empty (or whitespace-only) value.
+          has a non-empty value.
+        * `group`: keep only entries that are members of every given
+          static group (see {attr}`groups`).
+        * `not_group`: keep only entries that are members of none of
+          the given static groups.
 
-        For any field, exactly one of the three field predicates
-        holds: a field that is defined but empty is neither "missing"
-        nor "has".
+        For any field, exactly one of `has` and `missing` holds. A
+        field that is defined with an empty (or whitespace-only)
+        value counts as missing, since BibDesk deletes empty fields
+        when it saves a `.bib` file (see
+        [Empty fields](bibdesk-empty-fields)).
+
+        Raises {exc}`KeyError` for a group name (in `group` or
+        `not_group`) that does not exist in the library.
 
         ```python
         >>> from bibdeskparser import Entry, Library
@@ -1245,19 +1302,35 @@ class Library(MutableMapping):
         ()
         >>> bib.keys(has="title", missing="doi")
         ('Key2026',)
+        >>> bib.groups["My Papers"] = ("Key2026",)
+        >>> bib.keys(group="My Papers")
+        ('Key2026',)
+        >>> bib.keys(not_group="My Papers")
+        ()
 
         ```
         """
         types = {t.lower() for t in _names(types)}
-        required = [("has", name) for name in _names(has)]
-        required += [("missing", name) for name in _names(missing)]
-        required += [("empty", name) for name in _names(empty)]
+        required = [(True, name) for name in _names(has)]
+        required += [(False, name) for name in _names(missing)]
+
+        def _members(name):
+            if name not in self._group_data:
+                raise KeyError(name)
+            return set(self._group_data[name])
+
+        include = [_members(name) for name in _names(group)]
+        exclude = [_members(name) for name in _names(not_group)]
         result = []
         for key, entry in self._entries.items():
             if types and entry.entry_type.lower() not in types:
                 continue
+            if not all(key in members for members in include):
+                continue
+            if any(key in members for members in exclude):
+                continue
             if all(
-                _field_state(entry, name) == state for state, name in required
+                _has_field(entry, name) is state for state, name in required
             ):
                 result.append(key)
         return tuple(result)
@@ -2661,11 +2734,11 @@ class Library(MutableMapping):
         high-confidence by construction -- the `min_confidence`
         threshold of {meth}`add_abstract` does not apply here. An
         abstract that fails validation -- or a source that provides
-        none -- is silently omitted (never stored as an empty
-        "audited" marker: only {meth}`add_abstract`, which consults
-        more sources, completes an audit), so the new entry remains
-        matched by `keys --missing abstract` for a later
-        {meth}`add_abstract` pass.
+        none -- is silently omitted, so the new entry remains matched
+        by `keys --missing abstract` for a later {meth}`add_abstract`
+        pass; `add` itself never records a verified absence in a
+        known-missing group (only {meth}`add_abstract`, which
+        consults more sources, completes that audit).
 
         With `add_preprint=True`, {meth}`add_preprint` is called for
         the new entry (with its configured defaults, see there),
@@ -2699,33 +2772,101 @@ class Library(MutableMapping):
             self.add_preprint(key)
         return key
 
-    def add_abstract(
-        self, key, *, min_confidence=None, overwrite=False, mark_empty=None
-    ):
+    def add_abstract(self, key, *, min_confidence=None, overwrite=False):
         """Fetch the abstract of entry `key` from the best available
         source and store it in the entry's `abstract` field.
 
-        Delegates to {meth}`Entry.add_abstract` (see there for the
-        sources, the confidence levels, the `min_confidence`,
-        `overwrite`, and `mark_empty` arguments, and the returned
-        named tuple), after locating the entry's first attached PDF
-        and passing it as the `pdf_path`. Unlike {meth}`add_url` and
-        {meth}`add_preprint`, this is *more* than a convenience
-        delegate: the PDF source is available only through the
-        `Library`, because the paths in
-        {attr}`Entry.files` are relative to the library's `.bib` file,
-        which the entry itself does not know. Always prefer this
-        method over calling {meth}`Entry.add_abstract` directly for an
-        entry that is in a library. Like any other modification, the
-        change only becomes permanent with {meth}`save`.
+        Candidate abstracts are gathered from
+        [Crossref](https://www.crossref.org) (the publisher's
+        deposit, via the entry's `doi`), from the text of the entry's
+        first attached PDF (extracted with the
+        [poppler](https://poppler.freedesktop.org) `pdftotext`
+        command-line tool, which must be on `PATH`; this source is
+        skipped otherwise), from the [arXiv
+        API](https://info.arxiv.org/help/api/) (via the entry's
+        `eprint`, or an arXiv identifier contained in the citation
+        key), and from [Semantic
+        Scholar](https://www.semanticscholar.org) as a last resort.
+        Every candidate is cleaned to plain-unicode prose (LaTeX/JATS
+        math markup to unicode, ligature and hyphenation repair,
+        publisher copyright trailers stripped) and validated with
+        heuristic garble checks. The candidates are then combined
+        into a single result with a *confidence* level:
 
-        Raises {exc}`KeyError` if `key` is not in the library and
-        {exc}`ValueError` for an invalid `min_confidence`. Network
-        problems never raise: an unreachable source is skipped (see
-        the result's `note`). Requires network access for the online
-        sources.
+        * `"high"`: an online abstract identified by the entry's
+          `doi`/`eprint` (and agreeing with the PDF text, where both
+          exist -- the identifier guarantees the paper, the agreement
+          guards against a wrong or garbled deposit), or an
+          unambiguous PDF extraction;
+        * `"medium"`: a single unconfirmed source: only the PDF text,
+          or an online lookup via an arXiv identifier merely guessed
+          from the citation key;
+        * `"low"`: the PDF text and an online source *disagree*. The
+          PDF text is reported (it belongs to the given file), but
+          one of the two sources probably grabbed the wrong text --
+          review manually;
+        * `"none"`: no valid abstract found anywhere.
+
+        The fetched abstract is stored in the entry only if its
+        confidence is at least `min_confidence` (`"high"`,
+        `"medium"`, or `"low"`; defaulting to the `[add_abstract]`
+        table of the [configuration](configuration),
+        `config.add_abstract.min_confidence`, `"high"` unless
+        configured). If the entry already has a non-empty abstract,
+        nothing is fetched and the existing text is returned with
+        source `"existing"`, unless `overwrite=True`.
+
+        With a known-missing group configured for `abstract` (the
+        `[known_missing]` table of the configuration), the group
+        records which entries are verified to have no findable
+        abstract, and the method operates in one of two modes. By
+        default (routine fill-in), an entry that is a member is
+        skipped without any search (source `"known-missing"`); a
+        search that runs cleanly against every source and finds
+        nothing adds the entry to the group (creating the group on
+        first use); and storing an abstract removes the entry from
+        the group again -- so repeated fill-in passes never re-query
+        the sources for an entry already searched. With
+        `overwrite=True`, the membership is ignored and the search
+        re-runs: an explicit re-audit, for when an abstract may have
+        become available since the last check; select exactly the
+        group members with {meth}`keys` (`group="No Abstract"`). A
+        re-audited entry that still yields nothing simply stays in
+        the group. A search during which any source failed (source
+        `"error"`: an unreachable API, or an attached PDF that could
+        not be read) never marks the entry, so a re-run picks it up.
+        Without the configuration, none of this bookkeeping happens.
+
+        Returns a named tuple `(abstract, source, confidence, note,
+        applied)`: the abstract text (`""` if none was found), the
+        source it came from (`"crossref"`, `"pdf"`, `"arxiv"`,
+        `"semanticscholar"`, `"none"`, `"error"`, `"existing"`, or
+        `"known-missing"`), the confidence level, a short diagnostic
+        trace of the source selection (`note`), and whether the
+        library was modified -- the entry's `abstract` field, or its
+        known-missing group membership (`applied`).
+
+        Like any other modification, changes only become permanent
+        with {meth}`save`. Raises {exc}`KeyError` if `key` is not in
+        the library and {exc}`ValueError` for an invalid
+        `min_confidence`. Network problems never raise: an
+        unreachable source is skipped (see `note`). Requires network
+        access for the online sources.
         """
+        # Imported lazily: the abstracts module pulls in the network
+        # dependencies and pylatexenc, needed nowhere else.
+        from . import abstracts  # pylint: disable=import-outside-toplevel
+
         entry = self._entries[key]
+        group = self._known_missing_group("abstract")
+        if not overwrite and self._is_known_missing("abstract", key):
+            return abstracts.AbstractResult(
+                abstract="",
+                source="known-missing",
+                confidence="none",
+                note=f"in group {group!r} (overwrite to re-search)",
+                applied=False,
+            )
         pdf_path = None
         if self._path is not None:
             base_dir = self._files_base_dir()
@@ -2734,33 +2875,127 @@ class Library(MutableMapping):
                 if path.suffix.lower() == ".pdf" and path.is_file():
                     pdf_path = path
                     break
-        return entry.add_abstract(
+        result = entry._add_abstract(
             min_confidence=min_confidence,
             overwrite=overwrite,
-            mark_empty=mark_empty,
             pdf_path=pdf_path,
         )
+        if result.applied and result.abstract:
+            self._clear_known_missing("abstract", key)
+        elif result.source == "none" and self._mark_known_missing(
+            "abstract", key
+        ):
+            result = result._replace(applied=True)
+        return result
 
-    def add_preprint(
-        self, key, eprint=None, *, overwrite=False, mark_empty=None
-    ):
+    def add_preprint(self, key, eprint=None, *, overwrite=False):
         """Record the arXiv preprint of entry `key` in its `eprint`
         field -- an explicitly given identifier, or one found by
-        searching arXiv.
+        searching arXiv (the only supported preprint server).
 
-        Delegates to {meth}`Entry.add_preprint` (see there for the
-        matching rules, the `eprint`, `overwrite`, and `mark_empty`
-        arguments, the audit-state semantics of the `eprint` field,
-        and the returned named tuple). The search uses only the
-        entry's own fields, so -- like {meth}`add_url`, and unlike
-        {meth}`add_abstract` -- this is a pure convenience delegate.
-        Like any other modification, the change only becomes
-        permanent with {meth}`save`.
+        With `eprint` given (e.g. `"2205.15044"`,
+        `"quant-ph/0106057"`, or `"arXiv:2205.15044"`), the
+        identifier is validated and normalized (prefix and version
+        suffix stripped) and stored without any network access -- the
+        caller asserts the match, e.g. after manually reviewing a
+        candidate the search rejected.
 
-        Raises {exc}`KeyError` if `key` is not in the library and
-        {exc}`ValueError` if an explicitly given `eprint` is not a
-        valid arXiv identifier. Network problems never raise.
+        With `eprint=None`, the [arXiv
+        API](https://info.arxiv.org/help/api/) is searched for the
+        entry, by title and first author, precise queries first. A
+        result is accepted only when it confidently matches the
+        entry: its arXiv DOI equals the entry's `doi`, its title is a
+        near-exact match, or a good title match is corroborated by
+        the first author's last name. A title-based match whose arXiv
+        submission postdates the entry's `year` by more than a year
+        is rejected unless its journal reference names that year
+        (guarding against unrelated papers sharing a generic title);
+        such a rejected candidate is reported in the result's `note`
+        as `postdated-unverified(...)` and can, after review, be
+        applied by passing its identifier as `eprint`.
+
+        Whenever a non-empty `eprint` is stored, an
+        `archiveprefix = arXiv` field is added alongside it (unless
+        the entry already has an `archiveprefix`). A search match
+        additionally stores the preprint's arXiv primary category
+        (e.g. `quant-ph`) in the `primaryclass` field, replacing any
+        existing value (which, with `overwrite=True`, described the
+        replaced identifier); an explicitly given identifier stores
+        no `primaryclass`, since without network access the category
+        is unknown.
+
+        If the entry already has a non-empty `eprint`, nothing is
+        searched and the existing identifier is returned with match
+        `"existing"`, unless `overwrite=True`.
+
+        With a known-missing group configured for `eprint` (the
+        `[known_missing]` table of the
+        [configuration](configuration)), the group records which
+        entries are verified to have no preprint, and the method
+        operates in one of two modes. By default (routine fill-in),
+        a member entry is skipped without any search (match
+        `"known-missing"`); a search that runs cleanly and finds no
+        preprint adds the entry to the group (creating the group on
+        first use); and storing an identifier (a search match, or an
+        explicitly given `eprint`) removes the entry from the group
+        again -- so repeated fill-in passes never re-query arXiv for
+        an entry already searched. With `overwrite=True`, the
+        membership is ignored and the search re-runs: an explicit
+        re-audit. Membership means "searched, nothing found at the
+        time", not "does not exist" -- the earlier match may have
+        failed, or a preprint may have been posted since the last
+        check -- so re-audit periodically, selecting exactly the
+        group members with {meth}`keys` (`group="No Eprint"`). A
+        re-audited entry with another clean no-match simply stays in
+        the group; a match stores the identifier and unmarks. A
+        failed search (match `"error"`) never marks the entry, so a
+        re-run picks it up. Without the configuration, none of this
+        bookkeeping happens.
+
+        Returns a named tuple `(eprint, match, ratio, note, applied,
+        primaryclass)`: the stored (or existing) arXiv identifier
+        (`""` if none), how it was matched (`"doi"`, `"title"`, or
+        `"title+author"` for a search match, in decreasing order of
+        strength; `"explicit"` for a given identifier; `"none"` for a
+        clean no-match; `"error"` when the search could not run --
+        network/API failure, or an entry without a title;
+        `"existing"` or `"known-missing"` when the entry was
+        skipped), the title-similarity ratio of the best search
+        result (`None` when no search ran), a short diagnostic trace
+        (`note`), whether the library was modified -- the entry's
+        fields, or its known-missing group membership (`applied`),
+        and the primary category of a search match (`""` otherwise).
+
+        Like any other modification, changes only become permanent
+        with {meth}`save`. Raises {exc}`KeyError` if `key` is not in
+        the library and {exc}`ValueError` if an explicitly given
+        `eprint` is not a valid arXiv identifier. Network problems
+        never raise. The search respects the arXiv API's rate limit
+        (one request every three seconds, shared across all searches
+        in the process), so budget time accordingly for large batch
+        runs.
         """
-        return self._entries[key].add_preprint(
-            eprint, overwrite=overwrite, mark_empty=mark_empty
-        )
+        # Imported lazily: the preprints module pulls in the network
+        # dependencies, needed nowhere else.
+        from . import preprints  # pylint: disable=import-outside-toplevel
+
+        entry = self._entries[key]
+        if eprint is None and not overwrite:
+            group = self._known_missing_group("eprint")
+            if self._is_known_missing("eprint", key):
+                return preprints.PreprintResult(
+                    eprint="",
+                    match="known-missing",
+                    ratio=None,
+                    note=f"in group {group!r} (overwrite to re-search)",
+                    applied=False,
+                    primaryclass="",
+                )
+        result = entry._add_preprint(eprint, overwrite=overwrite)
+        if result.applied and result.eprint:
+            self._clear_known_missing("eprint", key)
+        elif result.match == "none" and self._mark_known_missing(
+            "eprint", key
+        ):
+            result = result._replace(applied=True)
+        return result

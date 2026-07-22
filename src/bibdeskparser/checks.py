@@ -12,7 +12,7 @@ from bibtexparser.model import DuplicateBlockKeyBlock
 
 from .config import active
 from .identifiers import _entry_preprint, _preprint_journal
-from .library import _bare_macro_fields, _field_state
+from .library import _bare_macro_fields, _has_field
 from .macros import MacroString
 
 __all__ = []
@@ -23,10 +23,10 @@ __private__ = ["Problem", "collect_problems"]
 
 
 #: One audit finding. `check` names the audit (`"parse"`,
-#: `"duplicate_keys"`, `"doi"`, `"journal"`, `"names"`, or
-#: `"unused_strings"`), `key` is the citation key the problem is tied
-#: to (`None` for a problem that concerns the file as a whole), and
-#: `message` describes the problem.
+#: `"duplicate_keys"`, `"doi"`, `"empty_fields"`, `"known_missing"`,
+#: `"journal"`, `"names"`, or `"unused_strings"`), `key` is the
+#: citation key the problem is tied to (`None` for a problem that
+#: concerns the file as a whole), and `message` describes the problem.
 Problem = namedtuple("Problem", ["check", "key", "message"])
 
 
@@ -78,16 +78,40 @@ def _parse_problems(library):
 
 
 def _entry_problems(entry, library):
-    """The doi, journal, and names problems of a single `entry`."""
+    """The doi, empty-field, known-missing, journal, and names
+    problems of a single `entry`."""
     problems = []
     archives = active.preprint_archives
+    known_missing = active.known_missing
     is_preprint = _entry_preprint(entry, archives) is not None
+    doi_group = known_missing.get("doi")
     if (
         entry.entry_type.lower() == "article"
         and not is_preprint
-        and _field_state(entry, "doi") == "missing"
+        and not _has_field(entry, "doi")
+        and not (doi_group is not None and doi_group in entry.groups)
     ):
         problems.append(Problem("doi", entry.key, "missing doi"))
+    for name in entry:
+        if not str(entry[name]).strip():
+            problems.append(
+                Problem(
+                    "empty_fields",
+                    entry.key,
+                    f"empty field {name!r} (BibDesk deletes empty "
+                    "fields on save)",
+                )
+            )
+    for field, group in known_missing.items():
+        if group in entry.groups and _has_field(entry, field):
+            problems.append(
+                Problem(
+                    "known_missing",
+                    entry.key,
+                    f"in group {group!r} (known-missing {field}) but "
+                    f"has a non-empty {field}",
+                )
+            )
     if "journal" in entry:
         problems += _journal_problems(entry, library, archives)
     for field in ("author", "editor"):

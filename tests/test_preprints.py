@@ -464,53 +464,96 @@ def test_add_preprint_no_match(monkeypatch):
     assert "eprint" not in lib["Key2020"]
 
 
-def test_add_preprint_mark_empty(monkeypatch):
+def test_add_preprint_marks_known_missing(monkeypatch):
+    """With a group configured for `eprint`, a clean no-match adds
+    the entry to the group (creating it on first use), and group
+    members are skipped by later runs without any search."""
     _mock_find(monkeypatch, NONE_RESULT)
     lib = _library_with_entry({"title": "A Title"})
-    result = lib.add_preprint("Key2020", mark_empty=True)
-    assert result.applied is True
-    assert lib["Key2020"]["eprint"] == ""
-    assert "archiveprefix" not in lib["Key2020"]
-
-
-def test_add_preprint_mark_empty_clears_primaryclass(monkeypatch):
-    """The empty marker clears a stale `primaryclass` (which described
-    the emptied eprint), like the stale `archiveprefix`."""
-    _mock_find(monkeypatch, NONE_RESULT)
-    lib = _library_with_entry(
-        {
-            "title": "A Title",
-            "eprint": "1103.6050",
-            "archiveprefix": "arXiv",
-            "primaryclass": "quant-ph",
-        }
+    monkeypatch.setattr(
+        config.active, "known_missing", {"eprint": "No Eprint"}
     )
-    result = lib.add_preprint("Key2020", overwrite=True, mark_empty=True)
-    assert result.applied is True
-    assert lib["Key2020"]["eprint"] == ""
-    assert "archiveprefix" not in lib["Key2020"]
-    assert "primaryclass" not in lib["Key2020"]
-
-
-def test_add_preprint_mark_empty_config(monkeypatch):
-    """`mark_empty` defaults to the `[add_preprint]` configuration."""
-    _mock_find(monkeypatch, NONE_RESULT)
-    lib = _library_with_entry({"title": "A Title"})
-    monkeypatch.setattr(config.active.add_preprint, "mark_empty", True)
     result = lib.add_preprint("Key2020")
     assert result.applied is True
-    assert lib["Key2020"]["eprint"] == ""
+    assert "eprint" not in lib["Key2020"]
+    assert "archiveprefix" not in lib["Key2020"]
+    assert lib.groups["No Eprint"] == ("Key2020",)
+    _forbid_find(monkeypatch)
+    result = lib.add_preprint("Key2020")
+    assert result.match == "known-missing"
+    assert result.applied is False
+    assert "'No Eprint'" in result.note
+
+
+def test_add_preprint_overwrite_researches_known_missing(monkeypatch):
+    """`overwrite=True` re-runs the search for a group member; a
+    repeated clean no-match leaves the membership unchanged."""
+    _mock_find(monkeypatch, NONE_RESULT)
+    lib = _library_with_entry({"title": "A Title"})
+    monkeypatch.setattr(
+        config.active, "known_missing", {"eprint": "No Eprint"}
+    )
+    lib.groups["No Eprint"] = ("Key2020",)
+    result = lib.add_preprint("Key2020", overwrite=True)
+    assert result.match == "none"
+    assert result.applied is False
+    assert lib.groups["No Eprint"] == ("Key2020",)
+
+
+def test_add_preprint_unmarks_on_match(monkeypatch):
+    """A search match removes the entry from the group."""
+    _mock_find(monkeypatch, FOUND_RESULT)
+    lib = _library_with_entry({"title": "A Title"})
+    monkeypatch.setattr(
+        config.active, "known_missing", {"eprint": "No Eprint"}
+    )
+    lib.groups["No Eprint"] = ("Key2020",)
+    result = lib.add_preprint("Key2020", overwrite=True)
+    assert result.applied is True
+    assert lib["Key2020"]["eprint"] == "2205.15044"
+    assert lib.groups["No Eprint"] == ()
+
+
+def test_add_preprint_explicit_unmarks(monkeypatch):
+    """An explicitly given identifier (the caller asserts the
+    preprint exists) removes a stale group membership, without any
+    search."""
+    _forbid_find(monkeypatch)
+    lib = _library_with_entry({"title": "A Title"})
+    monkeypatch.setattr(
+        config.active, "known_missing", {"eprint": "No Eprint"}
+    )
+    lib.groups["No Eprint"] = ("Key2020",)
+    result = lib.add_preprint("Key2020", "2205.15044")
+    assert result.applied is True
+    assert lib["Key2020"]["eprint"] == "2205.15044"
+    assert lib.groups["No Eprint"] == ()
+
+
+def test_add_preprint_no_match_without_config(monkeypatch):
+    """Without a `[known_missing]` configuration, a clean no-match
+    modifies nothing."""
+    _mock_find(monkeypatch, NONE_RESULT)
+    lib = _library_with_entry({"title": "A Title"})
+    result = lib.add_preprint("Key2020")
+    assert result.applied is False
+    assert "eprint" not in lib["Key2020"]
+    assert dict(lib.groups) == {}
 
 
 def test_add_preprint_error_never_marks(monkeypatch):
-    """A failed search must not store the empty marker (a re-run
+    """A failed search must not record a verified absence (a re-run
     should pick the entry up again)."""
     _mock_find(monkeypatch, ERROR_RESULT)
     lib = _library_with_entry({"title": "A Title"})
-    result = lib.add_preprint("Key2020", mark_empty=True)
+    monkeypatch.setattr(
+        config.active, "known_missing", {"eprint": "No Eprint"}
+    )
+    result = lib.add_preprint("Key2020")
     assert result.applied is False
     assert result.match == "error"
     assert "eprint" not in lib["Key2020"]
+    assert "No Eprint" not in lib.groups
 
 
 def test_add_preprint_explicit(monkeypatch):
@@ -551,10 +594,10 @@ def test_add_preprint_unknown_key():
 
 
 def test_entry_add_preprint_detached(monkeypatch):
-    """`Entry.add_preprint` works on an entry outside any library."""
+    """`Entry._add_preprint` works on an entry outside any library."""
     _mock_find(monkeypatch, FOUND_RESULT)
     entry = Entry("article", "Key2020", fields={"title": "A Title"})
-    result = entry.add_preprint()
+    result = entry._add_preprint()
     assert result.applied is True
     assert entry["eprint"] == "2205.15044"
     assert entry["archiveprefix"] == "arXiv"
@@ -563,7 +606,7 @@ def test_entry_add_preprint_detached(monkeypatch):
 def test_entry_add_preprint_explicit_detached(monkeypatch):
     _forbid_find(monkeypatch)
     entry = Entry("article", "Key2020")
-    result = entry.add_preprint("arXiv:2205.15044v2")
+    result = entry._add_preprint("arXiv:2205.15044v2")
     assert result.applied is True
     assert entry["eprint"] == "2205.15044"
 

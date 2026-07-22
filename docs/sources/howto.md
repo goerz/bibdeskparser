@@ -249,6 +249,12 @@ update the group data as well. `add_to_group` requires the group to
 exist already (create it first, e.g. with an empty tuple), and all
 assigned keys must belong to entries in the library.
 
+Groups also back the *known-missing* bookkeeping of the
+[abstract](howto-add-abstract) and [preprint](howto-add-preprint)
+recipes: a group declared in the `[known_missing]` configuration
+records which entries are verified not to have a given field (see
+[Empty fields](bibdesk-empty-fields)).
+
 ## How to tag entries with keywords
 
 {py:attr}`Library.keywords <bibdeskparser.library.Library.keywords>`
@@ -513,6 +519,8 @@ add_abstract = true
 add_preprint = true
 ```
 
+(howto-add-abstract)=
+
 ## How to fill in missing abstracts
 
 {py:meth}`Library.add_abstract <bibdeskparser.library.Library.add_abstract>`
@@ -555,12 +563,38 @@ $ bibdeskparser set_field tests/Refs/refs.bib Vecheck2022.09.09.507322 \
     abstract "Quantum biology examines quantum effects in living cells ..."
 ```
 
-For an entry whose abstract genuinely cannot be found, store an
-*empty* abstract as an "audited" marker -- either explicitly
-(`set_field KEY abstract ""`) or with `add_abstract --mark-empty`.
-The entry then no longer shows up in `keys --missing abstract` (it is
-matched by `keys --empty abstract` instead), so repeated fill-in
-passes stay fast and idempotent.
+For an entry whose abstract genuinely cannot be found, record the
+verified absence as membership in a *known-missing group*: a regular
+[BibDesk static group](bibdesk-static-groups), declared in the
+`[known_missing]` table of `bibdeskparser.toml`
+([configuration](config-known-missing)):
+
+```toml
+[known_missing]
+abstract = "No Abstract"
+```
+
+With the group declared, `add_abstract` maintains it automatically: a
+search that runs cleanly and finds nothing adds the entry to the
+group (creating the group on first use), group members are skipped by
+later runs (so repeated fill-in passes stay fast and idempotent), and
+storing an abstract removes the entry from the group again. To
+re-audit the group members on explicit demand (an abstract may have
+become available since the last check), pass `--overwrite` and select
+exactly them, as shown for preprints in the next recipe. An entry
+can also be marked by hand, with `add_to_group` or by drag and drop
+in BibDesk:
+
+```console
+$ bibdeskparser set_group tests/Refs/refs.bib "No Abstract"
+$ bibdeskparser add_to_group tests/Refs/refs.bib "No Abstract" KatrukhaNC2017
+$ bibdeskparser keys tests/Refs/refs.bib --group "No Abstract"
+KatrukhaNC2017
+```
+
+An *empty* `abstract` field cannot serve as the marker: BibDesk
+deletes empty fields whenever it saves the library, while a static
+group survives (see [Empty fields](bibdesk-empty-fields)).
 
 (howto-add-preprint)=
 
@@ -585,25 +619,39 @@ entries whose preprint status is unknown and fill them in bulk
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
-$ bibdeskparser add_preprint tests/Refs/refs.bib --mark-empty \
+$ bibdeskparser add_preprint tests/Refs/refs.bib \
     WinckelIP2008 Vecheck2022.09.09.507322
-WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]
-Vecheck2022.09.09.507322: no preprint found (stored empty marker) [best-ratio=0.31]
+WinckelIP2008: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.42]
+Vecheck2022.09.09.507322: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.31]
 ```
 
-With `--mark-empty` (or `mark_empty = true` in the
-[`[add_preprint]` configuration table](config-add)), an entry for
-which no preprint is found gets an *empty* `eprint` field. Like the
-empty-abstract marker of the previous recipe, this records "searched,
-nothing found": the entry moves from `keys --missing eprint` to
-`keys --empty eprint`, so repeated fill-in passes do not re-query
-arXiv for it. Since a non-match can also be a matching failure,
-re-audit those markers occasionally:
+The report above assumes a known-missing group declared for `eprint`
+in `bibdeskparser.toml`, like the one of the previous recipe
+([configuration](config-known-missing)):
+
+```toml
+[known_missing]
+eprint = "No Eprint"
+```
+
+An entry for which the search runs cleanly and finds nothing is then
+added to the group, and group members are skipped by every later
+run, so repeated fill-in passes ("find the preprint for everything
+that is missing one") never re-query arXiv for them. Membership
+records "searched, nothing found at the time", which is not the same
+as "does not exist": the match may have failed, or the preprint may
+have been posted since the last check. Re-auditing those entries
+therefore happens only on explicit demand, by passing `--overwrite`
+and selecting exactly the group members:
 
 ```console
-$ bibdeskparser add_preprint tests/Refs/refs.bib $(bibdeskparser keys \
-    tests/Refs/refs.bib --empty eprint)
+$ bibdeskparser add_preprint tests/Refs/refs.bib --overwrite \
+    $(bibdeskparser keys tests/Refs/refs.bib --group "No Eprint")
 ```
+
+A re-audited entry with another clean no-match simply stays in the
+group; a new match stores the identifier and removes the entry from
+the group.
 
 A match that the search rejects as `postdated-unverified` (an arXiv
 submission years after the entry's publication, without a

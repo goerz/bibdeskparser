@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 import bibdeskparser.abstracts as abstracts
+import bibdeskparser.config as config
 from bibdeskparser import Entry, Library
 from bibdeskparser.abstracts import AbstractResult
 
@@ -147,11 +148,25 @@ def test_crossref_abstract(monkeypatch):
 
 
 def test_crossref_abstract_error(monkeypatch):
+    """A network failure raises `_SourceError` (distinct from a
+    definite negative), while a 404 (a DOI not registered with
+    Crossref) is a definite negative."""
+
     class FakeCrossref:
         def works(self, ids):
             raise RuntimeError("connection refused")
 
     monkeypatch.setattr(abstracts, "Crossref", FakeCrossref)
+    with pytest.raises(abstracts._SourceError, match="connection refused"):
+        abstracts._crossref_abstract("10.1103/x")
+
+    class FakeCrossref404:
+        def works(self, ids):
+            error = RuntimeError("not found")
+            error.response = SimpleNamespace(status_code=404)
+            raise error
+
+    monkeypatch.setattr(abstracts, "Crossref", FakeCrossref404)
     assert abstracts._crossref_abstract("10.1103/x") is None
 
 
@@ -225,7 +240,8 @@ def test_semanticscholar_abstract_retries(monkeypatch):
 
     monkeypatch.setattr(abstracts, "httpx", SimpleNamespace(get=get))
     monkeypatch.setattr(abstracts.time, "sleep", lambda seconds: None)
-    assert abstracts._semanticscholar_abstract("DOI:10.1103/x") is None
+    with pytest.raises(abstracts._SourceError, match="semanticscholar"):
+        abstracts._semanticscholar_abstract("DOI:10.1103/x")
     assert len(calls) == 3
 
 
@@ -373,6 +389,30 @@ def test_fetch_invalid_candidates_rejected(monkeypatch):
     assert "cr-invalid:too-short" in result.note
 
 
+def test_fetch_source_failure_is_error(monkeypatch):
+    """When a source fails (rather than definitely having nothing)
+    and no abstract is found, the negative is not conclusive."""
+    _mock_sources(monkeypatch)
+
+    def crossref_error(doi):
+        raise abstracts._SourceError("crossref: down")
+
+    monkeypatch.setattr(abstracts, "_crossref_abstract", crossref_error)
+    result = abstracts.fetch_abstract(doi="10.1103/x")
+    assert result.source == "error"
+    assert result.abstract == ""
+    assert "cr-error" in result.note
+
+
+def test_fetch_unreadable_pdf_is_error(monkeypatch):
+    """An attached PDF that cannot be read is a failed source, not
+    evidence that no abstract exists."""
+    _mock_sources(monkeypatch)  # pdf=None -> "pdftotext-failed"
+    result = abstracts.fetch_abstract(pdf_path=Path("x.pdf"))
+    assert result.source == "error"
+    assert "pdftotext-failed" in result.note
+
+
 # -- Library.add_abstract --------------------------------------------------- #
 
 
@@ -394,6 +434,7 @@ def _mock_fetch(monkeypatch, result, calls=None):
 HIGH_RESULT = AbstractResult(TEXT_A, "crossref", "high", "ok", False)
 MEDIUM_RESULT = AbstractResult(TEXT_A, "pdf", "medium", "pdf-only", False)
 NONE_RESULT = AbstractResult("", "none", "none", "cr-miss; no-pdf", False)
+ERROR_RESULT = AbstractResult("", "error", "none", "cr-error; no-pdf", False)
 
 
 def test_add_abstract_stores_high(monkeypatch):
@@ -465,7 +506,7 @@ def test_add_abstract_overwrite(monkeypatch):
 
 
 def test_add_abstract_empty_existing_refetched(monkeypatch):
-    # an empty abstract (the audited marker) does not require overwrite
+    # an empty abstract counts as missing, so no overwrite is needed
     _mock_fetch(monkeypatch, HIGH_RESULT)
     lib = _library_with_entry({"abstract": ""})
     result = lib.add_abstract("Key2020")
@@ -473,33 +514,93 @@ def test_add_abstract_empty_existing_refetched(monkeypatch):
     assert lib["Key2020"]["abstract"] == TEXT_A
 
 
-def test_add_abstract_mark_empty(monkeypatch):
+def test_add_abstract_marks_known_missing(monkeypatch):
+    """With a group configured for `abstract`, a clean none-result
+    adds the entry to the group (creating it on first use), and group
+    members are skipped by later runs without any fetch."""
     _mock_fetch(monkeypatch, NONE_RESULT)
     lib = _library_with_entry({"year": "2020"})
-    result = lib.add_abstract("Key2020", mark_empty=True)
+    monkeypatch.setattr(
+        config.active, "known_missing", {"abstract": "No Abstract"}
+    )
+    result = lib.add_abstract("Key2020")
     assert result.applied is True
-    assert lib["Key2020"]["abstract"] == ""
-    # a second run now skips the entry-level fetch only for *non-empty*
-    # abstracts; the empty marker is refetched
-    result = lib.add_abstract("Key2020", mark_empty=True)
+    assert "abstract" not in lib["Key2020"]
+    assert lib.groups["No Abstract"] == ("Key2020",)
+    assert lib["Key2020"].groups == ("No Abstract",)
+
+    def fetch_abstract(**kwargs):  # pragma: no cover
+        raise AssertionError("must not fetch")
+
+    monkeypatch.setattr(abstracts, "fetch_abstract", fetch_abstract)
+    result = lib.add_abstract("Key2020")
+    assert result.source == "known-missing"
+    assert result.applied is False
+    assert "'No Abstract'" in result.note
+
+
+def test_add_abstract_overwrite_researches_known_missing(monkeypatch):
+    """`overwrite=True` re-runs the search for a group member; a
+    repeated clean no-match leaves the membership (and the library)
+    unchanged."""
+    _mock_fetch(monkeypatch, NONE_RESULT)
+    lib = _library_with_entry({"year": "2020"})
+    monkeypatch.setattr(
+        config.active, "known_missing", {"abstract": "No Abstract"}
+    )
+    lib.groups["No Abstract"] = ("Key2020",)
+    result = lib.add_abstract("Key2020", overwrite=True)
     assert result.source == "none"
+    assert result.applied is False
+    assert lib.groups["No Abstract"] == ("Key2020",)
 
 
-def test_add_abstract_no_mark_empty(monkeypatch):
+def test_add_abstract_unmarks_on_store(monkeypatch):
+    """Storing an abstract removes the entry from the group."""
+    _mock_fetch(monkeypatch, HIGH_RESULT)
+    lib = _library_with_entry({"year": "2020"})
+    monkeypatch.setattr(
+        config.active, "known_missing", {"abstract": "No Abstract"}
+    )
+    lib.groups["No Abstract"] = ("Key2020",)
+    result = lib.add_abstract("Key2020", overwrite=True)
+    assert result.applied is True
+    assert lib["Key2020"]["abstract"] == TEXT_A
+    assert lib.groups["No Abstract"] == ()
+
+
+def test_add_abstract_error_never_marks(monkeypatch):
+    """A search during which a source failed must not record a
+    verified absence (a re-run picks the entry up)."""
+    _mock_fetch(monkeypatch, ERROR_RESULT)
+    lib = _library_with_entry({"year": "2020"})
+    monkeypatch.setattr(
+        config.active, "known_missing", {"abstract": "No Abstract"}
+    )
+    result = lib.add_abstract("Key2020")
+    assert result.source == "error"
+    assert result.applied is False
+    assert "No Abstract" not in lib.groups
+
+
+def test_add_abstract_none_without_config(monkeypatch):
+    """Without a `[known_missing]` configuration, a none-result
+    modifies nothing."""
     _mock_fetch(monkeypatch, NONE_RESULT)
     lib = _library_with_entry({"year": "2020"})
     result = lib.add_abstract("Key2020")
     assert result.applied is False
     assert "abstract" not in lib["Key2020"]
+    assert dict(lib.groups) == {}
 
 
 def test_entry_add_abstract_detached(monkeypatch):
-    """`Entry.add_abstract` works on an entry outside any library;
+    """`Entry._add_abstract` works on an entry outside any library;
     without an explicit `pdf_path`, the PDF source is skipped."""
     calls = []
     _mock_fetch(monkeypatch, HIGH_RESULT, calls)
     entry = Entry("article", "Key2020", fields={"doi": "10.1103/x"})
-    result = entry.add_abstract()
+    result = entry._add_abstract()
     assert result.applied is True
     assert entry["abstract"] == TEXT_A
     assert calls == [
@@ -517,7 +618,7 @@ def test_entry_add_abstract_explicit_pdf_path(monkeypatch):
     calls = []
     _mock_fetch(monkeypatch, HIGH_RESULT, calls)
     entry = Entry("article", "Key2020", fields={"doi": "10.1103/x"})
-    entry.add_abstract(pdf_path=Path("/papers/x.pdf"))
+    entry._add_abstract(pdf_path=Path("/papers/x.pdf"))
     assert calls[0]["pdf_path"] == Path("/papers/x.pdf")
 
 

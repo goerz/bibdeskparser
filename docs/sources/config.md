@@ -216,12 +216,11 @@ The table is exposed as `Library.config.auto_file` (see
 
 (config-add)=
 
-## The `[add]`, `[add_abstract]`, and `[add_preprint]` tables: fetching defaults
+## The `[add]` and `[add_abstract]` tables: fetching defaults
 
-These three tables configure the default behavior of the fetching
-methods {py:meth}`~bibdeskparser.Library.add`,
-{py:meth}`~bibdeskparser.Library.add_abstract`, and
-{py:meth}`~bibdeskparser.Library.add_preprint` (and the like-named
+These two tables configure the default behavior of the fetching
+methods {py:meth}`~bibdeskparser.Library.add` and
+{py:meth}`~bibdeskparser.Library.add_abstract` (and the like-named
 {ref}`CLI commands <cli-add>`). Each key is the default for the
 like-named keyword argument (or command-line option); passing an
 explicit value -- e.g. `--no-add-abstract` to override a configured
@@ -235,20 +234,67 @@ add_preprint = false      # search arXiv for a matching preprint
 
 [add_abstract]            # defaults for `add_abstract`
 min_confidence = "high"   # lowest confidence stored: "high", "medium", "low"
-mark_empty = false        # store an empty abstract when none is found
-
-[add_preprint]            # defaults for `add_preprint`
-mark_empty = false        # store an empty eprint when no preprint is found
 ```
 
-The `mark_empty` keys control whether a clean "searched, found
-nothing" outcome is recorded in the entry as an *empty* field -- the
-audited marker that `keys --empty <field>` matches, as opposed to
-`keys --missing <field>` (see the
-[how-to guide](howto-add-preprint)). The tables are exposed as
-`Library.config.add`, `Library.config.add_abstract`, and
-`Library.config.add_preprint` (see
+The tables are exposed as `Library.config.add` and
+`Library.config.add_abstract` (see
 {class}`~bibdeskparser.Library`).
+
+(config-known-missing)=
+
+## The `[known_missing]` table: known-missing groups
+
+A field that is absent from an entry is ambiguous: the information may
+never have been looked for, or it may be verified not to exist. The
+`[known_missing]` table resolves the ambiguity by naming, per field, a
+[BibDesk static group](bibdesk-static-groups) that records the entries
+verified *not* to have that field:
+
+```toml
+[known_missing]
+abstract = "No Abstract"
+eprint = "No Eprint"
+doi = "No DOI"
+```
+
+Any field name may be declared, but what a declaration does depends
+on the field. One behavior applies to every declared field, and it is
+the only one for fields other than the three shown above: the `check`
+command reports an entry that sits in the field's group while
+actually having a non-empty value for that field (the `known_missing`
+audit), so a marker that has become stale -- e.g. after a manual edit
+in BibDesk -- cannot go unnoticed. On top of that:
+
+* `abstract`: {py:meth}`~bibdeskparser.Library.add_abstract` (and the
+  like-named CLI command) skips entries that are members of the
+  group, adds an entry to the group when a search runs cleanly and
+  finds nothing (creating the group on first use), and removes the
+  entry from the group whenever an abstract is stored;
+  `overwrite`/`--overwrite` re-searches members (an explicit
+  re-audit).
+* `eprint`: {py:meth}`~bibdeskparser.Library.add_preprint` maintains
+  the group in the same way.
+* `doi`: the `check` command accepts an `article` without a `doi` if
+  the entry is a member of the group. There is no fetcher for DOIs,
+  so entries enter and leave this group only manually.
+* Any other field (e.g. `author = "No Author"`): no command ever adds
+  or removes entries automatically; marking is entirely manual, and
+  the declaration provides the stale-marker audit above and names the
+  convention.
+
+Manual marking and unmarking always works, for declared and
+undeclared groups alike: with the `add_to_group`/`remove_from_group`
+CLI commands, or by drag and drop in BibDesk. Likewise,
+`keys --group NAME`/`--not-group NAME` select by membership in any
+static group; the `keys` filters do not consult this table. Without
+the table, none of the automatic bookkeeping above happens.
+
+Field names are lowercased; each field needs its own group, and group
+names must be non-empty (a shared group would make membership
+ambiguous between fields). The table is exposed as
+`Library.config.known_missing`, a `dict` mapping the field name to the
+group name. See [Empty fields](bibdesk-empty-fields) for why an empty
+field value cannot record this information.
 
 ## The `[initials]` table: acronym exceptions
 
@@ -480,8 +526,10 @@ file_automatically = true  # auto-file on add_file by default
 add_abstract = true          # store the abstract the source returns
 add_preprint = true          # search arXiv for a matching preprint
 
-[add_preprint]               # defaults for the `add_preprint` command
-mark_empty = true            # record "searched, no preprint" markers
+[known_missing]              # groups recording verified-absent info
+abstract = "No Abstract"
+eprint = "No Eprint"
+doi = "No DOI"
 
 [initials.journal]                   # acronym exceptions for %c{journal}
 "AIP Advances" = "AIPA"
@@ -522,7 +570,6 @@ Zenodo = "https://zenodo.org/records/{id}"
 
 [add_abstract]               # defaults for the add_abstract command
 min_confidence = "high"
-mark_empty = false
 ```
 
 With this configuration, the command-line tool operates on

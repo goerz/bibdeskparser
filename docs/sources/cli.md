@@ -151,17 +151,29 @@ MATLAB:2014
 Without options, every entry is listed. Filter options narrow the
 list: an entry is listed if it matches one of the (repeatable)
 `--type TYPE` values (if any are given) and satisfies every
-`--has FIELD`, `--missing FIELD`, and `--empty FIELD` filter. For any
-field, exactly one of the three field predicates holds: `--has`
-requires the field to be defined with a non-empty value, `--missing`
-requires it to not be defined at all, and `--empty` requires it to be
-defined, but with an empty value -- a defined-but-empty field is
-neither "missing" nor "has". Types and field names are matched
-case-insensitively.
+`--has FIELD`, `--missing FIELD`, `--group NAME`, and
+`--not-group NAME` filter. For any field, exactly one of `--has` and
+`--missing` holds: `--has` requires the field to be defined with a
+non-empty value, `--missing` matches everything else. In particular,
+a field that is defined with an empty value counts as missing, since
+BibDesk deletes empty fields when it saves a `.bib` file (see
+[Empty fields](bibdesk-empty-fields)). Types and field names are
+matched case-insensitively.
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
+```
+
+The `--group` filter keeps only the members of the given
+[static group](bibdesk-static-groups), `--not-group` excludes them (both
+repeatable). Group names are matched case-sensitively, and an unknown
+group name is an error rather than an empty result, so a typo cannot
+silently select nothing (or everything, for `--not-group`).
+
+```console
+$ bibdeskparser keys tests/Refs/refs.bib --type book --group Diploma
+Tannor2007
 ```
 
 ### `duplicate_keys`
@@ -190,39 +202,49 @@ PASS (61 entries checked)
 $ bibdeskparser check tests/test_cli_fail_checks/problems.bib
 Duplicate2026: duplicate citation key
 MissingDoi2026: missing doi
+EmptyDoi2026: missing doi
+EmptyDoi2026: empty field 'doi' (BibDesk deletes empty fields on save)
 LiteralJournal2026: journal is the literal string 'Some Journal', not an @string macro reference
 UndefinedMacro2026: journal references undefined @string macro 'nosuchjournal'
 BadNames2026: author does not parse as names: Cannot split the following name `Doe, John, Jr, X, Y` into parts: Too many commas
 unused @string macro 'unusedjrnl'
-FAIL (6 problems, 7 entries checked)
+FAIL (8 problems, 7 entries checked)
 ```
 
 The audits: the file parses cleanly (no skipped blocks); no citation
 key occurs more than once; every `article` that is not a
-[preprint](preprints) has a `doi` (a defined-but-empty `doi` marks an
-entry verified to have none, and passes); every `journal` field
-references a defined `@string` macro (a literal journal value is a
-problem, unless it is a recognized preprint pseudo-journal like
-`arXiv:2205.15044`); every `author` and `editor` field parses as
-names; and every `@string` macro defined in the file is referenced by
-some entry.
+[preprint](preprints) has a `doi`; no entry has a defined-but-empty
+field (BibDesk deletes empty fields when it saves, so the field would
+silently disappear -- see [Empty fields](bibdesk-empty-fields)); no
+entry sits in a [known-missing group](config-known-missing) for a
+field it actually has; every `journal` field references a defined
+`@string` macro (a literal journal value is a problem, unless it is a
+recognized preprint pseudo-journal like `arXiv:2205.15044`); every
+`author` and `editor` field parses as names; and every `@string`
+macro defined in the file is referenced by some entry.
 
-With `KEY...`, only the given entries are audited: the doi, journal,
-and names audits cover just those entries, the duplicate-key audit
-reports only the given keys, and the unused-macros audit is skipped;
-problems parsing the file itself are always reported. An unknown key
-is an error.
+An `article` verified to have no `doi` passes the doi audit if it is
+a member of the known-missing group configured for `doi` in the
+`[known_missing]` table of `bibdeskparser.toml`; the known-missing
+audits do nothing without that configuration.
+
+With `KEY...`, only the given entries are audited: the per-entry
+audits cover just those entries, the duplicate-key audit reports only
+the given keys, and the unused-macros audit is skipped; problems
+parsing the file itself are always reported. An unknown key is an
+error.
 
 ```console
-$ bibdeskparser check tests/test_cli_fail_checks/problems.bib EmptyDoi2026 Preprint2026
-PASS (2 entries checked)
+$ bibdeskparser check tests/test_cli_fail_checks/problems.bib Preprint2026
+PASS (1 entry checked)
 ```
 
 With `--json`: an object `{"passed": ..., "entries_checked": ...,
 "problems": [...]}`, where each problem is an object with `check`
-(the audit that failed: `parse`, `duplicate_keys`, `doi`, `journal`,
-`names`, or `unused_strings`), `key` (the citation key, or `null` for
-a problem not tied to an entry), and `message`.
+(the audit that failed: `parse`, `duplicate_keys`, `doi`,
+`empty_fields`, `known_missing`, `journal`, `names`, or
+`unused_strings`), `key` (the citation key, or `null` for a problem
+not tied to an entry), and `message`.
 
 (cli-show)=
 
@@ -716,6 +738,13 @@ reference ({class}`~bibdeskparser.MacroString`), failing for a
 names. A warning is printed on stderr for a field that is not
 appropriate for the entry type.
 
+An empty `VALUE` is an error: BibDesk deletes empty fields when it
+saves the `.bib` file, so an empty value cannot carry information
+(see [Empty fields](bibdesk-empty-fields)). Use
+[`delete_field`](cli-set-field) to remove a field; to record that an
+entry is verified not to have the information, add it to a
+[known-missing group](config-known-missing) instead.
+
 ### `delete_field KEY FIELDNAME`
 
 Delete one field from an entry. Corresponds to
@@ -879,16 +908,30 @@ The command prints a per-key report. A candidate that was *not*
 stored is reported in full, so it can be reviewed and applied
 manually with [`set_field`](cli-set-field). Entries that already have
 a non-empty abstract are skipped (`--overwrite` refetches and
-replaces them); an entry whose abstract is present but *empty* does
-not need `--overwrite`. With `--mark-empty`, an entry for which no
-valid abstract is found anywhere gets an *empty* `abstract` field,
-marking it as audited: such entries are matched by
-`keys --empty abstract`, no longer by `keys --missing abstract`.
-`--min-confidence` and `--mark-empty` default to the
-[`[add_abstract]` configuration table](config-add). Requires network
-access; `--dry-run` prints the report without modifying the `.bib`
-file, and `--json` maps each key to
-`{abstract, source, confidence, note, applied}`.
+replaces them).
+
+With a [known-missing group](config-known-missing) configured for
+`abstract`, the command has two modes. By default (routine fill-in),
+group members are skipped as verified to have no findable abstract,
+without any search; a search that runs cleanly against every source
+and finds nothing adds the entry to the group (creating it on first
+use); and storing an abstract removes the entry from the group, so
+repeated fill-in passes never re-search entries already audited.
+With `--overwrite`, the membership is ignored and the search re-runs:
+an explicit re-audit, for when an abstract may have become available
+since the last check, run over exactly the group members
+(`add_abstract --overwrite $(bibdeskparser keys --group "No
+Abstract")`); an entry that still yields nothing simply stays in the
+group. A search during which any source failed never marks the
+entry.
+
+`--min-confidence` defaults to the
+[`[add_abstract]` configuration table](config-add). Requires
+network access; `--dry-run` prints the report without modifying the
+`.bib` file, and `--json` maps each key to
+`{abstract, source, confidence, note, applied}` (`source` may also
+be `none`, `error`, `existing`, or `known-missing`; `applied` says
+whether the library was modified, counting group membership).
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing abstract
@@ -929,33 +972,55 @@ after reviewing it, apply it explicitly with `--eprint ID` (a single
 `KEY` only, no network access; a leading `arXiv:` prefix and a
 version suffix are stripped, and no `primaryclass` is stored).
 
-The `eprint` field encodes the entry's audit state: *absent* means
-the preprint status is unknown (`keys --missing eprint`), *empty*
-means a search ran cleanly and found no preprint
-(`keys --empty eprint`), non-empty holds the identifier. With
-`--mark-empty` (defaulting to the
-[`[add_preprint]` configuration table](config-add)), a clean
-no-match stores that empty marker, so repeated fill-in runs skip the
-entry. Entries that already have a non-empty `eprint` are skipped
-(`--overwrite` re-searches and replaces); the empty marker is
-re-searched without `--overwrite`. On a failed search (network/API
-error) the entry is never modified, so a re-run picks it up.
+Entries that already have a non-empty `eprint` are skipped
+(`--overwrite` re-searches and replaces).
+
+With a [known-missing group](config-known-missing) configured for
+`eprint`, the command has two modes. By default (routine fill-in,
+e.g. over `keys --missing eprint`), group members are skipped as
+verified to have no preprint, without contacting arXiv; a search
+that runs cleanly and finds no preprint adds the entry to the group
+(creating it on first use); and storing an identifier (a match, or
+an explicit `--eprint`) removes the entry from the group, so
+repeated fill-in passes never re-query arXiv for entries already
+searched. With `--overwrite`, the membership is ignored and the
+search re-runs: an explicit re-audit. Membership means "searched,
+nothing found at the time", not "does not exist" -- the earlier
+match may have failed, or a preprint may have been posted since the
+last check -- so re-audit periodically, over exactly the group
+members:
+
+```console
+$ bibdeskparser add_preprint tests/Refs/refs.bib --overwrite \
+    $(bibdeskparser keys tests/Refs/refs.bib --group "No Eprint")
+```
+
+A re-audited entry with another clean no-match simply stays in the
+group; a new match stores the identifier and removes the entry from
+the group. On a failed search (network/API error) the entry is never
+modified, and in particular never marked, so a re-run picks it up.
 
 The command prints a per-key report; `--dry-run` prints it without
 modifying the `.bib` file, and `--json` maps each key to
-`{eprint, match, ratio, note, applied, primaryclass}`. Requires
-network access (except with `--eprint`) and respects the arXiv API's
-rate limit of one request every three seconds, so large runs take
-time.
+`{eprint, match, ratio, note, applied, primaryclass}` (`match` may
+also be `none`, `error`, `existing`, or `known-missing`; `applied`
+says whether the library was modified, counting group membership).
+Requires network access (except with `--eprint`) and respects the
+arXiv API's rate limit of one request every three seconds, so large
+runs take time.
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
-$ bibdeskparser add_preprint tests/Refs/refs.bib --mark-empty \
+$ bibdeskparser add_preprint tests/Refs/refs.bib \
     WinckelIP2008 Vecheck2022.09.09.507322
-WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]
-Vecheck2022.09.09.507322: no preprint found (stored empty marker) [best-ratio=0.31]
+WinckelIP2008: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.42]
+Vecheck2022.09.09.507322: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.31]
 ```
+
+The report above assumes a known-missing group declared for `eprint`
+in `bibdeskparser.toml`; without one, the two lines end at the
+`[best-ratio=...]` note and nothing is recorded.
 
 ## Groups
 

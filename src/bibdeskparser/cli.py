@@ -324,7 +324,9 @@ def main():
     and `add --dry-run` only prints the fetched entry, without
     modifying the file; `add_abstract` and `add_preprint` print a
     per-key report of the fetched abstracts/arXiv identifiers, with
-    `--dry-run` without modifying the file).
+    `--dry-run` without modifying the file, and with a configured
+    [known_missing] table they also update the corresponding static
+    group memberships).
     Every command requires the `.bib` file to exist, except `create`,
     which starts a new, empty library and requires that the file does
     *not* exist yet.
@@ -348,7 +350,7 @@ def main():
         "bibdeskparser keys",
         "bibdeskparser keys --type article --type book",
         "bibdeskparser keys --missing doi --json",
-        "bibdeskparser keys --has eprint --empty abstract",
+        'bibdeskparser keys --group "My Papers"',
     ),
 )
 @click.option(
@@ -378,42 +380,66 @@ def main():
     multiple=True,
     metavar="FIELD",
     help=(
-        "Keep only entries where FIELD is not defined at all "
-        "(repeatable). A defined-but-empty FIELD does not count as "
-        "missing; see --empty."
+        "Keep only entries where FIELD has no non-empty value "
+        "(repeatable). A defined-but-empty FIELD counts as missing."
     ),
 )
 @click.option(
-    "--empty",
-    "empty_fields",
+    "--group",
+    "group_names",
     multiple=True,
-    metavar="FIELD",
+    metavar="NAME",
     help=(
-        "Keep only entries where FIELD is defined, but with an empty "
-        "value (repeatable)."
+        "Keep only entries that are members of the static group NAME "
+        "(repeatable, an entry must be in every given group). Group "
+        "names are case-sensitive; an unknown NAME is an error."
+    ),
+)
+@click.option(
+    "--not-group",
+    "not_group_names",
+    multiple=True,
+    metavar="NAME",
+    help=(
+        "Keep only entries that are not members of the static group "
+        "NAME (repeatable). Group names are case-sensitive; an "
+        "unknown NAME is an error."
     ),
 )
 @_json_option
 @click.pass_obj
 # click passes all parameters by keyword
 # pylint: disable-next=too-many-positional-arguments
-def keys(bibfile, types, has_fields, missing_fields, empty_fields, as_json):
+def keys(
+    bibfile,
+    types,
+    has_fields,
+    missing_fields,
+    group_names,
+    not_group_names,
+    as_json,
+):
     """List citation keys, one per line.
 
     Without options, list every entry in the library. The options
     narrow the list; an entry is listed if it matches one of the
     --type values (if any are given) and satisfies every --has,
-    --missing, and --empty filter. For any FIELD, exactly one of
-    --has, --missing, and --empty holds: a field that is defined but
-    empty is neither "missing" nor "has". Field names are
-    case-insensitive.
+    --missing, --group, and --not-group filter. For any FIELD,
+    exactly one of --has and --missing holds; a field that is
+    defined with an empty value counts as missing (BibDesk deletes
+    empty fields on save). Field names are case-insensitive, group
+    names case-sensitive.
     """
+    lib = Library(bibfile)
+    for name in (*group_names, *not_group_names):
+        _check_group(lib, name)
     data = list(
-        Library(bibfile).keys(
+        lib.keys(
             types=types,
             has=has_fields,
             missing=missing_fields,
-            empty=empty_fields,
+            group=group_names,
+            not_group=not_group_names,
         )
     )
     _emit(data, as_json, "\n".join(data))
@@ -1049,8 +1075,13 @@ def check(bibfile, citekeys, as_json):
 
     The audits: the file parses cleanly (no skipped blocks); no
     citation key occurs more than once; every article that is not a
-    preprint has a doi (a defined-but-empty doi marks an entry
-    verified to have none, and passes); every journal field
+    preprint has a doi (membership in the known-missing group
+    configured for 'doi' in the [known_missing] table of
+    bibdeskparser.toml marks an entry verified to have none, and
+    passes); no entry has a defined-but-empty field (BibDesk deletes
+    empty fields on save, so the field would silently disappear); no
+    entry sits in a configured known-missing group for a field it
+    actually has a non-empty value for; every journal field
     references a *defined* @string macro (a literal journal value is
     a problem, unless it is a recognized preprint pseudo-journal like
     'arXiv:2205.15044'); every author and editor field parses as
@@ -1058,19 +1089,19 @@ def check(bibfile, citekeys, as_json):
     by some entry.
 
     With KEY..., only the given entries are audited (an unknown key
-    is an error): the doi, journal, and names audits cover just those
-    entries, the duplicate-key audit reports only the given keys, and
-    the unused-macros audit is skipped; problems parsing the file
-    itself are always reported.
+    is an error): the per-entry audits cover just those entries, the
+    duplicate-key audit reports only the given keys, and the
+    unused-macros audit is skipped; problems parsing the file itself
+    are always reported.
 
     Each problem prints as one line, 'KEY: <problem>' for a problem
     tied to an entry, followed by a 'PASS (N entries checked)' or
     'FAIL (N problems, M entries checked)' summary line. With --json:
     {"passed": ..., "entries_checked": ..., "problems": [{"check":
     ..., "key": ..., "message": ...}]}, where "check" names the audit
-    ("parse", "duplicate_keys", "doi", "journal", "names", or
-    "unused_strings") and "key" is null for a problem not tied to an
-    entry.
+    ("parse", "duplicate_keys", "doi", "empty_fields",
+    "known_missing", "journal", "names", or "unused_strings") and
+    "key" is null for a problem not tied to an entry.
     """
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
@@ -1544,9 +1575,24 @@ def set_field(bibfile, citekey, fieldname, value, literal, macro):
     add_to_keyword, add_file, add_url, etc.); an 'author'/'editor'
     VALUE must be parseable as names. A warning is printed on stderr
     for a field that is not appropriate for the entry type.
+
+    An empty VALUE is an error: BibDesk deletes empty fields when it
+    saves the .bib file, so an empty value cannot carry information.
+    Use delete_field to remove FIELDNAME; to record that an entry is
+    verified not to have the information, add it to a known-missing
+    group instead (see the [known_missing] configuration and
+    add_to_group).
     """
     if literal and macro:
         raise click.UsageError("--literal and --macro are mutually exclusive")
+    if not value.strip():
+        raise click.ClickException(
+            "an empty VALUE is never stored (BibDesk deletes empty "
+            "fields when it saves the .bib file); use 'delete_field' "
+            f"to remove {fieldname!r}, or record a verified absence "
+            "by adding the entry to a known-missing group (see the "
+            "[known_missing] configuration and 'add_to_group')"
+        )
     if literal:
         value = ValueString(value)
     elif macro:
@@ -2404,18 +2450,8 @@ def add(bibfile, query, dry_run, fix_uppercase, add_abstract, add_preprint):
     default=False,
     help=(
         "Refetch and replace an existing non-empty abstract instead "
-        "of skipping the entry."
-    ),
-)
-@click.option(
-    "--mark-empty/--no-mark-empty",
-    default=None,
-    help=(
-        "When no valid abstract is found anywhere, store an *empty* "
-        "abstract field, marking the entry as audited (matched by "
-        "'keys --empty abstract' instead of 'keys --missing "
-        "abstract'). Defaults to the [add_abstract] configuration "
-        "(off)."
+        "of skipping the entry; also re-search entries in the "
+        "known-missing group for 'abstract' (explicit re-audit)."
     ),
 )
 @click.option(
@@ -2428,7 +2464,7 @@ def add(bibfile, query, dry_run, fix_uppercase, add_abstract, add_preprint):
 # click passes all parameters by keyword
 # pylint: disable-next=too-many-positional-arguments
 def add_abstract(
-    bibfile, citekeys, min_confidence, overwrite, mark_empty, dry_run, as_json
+    bibfile, citekeys, min_confidence, overwrite, dry_run, as_json
 ):
     """Fetch and store missing abstracts for the entries KEY...
 
@@ -2442,6 +2478,23 @@ def add_abstract(
     unconfirmed source), or low (sources disagree) -- reaches
     --min-confidence. Entries that already have a non-empty abstract
     are skipped (see --overwrite).
+
+    With a known-missing group configured for 'abstract' (the
+    [known_missing] table of bibdeskparser.toml), the command has two
+    modes. By default, entries in the group are skipped as verified
+    to have no findable abstract, without any search; a search that
+    runs cleanly against every source and finds nothing adds the
+    entry to the group (creating it on first use); and storing an
+    abstract removes the entry from the group -- so routine fill-in
+    runs never re-search entries already audited. With --overwrite,
+    the membership is ignored and the search re-runs: an explicit
+    re-audit, for when an abstract may have become available since
+    the last check, typically over exactly the group members:
+    `add_abstract --overwrite $(bibdeskparser keys --group "No
+    Abstract")`. An entry that still yields nothing stays in the
+    group. A search during which any source failed never marks the
+    entry. Without the configuration, none of this bookkeeping
+    happens.
 
     Prints a per-key report; candidates that were *not* stored are
     reported in full, so that they can be reviewed and applied
@@ -2460,7 +2513,6 @@ def add_abstract(
                 key,
                 min_confidence=min_confidence,
                 overwrite=overwrite,
-                mark_empty=mark_empty,
             )
         for warning in caught:
             click.echo(f"Warning: {warning.message}", err=True)
@@ -2481,9 +2533,19 @@ def _echo_abstract_result(key, result):
             f"{key}: skipped (already has an abstract; --overwrite to "
             "refetch)"
         )
+    elif result.source == "known-missing":
+        click.echo(f"{key}: skipped (known missing; --overwrite to re-search)")
+    elif result.source == "error":
+        click.echo(f"{key}: lookup failed [{result.note}]")
     elif not result.abstract:
-        stored = " (stored empty marker)" if result.applied else ""
-        click.echo(f"{key}: no abstract found{stored} [{result.note}]")
+        if result.applied:
+            group = config.active.known_missing.get("abstract")
+            click.echo(
+                f"{key}: no abstract found (marked known missing in "
+                f"group {group!r}) [{result.note}]"
+            )
+        else:
+            click.echo(f"{key}: no abstract found [{result.note}]")
     elif result.applied:
         click.echo(f"{key}: stored ({result.source}, {result.confidence})")
     else:
@@ -2500,9 +2562,10 @@ def _echo_abstract_result(key, result):
     short_help="Find and store arXiv identifiers (eprint) for entries.",
     epilog=_examples(
         "bibdeskparser add_preprint GoerzPRA2014",
-        "bibdeskparser add_preprint --mark-empty $(bibdeskparser keys "
+        "bibdeskparser add_preprint $(bibdeskparser keys "
         "--type article --missing eprint)",
-        "bibdeskparser add_preprint $(bibdeskparser keys --empty eprint)",
+        "bibdeskparser add_preprint --overwrite $(bibdeskparser keys "
+        '--group "No Eprint")',
         "bibdeskparser add_preprint Key2020 --eprint arXiv:2205.15044v1",
     ),
 )
@@ -2523,18 +2586,8 @@ def _echo_abstract_result(key, result):
     default=False,
     help=(
         "Replace an existing non-empty eprint instead of skipping "
-        "the entry."
-    ),
-)
-@click.option(
-    "--mark-empty/--no-mark-empty",
-    default=None,
-    help=(
-        "When the search runs cleanly but finds no preprint, store "
-        "an *empty* eprint field, marking the entry as searched "
-        "(matched by 'keys --empty eprint' instead of 'keys "
-        "--missing eprint', so that future fill-in runs skip it). "
-        "Defaults to the [add_preprint] configuration (off)."
+        "the entry; also re-search entries in the known-missing "
+        "group for 'eprint' (explicit re-audit)."
     ),
 )
 @click.option(
@@ -2546,9 +2599,7 @@ def _echo_abstract_result(key, result):
 @click.pass_obj
 # click passes all parameters by keyword
 # pylint: disable-next=too-many-positional-arguments
-def add_preprint(
-    bibfile, citekeys, eprint, overwrite, mark_empty, dry_run, as_json
-):
+def add_preprint(bibfile, citekeys, eprint, overwrite, dry_run, as_json):
     """Find and store the matching arXiv preprint for the entries
     KEY...
 
@@ -2564,8 +2615,24 @@ def add_preprint(
     corroborates the year; such a 'postdated-unverified' candidate is
     reported for review and can be applied explicitly with --eprint.
     Entries that already have a non-empty eprint are skipped (see
-    --overwrite); an entry whose eprint is present but *empty* (the
-    searched-no-preprint marker, see --mark-empty) is re-searched.
+    --overwrite).
+
+    With a known-missing group configured for 'eprint' (the
+    [known_missing] table of bibdeskparser.toml), the command has two
+    modes. By default, entries in the group are skipped as verified
+    to have no preprint, without contacting arXiv; a search that runs
+    cleanly and finds no preprint adds the entry to the group
+    (creating it on first use); and storing an identifier removes the
+    entry from the group -- so routine fill-in runs (e.g. over `keys
+    --missing eprint`) never re-query arXiv for entries already
+    searched. With --overwrite, the membership is ignored and the
+    search re-runs: an explicit re-audit, for when the earlier match
+    may have failed or a preprint may have been posted since the last
+    check, typically over exactly the group members:
+    `add_preprint --overwrite $(bibdeskparser keys --group "No
+    Eprint")`. An entry with another clean no-match stays in the
+    group. A failed search never marks the entry. Without the
+    configuration, none of this bookkeeping happens.
 
     Prints a per-key report; with --json, the report maps each KEY to
     {eprint, match, ratio, note, applied, primaryclass}. Modifies the
@@ -2582,9 +2649,7 @@ def add_preprint(
     for key in citekeys:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            result = lib.add_preprint(
-                key, eprint, overwrite=overwrite, mark_empty=mark_empty
-            )
+            result = lib.add_preprint(key, eprint, overwrite=overwrite)
         for warning in caught:
             click.echo(f"Warning: {warning.message}", err=True)
         results[key] = result._asdict()
@@ -2604,6 +2669,11 @@ def _echo_preprint_result(key, result, err=False):
             "replace)",
             err=err,
         )
+    elif result.match == "known-missing":
+        click.echo(
+            f"{key}: skipped (known missing; --overwrite to re-search)",
+            err=err,
+        )
     elif result.match == "explicit":
         click.echo(f"{key}: stored eprint {result.eprint}", err=err)
     elif result.eprint:
@@ -2616,7 +2686,12 @@ def _echo_preprint_result(key, result, err=False):
     elif result.match == "error":
         click.echo(f"{key}: search failed [{result.note}]", err=err)
     else:
-        stored = " (stored empty marker)" if result.applied else ""
-        click.echo(
-            f"{key}: no preprint found{stored} [{result.note}]", err=err
-        )
+        if result.applied:
+            group = config.active.known_missing.get("eprint")
+            click.echo(
+                f"{key}: no preprint found (marked known missing in "
+                f"group {group!r}) [{result.note}]",
+                err=err,
+            )
+        else:
+            click.echo(f"{key}: no preprint found [{result.note}]", err=err)
