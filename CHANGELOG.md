@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.4.0] - 2026-07-21
 
 * Fixed: `Library.render` (and the `render` CLI command) no longer drops the editors of an entry that has an `editor` but no `author` (e.g. an edited volume; a `proceedings` entry in particular can never have an author). The editors now render in the authors position, marked with an `(ed.)`/`(eds.)` suffix, e.g. `E. Andersson and P. Öhberg (eds.)`; the `edited by ...` piece of the published-in segment (for `inproceedings` and book-family entries) is correspondingly only rendered when the entry also has authors. [[#25], [#32]]
 * Fixed: `Library.render` (and the `render` CLI command) no longer drops most fields of book-family entries: an `inbook` entry previously rendered as author/title/year only (dropping `publisher`, `series`, `volume`, `chapter`, `pages`, and `booktitle`), and an `incollection` entry dropped its `editor`, `pages`, `series`, and `volume`. The book family (`book`, `inbook`, `incollection`, and the previously unhandled `proceedings`) now renders uniformly as `series Vol. N, publisher, address (year), Chapter N, pp. N1–N2` (each piece only if present), prefixed for `inbook`/`incollection` by `In: *booktitle*` and, when there are editors, by `edited by ...`. [[#25], [#32]]
@@ -96,7 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial release.
 
-[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.3.0..HEAD
+[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.4.0..HEAD
+[v0.4.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.4.0
 [v0.3.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.3.0
 [v0.2.1]: https://github.com/goerz/bibdeskparser/releases/tag/v0.2.1
 [v0.2.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.2.0
