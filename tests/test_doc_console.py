@@ -44,7 +44,7 @@ PAGES = {"howto.md": "script", "cli.md": "blocks"}
 SANDBOX_DIRS = ("Refs", "test_cli_fail_checks")
 
 #: Subcommands that contact online services (skipped automatically).
-NETWORK_COMMANDS = {"add", "add_abstract", "add_preprint"}
+NETWORK_COMMANDS = {"add", "add_abstract", "add_preprint", "add_doi"}
 
 NOTEST_MARKER = "<!-- notest -->"
 

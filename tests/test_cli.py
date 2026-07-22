@@ -2837,6 +2837,225 @@ def test_add_preprint_unknown_key(runner, bibfile):
     assert "unknown citation key 'NoSuchKey'" in result.stderr
 
 
+def _mock_find_doi(monkeypatch, results):
+    """Mock `dois.find_doi` to pop per-call results from the `results`
+    list -- `(doi, match, ratio, note)` tuples; records the call
+    kwargs."""
+    from bibdeskparser.dois import DoiResult
+
+    calls = []
+
+    def find_doi(**kwargs):
+        calls.append(kwargs)
+        doi, match, ratio, note = results.pop(0)
+        return DoiResult(doi, match, ratio, note, False)
+
+    monkeypatch.setattr("bibdeskparser.dois.find_doi", find_doi)
+    return calls
+
+
+def _forbid_find_doi(monkeypatch):
+    def find_doi(**kwargs):  # pragma: no cover
+        raise AssertionError("must not search")
+
+    monkeypatch.setattr("bibdeskparser.dois.find_doi", find_doi)
+
+
+def test_add_doi_stores(runner, bibfile, monkeypatch):
+    calls = _mock_find_doi(
+        monkeypatch, [("10.1016/j.aop.2004.09.012", "title+author", 0.98, "")]
+    )
+    result = _run(runner, "add_doi", bibfile, "GoerzPhd2015")
+    assert result.stdout == (
+        "GoerzPhd2015: stored doi 10.1016/j.aop.2004.09.012 "
+        "(match=title+author, ratio=0.98)\n"
+    )
+    assert calls[0]["title"] == (
+        "Optimizing Robust Quantum Gates in Open Quantum Systems"
+    )
+    lib = _load(bibfile)
+    assert lib["GoerzPhd2015"]["doi"] == "10.1016/j.aop.2004.09.012"
+
+
+def test_add_doi_stores_via_eprint(runner, bibfile, monkeypatch):
+    """A DOI found on arXiv (match `eprint`) reports without a
+    ratio."""
+    _mock_find_doi(
+        monkeypatch, [("10.1016/j.aop.2004.09.012", "eprint", None, "")]
+    )
+    result = _run(runner, "add_doi", bibfile, "GoerzPhd2015")
+    assert result.stdout == (
+        "GoerzPhd2015: stored doi 10.1016/j.aop.2004.09.012 "
+        "(match=eprint)\n"
+    )
+
+
+def test_add_doi_skips_existing(runner, bibfile, monkeypatch):
+    _forbid_find_doi(monkeypatch)
+    result = _run(runner, "add_doi", bibfile, "GoerzNJP2014")
+    assert "GoerzNJP2014: skipped (already has a doi" in result.stdout
+    lib = _load(bibfile)
+    assert lib["GoerzNJP2014"]["doi"] == "10.1088/1367-2630/16/5/055012"
+
+
+def test_add_doi_skips_preprint_only(runner, bibfile, monkeypatch):
+    """A preprint-only entry without a `doi` is skipped without any
+    lookup."""
+    _forbid_find_doi(monkeypatch)
+    lib = _load(bibfile)
+    del lib["Wilhelm2003.10132"]["doi"]
+    lib.save()
+    result = _run(runner, "add_doi", bibfile, "Wilhelm2003.10132")
+    assert "Wilhelm2003.10132: skipped (preprint-only entry)" in result.stdout
+    lib = _load(bibfile)
+    assert "doi" not in lib["Wilhelm2003.10132"]
+
+
+def test_add_doi_overwrite(runner, bibfile, monkeypatch):
+    _mock_find_doi(monkeypatch, [("10.5555/xyz", "title", 0.99, "")])
+    _run(runner, "add_doi", bibfile, "--overwrite", "GoerzNJP2014")
+    lib = _load(bibfile)
+    assert lib["GoerzNJP2014"]["doi"] == "10.5555/xyz"
+
+
+def test_add_doi_not_found_and_known_missing(runner, bibfile, monkeypatch):
+    """Without a `[known_missing]` configuration a clean no-match
+    modifies nothing; with one, it is recorded as group membership
+    (in the saved file), and members are skipped."""
+    _mock_find_doi(
+        monkeypatch,
+        [
+            ("", "none", 0.55, "best-ratio=0.55"),
+            ("", "none", 0.55, "best-ratio=0.55"),
+        ],
+    )
+    result = _run(runner, "add_doi", bibfile, "GoerzPhd2015")
+    assert "GoerzPhd2015: no doi found [best-ratio=0.55]" in result.stdout
+    lib = _load(bibfile)
+    assert "doi" not in lib["GoerzPhd2015"]
+    assert "No DOI" not in lib.groups
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        '[known_missing]\ndoi = "No DOI"\n', encoding="utf-8"
+    )
+    result = _run(runner, "add_doi", bibfile, "GoerzPhd2015")
+    assert (
+        "GoerzPhd2015: no doi found (marked known missing in "
+        "group 'No DOI') [best-ratio=0.55]" in result.stdout
+    )
+    lib = _load(bibfile)
+    assert "doi" not in lib["GoerzPhd2015"]
+    assert lib.groups["No DOI"] == ("GoerzPhd2015",)
+    _forbid_find_doi(monkeypatch)
+    result = _run(runner, "add_doi", bibfile, "GoerzPhd2015")
+    assert (
+        "GoerzPhd2015: skipped (known missing; --overwrite to re-search)"
+        in result.stdout
+    )
+
+
+def test_add_doi_error(runner, bibfile, monkeypatch):
+    """A failed lookup is reported and stores nothing, even with a
+    known-missing group configured."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        '[known_missing]\ndoi = "No DOI"\n', encoding="utf-8"
+    )
+    _mock_find_doi(
+        monkeypatch, [("", "error", 0.0, "crossref-error(HTTPError: 500)")]
+    )
+    before = bibfile.read_text(encoding="utf-8")
+    result = _run(runner, "add_doi", bibfile, "GoerzPhd2015")
+    assert (
+        "GoerzPhd2015: lookup failed [crossref-error(HTTPError: 500)]"
+        in result.stdout
+    )
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_add_doi_explicit(runner, bibfile, monkeypatch):
+    _forbid_find_doi(monkeypatch)
+    result = _run(
+        runner,
+        "add_doi",
+        bibfile,
+        "--doi",
+        "https://doi.org/10.1016/j.aop.2004.09.012",
+        "GoerzPhd2015",
+    )
+    assert result.stdout == (
+        "GoerzPhd2015: stored doi 10.1016/j.aop.2004.09.012\n"
+    )
+    lib = _load(bibfile)
+    assert lib["GoerzPhd2015"]["doi"] == "10.1016/j.aop.2004.09.012"
+
+
+def test_add_doi_explicit_invalid(runner, bibfile):
+    result = runner.invoke(
+        main,
+        ["add_doi", str(bibfile), "--doi", "2205.15044", "GoerzPhd2015"],
+    )
+    assert result.exit_code == 1
+    assert "Error: not a valid DOI" in result.stderr
+
+
+def test_add_doi_explicit_single_key_only(runner, bibfile):
+    result = runner.invoke(
+        main,
+        [
+            "add_doi",
+            str(bibfile),
+            "--doi",
+            "10.5555/xyz",
+            "GoerzPhd2015",
+            "GoerzDiploma2010",
+        ],
+    )
+    assert result.exit_code == 2
+    assert "--doi requires a single KEY" in result.stderr
+
+
+def test_add_doi_json(runner, bibfile, monkeypatch):
+    _mock_find_doi(
+        monkeypatch,
+        [
+            ("10.5555/xyz", "title+author", 0.95, ""),
+            ("", "none", 0.4, "best-ratio=0.40"),
+        ],
+    )
+    result = _run(
+        runner,
+        "add_doi",
+        bibfile,
+        "--json",
+        "GoerzPhd2015",
+        "GoerzDiploma2010",
+    )
+    data = json.loads(result.stdout)
+    assert data["GoerzPhd2015"] == {
+        "doi": "10.5555/xyz",
+        "match": "title+author",
+        "ratio": 0.95,
+        "note": "",
+        "applied": True,
+    }
+    assert data["GoerzDiploma2010"]["applied"] is False
+    lib = _load(bibfile)
+    assert lib["GoerzPhd2015"]["doi"] == "10.5555/xyz"
+
+
+def test_add_doi_dry_run(runner, bibfile, monkeypatch):
+    _mock_find_doi(monkeypatch, [("10.5555/xyz", "title", 1.0, "")])
+    before = bibfile.read_text(encoding="utf-8")
+    result = _run(runner, "add_doi", bibfile, "--dry-run", "GoerzPhd2015")
+    assert "GoerzPhd2015: stored doi 10.5555/xyz" in result.stdout
+    assert bibfile.read_text(encoding="utf-8") == before
+
+
+def test_add_doi_unknown_key(runner, bibfile):
+    result = runner.invoke(main, ["add_doi", str(bibfile), "NoSuchKey"])
+    assert result.exit_code == 1
+    assert "unknown citation key 'NoSuchKey'" in result.stderr
+
+
 def test_add_passes_add_abstract(runner, bibfile, monkeypatch):
     flags = []
 

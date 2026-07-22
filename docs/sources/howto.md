@@ -668,6 +668,71 @@ The search respects the arXiv API's rate limit of one request every
 three seconds, so filling in a large library takes time -- let it
 run.
 
+(howto-add-doi)=
+
+## How to fill in missing DOIs
+
+{py:meth}`Library.add_doi <bibdeskparser.library.Library.add_doi>`
+looks up the DOI of an existing entry and records it in the entry's
+`doi` field:
+
+```python
+result = bib.add_doi("DevoretLH1995")
+bib.save()
+```
+
+If the entry has an arXiv `eprint`, the DOI that arXiv records for
+the identifier is used directly (it names the published version of
+exactly this paper); otherwise Crossref is searched, and a result is
+stored only on a confident match: a near-exact title match, or a
+good title match corroborated by the first author (see the
+{ref}`CLI reference <cli-add-doi>` for the exact guards). On the
+command line, fill in every `article` that is missing a DOI -- the
+same entries the missing-doi audit of [`check`](cli-check) reports:
+
+```console
+$ bibdeskparser add_doi tests/Refs/refs.bib \
+    $(bibdeskparser keys tests/Refs/refs.bib --type article --missing doi)
+```
+
+The lookup is not limited to articles -- books and book chapters
+have DOIs, too, and theses sometimes do. As with abstracts and
+preprints, declare a known-missing group in `bibdeskparser.toml`
+([configuration](config-known-missing)), so that a clean search that
+finds nothing is recorded and never repeated:
+
+```toml
+[known_missing]
+doi = "No DOI"
+```
+
+```console
+$ bibdeskparser add_doi tests/Refs/refs.bib GoerzPhd2015 GoerzDiploma2010
+GoerzPhd2015: no doi found (marked known missing in group 'No DOI') [best-ratio=0.55]
+GoerzDiploma2010: no doi found (marked known missing in group 'No DOI') [best-ratio=0.47]
+```
+
+Membership in the group also makes the missing-doi audit of `check`
+accept the entry, and re-auditing the members happens only on
+explicit demand, exactly as in the previous two recipes
+(`add_doi --overwrite` over `keys --group "No DOI"`).
+
+A candidate that the search rejects -- a `year-mismatch`, or a good
+title match without an author match -- shows up in the report's
+`[...]` note; if reviewing it confirms it really is this work's DOI,
+record it explicitly, which needs no network access:
+
+```console
+$ bibdeskparser add_doi tests/Refs/refs.bib GoerzDiploma2010 \
+    --doi 10.5555/12345678
+GoerzDiploma2010: stored doi 10.5555/12345678
+```
+
+A [preprint-only](preprints) entry is skipped: a search would turn
+up the DOI of the *published version*, which does not belong on a
+preprint reference. If the work has in fact been published, update
+the entry to the published version instead (see the next recipe).
+
 (howto-preprints)=
 
 ## How to manage preprint-only publications

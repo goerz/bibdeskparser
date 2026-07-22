@@ -274,9 +274,9 @@ in BibDesk -- cannot go unnoticed. On top of that:
   re-audit).
 * `eprint`: {py:meth}`~bibdeskparser.Library.add_preprint` maintains
   the group in the same way.
-* `doi`: the `check` command accepts an `article` without a `doi` if
-  the entry is a member of the group. There is no fetcher for DOIs,
-  so entries enter and leave this group only manually.
+* `doi`: {py:meth}`~bibdeskparser.Library.add_doi` maintains the
+  group in the same way. In addition, the `check` command accepts an
+  `article` without a `doi` if the entry is a member of the group.
 * Any other field (e.g. `author = "No Author"`): no command ever adds
   or removes entries automatically; marking is entirely manual, and
   the declaration provides the stale-marker audit above and names the

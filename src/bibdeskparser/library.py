@@ -631,11 +631,14 @@ class Library(MutableMapping):
       appropriate online source and imports it as a new entry.
       {meth}`add_abstract` fetches an entry's abstract from the best
       available source (including the entry's first attached PDF) and
-      stores it in the `abstract` field, and {meth}`add_preprint`
+      stores it in the `abstract` field, {meth}`add_preprint`
       records an entry's matching arXiv preprint (given explicitly,
-      or found by searching arXiv) in the `eprint` field. Both
-      maintain the configured known-missing groups, recording which
-      entries are verified to have no abstract or preprint (see the
+      or found by searching arXiv) in the `eprint` field, and
+      {meth}`add_doi` records an entry's DOI (given explicitly,
+      recorded on arXiv for the entry's `eprint`, or found by
+      searching Crossref) in the `doi` field. All three maintain the
+      configured known-missing groups, recording which entries are
+      verified to have no abstract, preprint, or DOI (see the
       `[known_missing]` table of the configuration).
 
     The process-global configuration (see the
@@ -2997,5 +3000,120 @@ class Library(MutableMapping):
         elif result.match == "none" and self._mark_known_missing(
             "eprint", key
         ):
+            result = result._replace(applied=True)
+        return result
+
+    def add_doi(self, key, doi=None, *, overwrite=False):
+        """Record the DOI of entry `key` in its `doi` field -- an
+        explicitly given DOI, or one found online.
+
+        With `doi` given (e.g. `"10.1103/PhysRevA.89.032334"`, a
+        `doi:`-prefixed value, or a `https://doi.org/...` resolver
+        address), the DOI is validated and normalized (prefix or
+        resolver address stripped, lowercased -- DOIs are defined to
+        be case-insensitive) and stored without any network access --
+        the caller asserts the match, e.g. after manually reviewing a
+        candidate the search rejected.
+
+        With `doi=None`, the DOI is looked up online, from two
+        sources. If the entry has an arXiv `eprint`, the [arXiv
+        API](https://info.arxiv.org/help/api/) is consulted first:
+        the DOI that arXiv records for the identifier names the
+        published version of exactly this paper (an arXiv-issued
+        `10.48550/...` DataCite DOI, which merely restates the arXiv
+        identifier, does not count as a DOI on record). Otherwise --
+        no `eprint`, or no DOI recorded on arXiv --
+        [Crossref](https://www.crossref.org) is searched for the
+        entry, by title and first author. A search result is accepted
+        only when it confidently matches the entry: its title is a
+        near-exact match, or a good title match is corroborated by
+        the first author's last name. A title-based match whose
+        publication year differs from the entry's `year` by more than
+        one is rejected (guarding against unrelated papers sharing a
+        generic title), reported in the result's `note` as
+        `year-mismatch(...)`; and an amendment record -- an erratum,
+        corrigendum, retraction, comment, or reply, whose title
+        embeds the original title -- never matches an entry that is
+        not itself such an amendment. A rejected candidate can, after
+        review, be applied by passing its DOI as `doi`.
+
+        A *preprint-only* entry (see the
+        [preprints](preprints-convention) documentation) is skipped
+        without any lookup (match `"preprint"`): the search
+        would find the DOI of the *published version*, which does not
+        belong on a preprint reference. To record it deliberately,
+        pass it as `doi` -- but consider replacing the entry with the
+        published version (via {meth}`add`) instead.
+
+        If the entry already has a non-empty `doi`, nothing is
+        searched and the existing DOI is returned with match
+        `"existing"`, unless `overwrite=True`.
+
+        With a known-missing group configured for `doi` (the
+        `[known_missing]` table of the
+        [configuration](configuration)), the group records which
+        entries are verified to have no DOI, and the method operates
+        in one of two modes. By default (routine fill-in), a member
+        entry is skipped without any lookup (match
+        `"known-missing"`); a lookup that runs cleanly and finds no
+        DOI adds the entry to the group (creating the group on first
+        use); and storing a DOI (a match, or an explicitly given
+        `doi`) removes the entry from the group again -- so repeated
+        fill-in passes never re-query the sources for an entry
+        already searched. With `overwrite=True`, the membership is
+        ignored and the lookup re-runs: an explicit re-audit.
+        Membership means "searched, nothing found at the time", not
+        "does not exist" -- the earlier match may have failed, or a
+        DOI may have been registered since the last check -- so
+        re-audit periodically, selecting exactly the group members
+        with {meth}`keys` (`group="No DOI"`). A re-audited entry with
+        another clean no-match simply stays in the group; a match
+        stores the DOI and unmarks. A failed lookup (match `"error"`)
+        never marks the entry, so a re-run picks it up. Membership
+        also makes the `check` command accept an `article` without a
+        `doi`. Without the configuration, none of this bookkeeping
+        happens.
+
+        Returns a named tuple `(doi, match, ratio, note, applied)`:
+        the stored (or existing) DOI (`""` if none), how it was found
+        (`"eprint"` for the DOI recorded on arXiv for the entry's
+        eprint; `"title"` or `"title+author"` for a Crossref search
+        match, in decreasing order of strength; `"explicit"` for a
+        given DOI; `"none"` for a clean no-match; `"error"` when the
+        lookup could not run to completion -- network/API failure, or
+        an entry without a title; `"existing"`, `"known-missing"`, or
+        `"preprint"` when the entry was skipped), the title-similarity
+        ratio of the best Crossref result (`None` when no search
+        ran), a short diagnostic trace (`note`), and whether the
+        library was modified -- the entry's `doi` field, or its
+        known-missing group membership (`applied`).
+
+        Like any other modification, changes only become permanent
+        with {meth}`save`. Raises {exc}`KeyError` if `key` is not in
+        the library and {exc}`ValueError` if an explicitly given
+        `doi` is not a valid DOI. Network problems never raise. An
+        `eprint` lookup respects the arXiv API's rate limit (one
+        request every three seconds, shared with {meth}`add_preprint`
+        searches), so budget time accordingly for large batch runs.
+        """
+        # Imported lazily: the dois module pulls in the network
+        # dependencies, needed nowhere else.
+        from . import dois  # pylint: disable=import-outside-toplevel
+
+        entry = self._entries[key]
+        if doi is None and not overwrite:
+            group = self._known_missing_group("doi")
+            if self._is_known_missing("doi", key):
+                return dois.DoiResult(
+                    doi="",
+                    match="known-missing",
+                    ratio=None,
+                    note=f"in group {group!r} (overwrite to re-search)",
+                    applied=False,
+                )
+        result = entry._add_doi(doi, overwrite=overwrite)
+        if result.applied and result.doi:
+            self._clear_known_missing("doi", key)
+        elif result.match == "none" and self._mark_known_missing("doi", key):
             result = result._replace(applied=True)
         return result

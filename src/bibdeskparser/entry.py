@@ -10,6 +10,7 @@ from bibtexparser import model
 
 from .bdskfile import BibDeskFile
 from .config import active
+from .identifiers import _entry_preprint
 from .macros import (
     MacroString,
     ValueString,
@@ -663,6 +664,61 @@ class Entry(MutableMapping):
         )
         if result.eprint:
             self._store_eprint(result.eprint, result.primaryclass)
+            return result._replace(applied=True)
+        return result
+
+    def _add_doi(self, doi=None, *, overwrite=False):
+        """Backing implementation of `Library.add_doi`: pure
+        fetch-and-store, without the known-missing group bookkeeping
+        (an `Entry` holds no reference to its library); see
+        `Library.add_doi` for the matching-rule and result
+        semantics.
+        """
+        # Imported lazily: the dois module pulls in the network
+        # dependencies, needed nowhere else.
+        from . import dois  # pylint: disable=import-outside-toplevel
+
+        existing = str(self.get("doi") or "")
+        if doi is not None:
+            value = dois.normalize_doi(doi)
+            if existing and not overwrite:
+                return dois.DoiResult(
+                    doi=existing,
+                    match="existing",
+                    ratio=None,
+                    note="entry already has a doi (overwrite to replace)",
+                    applied=False,
+                )
+            self["doi"] = ValueString(value)
+            return dois.DoiResult(value, "explicit", None, "", True)
+        if existing and not overwrite:
+            return dois.DoiResult(
+                doi=existing,
+                match="existing",
+                ratio=None,
+                note="entry already has a doi (overwrite to replace)",
+                applied=False,
+            )
+        if _entry_preprint(self, active.preprint_archives) is not None:
+            # `existing` carries a stored DOI through (reachable with
+            # `overwrite=True`): the result's `doi` always reflects
+            # the entry's actual value.
+            return dois.DoiResult(
+                doi=existing,
+                match="preprint",
+                ratio=None,
+                note="preprint-only entry (a search would find the "
+                "published version)",
+                applied=False,
+            )
+        result = dois.find_doi(
+            title=str(self.get("title") or "") or None,
+            author=str(self.get("author") or "") or None,
+            year=str(self.get("year") or "") or None,
+            eprint=str(self.get("eprint") or "") or None,
+        )
+        if result.doi:
+            self["doi"] = ValueString(result.doi)
             return result._replace(applied=True)
         return result
 

@@ -70,8 +70,10 @@ print the generated key or file path, as does
 [`import`](cli-import)/[`add`](cli-add), which print the citation
 keys of the added entries (`add --dry-run` only prints the fetched
 entry, without modifying the file).
-[`add_abstract`](cli-add-abstract) prints a per-key report of the
-fetched abstracts (with `--dry-run`, without modifying the file).
+[`add_abstract`](cli-add-abstract),
+[`add_preprint`](cli-add-preprint), and [`add_doi`](cli-add-doi)
+print a per-key report of the fetched abstracts, arXiv identifiers,
+and DOIs (with `--dry-run`, without modifying the file).
 
 ## JSON output
 
@@ -226,7 +228,9 @@ macro defined in the file is referenced by some entry.
 An `article` verified to have no `doi` passes the doi audit if it is
 a member of the known-missing group configured for `doi` in the
 `[known_missing]` table of `bibdeskparser.toml`; the known-missing
-audits do nothing without that configuration.
+audits do nothing without that configuration. The
+[`add_doi`](cli-add-doi) command fills in missing DOIs and maintains
+that group.
 
 With `KEY...`, only the given entries are audited: the per-entry
 audits cover just those entries, the duplicate-key audit reports only
@@ -878,7 +882,7 @@ $ bibdeskparser add tests/Refs/refs.bib --dry-run 10.22331/q-2022-01-24-629
 ...
 ```
 
-## Abstracts and preprints
+## Abstracts, preprints, and DOIs
 
 (cli-add-abstract)=
 
@@ -1020,6 +1024,87 @@ Vecheck2022.09.09.507322: no preprint found (marked known missing in group 'No E
 
 The report above assumes a known-missing group declared for `eprint`
 in `bibdeskparser.toml`; without one, the two lines end at the
+`[best-ratio=...]` note and nothing is recorded.
+
+(cli-add-doi)=
+
+### `add_doi KEY...`
+
+Find and store the DOI for the given entries, via
+{py:meth}`~bibdeskparser.Library.add_doi`. For each `KEY`, the DOI is
+looked up online, from two sources. If the entry has an arXiv
+`eprint`, the arXiv API is consulted first: the DOI recorded there
+names the published version of exactly this paper (an arXiv-issued
+`10.48550/...` DataCite DOI, which merely restates the arXiv
+identifier, does not count as a DOI on record). Otherwise, Crossref
+is searched for the entry by title and first author, and a result is
+accepted only when
+
+* its title is a near-exact match, or
+* a good title match is corroborated by the first author's last name.
+
+A title-based match whose publication year differs from the entry's
+`year` by more than one is rejected -- a guard against unrelated
+papers sharing a generic title. Such a `year-mismatch` candidate is
+only reported; after reviewing it, apply it explicitly with
+`--doi DOI` (a single `KEY` only, no network access; a leading `doi:`
+prefix or `https://doi.org/` resolver address is stripped). An
+amendment record -- an erratum, corrigendum, retraction, comment, or
+reply, whose title embeds the original title -- never matches an
+entry that is not itself such an amendment. The found DOI is stored
+in the entry's `doi` field, in its bare lowercase form (DOIs are
+defined to be case-insensitive).
+
+Entries that already have a non-empty `doi` are skipped
+(`--overwrite` re-searches and replaces). A
+[preprint-only](preprints) entry is skipped without any lookup: the
+search would find the DOI of the *published version*, which does not
+belong on a preprint reference (store it deliberately with `--doi`,
+or replace the entry with the published version via
+[`add`](cli-add)).
+
+With a [known-missing group](config-known-missing) configured for
+`doi`, the command has two modes. By default (routine fill-in, e.g.
+over `keys --missing doi`), group members are skipped as verified to
+have no DOI, without any lookup; a lookup that runs cleanly and finds
+nothing adds the entry to the group (creating it on first use); and
+storing a DOI (a match, or an explicit `--doi`) removes the entry
+from the group, so repeated fill-in passes never re-query the sources
+for entries already searched. With `--overwrite`, the membership is
+ignored and the lookup re-runs: an explicit re-audit, for when a DOI
+may have been registered since the last check, over exactly the group
+members:
+
+```console
+$ bibdeskparser add_doi tests/Refs/refs.bib --overwrite \
+    $(bibdeskparser keys tests/Refs/refs.bib --group "No DOI")
+```
+
+A re-audited entry with another clean no-match simply stays in the
+group; a new match stores the DOI and removes the entry from the
+group. On a failed lookup (network/API error) the entry is never
+modified, and in particular never marked, so a re-run picks it up.
+Membership in the group also makes the [`check`](cli-check) command
+accept an `article` without a `doi`.
+
+The command prints a per-key report; `--dry-run` prints it without
+modifying the `.bib` file, and `--json` maps each key to
+`{doi, match, ratio, note, applied}` (`match` is `eprint`, `title`,
+`title+author`, or `explicit` for a stored DOI, and may also be
+`none`, `error`, `existing`, `known-missing`, or `preprint`;
+`applied` says whether the library was modified, counting group
+membership). Requires network access (except with `--doi`); an
+`eprint` lookup respects the arXiv API's rate limit of one request
+every three seconds.
+
+```console
+$ bibdeskparser add_doi tests/Refs/refs.bib GoerzPhd2015 GoerzDiploma2010
+GoerzPhd2015: no doi found (marked known missing in group 'No DOI') [best-ratio=0.55]
+GoerzDiploma2010: no doi found (marked known missing in group 'No DOI') [best-ratio=0.47]
+```
+
+The report above assumes a known-missing group declared for `doi` in
+`bibdeskparser.toml`; without one, the two lines end at the
 `[best-ratio=...]` note and nothing is recorded.
 
 ## Groups
