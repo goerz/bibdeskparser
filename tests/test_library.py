@@ -941,13 +941,12 @@ def test_keys_filter_types(bib):
     assert bib.keys(types="nosuchtype") == ()
 
 
-def test_keys_filter_has_missing_empty(bib):
-    """For any field, exactly one of `has`, `missing`, and `empty`
-    holds; a defined-but-empty field is neither "missing" nor
-    "has"."""
+def test_keys_filter_has_missing(bib):
+    """For any field, exactly one of `has` and `missing` holds; a
+    defined-but-empty field counts as missing (BibDesk deletes empty
+    fields on save, so an empty value cannot carry information)."""
     has_abstract = bib.keys(has="abstract")
     missing_abstract = bib.keys(missing="abstract")
-    assert bib.keys(empty="abstract") == ()
     assert set(has_abstract) | set(missing_abstract) == set(bib)
     assert set(has_abstract) & set(missing_abstract) == set()
     assert "GoerzJPB2011" in has_abstract
@@ -955,9 +954,8 @@ def test_keys_filter_has_missing_empty(bib):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         bib["GoerzJPB2011"]["abstract"] = ""
-    assert bib.keys(empty="abstract") == ("GoerzJPB2011",)
     assert "GoerzJPB2011" not in bib.keys(has="abstract")
-    assert "GoerzJPB2011" not in bib.keys(missing="abstract")
+    assert "GoerzJPB2011" in bib.keys(missing="abstract")
 
 
 def test_keys_filter_combined(bib):
@@ -971,6 +969,35 @@ def test_keys_filter_combined(bib):
     assert keys == bib.keys(
         types=("article",), has=("eprint",), missing=("note",)
     )
+
+
+def test_keys_filter_group(bib):
+    """`group` keeps only members of every given static group,
+    `not_group` excludes the members of every given group; group
+    names match case-sensitively."""
+    assert bib.keys(group="Diploma") == (
+        "Tannor2007",
+        "NielsenChuangCh10QEC",
+        "Evans1983",
+        "LapertPRA09",
+    )
+    assert bib.keys(group="Diploma", types="book") == ("Tannor2007",)
+    assert bib.keys(group=["Diploma", "My Papers"]) == ()
+    not_diploma = bib.keys(not_group="Diploma")
+    assert set(not_diploma) == set(bib.keys()) - set(bib.keys(group="Diploma"))
+    assert bib.keys(group="Diploma", not_group="Diploma") == ()
+    # membership order is library order, not group order
+    bib.groups["Reversed"] = ("NielsenChuangCh10QEC", "Tannor2007")
+    assert bib.keys(group="Reversed") == ("Tannor2007", "NielsenChuangCh10QEC")
+
+
+def test_keys_filter_group_unknown(bib):
+    """An unknown group name raises `KeyError` instead of silently
+    matching nothing (or everything, for `not_group`)."""
+    with pytest.raises(KeyError, match="diploma"):
+        bib.keys(group="diploma")  # case-sensitive
+    with pytest.raises(KeyError, match="No Such Group"):
+        bib.keys(not_group="No Such Group")
 
 
 def test_add_new_entry(bib):

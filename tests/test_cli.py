@@ -13,6 +13,7 @@ import bibdeskparser
 import bibdeskparser.config as config
 from bibdeskparser import Library
 from bibdeskparser.cli import main
+from bibdeskparser.groups import render_static_groups
 
 REFS_DIR = Path(__file__).parent / "Refs"
 FAIL_CHECKS_DIR = Path(__file__).parent / "test_cli_fail_checks"
@@ -61,12 +62,13 @@ def fixture_checkfile(tmp_path):
     """A copy of `test_cli_fail_checks/problems.bib` in `tmp_path`: a
     library that fails every audit of the `check` command except the parse
     audit (see the `brokenfile` fixture), with one entry per problem,
-    named after it (`MissingDoi2026`, `LiteralJournal2026`,
+    named after it (`MissingDoi2026`, `EmptyDoi2026` -- failing both
+    the doi audit and the empty-fields audit, since its `doi = {}`
+    would be deleted by BibDesk on save -- `LiteralJournal2026`,
     `UndefinedMacro2026`, `BadNames2026`, `Duplicate2026`), plus an
-    unused `@string` macro (`unusedjrnl`) and the two *passing*
-    entries `EmptyDoi2026` (an empty doi marks the entry as verified
-    to have none) and `Preprint2026` (a preprint-only entry, exempt
-    from the doi and journal audits)."""
+    unused `@string` macro (`unusedjrnl`) and the *passing* entry
+    `Preprint2026` (a preprint-only entry, exempt from the doi and
+    journal audits)."""
     return Path(shutil.copy(FAIL_CHECKS_DIR / "problems.bib", tmp_path))
 
 
@@ -159,26 +161,27 @@ def test_keys_filter_type(runner, bibfile):
     ]
 
 
-def test_keys_filter_has_missing_empty(runner, bibfile):
+def test_keys_filter_has_missing(runner, bibfile):
     all_keys = set(_load(bibfile))
     result = _run(runner, "keys", bibfile, "--has", "abstract")
     has_abstract = result.output.splitlines()
     result = _run(runner, "keys", bibfile, "--missing", "abstract")
     missing_abstract = result.output.splitlines()
-    result = _run(runner, "keys", bibfile, "--empty", "abstract")
-    assert result.output == ""  # no empty fields in the pristine file
     assert set(has_abstract) | set(missing_abstract) == all_keys
     assert set(has_abstract) & set(missing_abstract) == set()
     assert "GoerzJPB2011" in has_abstract
     assert "GoerzPhd2015" in missing_abstract
-    # A defined-but-empty field is neither "missing" nor "has":
-    _run(runner, "set_field", bibfile, "GoerzJPB2011", "abstract", "")
-    result = _run(runner, "keys", bibfile, "--empty", "abstract")
-    assert result.output.splitlines() == ["GoerzJPB2011"]
+    # A defined-but-empty field counts as missing (the CLI refuses to
+    # write one, so create it via the Python API):
+    lib = _load(bibfile)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        lib["GoerzJPB2011"]["abstract"] = ""
+    lib.save()
     result = _run(runner, "keys", bibfile, "--has", "abstract")
     assert "GoerzJPB2011" not in result.output.splitlines()
     result = _run(runner, "keys", bibfile, "--missing", "abstract")
-    assert "GoerzJPB2011" not in result.output.splitlines()
+    assert "GoerzJPB2011" in result.output.splitlines()
 
 
 def test_keys_filter_combined(runner, bibfile):
@@ -204,6 +207,51 @@ def test_keys_filter_combined(runner, bibfile):
         assert entry.entry_type == "article"
         assert str(entry["eprint"]).strip()
         assert "note" not in entry
+
+
+def test_keys_filter_group(runner, bibfile):
+    result = _run(runner, "keys", bibfile, "--group", "Diploma")
+    assert result.output.splitlines() == [
+        "Tannor2007",
+        "NielsenChuangCh10QEC",
+        "Evans1983",
+        "LapertPRA09",
+    ]
+    result = _run(
+        runner, "keys", bibfile, "--group", "Diploma", "--type", "book"
+    )
+    assert result.output.splitlines() == ["Tannor2007"]
+    result = _run(
+        runner,
+        "keys",
+        bibfile,
+        "--group",
+        "Diploma",
+        "--group",
+        "My Papers",
+    )
+    assert result.output == ""
+
+
+def test_keys_filter_not_group(runner, bibfile):
+    all_keys = set(_load(bibfile))
+    result = _run(runner, "keys", bibfile, "--not-group", "Diploma")
+    not_diploma = result.output.splitlines()
+    result = _run(runner, "keys", bibfile, "--group", "Diploma")
+    diploma = result.output.splitlines()
+    assert set(not_diploma) == all_keys - set(diploma)
+
+
+def test_keys_filter_group_unknown(runner, bibfile):
+    """An unknown group name is an error, not an empty result."""
+    result = runner.invoke(main, ["keys", str(bibfile), "--group", "diploma"])
+    assert result.exit_code != 0
+    assert "unknown static group 'diploma'" in result.stderr
+    result = runner.invoke(
+        main, ["keys", str(bibfile), "--not-group", "No Such Group"]
+    )
+    assert result.exit_code != 0
+    assert "unknown static group 'No Such Group'" in result.stderr
 
 
 def test_show(runner, bibfile):
@@ -758,21 +806,26 @@ def test_check_problems(runner, checkfile):
     lines = result.output.splitlines()
     assert lines[0] == "Duplicate2026: duplicate citation key"
     assert lines[1] == "MissingDoi2026: missing doi"
-    assert lines[2] == (
+    assert lines[2] == "EmptyDoi2026: missing doi"
+    assert lines[3] == (
+        "EmptyDoi2026: empty field 'doi' (BibDesk deletes empty "
+        "fields on save)"
+    )
+    assert lines[4] == (
         "LiteralJournal2026: journal is the literal string "
         "'Some Journal', not an @string macro reference"
     )
-    assert lines[3] == (
+    assert lines[5] == (
         "UndefinedMacro2026: journal references undefined @string "
         "macro 'nosuchjournal'"
     )
-    assert lines[4].startswith(
+    assert lines[6].startswith(
         "BadNames2026: author does not parse as names: "
     )
-    assert "Too many commas" in lines[4]
-    assert lines[5] == "unused @string macro 'unusedjrnl'"
-    assert lines[6] == "FAIL (6 problems, 7 entries checked)"
-    assert len(lines) == 7
+    assert "Too many commas" in lines[6]
+    assert lines[7] == "unused @string macro 'unusedjrnl'"
+    assert lines[8] == "FAIL (8 problems, 7 entries checked)"
+    assert len(lines) == 9
 
 
 def test_check_problems_json(runner, checkfile):
@@ -784,6 +837,8 @@ def test_check_problems_json(runner, checkfile):
     assert [(p["check"], p["key"]) for p in data["problems"]] == [
         ("duplicate_keys", "Duplicate2026"),
         ("doi", "MissingDoi2026"),
+        ("doi", "EmptyDoi2026"),
+        ("empty_fields", "EmptyDoi2026"),
         ("journal", "LiteralJournal2026"),
         ("journal", "UndefinedMacro2026"),
         ("names", "BadNames2026"),
@@ -813,13 +868,86 @@ def test_check_per_key(runner, checkfile):
 
 
 def test_check_per_key_passing_entries(runner, checkfile):
-    # The empty doi of EmptyDoi2026 marks it as verified to have no
-    # doi, Preprint2026 is exempt from the doi and journal audits as
-    # a preprint-only entry, and the unused-macros audit (which the
+    # Preprint2026 is exempt from the doi and journal audits as a
+    # preprint-only entry, and the unused-macros audit (which the
     # never-referenced 'unusedjrnl' macro would fail) is skipped in
     # per-key mode.
-    result = _run(runner, "check", checkfile, "EmptyDoi2026", "Preprint2026")
-    assert result.output == "PASS (2 entries checked)\n"
+    result = _run(runner, "check", checkfile, "Preprint2026")
+    assert result.output == "PASS (1 entry checked)\n"
+
+
+def test_check_per_key_empty_doi(runner, checkfile):
+    # A defined-but-empty doi counts as missing, and the empty field
+    # itself is doomed data (BibDesk deletes it on save).
+    result = runner.invoke(main, ["check", str(checkfile), "EmptyDoi2026"])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "EmptyDoi2026: missing doi",
+        "EmptyDoi2026: empty field 'doi' (BibDesk deletes empty "
+        "fields on save)",
+        "FAIL (2 problems, 1 entry checked)",
+    ]
+
+
+def _add_static_group(bibfile, name, keys):
+    """Append a `BibDesk Static Groups` comment with one group to
+    `bibfile` (bypassing `save()`, which would refuse to write the
+    deliberately broken check fixtures)."""
+    comment = render_static_groups({name: tuple(keys)})
+    with open(bibfile, "a", encoding="utf-8") as handle:
+        handle.write("\n@comment{" + comment + "}\n")
+
+
+def test_check_known_missing_suppresses_doi(runner, checkfile):
+    """Membership in the known-missing group configured for `doi`
+    passes the doi audit; without configuration, the same membership
+    means nothing."""
+    (checkfile.parent / "bibdeskparser.toml").write_text(
+        '[known_missing]\ndoi = "No DOI"\n', encoding="utf-8"
+    )
+    _add_static_group(checkfile, "No DOI", ["MissingDoi2026"])
+    result = runner.invoke(main, ["check", str(checkfile), "MissingDoi2026"])
+    assert result.exit_code == 0
+    assert result.output == "PASS (1 entry checked)\n"
+    (checkfile.parent / "bibdeskparser.toml").unlink()
+    result = runner.invoke(main, ["check", str(checkfile), "MissingDoi2026"])
+    assert result.exit_code == 1
+    assert "MissingDoi2026: missing doi" in result.output
+
+
+def test_check_known_missing_arbitrary_field(runner, checkfile):
+    """A known-missing group may be declared for any field; the
+    stale-marker audit is the (only) behavior it gets. Nothing ever
+    marks such a group automatically, but a contradiction is
+    flagged."""
+    (checkfile.parent / "bibdeskparser.toml").write_text(
+        '[known_missing]\nauthor = "No Author"\n', encoding="utf-8"
+    )
+    _add_static_group(checkfile, "No Author", ["Preprint2026"])
+    result = runner.invoke(main, ["check", str(checkfile), "Preprint2026"])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "Preprint2026: in group 'No Author' (known-missing author) "
+        "but has a non-empty author",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+def test_check_known_missing_contradiction(runner, checkfile):
+    """An entry in a known-missing group for a field it actually has
+    is flagged (e.g. after a manual edit in BibDesk)."""
+    (checkfile.parent / "bibdeskparser.toml").write_text(
+        '[known_missing]\ndoi = "No DOI"\n', encoding="utf-8"
+    )
+    _add_static_group(checkfile, "No DOI", ["LiteralJournal2026"])
+    result = runner.invoke(
+        main, ["check", str(checkfile), "LiteralJournal2026"]
+    )
+    assert result.exit_code == 1
+    assert (
+        "LiteralJournal2026: in group 'No DOI' (known-missing doi) "
+        "but has a non-empty doi" in result.output
+    )
 
 
 def test_check_duplicate_key(runner, dupfile):
@@ -1323,6 +1451,22 @@ def test_set_field_literal_and_macro_conflict(runner, bibfile):
     )
     assert result.exit_code == 2
     assert "mutually exclusive" in result.stderr
+
+
+def test_set_field_empty_value_rejected(runner, bibfile):
+    """An empty (or whitespace-only) VALUE is an error: BibDesk would
+    delete the field on its next save."""
+    for value in ("", "   "):
+        result = runner.invoke(
+            main, ["set_field", str(bibfile), "GoerzJPB2011", "doi", value]
+        )
+        assert result.exit_code != 0
+        assert "an empty VALUE is never stored" in result.stderr
+        assert "delete_field" in result.stderr
+        assert "known-missing group" in result.stderr
+    # the existing value is untouched
+    doi = _load(bibfile)["GoerzJPB2011"]["doi"]
+    assert str(doi) == "10.1088/0953-4075/44/15/154011"
 
 
 def test_set_field_inappropriate_warns(runner, bibfile):
@@ -2404,7 +2548,12 @@ def test_add_abstract_overwrite(runner, bibfile, monkeypatch):
     assert lib["GoerzNJP2014"]["abstract"] == ABSTRACT
 
 
-def test_add_abstract_not_found_and_mark_empty(runner, bibfile, monkeypatch):
+def test_add_abstract_not_found_and_known_missing(
+    runner, bibfile, monkeypatch
+):
+    """Without a `[known_missing]` configuration a clean no-find
+    modifies nothing; with one, it is recorded as group membership
+    (in the saved file), and members are skipped."""
     _mock_fetch_abstract(
         monkeypatch,
         [("", "none", "none", "cr-miss"), ("", "none", "none", "cr-miss")],
@@ -2413,15 +2562,29 @@ def test_add_abstract_not_found_and_mark_empty(runner, bibfile, monkeypatch):
     assert "GoerzPhd2015: no abstract found [cr-miss]" in result.stdout
     lib = _load(bibfile)
     assert "abstract" not in lib["GoerzPhd2015"]
-    result = _run(
-        runner, "add_abstract", bibfile, "--mark-empty", "GoerzPhd2015"
+    assert "No Abstract" not in lib.groups
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        '[known_missing]\nabstract = "No Abstract"\n', encoding="utf-8"
     )
+    result = _run(runner, "add_abstract", bibfile, "GoerzPhd2015")
     assert (
-        "GoerzPhd2015: no abstract found (stored empty marker) [cr-miss]"
-        in result.stdout
+        "GoerzPhd2015: no abstract found (marked known missing in "
+        "group 'No Abstract') [cr-miss]" in result.stdout
     )
     lib = _load(bibfile)
-    assert lib["GoerzPhd2015"]["abstract"] == ""
+    assert "abstract" not in lib["GoerzPhd2015"]
+    assert lib.groups["No Abstract"] == ("GoerzPhd2015",)
+    monkeypatch.setattr(
+        "bibdeskparser.abstracts.fetch_abstract",
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("must not fetch")
+        ),
+    )
+    result = _run(runner, "add_abstract", bibfile, "GoerzPhd2015")
+    assert (
+        "GoerzPhd2015: skipped (known missing; --overwrite to re-search)"
+        in result.stdout
+    )
 
 
 def test_add_abstract_json(runner, bibfile, monkeypatch):
@@ -2523,7 +2686,12 @@ def test_add_preprint_overwrite(runner, bibfile, monkeypatch):
     assert lib["GoerzNJP2014"]["eprint"] == "2510.12345"
 
 
-def test_add_preprint_not_found_and_mark_empty(runner, bibfile, monkeypatch):
+def test_add_preprint_not_found_and_known_missing(
+    runner, bibfile, monkeypatch
+):
+    """Without a `[known_missing]` configuration a clean no-match
+    modifies nothing; with one, it is recorded as group membership
+    (in the saved file), and members are skipped."""
     _mock_find_preprint(
         monkeypatch,
         [
@@ -2537,41 +2705,38 @@ def test_add_preprint_not_found_and_mark_empty(runner, bibfile, monkeypatch):
     )
     lib = _load(bibfile)
     assert "eprint" not in lib["WinckelIP2008"]
-    result = _run(
-        runner, "add_preprint", bibfile, "--mark-empty", "WinckelIP2008"
-    )
-    assert (
-        "WinckelIP2008: no preprint found (stored empty marker) "
-        "[best-ratio=0.55]" in result.stdout
-    )
-    lib = _load(bibfile)
-    assert lib["WinckelIP2008"]["eprint"] == ""
-    assert "archiveprefix" not in lib["WinckelIP2008"]
-
-
-def test_add_preprint_mark_empty_config(runner, bibfile, monkeypatch):
-    """Without `--mark-empty`, the `[add_preprint]` configuration next
-    to the `.bib` file supplies the default."""
+    assert "No Eprint" not in lib.groups
     (bibfile.parent / "bibdeskparser.toml").write_text(
-        "[add_preprint]\nmark_empty = true\n", encoding="utf-8"
+        '[known_missing]\neprint = "No Eprint"\n', encoding="utf-8"
     )
-    _mock_find_preprint(monkeypatch, [("", "none", 0.55, "best-ratio=0.55")])
     result = _run(runner, "add_preprint", bibfile, "WinckelIP2008")
-    assert "stored empty marker" in result.stdout
+    assert (
+        "WinckelIP2008: no preprint found (marked known missing in "
+        "group 'No Eprint') [best-ratio=0.55]" in result.stdout
+    )
     lib = _load(bibfile)
-    assert lib["WinckelIP2008"]["eprint"] == ""
+    assert "eprint" not in lib["WinckelIP2008"]
+    assert "archiveprefix" not in lib["WinckelIP2008"]
+    assert lib.groups["No Eprint"] == ("WinckelIP2008",)
+    _forbid_find_preprint(monkeypatch)
+    result = _run(runner, "add_preprint", bibfile, "WinckelIP2008")
+    assert (
+        "WinckelIP2008: skipped (known missing; --overwrite to re-search)"
+        in result.stdout
+    )
 
 
 def test_add_preprint_error(runner, bibfile, monkeypatch):
-    """A failed search is reported and stores nothing, even with
-    --mark-empty."""
+    """A failed search is reported and stores nothing, even with a
+    known-missing group configured."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        '[known_missing]\neprint = "No Eprint"\n', encoding="utf-8"
+    )
     _mock_find_preprint(
         monkeypatch, [("", "error", 0.0, "arxiv-error(HTTPError: 500)")]
     )
     before = bibfile.read_text(encoding="utf-8")
-    result = _run(
-        runner, "add_preprint", bibfile, "--mark-empty", "WinckelIP2008"
-    )
+    result = _run(runner, "add_preprint", bibfile, "WinckelIP2008")
     assert (
         "WinckelIP2008: search failed [arxiv-error(HTTPError: 500)]"
         in result.stdout

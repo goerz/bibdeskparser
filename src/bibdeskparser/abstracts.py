@@ -166,31 +166,43 @@ def _extract_pdf_abstract(text):
 # --------------------------------------------------------------------- #
 
 
+class _SourceError(Exception):
+    """An abstract source could not be consulted (network or API
+    failure); distinct from the source definitely having no abstract
+    for the paper."""
+
+
 def _crossref_abstract(doi):
     """The raw (JATS) abstract deposited with Crossref for `doi`, or
-    `None` (no deposit, or any network/data error)."""
+    `None` for a definite negative (a deposit without an abstract, or
+    a DOI not registered with Crossref). Raises `_SourceError` on any
+    other network/data error."""
     try:
         response = Crossref().works(ids=doi)
-        if not isinstance(response, dict):
-            return None
-        message = response.get("message") or {}
-        return message.get("abstract")
     # pylint: disable-next=broad-except
-    except Exception:
-        return None
+    except Exception as exc:
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        if status == 404:
+            return None
+        raise _SourceError(f"crossref: {exc}") from exc
+    if not isinstance(response, dict):
+        raise _SourceError("crossref: unexpected response")
+    message = response.get("message") or {}
+    return message.get("abstract")
 
 
 def _arxiv_summary(arxiv_id):
     """The abstract ("summary") of `arxiv_id` from the arXiv API, or
-    `None` (no such paper, or any network error). `arxiv.Client`
-    enforces the arXiv API's rate limits."""
+    `None` if arXiv has no paper with that identifier. Raises
+    `_SourceError` on any network error. `arxiv.Client` enforces the
+    arXiv API's rate limits."""
     try:
         search = arxiv.Search(id_list=[arxiv_id])
         results = list(arxiv.Client().results(search))
-        return results[0].summary if results else None
     # pylint: disable-next=broad-except
-    except Exception:
-        return None
+    except Exception as exc:
+        raise _SourceError(f"arxiv: {exc}") from exc
+    return results[0].summary if results else None
 
 
 _SS_API = "https://api.semanticscholar.org/graph/v1/paper/"
@@ -198,9 +210,12 @@ _SS_API = "https://api.semanticscholar.org/graph/v1/paper/"
 
 def _semanticscholar_abstract(ident):
     """The abstract for `ident` (`"DOI:..."` or `"arXiv:..."`) from
-    the Semantic Scholar Graph API, or `None`. The public API is
-    rate-limited (~1 request/second): retry twice with a backoff."""
+    the Semantic Scholar Graph API, or `None` if the paper is not in
+    the index (a 404). Raises `_SourceError` when the API cannot be
+    reached. The public API is rate-limited (~1 request/second):
+    retry twice with a backoff."""
     url = _SS_API + urllib.parse.quote(ident, safe=":/") + "?fields=abstract"
+    error = None
     for attempt in range(3):
         try:
             response = httpx.get(url, timeout=30)
@@ -209,9 +224,10 @@ def _semanticscholar_abstract(ident):
             response.raise_for_status()
             return response.json().get("abstract")
         # pylint: disable-next=broad-except
-        except Exception:
+        except Exception as exc:
+            error = exc
             time.sleep(1 + 2 * attempt)
-    return None
+    raise _SourceError(f"semanticscholar: {error}") from error
 
 
 # --------------------------------------------------------------------- #
@@ -239,19 +255,29 @@ def fetch_abstract(*, doi=None, eprint=None, key=None, pdf_path=None):
     and the resolved path of its PDF attachment (`None` if it has
     none). Returns an `AbstractResult` with `applied=False`; network
     problems never raise (an unreachable source is skipped, see the
-    result's `note`).
+    result's `note`). When no abstract is found anywhere *and* at
+    least one consulted source failed (rather than definitely having
+    no abstract), the result's `source` is `"error"` instead of
+    `"none"`: the negative is not conclusive.
     """
     note = []
+    errors = []
     doi = _normalize_doi(doi)
     arxiv_id, arxiv_certain = _arxiv_id(eprint, key)
 
     # --- Crossref (publisher JATS deposit, by DOI) -------------------- #
     cr_text = None
     if doi:
-        raw = _crossref_abstract(doi)
-        if raw is None:
-            note.append("cr-miss")
+        try:
+            raw = _crossref_abstract(doi)
+        except _SourceError:
+            errors.append("cr")
+            note.append("cr-error")
+            raw = None
         else:
+            if raw is None:
+                note.append("cr-miss")
+        if raw is not None:
             cr_text = _valid_or_none(_jats_to_text(raw), "cr", note)
 
     # --- PDF ----------------------------------------------------------- #
@@ -262,6 +288,9 @@ def fetch_abstract(*, doi=None, eprint=None, key=None, pdf_path=None):
     else:
         text, error = _pdftotext(pdf_path)
         if text is None:
+            # An attached PDF that cannot be read is a failed source,
+            # not evidence that no abstract exists.
+            errors.append("pdf")
             note.append(error)
         else:
             block, pdf_note = _extract_pdf_abstract(text)
@@ -289,7 +318,13 @@ def fetch_abstract(*, doi=None, eprint=None, key=None, pdf_path=None):
 
     # --- arXiv (by eprint, or an id guessed from the key) ------------- #
     if arxiv_id:
-        ax_text = _valid_or_none(_arxiv_summary(arxiv_id), "arxiv", note)
+        try:
+            summary = _arxiv_summary(arxiv_id)
+        except _SourceError:
+            errors.append("arxiv")
+            note.append("arxiv-error")
+            summary = None
+        ax_text = _valid_or_none(summary, "arxiv", note)
         confidence = "high" if arxiv_certain else "medium"
         if ax_text and pdf_text:
             overlap = _overlap(pdf_text, ax_text)
@@ -308,7 +343,13 @@ def fetch_abstract(*, doi=None, eprint=None, key=None, pdf_path=None):
     elif arxiv_id:
         ident, certain = f"arXiv:{arxiv_id}", arxiv_certain
     if ident:
-        ss_text = _valid_or_none(_semanticscholar_abstract(ident), "ss", note)
+        try:
+            ss_raw = _semanticscholar_abstract(ident)
+        except _SourceError:
+            errors.append("ss")
+            note.append("ss-error")
+            ss_raw = None
+        ss_text = _valid_or_none(ss_raw, "ss", note)
         confidence = "high" if certain else "medium"
         if ss_text and pdf_text:
             overlap = _overlap(pdf_text, ss_text)
@@ -322,4 +363,6 @@ def fetch_abstract(*, doi=None, eprint=None, key=None, pdf_path=None):
 
     if pdf_text:
         return _result(pdf_text, "pdf", "medium", note)
+    if errors:
+        return _result("", "error", "none", note)
     return _result("", "none", "none", note)

@@ -148,15 +148,6 @@ class Entry(MutableMapping):
     at the {class}`Library` level only: entries that are not part of a
     `Library` cannot have `groups`.
 
-    {meth}`add_abstract` and {meth}`add_preprint` enrich the entry
-    from online sources, filling the `abstract` field and the
-    `eprint` field (the matching arXiv preprint), respectively. Both
-    are mirrored by like-named {class}`Library` methods; for an entry
-    in a library, prefer {meth}`Library.add_abstract`, which also
-    locates the entry's attached PDF as an additional abstract
-    source (see {meth}`add_abstract` on why the entry cannot do that
-    itself).
-
     {meth}`copy` returns an independent copy of the entry: a faithful
     snapshot of its current fields, but not a member of any `Library`.
     """
@@ -590,87 +581,15 @@ class Entry(MutableMapping):
 
     # -- online enrichment (abstracts, preprints) ----------------------- #
 
-    def add_abstract(
-        self,
-        *,
-        min_confidence=None,
-        overwrite=False,
-        mark_empty=None,
-        pdf_path=None,
+    def _add_abstract(
+        self, *, min_confidence=None, overwrite=False, pdf_path=None
     ):
-        """Fetch the entry's abstract from the best available source
-        and store it in the `abstract` field.
-
-        Candidate abstracts are gathered from
-        [Crossref](https://www.crossref.org) (the publisher's
-        deposit, via the entry's `doi`), from the text of the PDF
-        given as `pdf_path` (extracted with the
-        [poppler](https://poppler.freedesktop.org) `pdftotext`
-        command-line tool, which must be on `PATH`; this source is
-        skipped otherwise), from the [arXiv
-        API](https://info.arxiv.org/help/api/) (via the entry's
-        `eprint`, or an arXiv identifier contained in the citation
-        key), and from [Semantic
-        Scholar](https://www.semanticscholar.org) as a last resort.
-        Every candidate is cleaned to plain-unicode prose (LaTeX/JATS
-        math markup to unicode, ligature and hyphenation repair,
-        publisher copyright trailers stripped) and validated with
-        heuristic garble checks. The candidates are then combined
-        into a single result with a *confidence* level:
-
-        * `"high"`: an online abstract identified by the entry's
-          `doi`/`eprint` (and agreeing with the PDF text, where both
-          exist -- the identifier guarantees the paper, the agreement
-          guards against a wrong or garbled deposit), or an
-          unambiguous PDF extraction;
-        * `"medium"`: a single unconfirmed source: only the PDF text,
-          or an online lookup via an arXiv identifier merely guessed
-          from the citation key;
-        * `"low"`: the PDF text and an online source *disagree*. The
-          PDF text is reported (it belongs to the given file), but
-          one of the two sources probably grabbed the wrong text --
-          review manually;
-        * `"none"`: no valid abstract found anywhere.
-
-        `pdf_path` is the resolved filesystem path of a PDF of the
-        paper (`None` to skip the PDF source). An `Entry` cannot
-        locate its own attached PDFs: the paths in {attr}`files` are
-        relative to the library's `.bib` file, which only the
-        {class}`Library` knows. For an entry in a library, call
-        {meth}`Library.add_abstract` instead, which finds the entry's
-        first attached PDF automatically and passes it here.
-
-        The fetched abstract is stored in the entry only if its
-        confidence is at least `min_confidence` (`"high"`,
-        `"medium"`, or `"low"`). With `mark_empty=True`, a `"none"`
-        result stores an *empty* `abstract` field instead of leaving
-        the field undefined, marking the entry as audited (`keys
-        --empty abstract` in the command line, as opposed to `keys
-        --missing abstract`). Both arguments default to the
-        `[add_abstract]` table of the
-        [configuration](configuration)
-        (`config.add_abstract.min_confidence`, `"high"` unless
-        configured, and `config.add_abstract.mark_empty`, `False`
-        unless configured).
-
-        If the entry already has a non-empty abstract, nothing is
-        fetched and the existing text is returned with source
-        `"existing"`, unless `overwrite=True`. An entry whose
-        `abstract` field is present but *empty* (the audited marker)
-        does not require `overwrite`.
-
-        Returns a named tuple `(abstract, source, confidence, note,
-        applied)`: the abstract text (`""` if none was found), the
-        source it came from (`"crossref"`, `"pdf"`, `"arxiv"`,
-        `"semanticscholar"`, `"none"`, or `"existing"`), the
-        confidence level, a short diagnostic trace of the source
-        selection (`note`), and whether the entry was modified
-        (`applied`).
-
-        Raises {exc}`ValueError` for an invalid `min_confidence`.
-        Network problems never raise: an unreachable source is
-        skipped (see `note`). Requires network access for the online
-        sources.
+        """Backing implementation of `Library.add_abstract`: pure
+        fetch-and-store, without the known-missing group bookkeeping
+        (an `Entry` holds no reference to its library). `pdf_path` is
+        the resolved filesystem path of a PDF of the paper, or `None`
+        to skip the PDF source; see `Library.add_abstract` for the
+        source-selection, confidence, and result semantics.
         """
         # Imported lazily: the abstracts module pulls in the network
         # dependencies and pylatexenc, needed nowhere else.
@@ -678,8 +597,6 @@ class Entry(MutableMapping):
 
         if min_confidence is None:
             min_confidence = active.add_abstract.min_confidence
-        if mark_empty is None:
-            mark_empty = active.add_abstract.mark_empty
         if min_confidence not in ("high", "medium", "low"):
             raise ValueError(
                 f"min_confidence must be 'high', 'medium', or 'low', "
@@ -704,97 +621,19 @@ class Entry(MutableMapping):
         if result.abstract and rank(result.confidence) >= rank(min_confidence):
             self["abstract"] = ValueString(result.abstract)
             return result._replace(applied=True)
-        if not result.abstract and mark_empty:
-            self["abstract"] = ValueString("")
-            return result._replace(applied=True)
         return result
 
-    def add_preprint(self, eprint=None, *, overwrite=False, mark_empty=None):
-        """Record the entry's arXiv preprint in its `eprint` field --
-        an explicitly given identifier, or one found by searching
-        arXiv (the only supported preprint server).
-
-        With `eprint` given (e.g. `"2205.15044"`,
-        `"quant-ph/0106057"`, or `"arXiv:2205.15044"`), the identifier
-        is validated and normalized (prefix and version suffix
-        stripped) and stored without any network access -- the caller
-        asserts the match, e.g. after manually reviewing a candidate
-        the search rejected.
-
-        With `eprint=None`, the [arXiv
-        API](https://info.arxiv.org/help/api/) is searched for the
-        entry, by title and first author, precise queries first. A
-        result is accepted only when it confidently matches the
-        entry: its arXiv DOI equals the entry's `doi`, its title is a
-        near-exact match, or a good title match is corroborated by
-        the first author's last name. A title-based match whose arXiv
-        submission postdates the entry's `year` by more than a year
-        is rejected unless its journal reference names that year
-        (guarding against unrelated papers sharing a generic title);
-        such a rejected candidate is reported in the result's `note`
-        as `postdated-unverified(...)` and can, after review, be
-        applied by passing its identifier as `eprint`. The search
-        uses only the entry's own fields, so it works the same for an
-        entry that is not (yet) in a {class}`Library`.
-
-        Whenever a non-empty `eprint` is stored, an
-        `archiveprefix = arXiv` field is added alongside it (unless
-        the entry already has an `archiveprefix`). A search match
-        additionally stores the preprint's arXiv primary category
-        (e.g. `quant-ph`) in the `primaryclass` field, replacing any
-        existing value (which, with `overwrite=True`, described the
-        replaced identifier); an explicitly given identifier stores
-        no `primaryclass`, since without network access the category
-        is unknown.
-
-        The `eprint` field encodes the entry's audit state, mirroring
-        how {meth}`add_abstract` treats the `abstract` field: a field
-        that is *absent* means the preprint status is unknown
-        (`keys --missing eprint` in the command line); an *empty*
-        field means a search ran cleanly and found no preprint
-        (`keys --empty eprint`); a non-empty field holds the known
-        identifier. With `mark_empty=True` (defaulting to the
-        `[add_preprint]` table of the
-        [configuration](configuration),
-        `config.add_preprint.mark_empty`, `False` unless configured),
-        a clean no-match stores that empty marker, so that repeated
-        fill-in runs -- selecting entries with
-        `keys --missing eprint` -- do not re-query arXiv for entries
-        already searched. A no-match is not proof that no preprint
-        exists (matching can fail), so re-audit the empty markers
-        occasionally by passing the `keys --empty eprint` entries. If
-        the entry already has a *non-empty* `eprint`, nothing is
-        searched and the existing identifier is returned with match
-        `"existing"`, unless `overwrite=True`; the empty marker does
-        not require `overwrite`.
-
-        Returns a named tuple `(eprint, match, ratio, note, applied,
-        primaryclass)`: the stored (or existing) arXiv identifier
-        (`""` if none), how it was matched (`"doi"`, `"title"`, or
-        `"title+author"` for a search match, in decreasing order of
-        strength; `"explicit"` for a given identifier; `"none"` for a
-        clean no-match; `"error"` when the search could not run;
-        `"existing"` when the entry was skipped), the title-similarity
-        ratio of the best search result (`None` when no search ran),
-        a short diagnostic trace (`note`), whether the entry was
-        modified (`applied`), and the primary category of a search
-        match (`""` otherwise). On a `"error"` result (network/API
-        failure, or an entry without a title) the entry is never
-        modified -- in particular, no empty marker is stored -- so a
-        re-run picks it up.
-
-        Raises {exc}`ValueError` if an explicitly given `eprint` is
-        not a valid arXiv identifier. Network problems never raise.
-        The search respects the arXiv API's rate limit (one request
-        every three seconds, shared across all searches in the
-        process), so budget time accordingly for large batch runs.
+    def _add_preprint(self, eprint=None, *, overwrite=False):
+        """Backing implementation of `Library.add_preprint`: pure
+        fetch-and-store, without the known-missing group bookkeeping
+        (an `Entry` holds no reference to its library); see
+        `Library.add_preprint` for the matching-rule and result
+        semantics.
         """
         # Imported lazily: the preprints module pulls in the network
         # dependencies, needed nowhere else.
         from . import preprints  # pylint: disable=import-outside-toplevel
 
-        if mark_empty is None:
-            mark_empty = active.add_preprint.mark_empty
         existing = str(self.get("eprint") or "")
         if eprint is not None:
             value = preprints.normalize_eprint(eprint)
@@ -824,13 +663,6 @@ class Entry(MutableMapping):
         )
         if result.eprint:
             self._store_eprint(result.eprint, result.primaryclass)
-            return result._replace(applied=True)
-        if result.match == "none" and mark_empty:
-            self["eprint"] = ValueString("")
-            if str(self.get("archiveprefix") or "").lower() == "arxiv":
-                del self["archiveprefix"]
-            if "primaryclass" in self:
-                del self["primaryclass"]
             return result._replace(applied=True)
         return result
 

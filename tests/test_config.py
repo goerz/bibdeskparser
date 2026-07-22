@@ -727,9 +727,6 @@ def test_add_abstract_option_validation(tmp_path, monkeypatch):
     _write(tmp_path, '[add_abstract]\nmin_confidence = "certain"\n')
     with pytest.raises(ValueError, match="min_confidence"):
         config.active.load(bib_dir=tmp_path)
-    _write(tmp_path, '[add_abstract]\nmark_empty = "yes"\n')
-    with pytest.raises(ValueError, match="mark_empty must be a boolean"):
-        config.active.load(bib_dir=tmp_path)
     _write(tmp_path, "[add_abstract]\nnonsense = 1\n")
     with pytest.warns(
         UserWarning, match=r"unknown key\(s\) in \[add_abstract\]"
@@ -743,24 +740,21 @@ def test_add_abstract_min_confidence_assignment():
         config.active.add_abstract.min_confidence = "certain"
 
 
-def test_add_preprint_option_validation(tmp_path, monkeypatch):
+def test_stale_add_preprint_table_warns(tmp_path, monkeypatch):
+    """The `[add_preprint]` table no longer exists (its only key was
+    the removed `mark_empty`); a leftover table triggers the generic
+    unknown-key warning."""
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
-    _write(tmp_path, "add_preprint = 1\n")
-    with pytest.raises(ValueError, match=r"\[add_preprint\] must be a table"):
-        config.active.load(bib_dir=tmp_path)
-    _write(tmp_path, '[add_preprint]\nmark_empty = "yes"\n')
-    with pytest.raises(ValueError, match="mark_empty must be a boolean"):
-        config.active.load(bib_dir=tmp_path)
-    _write(tmp_path, "[add_preprint]\nnonsense = 1\n")
+    _write(tmp_path, "[add_preprint]\nmark_empty = true\n")
     with pytest.warns(
-        UserWarning, match=r"unknown key\(s\) in \[add_preprint\]"
+        UserWarning, match=r"unknown key\(s\) in bibdeskparser.toml"
     ):
         config.active.load(bib_dir=tmp_path)
 
 
 def test_add_defaults(tmp_path, monkeypatch):
-    """Without `[add]`/`[add_abstract]`/`[add_preprint]` tables, the
-    built-in defaults apply."""
+    """Without `[add]`/`[add_abstract]` tables, the built-in defaults
+    apply."""
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
     _write(tmp_path, "verify_types = false\n")
     config.active.load(bib_dir=tmp_path)
@@ -768,8 +762,6 @@ def test_add_defaults(tmp_path, monkeypatch):
     assert config.active.add.add_abstract is False
     assert config.active.add.add_preprint is False
     assert config.active.add_abstract.min_confidence == "high"
-    assert config.active.add_abstract.mark_empty is False
-    assert config.active.add_preprint.mark_empty is False
 
 
 def test_add_settings(tmp_path, monkeypatch):
@@ -781,22 +773,16 @@ def test_add_settings(tmp_path, monkeypatch):
         "add_abstract = true\n"
         "add_preprint = true\n"
         "[add_abstract]\n"
-        'min_confidence = "medium"\n'
-        "mark_empty = true\n"
-        "[add_preprint]\n"
-        "mark_empty = true\n",
+        'min_confidence = "medium"\n',
     )
     config.active.load(bib_dir=tmp_path)
     assert config.active.add.fix_uppercase is True
     assert config.active.add.add_abstract is True
     assert config.active.add.add_preprint is True
     assert config.active.add_abstract.min_confidence == "medium"
-    assert config.active.add_abstract.mark_empty is True
-    assert config.active.add_preprint.mark_empty is True
     config.active.reset()
     assert config.active.add.add_preprint is False
     assert config.active.add_abstract.min_confidence == "high"
-    assert config.active.add_preprint.mark_empty is False
 
 
 def test_add_option_validation(tmp_path, monkeypatch):
@@ -809,4 +795,64 @@ def test_add_option_validation(tmp_path, monkeypatch):
         config.active.load(bib_dir=tmp_path)
     _write(tmp_path, "[add]\nnonsense = 1\n")
     with pytest.warns(UserWarning, match=r"unknown key\(s\) in \[add\]"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_known_missing_defaults(tmp_path, monkeypatch):
+    """Without a `[known_missing]` table, the mapping is empty."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "verify_types = false\n")
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.known_missing == {}
+
+
+def test_known_missing_settings(tmp_path, monkeypatch):
+    """The `[known_missing]` table maps lowercased field names to
+    stripped group names; `reset` restores the empty default."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(
+        tmp_path,
+        "[known_missing]\n"
+        'abstract = "No Abstract"\n'
+        'Eprint = " No Eprint "\n'
+        'doi = "No DOI"\n',
+    )
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.known_missing == {
+        "abstract": "No Abstract",
+        "eprint": "No Eprint",
+        "doi": "No DOI",
+    }
+    config.active.reset()
+    assert config.active.known_missing == {}
+
+
+def test_known_missing_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "known_missing = 1\n")
+    with pytest.raises(ValueError, match=r"\[known_missing\] must be a table"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[known_missing]\neprint = 1\n")
+    with pytest.raises(
+        ValueError, match="eprint must be a non-empty group name"
+    ):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[known_missing]\neprint = "  "\n')
+    with pytest.raises(
+        ValueError, match="eprint must be a non-empty group name"
+    ):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[known_missing]\neprint = "X"\nEprint = "Y"\n')
+    with pytest.raises(
+        ValueError, match="defines field 'eprint' more than once"
+    ):
+        config.active.load(bib_dir=tmp_path)
+    _write(
+        tmp_path,
+        '[known_missing]\neprint = "No Data"\nabstract = "No Data"\n',
+    )
+    with pytest.raises(
+        ValueError,
+        match="maps both 'eprint' and 'abstract' to group 'No Data'",
+    ):
         config.active.load(bib_dir=tmp_path)

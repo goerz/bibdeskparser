@@ -253,6 +253,8 @@ overrides the built-in month name and round-trips like any other. A
 bare reference to a `.bst` journal abbreviation, by contrast, is
 undefined unless the `.bib` file defines it.
 
+(bibdesk-static-groups)=
+
 ## BibDesk Static Groups
 
 BibDesk lets you organize entries into user-curated "static" groups
@@ -392,6 +394,52 @@ BibDesk's *external file groups* and *script groups* are stored in
 analogous `BibDesk URL Groups` / `BibDesk Script Groups` `@comment`
 blocks, and are likewise preserved verbatim without being
 interpreted.
+
+(bibdesk-empty-fields)=
+
+## Empty fields
+
+A field with an empty value, like `doi = {}`, is valid BibTeX, and
+BibDesk parses it without complaint. It does not survive, though:
+whenever BibDesk saves a library, its serializer silently omits every
+field whose value is empty, so the field is deleted from the `.bib`
+file the next time the user saves in BibDesk, without any warning. An
+empty field therefore cannot carry durable information.
+
+That rules out a marker convention that would otherwise be natural: an
+*empty* field meaning "this information was searched for and verified
+not to exist" (say, an article confirmed to have no DOI), as opposed
+to an *absent* field meaning "never checked". Any tool sharing a
+`.bib` file with BibDesk would lose those markers on the first save.
+`bibdeskparser` consequently treats a defined-but-empty field as
+missing everywhere -- in `keys --missing`, in the fetching commands,
+and in the audits -- and the `check` command flags every empty field
+as a problem, since whatever it was meant to record is about to
+disappear.
+
+The verified status "searched, this info does not exist" is recorded
+as membership in a *known-missing group* instead: a regular
+[static group](bibdesk-static-groups), named per field in the
+`[known_missing]` table of `bibdeskparser.toml`
+([configuration](config-known-missing)), e.g. `"No Abstract"` for
+`abstract`. Unlike an empty field, a static group survives every
+BibDesk save; BibDesk itself keeps its membership intact when
+citation keys change and when entries are deleted; the marker never
+travels into exported or shared entries, since it is not part of the
+entry; and membership can be inspected and changed directly in
+BibDesk's group sidebar, by drag and drop. With the table configured,
+`add_abstract` and `add_preprint` maintain the groups declared for
+`abstract` and `eprint` automatically (recording clean no-finds,
+skipping members, unmarking when a value is stored), `check` accepts
+an `article` without a `doi` when the entry is in the group
+configured for `doi` and reports any entry whose membership in a
+declared group contradicts a non-empty value in that field, and
+`keys --group` selects the members. Groups declared for other fields
+are maintained by hand and get the contradiction audit; the
+[configuration reference](config-known-missing) spells out what a
+declaration does per field. The how-to recipes for
+[abstracts](howto-add-abstract) and
+[preprints](howto-add-preprint) show the full workflow.
 
 ## Keywords
 
