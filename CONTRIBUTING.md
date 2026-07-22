@@ -95,6 +95,17 @@ Tests live in the `tests` subfolder, in `test_*.py` files with `test_*` function
 
 Two `conftest.py` files configure the suite via [pytest fixtures](https://docs.pytest.org/en/stable/how-to/doctest.html#the-doctest-namespace-fixture). The one at the repository root isolates every test from a developer's personal configuration, and `src/conftest.py` injects the `bibdeskparser` package into the [doctest namespace](https://docs.pytest.org/en/stable/how-to/doctest.html) so doctests can use it without an explicit import. Extend the latter's autouse fixture to make more names available to every doctest.
 
+The command-line examples in the documentation are tested as well. The doctest collector only executes ` ```python ` blocks; the ` ```console ` blocks of the how-to page (`docs/sources/howto.md`) and the CLI-reference page (`docs/sources/cli.md`) are instead executed by `tests/test_doc_console.py`. That harness extracts every `$ bibdeskparser ...` command, replays it through click's `CliRunner` in a temporary directory holding a fresh copy of `tests/Refs` (and `tests/test_cli_fail_checks`), and compares the output shown in the documentation against the actual output with doctest semantics, so `...` in the shown output matches any text. A failure names the page and line of the offending command. A `console` example on these pages is therefore a doctest, and is written under the following contract:
+
+- The example operates on the example database at the relative path `tests/Refs/refs.bib`, and no `bibdeskparser.toml` is in effect. An example that depends on configuration (e.g. `rekey` without an explicit `--format-spec`) cannot run and must be excluded (see below).
+- On the how-to page, all blocks run in order, in one shared sandbox (like the Python doctests of a single file), so an example may rely on the effects of earlier blocks. On the CLI-reference page, every block runs in isolation, in a fresh sandbox, so each example must be self-contained; in particular, it cannot delete or rename something that only an example in another block created.
+- The harness understands a small shell subset: `$ ` prompts, backslash continuations, trailing `#` comments, `<< 'EOF'` heredocs, one level of `$(...)` command substitution, and pipelines in which every stage is a `bibdeskparser` invocation. Any other shell syntax fails the test; extend the harness if a new example needs it.
+- Commands that need network access (`add`, `add_abstract`, `add_preprint`, `import --url`), would open an interactive editor (`edit`/`edit_strings` without `--stdin`), or pipe through other programs (`pbpaste`, `sed`) are skipped automatically, and their shown output goes unverified, so double-check it by hand. Later blocks on the how-to page must not depend on the effects of a skipped command.
+- A command with no output shown below it is only required to succeed; what it actually prints is not compared (in particular, it is *not* required to print nothing). The `check` command may exit with code 1, since reporting problems is its purpose.
+- An HTML comment `<!-- notest -->` on the line directly above a fence excludes that block; the comment is invisible in the rendered documentation. Use it for purely illustrative examples, e.g. ones referencing files that do not exist outside the reader's setting.
+
+The pages under test are listed in `PAGES` at the top of `tests/test_doc_console.py`; a new documentation page with `console` examples must be registered there.
+
 Code Style
 ----------
 

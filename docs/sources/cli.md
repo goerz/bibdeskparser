@@ -19,6 +19,7 @@ invocations, guided by the `--help` output alone (see
 
 ## Usage
 
+<!-- notest -->
 ```console
 $ bibdeskparser <command> [BIBFILE] <args> <options>
 ```
@@ -121,6 +122,7 @@ $ bibdeskparser create new.bib
 All other commands require the `.bib` file to exist, so a new library
 is started with `create` and then filled with entries:
 
+<!-- notest -->
 ```console
 $ bibdeskparser create new.bib
 $ bibdeskparser import new.bib entries.bib
@@ -279,8 +281,9 @@ For example, to inspect the DOI and title of every entry that is
 missing an `eprint` field, in one pipeline:
 
 ```console
-$ bibdeskparser keys --missing eprint \
-    | bibdeskparser show --field doi,title --json --keys-from -
+$ bibdeskparser keys tests/Refs/refs.bib --missing eprint \
+    | bibdeskparser show tests/Refs/refs.bib --field doi,title \
+        --json --keys-from -
 ```
 
 (cli-fields)=
@@ -503,6 +506,7 @@ given `BIBFILE`, or the configured `default_bib_file` when `BIBFILE`
 is omitted. See {py:attr}`~bibdeskparser.Library.path`. With
 `--json`: a string.
 
+<!-- notest -->
 ```console
 $ bibdeskparser path
 /Users/mg/Refs/refs.bib
@@ -520,6 +524,7 @@ checks the directory of the `.bib` file, then the file named by
 the command fails with an error (the built-in defaults are then in
 effect). With `--json`: a string.
 
+<!-- notest -->
 ```console
 $ bibdeskparser config_path
 /Users/mg/.config/bibdeskparser/bibdeskparser.toml
@@ -652,6 +657,7 @@ configured in the `[auto_key]` table of `bibdeskparser.toml` (which may
 map a format per entry type; see the [configuration](configuration)) --
 and printed to stdout:
 
+<!-- notest -->
 ```console
 $ bibdeskparser rekey tests/Refs/refs.bib LapertPRA09
 LapertPRA2009
@@ -765,6 +771,7 @@ An entry whose DOI or eprint is already in the library is rejected,
 and any validation problem in the snippet rejects the whole import,
 reporting all problems at once, with the `.bib` file untouched.
 
+<!-- notest -->
 ```console
 $ bibdeskparser import tests/Refs/refs.bib entries.bib
 BaumgratzPRL2014
@@ -885,9 +892,7 @@ file, and `--json` maps each key to
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing abstract
-TuriniciHAL00640217
 SauvagePRXQ2020
-Vecheck2022.09.09.507322
 KatrukhaNC2017
 $ bibdeskparser add_abstract tests/Refs/refs.bib \
     SauvagePRXQ2020 Vecheck2022.09.09.507322
@@ -946,8 +951,6 @@ time.
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
 WinckelIP2008
-TuriniciHAL00640217
-Vecheck2022.09.09.507322
 $ bibdeskparser add_preprint tests/Refs/refs.bib --mark-empty \
     WinckelIP2008 Vecheck2022.09.09.507322
 WinckelIP2008: no preprint found (stored empty marker) [best-ratio=0.42]
@@ -993,7 +996,7 @@ Delete the static group `NAME`; the entries themselves are not
 affected. Corresponds to `del lib.groups[name]`.
 
 ```console
-$ bibdeskparser delete_group tests/Refs/refs.bib "To Read"
+$ bibdeskparser delete_group tests/Refs/refs.bib Diploma
 ```
 
 ## Keywords
@@ -1035,6 +1038,7 @@ $ bibdeskparser set_string tests/Refs/refs.bib prl "Phys. Rev. Lett."
 Delete the `@string` macro `NAME` (which must not be referenced by any
 entry). Corresponds to `del lib.strings[name]`.
 
+<!-- notest -->
 ```console
 $ bibdeskparser delete_string tests/Refs/refs.bib prl
 ```
@@ -1061,6 +1065,7 @@ Attach the file `FILENAME` to the entry `KEY`, via
 {py:meth}`~bibdeskparser.Library.add_file`. By default, `FILENAME`
 must exist on disk; pass `--no-check-exists` to skip that check.
 
+<!-- notest -->
 ```console
 $ bibdeskparser add_file tests/Refs/refs.bib Shapiro2012 papers/shapiro-brumer.pdf
 ```
@@ -1076,6 +1081,7 @@ the [configuration](configuration)), or when the configuration sets
 `file_automatically = true`; pass `--no-auto-file` to force a plain
 attach regardless of the configuration:
 
+<!-- notest -->
 ```console
 $ bibdeskparser add_file tests/Refs/refs.bib Shapiro2012 \
     ~/Downloads/9780471973461.pdf \
@@ -1090,6 +1096,7 @@ Replace the entry's attached file `OLD` with `NEW`, via
 also delete the old file from the filesystem, and `--no-check-exists`
 to not require `NEW` to exist on disk.
 
+<!-- notest -->
 ```console
 $ bibdeskparser replace_file tests/Refs/refs.bib GoerzJPB2011 \
     GoerzJPB2011.pdf corrected.pdf --remove
@@ -1127,6 +1134,7 @@ else the `format_spec` and `location` keys of the `[auto_file]` table
 of `bibdeskparser.toml` (see the [configuration](configuration)) --
 and the new path (relative to the `.bib` file) is printed to stdout:
 
+<!-- notest -->
 ```console
 $ bibdeskparser rename_file tests/Refs/refs.bib GraceJMO2007 grace_jmo_2007.pdf
 GraceJMO2007.pdf
@@ -1170,8 +1178,8 @@ Remove `URL` from the entry `KEY`, via
 {py:meth}`~bibdeskparser.Library.remove_url`.
 
 ```console
-$ bibdeskparser remove_url tests/Refs/refs.bib WattsPRA2015 \
-    https://arxiv.org/abs/1412.7347
+$ bibdeskparser remove_url tests/Refs/refs.bib TomzaPRA2012 \
+    http://dx.doi.org/10.1103/PhysRevA.86.043424
 ```
 
 ## Free-form editing

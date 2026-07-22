@@ -750,6 +750,7 @@ bib.save()
 On the command line, `import` reads from a file, stdin, or a URL
 ({ref}`CLI reference <cli-import>`):
 
+<!-- notest -->
 ```console
 $ bibdeskparser import tests/Refs/refs.bib entries.bib
 $ pbpaste | bibdeskparser import tests/Refs/refs.bib --stdin
@@ -761,9 +762,10 @@ Since [`export`](cli-export) writes exactly the kind of snippet that
 moves entries between libraries:
 
 ```console
-$ bibdeskparser export tests/Refs/refs.bib GoerzPRA2014 \
+$ bibdeskparser create other.bib
+$ bibdeskparser export tests/Refs/refs.bib Tannor2007 \
     | bibdeskparser import other.bib --stdin
-GoerzPRA2014
+Tannor2007
 ```
 
 If anything about a snippet is not acceptable (an undefined macro, an
