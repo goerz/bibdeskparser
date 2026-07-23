@@ -31,6 +31,7 @@ from difflib import SequenceMatcher
 import arxiv
 
 from .identifiers import _RX_ARXIV_ID, _normalize_doi
+from .texmap import detexify
 
 __all__ = []
 
@@ -64,7 +65,45 @@ _MAX_RESULTS = 10
 
 _RX_VERSION = re.compile(r"v\d+$")
 
+#: Non-alphanumeric runs, for the fold-to-ASCII comparison path.
 _NONALNUM = re.compile(r"[^a-z0-9]+")
+
+#: Non-word runs, for the unicode-preserving query path. Unlike
+#: `_NONALNUM`, `\w` keeps non-ASCII letters, so `sørensen` stays one
+#: token instead of shattering into `s`/`rensen`.
+_NONWORD = re.compile(r"[^\w]+")
+
+#: Latin letters that Unicode treats as atomic rather than as
+#: base-plus-combining-accent, so they have no NFKD decomposition and
+#: survive `unicodedata.normalize("NFKD", ...)` unchanged. Folded to
+#: ASCII explicitly on the comparison path (see `_deaccent`).
+_ATOMIC = str.maketrans(
+    {
+        "ø": "o",
+        "Ø": "O",
+        "ł": "l",
+        "Ł": "L",
+        "đ": "d",
+        "Đ": "D",
+        "ħ": "h",
+        "Ħ": "H",
+        "ß": "ss",
+        "ẞ": "SS",
+        "æ": "ae",
+        "Æ": "AE",
+        "œ": "oe",
+        "Œ": "OE",
+        "ð": "d",
+        "Ð": "D",
+        "þ": "th",
+        "Þ": "Th",
+        "ŧ": "t",
+        "Ŧ": "T",
+        "ı": "i",
+        "ŋ": "ng",
+        "Ŋ": "Ng",
+    }
+)
 
 
 # --------------------------------------------------------------------- #
@@ -96,35 +135,56 @@ def _short_id(result):
 
 
 def _deaccent(s):
-    """Drop diacritics: 'Körner' -> 'Korner'."""
-    return "".join(
+    """Fold accented and atomic Latin letters to ASCII: 'Körner' ->
+    'Korner', 'Mølmer' -> 'Molmer', 'Weiß' -> 'Weiss'. Decomposable
+    letters lose their combining marks; atomic letters (ø, ł, ß, æ, …,
+    which have no NFKD decomposition) are folded via an explicit table.
+    Applied on the comparison path so a match is insensitive to how an
+    accent is spelled; queries preserve the original letters."""
+    s = "".join(
         c
         for c in unicodedata.normalize("NFKD", s)
         if not unicodedata.combining(c)
     )
+    return s.translate(_ATOMIC)
 
 
-def _clean_text(raw):
+def _clean_text(raw, *, deaccent=True):
     """Strip TeX/braces/math markup from a field value, for building
     queries and comparing titles. Field values are already TeX-decoded
     unicode, but titles may retain brace protection, math (`$...$`),
-    and the occasional TeX command."""
+    and the occasional TeX command, so any `{\\...}` is decoded first.
+    With `deaccent` (the default, for comparison) accented and atomic
+    letters are folded to ASCII; query construction passes
+    `deaccent=False` to preserve the letters, which arXiv's index
+    stores literally."""
     if raw is None:
         return ""
-    s = str(raw)
+    s = detexify(str(raw))
     s = re.sub(r"\\[a-zA-Z]+\{([^{}]*)\}", r"\1", s)
     s = re.sub(r"\\[a-zA-Z]+", " ", s)
     s = re.sub(r"\\[^a-zA-Z]", "", s)
     s = s.replace("{", "").replace("}", "").replace("$", "")
     s = s.replace("~", " ").replace("--", "-")
-    s = _deaccent(s)
+    if deaccent:
+        s = _deaccent(s)
     return re.sub(r"\s+", " ", s).strip()
 
 
 def _norm_title(raw):
-    """Collapse a title to lowercase alphanumeric tokens for fuzzy
-    matching."""
+    """Collapse a title to lowercase ASCII alphanumeric tokens, for
+    fuzzy comparison (accents folded)."""
     return _NONALNUM.sub(" ", _clean_text(raw).lower()).strip()
+
+
+def _query_norm(raw):
+    """Like `_norm_title`, but preserves non-ASCII letters and does not
+    fold accents, for building arXiv queries. arXiv's index stores
+    title characters literally, so a folded query never matches a
+    unicode title. NFC composes any decomposed accent (`o` + combining
+    diaeresis) so `\\w` keeps it as one token."""
+    s = unicodedata.normalize("NFC", _clean_text(raw, deaccent=False))
+    return _NONWORD.sub(" ", s.lower()).strip()
 
 
 def _first_author_lastname(authors_raw):
@@ -271,10 +331,15 @@ def _distinctive_words(title, n=4):
     first). Querying a few long words joined by AND (rather than an
     exact phrase) is robust to minor wording differences -- e.g. a
     published "colour" vs. the arXiv "color" -- while `_pick_match`
-    still enforces precision."""
-    words = [w for w in _norm_title(title).split() if len(w) >= 4]
+    still enforces precision. Pure-ASCII words are preferred (arXiv
+    indexes them unambiguously); a non-ASCII word is kept only when
+    fewer than three ASCII candidates remain."""
+    words = [w for w in _query_norm(title).split() if len(w) >= 4]
     if len(words) < 3:  # very short title: keep everything
-        words = _norm_title(title).split()
+        words = _query_norm(title).split()
+    ascii_words = [w for w in words if w.isascii()]
+    if len(ascii_words) >= 3:
+        words = ascii_words
     seen, uniq = set(), []
     for word in sorted(words, key=len, reverse=True):
         if word not in seen:
@@ -291,8 +356,12 @@ def _build_queries(title, lastname):
     3. distinctive title words + author (tolerant of a single
        word/spelling difference);
     4. distinctive title words (last resort).
+
+    Non-ASCII letters are preserved (see `_query_norm`), so a title
+    like "Mølmer-Sørensen" produces intact `mølmer`/`sørensen` tokens
+    rather than shattered fragments.
     """
-    words = _norm_title(title).split()
+    words = _query_norm(title).split()
     if not words:
         return []
     phrase = " ".join(words[:14])
