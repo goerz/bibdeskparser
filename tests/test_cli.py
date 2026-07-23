@@ -668,7 +668,7 @@ def test_files_whole_library_relative(runner, bibfile):
 
 def test_files_whole_library_absolute_default(runner, bibfile):
     data = json.loads(_run(runner, "files", bibfile, "--json").output)
-    assert all(p.startswith("/") for paths in data.values() for p in paths)
+    assert all(Path(p).is_absolute() for paths in data.values() for p in paths)
 
 
 def test_files_flat(runner, bibfile):

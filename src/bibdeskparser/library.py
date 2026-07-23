@@ -2586,9 +2586,14 @@ class Library(MutableMapping):
           [configuration](configuration) (its `@string` definition is
           added to the library as needed), or -- with a `UserWarning`
           -- a newly created macro named by the journal's lowercased
-          initials (honoring `[initials.journal]` exceptions). A
-          pseudo-journal whose archive is *not* recognized is
-          rejected, since it must not be turned into a macro.
+          initials (honoring `[initials.journal]` exceptions). When
+          the derived name is taken by a macro whose value matches
+          the journal name word by word as an abbreviation (e.g.
+          `prl = "Phys. Rev. Lett."` for an incoming `Physical
+          Review Letters`), that macro is reused, also with a
+          `UserWarning`. A pseudo-journal whose archive is *not*
+          recognized is rejected, since it must not be turned into a
+          macro.
         * A *preprint-only* entry -- one whose `journal` is a
           preprint pseudo-journal like `arXiv:2205.15044` (any
           archive from the `preprint_archives`

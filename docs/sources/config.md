@@ -358,6 +358,22 @@ consistent across libraries. The table is exposed as
 `Library.config.journal_macros`, a `dict` mapping each macro name to
 a tuple of journal names.
 
+When the derived macro name is already defined -- typically because
+the library abbreviates a journal that an imported entry spells in
+full, `prl = "Phys. Rev. Lett."` versus an incoming `Physical Review
+Letters` -- the incoming name is compared word by word against the
+existing macro's value: a dot-terminated word matches as a
+case-insensitive prefix (`Phys.` matches `Physical`), and a bare
+word must match exactly (so `Phys. Rev. A` does not capture
+`Physical Review Applied`). On a full match the existing macro is
+reused, with a warning showing the `[journal_macros]` alias line
+that makes the mapping explicit. Otherwise the import fails, and the
+error spells out the configuration for either intent: appending the
+incoming spelling to the macro's alias list (canonical value first)
+if the two name the same journal, or an entry under a fresh macro
+name (or an `[initials.journal]` exception) for a different journal
+that happens to share its initials.
+
 (config-preprint-archives)=
 
 ## The `[preprint_archives]` table: recognized preprint servers
