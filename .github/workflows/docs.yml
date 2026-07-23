@@ -99,6 +99,43 @@ jobs:
       - name: Run docs-versions-menu
         run: uvx docs-versions-menu
 
+      - name: Write root-level redirect stubs
+        # Pages exist only inside per-version folders, but the README
+        # (rendered on GitHub and PyPI) deep-links to version-less URLs
+        # like https://goerz.github.io/bibdeskparser/howto.html. For
+        # every page of the default (latest release) version, write a
+        # root-level stub that redirects there. The JavaScript redirect
+        # preserves URL fragments (#section anchors), which a plain
+        # meta refresh would drop.
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          STUB = """<!DOCTYPE html>
+          <html>
+            <head>
+              <script>location.replace("{target}" + location.hash);</script>
+              <meta http-equiv="Refresh" content="0; url={target}" />
+            </head>
+            <body>
+              <p>Go to the <a href="{target}">default documentation</a>.</p>
+            </body>
+          </html>
+          """
+
+          versions = json.loads(Path("versions.json").read_text())
+          default = versions.get("latest") or versions["default-branch"]
+          for stub in Path(".").glob("*.html"):
+              if stub.name != "index.html":
+                  stub.unlink()  # clean up stubs for removed pages
+          for page in sorted(Path(default).glob("*.html")):
+              if page.name == "index.html":
+                  continue  # written by docs-versions-menu
+              target = f"{default}/{page.name}"
+              Path(page.name).write_text(STUB.format(target=target))
+              print(f"{page.name} -> {target}")
+
       - name: Get the previous commit message
         id: get_previous_commit
         run: |

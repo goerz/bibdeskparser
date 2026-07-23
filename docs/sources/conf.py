@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -55,6 +56,10 @@ extensions = [
 ]
 
 myst_enable_extensions = ["dollarmath"]
+# Auto-generate anchor slugs for h1/h2 headings, so that cross-document
+# links may target section anchors, e.g. `howto.md#how-to-...` (needed
+# by the rewritten README links, see `_resolve_readme_doc_links`).
+myst_heading_anchors = 2
 
 if os.getenv("SPELLCHECK"):
     extensions.append("sphinxcontrib.spelling")
@@ -267,3 +272,24 @@ latex_elements = {
     "babel": "",
 }
 latex_show_urls = "no"
+
+
+def _resolve_readme_doc_links(app, relative_path, parent_docname, content):
+    # README.md must carry absolute URLs into the deployed documentation
+    # (https://goerz.github.io/bibdeskparser/<page>.html), since it is
+    # also rendered standalone on GitHub and as the PyPI description.
+    # When the README is included into the documentation itself (via
+    # readme.md), rewrite those URLs to `<page>.md` cross-references, so
+    # that readers stay within the docs version they are browsing, and
+    # so that Sphinx validates the link targets at build time.
+    if relative_path.name != "README.md":
+        return
+    content[0] = re.sub(
+        r"https://goerz\.github\.io/bibdeskparser/([\w.-]+)\.html",
+        r"\1.md",
+        content[0],
+    )
+
+
+def setup(app):
+    app.connect("include-read", _resolve_readme_doc_links)
