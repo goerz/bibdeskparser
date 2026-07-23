@@ -36,6 +36,11 @@ precedence. **The first file found wins**; the others are ignored.
 The configuration is applied **process-wide**: it affects every
 {class}`~bibdeskparser.Entry`, whether or not it belongs to a library.
 
+The [`config_path`](cli-config-path) command reports which file (if
+any) is in effect, and [`config`](cli-config) dumps the resolved
+configuration -- the defaults merged with that file -- so you can see
+the effective value of every setting described below.
+
 
 ## The `default_bib_file` option
 

@@ -1677,6 +1677,70 @@ def test_config_path_none(runner, bibfile):
     assert "no configuration file found" in result.stderr
 
 
+def test_config_defaults(runner, bibfile):
+    """`config` with no file dumps the built-in defaults as TOML,
+    including the resolved entry-type/field data model by default."""
+    result = _run(runner, "config", bibfile)
+    assert "verify_types = true" in result.output
+    assert "[preprint_archives]" in result.output
+    assert 'arXiv = "https://arxiv.org/abs/{id}"' in result.output
+    assert "[documented_types.article]" in result.output
+
+
+def test_config_no_types(runner, bibfile):
+    """`--no-types` restricts the dump to the tunable settings."""
+    result = _run(runner, "config", bibfile, "--no-types")
+    assert "verify_types = true" in result.output
+    assert "[preprint_archives]" in result.output
+    assert "documented_types" not in result.output
+    assert "known_fields" not in result.output
+
+
+def test_config_json(runner, bibfile):
+    """`--json` prints the complete state as an object (unset as null),
+    and `--no-types` drops the data model there too."""
+    data = json.loads(_run(runner, "config", bibfile, "--json").output)
+    assert data["verify_types"] is True
+    assert data["auto_key"]["format_spec"] is None
+    assert data["default_bib_file"] is None
+    assert "documented_types" in data
+    data = json.loads(
+        _run(runner, "config", bibfile, "--json", "--no-types").output
+    )
+    assert "documented_types" not in data
+
+
+def test_config_no_bibfile(runner, tmp_path, monkeypatch):
+    """`config` needs no `.bib` file: with none, it discovers from the
+    current directory and dumps the defaults when nothing is found."""
+    monkeypatch.chdir(tmp_path)
+    result = _run(runner, "config", "--no-types")
+    assert "verify_types = true" in result.output
+    assert "[preprint_archives]" in result.output
+
+
+def test_config_reflects_file(runner, bibfile, tmp_path):
+    """The dump reflects a discovered `bibdeskparser.toml`."""
+    (tmp_path / "bibdeskparser.toml").write_text(
+        '[auto_key]\nformat_spec = "%a1%Y%u0"\n\n'
+        '[types.mytype]\nrequired = ["author", "title"]\n',
+        encoding="utf-8",
+    )
+    result = _run(runner, "config", bibfile)
+    assert 'format_spec = "%a1%Y%u0"' in result.output
+    assert "[documented_types.mytype]" in result.output
+
+
+def test_config_malformed(runner, bibfile, tmp_path):
+    """A malformed `bibdeskparser.toml` fails cleanly (exit 1)."""
+    (tmp_path / "bibdeskparser.toml").write_text(
+        "this is not = valid = toml\n", encoding="utf-8"
+    )
+    result = runner.invoke(main, ["config", str(bibfile)])
+    assert result.exit_code == 1
+    assert "Error" in result.stderr
+
+
 def test_render(runner, bibfile):
     result = _run(runner, "render", bibfile, "GoerzJPB2011")
     assert "quantum speed limit" in result.output

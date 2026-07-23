@@ -659,6 +659,45 @@ $ bibdeskparser path
 /Users/mg/Refs/refs.bib
 ```
 
+(cli-config)=
+
+### `config`
+
+Print the *resolved* configuration: the built-in defaults merged with
+whatever a discovered `bibdeskparser.toml` sets. Where
+[`config_path`](cli-config-path) reports only the file in effect,
+`config` shows the effective value of every setting, including the
+ones the file omits (`auto_key.clean`, `preprint_export`, the
+built-in `preprint_archives`, ...), and the built-in defaults in full
+when no file is found at all.
+
+The default text output is TOML-shaped, mirroring what a
+`bibdeskparser.toml` would contain to reproduce the resolved tunable
+state (an unset value, or an `[auto_key]`/`[auto_file]` table without
+a `format_spec`, is omitted). Pass `--no-types` to restrict the dump
+to those user-tunable settings; by default it also lists the resolved
+entry-type/field data model (`documented_types`,
+`recognized_entry_types`, `universal_fields`, `known_fields`). With
+`--json`, the complete state as an object, unset values as `null`.
+
+A `BIBFILE` fixes the config-discovery directory (checked before
+`$BIBDESKPARSER_CONFIG` and the XDG location; see
+[Configuration](configuration)); without one, discovery starts in the
+current directory. Unlike the other commands, `config` needs no
+`.bib` file and never fails for a missing configuration file.
+
+```console
+$ bibdeskparser config --no-types
+verify_types = true
+verify_fields = true
+preprint_export = "unpublished"
+protected_words = []
+...
+[preprint_archives]
+arXiv = "https://arxiv.org/abs/{id}"
+...
+```
+
 (cli-config-path)=
 
 ### `config_path`
