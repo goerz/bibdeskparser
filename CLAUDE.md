@@ -36,7 +36,7 @@ Before the 1.0 release, backwards compatibility is not a concern. The API should
 
 See @CONTRIBUTING.md, but do not make commits or pull requests until specifically asked to do so.
 
-When a commit is requested, its message must describe the change in a self-contained way and must not reference the issue it addresses — no `#N` references and no `Closes #N` line. The issue reference and any discussion of how the change relates to the issue belong in a separate PR message instead; draft it in `./pr_message.md`, without hard-wrapping (GitHub-flavored markdown preserves line breaks, unlike the hard-wrapped commit message body). A PR that is not in response to an issue needs a separate PR message only if it has multiple commits; for a single commit, GitHub turns the commit message into the PR message automatically.
+When a commit is requested, its message must describe the change in a self-contained way and must not reference the issue it addresses — no `#N` references and no `Closes #N` line. The issue reference and any discussion of how the change relates to the issue belong in a separate PR message instead; draft it in `./pr_message.md`, without hard-wrapping (GitHub-flavored markdown preserves line breaks, unlike the hard-wrapped commit message body). It should have a "Closes #N" in the last line. A PR that is not in response to an issue needs a separate PR message only if it has multiple commits; for a single commit, GitHub turns the commit message into the PR message automatically.
 
 When creating issues, the issue text must be GitHub-flavored markdown without hard-wrapping.
 

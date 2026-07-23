@@ -132,7 +132,10 @@ that BibDesk uses to re-locate a moved or renamed file, preserved so
 BibDesk keeps working after `bibdeskparser` has touched the entry.
 `entry.files` always reflects the *stored* relative path, not a live
 lookup, so it does not change if the file is moved outside of
-`bibdeskparser` (or by BibDesk itself, resolving a bookmark).
+`bibdeskparser` (or by BibDesk itself, resolving a bookmark). To audit
+the stored paths against what is actually on disk, use
+[`check --files`](cli-check), which reports links that no longer
+resolve or whose spelling differs only in case from the file on disk.
 
 ## Linked URLs (`bdsk-url-N` fields)
 

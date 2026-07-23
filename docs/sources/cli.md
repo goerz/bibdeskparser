@@ -270,12 +270,35 @@ $ bibdeskparser check tests/test_cli_fail_checks/problems.bib Preprint2026
 PASS (1 entry checked)
 ```
 
+With `--files`, an additional per-entry audit reports every linked
+attachment (`bdsk-file` path) that does not resolve to a real path on
+disk, relative to the `.bib` directory. It is off by default because
+attachments may legitimately live only on another machine, and a
+fresh clone of a library whose PDFs are not under version control
+would fail wholesale. The audit walks each stored path one component
+at a time, matching case exactly, so it also reports a link whose
+spelling differs only in case from the file on disk -- invisible on a
+case-insensitive filesystem (macOS) but broken on a case-sensitive
+one (a collaborator's machine or a Linux CI job). It is therefore
+stricter than the plain existence check behind the warning a
+write-in-place command prints for a missing link: `check --files` can
+FAIL a library that would be written without any such warning.
+
+```console
+$ bibdeskparser check tests/Refs/refs.bib --files
+PASS (61 entries checked)
+$ bibdeskparser check tests/test_cli_fail_checks/deadfiles.bib --files
+Dead2020: linked file does not exist: 'Dead2020.pdf'
+Case2020: linked file 'case2020.pdf' exists only as 'Case2020.pdf' (case mismatch)
+FAIL (2 problems, 2 entries checked)
+```
+
 With `--json`: an object `{"passed": ..., "entries_checked": ...,
 "problems": [...]}`, where each problem is an object with `check`
 (the audit that failed: `parse`, `duplicate_keys`, `doi`,
-`empty_fields`, `known_missing`, `journal`, `names`, or
-`unused_strings`), `key` (the citation key, or `null` for a problem
-not tied to an entry), and `message`.
+`empty_fields`, `known_missing`, `journal`, `names`,
+`unused_strings`, or `files`), `key` (the citation key, or `null` for
+a problem not tied to an entry), and `message`.
 
 (cli-show)=
 

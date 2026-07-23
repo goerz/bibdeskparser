@@ -5,6 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Added: a `--files` option on the `check` CLI command, an opt-in audit (off by default) that reports every linked attachment (`bdsk-file` path) that does not resolve to a real path on disk relative to the `.bib` directory. It walks each stored path one component at a time, matching case exactly, so besides a link to a deleted file it also catches a link whose spelling differs only in case from the file on disk, one that works on a case-insensitive filesystem (macOS) but breaks on a case-sensitive one (a collaborator's machine or a Linux CI job); the plain existence check behind the warning a write-in-place command prints for a missing link cannot detect that case-mismatch class, so `check --files` can fail a library that would be written without any such warning. It is off by default because attachments may legitimately live only on another machine, so a fresh clone of a library whose PDFs are not under version control would otherwise fail wholesale. The audit name `files` also appears in the `--json` output; an attachment whose stored path is empty is flagged, and a link resolving to a directory passes (BibDesk can link folders). [[#43], [#48]]
 * Added: a `--usage` option on the `bibdeskparser` command-line tool, printing a short usage summary (the one-line description, the usage line, and the list of command names) as a compact alternative to the full `--help` output. [[#47]]
 * Changed: running `bibdeskparser` with no command now prints the short usage summary (see `--usage`) on stderr and exits 2, instead of dumping the entire `--help` output. [[#47]]
 * Fixed: the network commands no longer fail in an environment that routes traffic through a SOCKS proxy (`ALL_PROXY=socks5h://...`, e.g. an SSH tunnel). Both HTTP stacks used by the package refuse to even attempt a SOCKS connection without an optional helper package, each with a different error: httpx (behind `add` and `import --url`) needs `socksio`, and requests (behind `add_preprint`, `add_doi`, and `add_abstract`, via the `arxiv` and `habanero` packages) needs `pysocks`. Both helpers are now regular dependencies.
@@ -157,4 +158,6 @@ Initial release.
 [#40]: https://github.com/goerz/bibdeskparser/issues/40
 [#41]: https://github.com/goerz/bibdeskparser/pull/41
 [#42]: https://github.com/goerz/bibdeskparser/pull/42
+[#43]: https://github.com/goerz/bibdeskparser/issues/43
 [#47]: https://github.com/goerz/bibdeskparser/pull/47
+[#48]: https://github.com/goerz/bibdeskparser/pull/48
