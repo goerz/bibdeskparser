@@ -23,7 +23,7 @@ import click
 from . import __version__, config
 from .checks import collect_problems
 from .editing import strings_bib_text
-from .library import Library, StaleFileError
+from .library import Library, StaleFileError, _MissingFileWarning
 from .macros import MacroString, ValueString
 from .texmap import skip_texify, texify
 
@@ -253,6 +253,35 @@ def _emit(data, as_json, text):
         click.echo(json.dumps(data, indent=2, ensure_ascii=False))
     elif text:
         click.echo(text)
+
+
+def _save(lib):
+    """Save `lib`, reporting save-time warnings as `Warning:` lines on
+    stderr.
+
+    Warnings about linked files that do not exist are printed
+    individually only up to a small number; beyond that (e.g. for a
+    `.bib` file separated from its attachment tree), they collapse
+    into a single summary line.
+    """
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        lib.save()
+    missing = []
+    for warning in caught:
+        if issubclass(warning.category, _MissingFileWarning):
+            missing.append(str(warning.message))
+        else:
+            click.echo(f"Warning: {warning.message}", err=True)
+    if len(missing) > 5:
+        click.echo(
+            f"Warning: {len(missing)} linked files do not exist "
+            f"(first: {missing[0]})",
+            err=True,
+        )
+    else:
+        for message in missing:
+            click.echo(f"Warning: {message}", err=True)
 
 
 def _echo_block(text):
@@ -1658,7 +1687,7 @@ def rekey(bibfile, old_key, new_key, format_spec):
     lib = Library(bibfile)
     _check_keys(lib, [old_key])
     result = lib.rekey(old_key, new_key, format_spec=format_spec)
-    lib.save()
+    _save(lib)
     if new_key is None:
         click.echo(result)
 
@@ -1677,7 +1706,7 @@ def delete(bibfile, citekeys):
     _check_keys(lib, citekeys)
     for key in citekeys:
         del lib[key]
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1696,7 +1725,7 @@ def set_type(bibfile, citekey, entry_type):
     define custom entry types."""
     lib = Library(bibfile)
     _entry(lib, citekey).entry_type = entry_type
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1771,7 +1800,7 @@ def set_field(bibfile, citekey, fieldname, value, literal, macro):
         entry[fieldname] = value
     for warning in caught:
         click.echo(f"Warning: {warning.message}", err=True)
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1795,7 +1824,7 @@ def delete_field(bibfile, citekey, fieldname):
     if fieldname not in entry:
         raise KeyError(f"entry {citekey!r} has no field {fieldname!r}")
     del entry[fieldname]
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1815,7 +1844,7 @@ def add_to_group(bibfile, name, citekeys):
     _check_group(lib, name)
     _check_keys(lib, citekeys)
     lib.add_to_group(name, *citekeys)
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1834,7 +1863,7 @@ def remove_from_group(bibfile, name, citekeys):
     lib = Library(bibfile)
     _check_group(lib, name)
     lib.remove_from_group(name, *citekeys)
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1853,7 +1882,7 @@ def set_group(bibfile, name, citekeys):
     """Create or replace the static group NAME with the given keys."""
     lib = Library(bibfile)
     lib.groups[name] = citekeys
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1869,7 +1898,7 @@ def delete_group(bibfile, name):
     lib = Library(bibfile)
     _check_group(lib, name)
     del lib.groups[name]
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1887,7 +1916,7 @@ def set_string(bibfile, name, value):
     """Define or redefine the @string macro NAME as VALUE."""
     lib = Library(bibfile)
     lib.strings[name] = value
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1903,7 +1932,7 @@ def delete_string(bibfile, name):
     lib = Library(bibfile)
     _check_string(lib, name)
     del lib.strings[name]
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1921,7 +1950,7 @@ def rename_string(bibfile, old_name, new_name):
     lib = Library(bibfile)
     _check_string(lib, old_name)
     lib.rename_string(old_name, new_name)
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1941,7 +1970,7 @@ def add_to_keyword(bibfile, keyword, citekeys):
     lib = Library(bibfile)
     _check_keys(lib, citekeys)
     lib.add_to_keyword(keyword, *citekeys)
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -1960,7 +1989,7 @@ def remove_from_keyword(bibfile, keyword, citekeys):
     lib = Library(bibfile)
     _check_keys(lib, citekeys)
     lib.remove_from_keyword(keyword, *citekeys)
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -2058,7 +2087,7 @@ def add_file(
         format_spec=format_spec,
         auto_file_location=auto_file_location,
     )
-    lib.save()
+    _save(lib)
     if auto_file_location is None:
         auto_filed = (
             format_spec is not None or lib.config.auto_file.file_automatically
@@ -2106,7 +2135,7 @@ def replace_file(
         remove=remove,
         check_that_file_exists=check_exists,
     )
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -2131,7 +2160,7 @@ def unlink_file(bibfile, key, filename, remove):
     lib = Library(bibfile)
     _check_keys(lib, [key])
     lib.unlink_file(key, filename, remove=remove)
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -2195,7 +2224,7 @@ def rename_file(
         format_spec=format_spec,
         auto_file_location=location,
     )
-    lib.save()
+    _save(lib)
     if new_filename is None:
         click.echo(result)
 
@@ -2215,7 +2244,7 @@ def add_url(bibfile, key, url):
     lib = Library(bibfile)
     _check_keys(lib, [key])
     lib.add_url(key, url)
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -2234,7 +2263,7 @@ def replace_url(bibfile, key, old_url, new_url):
     lib = Library(bibfile)
     _check_keys(lib, [key])
     lib.replace_url(key, old_url, new_url)
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -2252,7 +2281,7 @@ def remove_url(bibfile, key, url):
     lib = Library(bibfile)
     _check_keys(lib, [key])
     lib.remove_url(key, url)
-    lib.save()
+    _save(lib)
 
 
 _stdin_option = click.option(
@@ -2330,7 +2359,7 @@ def edit(bibfile, citekeys, editor_cmd, use_stdin):
     _check_keys(lib, citekeys)
     editor_cmd = _resolve_editor(editor_cmd, use_stdin)
     lib.edit(*citekeys, editor=editor_cmd)
-    lib.save()
+    _save(lib)
 
 
 @main.command(
@@ -2368,7 +2397,7 @@ def edit_strings(bibfile, editor_cmd, use_stdin):
         editor_cmd, use_stdin, allow_empty=not lib.strings
     )
     lib.edit_strings(editor=editor_cmd)
-    lib.save()
+    _save(lib)
 
 
 # -- importing / adding entries ---------------------------------------- #
@@ -2496,7 +2525,7 @@ def import_bibtex(
         )
     for warning in caught:
         click.echo(f"Warning: {warning.message}", err=True)
-    lib.save()
+    _save(lib)
     for citekey in citekeys:
         click.echo(citekey)
 
@@ -2586,7 +2615,7 @@ def add(bibfile, query, dry_run, fix_uppercase, add_abstract, add_preprint):
     if dry_run:
         _echo_block(lib.export(citekey))
     else:
-        lib.save()
+        _save(lib)
         click.echo(citekey)
 
 
@@ -2689,7 +2718,7 @@ def add_abstract(
     if as_json:
         click.echo(json.dumps(results, indent=2, ensure_ascii=False))
     if not dry_run and any(r["applied"] for r in results.values()):
-        lib.save()
+        _save(lib)
 
 
 def _echo_abstract_result(key, result):
@@ -2825,7 +2854,7 @@ def add_preprint(bibfile, citekeys, eprint, overwrite, dry_run, as_json):
     if as_json:
         click.echo(json.dumps(results, indent=2, ensure_ascii=False))
     if not dry_run and any(r["applied"] for r in results.values()):
-        lib.save()
+        _save(lib)
 
 
 def _echo_preprint_result(key, result, err=False):
@@ -2970,7 +2999,7 @@ def add_doi(bibfile, citekeys, doi, overwrite, dry_run, as_json):
     if as_json:
         click.echo(json.dumps(results, indent=2, ensure_ascii=False))
     if not dry_run and any(r["applied"] for r in results.values()):
-        lib.save()
+        _save(lib)
 
 
 def _echo_doi_result(key, result):

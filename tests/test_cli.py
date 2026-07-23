@@ -1803,6 +1803,47 @@ def test_set_field_protected(runner, bibfile):
         assert "Traceback" not in result.stderr
 
 
+def test_save_warns_individually_for_few_missing_files(runner, bibfile):
+    """Up to five missing linked files are each reported on their own
+    `Warning:` line, without Python's warning-machinery source
+    location."""
+    (bibfile.parent / "GoerzJPB2011.pdf").unlink()
+    result = _run(
+        runner, "set_field", bibfile, "BrifNJP2010", "note", "A note"
+    )
+    warning_lines = [
+        line
+        for line in result.stderr.splitlines()
+        if line.startswith("Warning:")
+    ]
+    assert warning_lines == [
+        "Warning: GoerzJPB2011: linked file does not exist: "
+        "'GoerzJPB2011.pdf'"
+    ]
+    assert "UserWarning" not in result.stderr
+
+
+def test_save_summarizes_many_missing_files(runner, tmp_path):
+    """More than five missing linked files collapse into a single
+    summary line (e.g. for a `.bib` file separated from its attachment
+    tree)."""
+    bibfile = Path(shutil.copy(REFS_DIR / "refs.bib", tmp_path))
+    result = _run(
+        runner, "set_field", bibfile, "BrifNJP2010", "note", "A note"
+    )
+    warning_lines = [
+        line
+        for line in result.stderr.splitlines()
+        if line.startswith("Warning:")
+    ]
+    assert len(warning_lines) == 1
+    assert warning_lines[0].startswith(
+        "Warning: 30 linked files do not exist "
+        "(first: BrifNJP2010: linked file does not exist: "
+    )
+    assert "UserWarning" not in result.stderr
+
+
 def test_delete_field(runner, bibfile):
     _run(runner, "delete_field", bibfile, "GoerzJPB2011", "abstract")
     assert "abstract" not in _load(bibfile)["GoerzJPB2011"]

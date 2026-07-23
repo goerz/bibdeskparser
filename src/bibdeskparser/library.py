@@ -72,6 +72,15 @@ class StaleFileError(RuntimeError):
 # -- module-private helpers ------------------------------------------- #
 
 
+class _MissingFileWarning(UserWarning):
+    """Save-time warning for a linked file that does not exist.
+
+    A distinct category (emitted by `Library._validate_for_save`) so
+    that the command-line interface can aggregate these warnings
+    without matching on the message text.
+    """
+
+
 @contextmanager
 def _quiet_bibtexparser_block_type_logging():
     """Silence bibtexparser's per-middleware "Unknown block type"
@@ -2177,7 +2186,7 @@ class Library(MutableMapping):
                     warnings.warn(
                         f"{entry.key}: linked file does not exist: "
                         f"{rel_path!r}",
-                        UserWarning,
+                        _MissingFileWarning,
                         stacklevel=3,
                     )
 
