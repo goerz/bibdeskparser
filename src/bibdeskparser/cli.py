@@ -352,6 +352,7 @@ def main():
         "bibdeskparser keys --type article --type book",
         "bibdeskparser keys --missing doi --json",
         'bibdeskparser keys --group "My Papers"',
+        "bibdeskparser keys --without-files  # entries lacking a PDF",
     ),
 )
 @click.option(
@@ -407,6 +408,16 @@ def main():
         "unknown NAME is an error."
     ),
 )
+@click.option(
+    "--with-files/--without-files",
+    "with_files",
+    default=None,
+    help=(
+        "Keep only entries that have at least one file attachment "
+        "(--with-files) or none (--without-files). The default is to "
+        "not filter on attachments."
+    ),
+)
 @_json_option
 @click.pass_obj
 # click passes all parameters by keyword
@@ -418,6 +429,7 @@ def keys(
     missing_fields,
     group_names,
     not_group_names,
+    with_files,
     as_json,
 ):
     """List citation keys, one per line.
@@ -425,11 +437,13 @@ def keys(
     Without options, list every entry in the library. The options
     narrow the list; an entry is listed if it matches one of the
     --type values (if any are given) and satisfies every --has,
-    --missing, --group, and --not-group filter. For any FIELD,
-    exactly one of --has and --missing holds; a field that is
-    defined with an empty value counts as missing (BibDesk deletes
-    empty fields on save). Field names are case-insensitive, group
-    names case-sensitive.
+    --missing, --group, --not-group, and --with-files/--without-files
+    filter. For any FIELD, exactly one of --has and --missing holds; a
+    field that is defined with an empty value counts as missing
+    (BibDesk deletes empty fields on save). --with-files keeps entries
+    with a file attachment, --without-files those with none (see the
+    `files` command). Field names are case-insensitive, group names
+    case-sensitive.
     """
     lib = Library(bibfile)
     for name in (*group_names, *not_group_names):
@@ -441,6 +455,7 @@ def keys(
             missing=missing_fields,
             group=group_names,
             not_group=not_group_names,
+            with_files=with_files,
         )
     )
     _emit(data, as_json, "\n".join(data))
@@ -820,17 +835,62 @@ def editor(bibfile, citekey, as_json):
     _emit(_names_data(names), as_json, _names_text(names))
 
 
+def _emit_derived(lib, citekeys, values_for, as_json, flat):
+    """Print the per-entry derived lists produced by `values_for`.
+
+    Without `flat`, a `{key: [values]}` map: the requested `citekeys`
+    (each present, an empty one as `[]`), or -- for no keys -- every
+    library entry that has at least one value, in library order. With
+    `flat`, the values themselves as a bare list, combined across the
+    selected entries with duplicates removed (a single key keeps that
+    entry's own order). An unknown key in `citekeys` is an error.
+    """
+    _check_keys(lib, citekeys)
+    keys = citekeys if citekeys else lib.keys()
+    if flat:
+        seen = {}
+        for key in keys:
+            for value in values_for(key):
+                seen.setdefault(value, None)
+        data = list(seen)
+        _emit(data, as_json, "\n".join(data))
+        return
+    if citekeys:
+        data = {key: values_for(key) for key in citekeys}
+    else:
+        data = {}
+        for key in keys:
+            values = values_for(key)
+            if values:
+                data[key] = values
+    text = "\n".join(
+        f"{key}: {', '.join(values)}" for key, values in data.items()
+    )
+    _emit(data, as_json, text)
+
+
+def _emit_index(mapping, as_json):
+    """Print an inverse name -> member-keys `mapping` (`Library.groups`
+    or `Library.keywords`) as a `{name: [keys]}` map."""
+    data = {name: list(keys) for name, keys in mapping.items()}
+    text = "\n".join(
+        f"{name}: {', '.join(keys)}" for name, keys in data.items()
+    )
+    _emit(data, as_json, text)
+
+
 @main.command(
     name="files",
     cls=_BibCommand,
-    short_help="List an entry's file attachments.",
+    short_help="List file attachments of entries, or the whole library.",
     epilog=_examples(
         "bibdeskparser files GoerzJPB2011",
-        "bibdeskparser files GoerzJPB2011 --relative",
-        "bibdeskparser files GoerzJPB2011 --json",
+        "bibdeskparser files GoerzJPB2011 --relative --flat",
+        "bibdeskparser files                 # whole-library map",
+        "bibdeskparser files --flat          # every referenced file",
     ),
 )
-@click.argument("citekey", metavar="KEY")
+@click.argument("citekeys", metavar="[KEY...]", nargs=-1)
 @click.option(
     "--absolute/--relative",
     "absolute",
@@ -842,44 +902,86 @@ def editor(bibfile, citekey, as_json):
         "(--relative)."
     ),
 )
+@click.option(
+    "--flat/--no-flat",
+    default=False,
+    help=(
+        "Print just the attachment paths as a bare list, combined "
+        "across the selected entries, instead of a {key: [paths]} map."
+    ),
+)
 @_json_option
 @click.pass_obj
-def files(bibfile, citekey, absolute, as_json):
-    """List the file attachments of the entry with the given KEY (the
-    `bdsk-file-N` fields), one per line, in numeric order. By default,
-    each attachment is printed as an absolute path; with --relative,
-    as stored in the `.bib` file (relative to its directory). Prints
-    nothing (an empty array, with --json) for an entry without
-    attachments. Attachments are modified with `add_file`,
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def files(bibfile, citekeys, absolute, flat, as_json):
+    """List file attachments (the `bdsk-file-N` fields), in numeric
+    order within each entry. By default, each attachment is printed as
+    an absolute path; with --relative, as stored in the `.bib` file
+    (relative to its directory).
+
+    The output is a map from each citation key to its list of
+    attachments: with KEY arguments, exactly those entries (an entry
+    with none maps to an empty list); with no KEY, every entry in the
+    library that has at least one attachment, in library order. With
+    --flat, the attachment paths are instead printed as a bare list,
+    one per line, combined across the selected entries with duplicates
+    removed -- so `files --flat` is every file the library references,
+    the reverse index for reconciling against a folder of PDFs (find
+    the entries lacking one with `keys --without-files`). An unknown
+    key is an error. Attachments are modified with `add_file`,
     `replace_file`, `unlink_file`, and `rename_file`."""
     lib = Library(bibfile)
-    paths = list(_entry(lib, citekey).files)
-    if absolute:
-        base = lib._files_base_dir()
-        paths = [str((base / p).resolve()) for p in paths]
-    _emit(paths, as_json, "\n".join(paths))
+    base = lib._files_base_dir() if absolute else None
+
+    def paths_for(key):
+        paths = list(lib[key].files)
+        if absolute:
+            paths = [str((base / p).resolve()) for p in paths]
+        return paths
+
+    _emit_derived(lib, citekeys, paths_for, as_json, flat)
 
 
 @main.command(
     name="urls",
     cls=_BibCommand,
-    short_help="List an entry's linked URLs.",
+    short_help="List linked URLs of entries, or the whole library.",
     epilog=_examples(
         "bibdeskparser urls KochJPCM2016",
-        "bibdeskparser urls KochJPCM2016 --json",
+        "bibdeskparser urls KochJPCM2016 --flat",
+        "bibdeskparser urls --json          # whole-library map",
     ),
 )
-@click.argument("citekey", metavar="KEY")
+@click.argument("citekeys", metavar="[KEY...]", nargs=-1)
+@click.option(
+    "--flat/--no-flat",
+    default=False,
+    help=(
+        "Print just the URLs as a bare list, combined across the "
+        "selected entries, instead of a {key: [urls]} map."
+    ),
+)
 @_json_option
 @click.pass_obj
-def urls(bibfile, citekey, as_json):
-    """List the URLs linked to the entry with the given KEY (the
-    `bdsk-url-N` fields), one per line, in numeric order. Prints
-    nothing (an empty array, with --json) for an entry without linked
-    URLs. Linked URLs are modified with `add_url`, `replace_url`, and
+def urls(bibfile, citekeys, flat, as_json):
+    """List the URLs linked to entries (the `bdsk-url-N` fields), in
+    numeric order within each entry.
+
+    The output is a map from each citation key to its list of URLs:
+    with KEY arguments, exactly those entries (an entry with none maps
+    to an empty list); with no KEY, every entry in the library that has
+    at least one linked URL, in library order. With --flat, the URLs
+    are instead printed as a bare list, one per line, combined across
+    the selected entries with duplicates removed. An unknown key is an
+    error. Linked URLs are modified with `add_url`, `replace_url`, and
     `remove_url`."""
-    data = list(_entry(Library(bibfile), citekey).urls)
-    _emit(data, as_json, "\n".join(data))
+    lib = Library(bibfile)
+
+    def values_for(key):
+        return list(lib[key].urls)
+
+    _emit_derived(lib, citekeys, values_for, as_json, flat)
 
 
 @main.command(
@@ -950,59 +1052,123 @@ def search(bibfile, query, field_names, match_, as_json):
 @main.command(
     name="groups",
     cls=_BibCommand,
-    short_help="List all static groups, or the groups of entry KEY.",
+    short_help="List the groups of entries, or all static groups.",
     epilog=_examples(
-        "bibdeskparser groups   # all groups and members",
-        "bibdeskparser groups Preskill2018  # entry's groups",
+        "bibdeskparser groups Preskill2018   # that entry's groups",
+        "bibdeskparser groups                # per-entry group map",
+        "bibdeskparser groups --index        # each group's members",
+        "bibdeskparser groups --flat         # all group names in use",
     ),
 )
-@click.argument("citekey", metavar="[KEY]", required=False)
+@click.argument("citekeys", metavar="[KEY...]", nargs=-1)
+@click.option(
+    "--flat/--no-flat",
+    default=False,
+    help=(
+        "Print just the group names as a bare list, combined across "
+        "the selected entries, instead of a {key: [groups]} map."
+    ),
+)
+@click.option(
+    "--index/--no-index",
+    default=False,
+    help=(
+        "Instead print the inverse {group: [member keys]} map of every "
+        "static group. Not combinable with KEY arguments or --flat."
+    ),
+)
 @_json_option
 @click.pass_obj
-def groups(bibfile, citekey, as_json):
-    """Without KEY, list all static groups and the keys they contain.
-    With KEY, list the names of the groups the entry with that key
-    belongs to, one per line."""
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def groups(bibfile, citekeys, flat, index, as_json):
+    """List the static groups (see BibDesk static groups) that entries
+    belong to.
+
+    The default output is a map from each citation key to its list of
+    group names: with KEY arguments, exactly those entries (an entry in
+    no group maps to an empty list); with no KEY, every entry that is in
+    at least one group, in library order. With --flat, the group names
+    are instead printed as a bare list, combined across the selected
+    entries with duplicates removed. With --index, the inverse is
+    printed: a map from each static group name to the citation keys it
+    contains (every group, including empty ones); --index takes no KEY
+    arguments and is not combinable with --flat. An unknown key is an
+    error. Group membership is modified with `add_to_group`,
+    `remove_from_group`, `set_group`, and `delete_group`."""
     lib = Library(bibfile)
-    if citekey is not None:
-        data = list(_entry(lib, citekey).groups)
-        _emit(data, as_json, "\n".join(data))
+    if index:
+        if citekeys or flat:
+            raise click.UsageError(
+                "--index cannot be combined with KEY arguments or --flat"
+            )
+        _emit_index(lib.groups, as_json)
         return
-    data = {name: list(group_keys) for name, group_keys in lib.groups.items()}
-    text = "\n".join(
-        f"{name}: {', '.join(group_keys)}" for name, group_keys in data.items()
-    )
-    _emit(data, as_json, text)
+
+    def values_for(key):
+        return list(lib[key].groups)
+
+    _emit_derived(lib, citekeys, values_for, as_json, flat)
 
 
 @main.command(
     name="keywords",
     cls=_BibCommand,
-    short_help="List all keywords, or the keywords of entry KEY.",
+    short_help="List the keywords of entries, or all keywords.",
     epilog=_examples(
-        "bibdeskparser keywords   # all keywords and users",
-        "bibdeskparser keywords Preskill2018",
+        "bibdeskparser keywords Preskill2018   # that entry's keywords",
+        "bibdeskparser keywords                # per-entry keyword map",
+        "bibdeskparser keywords --index        # each keyword's entries",
+        "bibdeskparser keywords --flat         # all keywords in use",
     ),
 )
-@click.argument("citekey", metavar="[KEY]", required=False)
+@click.argument("citekeys", metavar="[KEY...]", nargs=-1)
+@click.option(
+    "--flat/--no-flat",
+    default=False,
+    help=(
+        "Print just the keywords as a bare list, combined across the "
+        "selected entries, instead of a {key: [keywords]} map."
+    ),
+)
+@click.option(
+    "--index/--no-index",
+    default=False,
+    help=(
+        "Instead print the inverse {keyword: [entry keys]} map of every "
+        "keyword. Not combinable with KEY arguments or --flat."
+    ),
+)
 @_json_option
 @click.pass_obj
-def keywords(bibfile, citekey, as_json):
-    """Without KEY, list all keywords and the keys of the entries
-    using them. With KEY, list the keywords of the entry with that
-    key, one per line."""
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def keywords(bibfile, citekeys, flat, index, as_json):
+    """List the keywords that entries are tagged with.
+
+    The default output is a map from each citation key to its list of
+    keywords: with KEY arguments, exactly those entries (an untagged
+    entry maps to an empty list); with no KEY, every entry that has at
+    least one keyword, in library order. With --flat, the keywords are
+    instead printed as a bare list, combined across the selected entries
+    with duplicates removed. With --index, the inverse is printed: a map
+    from each keyword to the citation keys tagged with it; --index takes
+    no KEY arguments and is not combinable with --flat. An unknown key
+    is an error. Keywords are modified with `add_to_keyword` and
+    `remove_from_keyword`."""
     lib = Library(bibfile)
-    if citekey is not None:
-        data = list(_entry(lib, citekey).keywords)
-        _emit(data, as_json, "\n".join(data))
+    if index:
+        if citekeys or flat:
+            raise click.UsageError(
+                "--index cannot be combined with KEY arguments or --flat"
+            )
+        _emit_index(lib.keywords, as_json)
         return
-    data = {
-        keyword: list(kw_keys) for keyword, kw_keys in lib.keywords.items()
-    }
-    text = "\n".join(
-        f"{keyword}: {', '.join(kw_keys)}" for keyword, kw_keys in data.items()
-    )
-    _emit(data, as_json, text)
+
+    def values_for(key):
+        return list(lib[key].keywords)
+
+    _emit_derived(lib, citekeys, values_for, as_json, flat)
 
 
 @main.command(

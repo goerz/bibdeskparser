@@ -174,6 +174,47 @@ here into a subdirectory next to the `.bib` file:
 (Conversely, `auto_file_location=""` forces a plain attach even with
 `file_automatically = true`.)
 
+(howto-reconcile-attachments)=
+
+## How to reconcile attachments against a folder of PDFs
+
+Two questions come up when a library and its folder of PDFs drift
+apart: which entries still lack a PDF, and which PDFs on disk no entry
+links. Both are read-only CLI queries.
+
+List the entries with no attachment with
+[`keys --without-files`](cli-keys) (`--with-files` gives the
+complement):
+
+```console
+$ bibdeskparser keys tests/Refs/refs.bib --without-files
+Shapiro2012
+...
+```
+
+The reverse index -- every file the library references -- is
+[`files --flat`](cli-files), which prints the paths of all attachments
+as a plain list. Use `--relative`, so the paths match the names stored
+in the `.bib` file and compare directly against a directory listing:
+
+```console
+$ bibdeskparser files tests/Refs/refs.bib --relative --flat --json
+[
+  "BrifNJP2010.pdf",
+  ...
+]
+```
+
+Diffing that set against the folder is a job for the shell or a short
+script. For example, the PDFs on disk that no entry links (orphans):
+
+<!-- notest -->
+```console
+$ comm -23 \
+    <(ls tests/Refs/*.pdf | xargs -n1 basename | sort) \
+    <(bibdeskparser files tests/Refs/refs.bib --relative --flat | sort)
+```
+
 (howto-string-macros)=
 
 ## How to define or rename a `@string` macro (journal abbreviation)

@@ -53,11 +53,15 @@ assign to and delete from {py:attr}`~bibdeskparser.Library.strings`,
 `del` on the library itself, and
 `fields`/`get_field`/`set_field`/`delete_field` correspond to
 iterating over, indexing, assigning to, and `del` on a single
-{class}`~bibdeskparser.Entry` (its fields). Commands that read one
-entry's derived data -- `author`, `editor`, `files`, `urls`,
-`groups KEY`, `keywords KEY` -- correspond to the same-named
-{class}`~bibdeskparser.Entry` properties, and `set_type` assigns
-{py:attr}`~bibdeskparser.Entry.entry_type`. The one command with no
+{class}`~bibdeskparser.Entry` (its fields). Commands that read entries'
+derived data -- `author`, `editor`, `files`, `urls`, `groups`,
+`keywords` -- correspond to the same-named
+{class}`~bibdeskparser.Entry` properties (`files`, `urls`, `groups`,
+and `keywords` take any number of keys and key their output by citation
+key; `groups --index` / `keywords --index` read the inverse
+{py:attr}`~bibdeskparser.Library.groups` /
+{py:attr}`~bibdeskparser.Library.keywords` mappings), and `set_type`
+assigns {py:attr}`~bibdeskparser.Entry.entry_type`. The one command with no
 API counterpart is [`config_path`](cli-config-path), which reports
 the discovered configuration file.
 
@@ -136,6 +140,8 @@ argument creates that file, bootstrapping the configured library.
 
 ## Inspecting
 
+(cli-keys)=
+
 ### `keys`
 
 List citation keys, one per line. See
@@ -176,6 +182,20 @@ silently select nothing (or everything, for `--not-group`).
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type book --group Diploma
 Tannor2007
+```
+
+The paired `--with-files`/`--without-files` flag filters on file
+attachments (the [`files`](cli-files) command): `--with-files` keeps
+only entries with at least one attachment, `--without-files` only
+those with none. The default is to not filter on attachments. This is
+the way to find entries that still need a PDF attached.
+
+```console
+$ bibdeskparser keys tests/Refs/refs.bib --type article --without-files
+ImamogluPRE2015
+Luc-KoenigEPJD2004
+SauvagePRXQ2020
+KatrukhaNC2017
 ```
 
 ### `duplicate_keys`
@@ -389,37 +409,70 @@ $ bibdeskparser author tests/Refs/refs.bib KochJPCM2016 --json
 
 (cli-files)=
 
-### `files KEY`
+### `files [KEY...]`
 
-List the file attachments of an entry (the `bdsk-file-N` fields),
-one per line, in numeric order; see
-{py:attr}`~bibdeskparser.Entry.files`. By default, each attachment is
-printed as an absolute path; with `--relative`, as stored in the
-`.bib` file, relative to its directory. An entry without attachments
-prints nothing. With `--json`: an array of strings.
+List file attachments (the `bdsk-file-N` fields), in numeric order
+within each entry; see {py:attr}`~bibdeskparser.Entry.files`. By
+default, each attachment is printed as an absolute path; with
+`--relative`, as stored in the `.bib` file, relative to its directory.
+
+The output is a map from each citation key to its attachments
+(`KEY: path, path` per line; a `{key: [paths]}` object with `--json`).
+With one or more `KEY` arguments, exactly those entries appear, an
+entry with no attachment mapped to an empty list:
 
 ```console
-$ bibdeskparser files tests/Refs/refs.bib GoerzJPB2011 --relative
+$ bibdeskparser files tests/Refs/refs.bib GoerzPRA2014 Shapiro2012 --relative
+GoerzPRA2014: GoerzPRA2014.pdf
+Shapiro2012: 
+```
+
+With no key, the map covers the whole library, listing only the
+entries that have at least one attachment:
+
+```console
+$ bibdeskparser files tests/Refs/refs.bib --relative --json
+{
+  "BrifNJP2010": [
+    "BrifNJP2010.pdf"
+  ],
+  ...
+}
+```
+
+With `--flat`, the attachment paths are printed instead as a bare list,
+one per line (a JSON array with `--json`), combined across the selected
+entries with duplicates removed. So `files --flat` is every file the
+library references, the reverse index for reconciling the library
+against a folder of PDFs; find the entries still missing one with
+[`keys --without-files`](cli-keys). The order of the list is
+unspecified.
+
+```console
+$ bibdeskparser files tests/Refs/refs.bib GoerzJPB2011 --relative --flat
 GoerzJPB2011.pdf
 ```
 
-Attachments are modified with [`add_file`](cli-add-file),
-`replace_file`, `unlink_file`, and [`rename_file`](cli-rename-file).
+An unknown key is an error. Attachments are modified with
+[`add_file`](cli-add-file), `replace_file`, `unlink_file`, and
+[`rename_file`](cli-rename-file).
 
 (cli-urls)=
 
-### `urls KEY`
+### `urls [KEY...]`
 
-List the URLs linked to an entry (the `bdsk-url-N` fields), one per
-line, in numeric order; see {py:attr}`~bibdeskparser.Entry.urls`. An
-entry without linked URLs prints nothing. With `--json`: an array of
-strings. Linked URLs are modified with `add_url`, `replace_url`, and
-`remove_url`.
+List the URLs linked to entries (the `bdsk-url-N` fields), in numeric
+order within each entry; see {py:attr}`~bibdeskparser.Entry.urls`. The
+output shape matches [`files`](cli-files): a map from each citation key
+to its list of URLs (`KEY: url, url` per line; a `{key: [urls]}` object
+with `--json`), covering the requested keys or -- with no key -- every
+entry in the library that has at least one linked URL. `--flat` prints
+just the URLs as a bare list instead. Linked URLs are modified with
+`add_url`, `replace_url`, and `remove_url`.
 
 ```console
-$ bibdeskparser urls tests/Refs/refs.bib TomzaPRA2012
-http://link.aps.org/doi/10.1103/PhysRevA.86.043424
-http://dx.doi.org/10.1103/PhysRevA.86.043424
+$ bibdeskparser urls tests/Refs/refs.bib KochJPCM2016
+KochJPCM2016: http://dx.doi.org/10.1088/0953-8984/28/21/213001
 ```
 
 ### `search QUERY`
@@ -450,49 +503,63 @@ $ bibdeskparser search tests/Refs/refs.bib "Schroedinger" --field title
 WP_Schroedinger
 ```
 
-### `groups [KEY]`
+(cli-groups)=
 
-Without `KEY`, list all static groups and the keys they contain. See
-{py:attr}`~bibdeskparser.Library.groups`. With `--json`: an object
-mapping each group name to an array of keys.
+### `groups [KEY...]`
+
+List the [static groups](bibdesk-static-groups) each entry belongs to.
+The output shape matches [`files`](cli-files): a map from each citation
+key to its list of group names (see
+{py:attr}`~bibdeskparser.Entry.groups`), covering the requested keys or
+-- with no key -- every entry that is in at least one group.
 
 ```console
-$ bibdeskparser groups tests/Refs/refs.bib
+$ bibdeskparser groups tests/Refs/refs.bib GoerzQ2022
+GoerzQ2022: My Papers
+```
+
+`--flat` prints just the group names as a bare list. `--index` instead
+prints the inverse map, from each static group to the citation keys it
+contains (see {py:attr}`~bibdeskparser.Library.groups`); it takes no
+`KEY` and lists every group, including empty ones:
+
+```console
+$ bibdeskparser groups tests/Refs/refs.bib --index
 Diploma: Tannor2007, NielsenChuangCh10QEC, Evans1983, LapertPRA09
 My Papers: GoerzDiploma2010, GoerzJPB2011, GoerzNJP2014, GoerzPRA2014, GoerzPhd2015, GoerzPRA2015, GoerzEPJQT2015, GoerzNPJQI2017, GoerzQST2018, GoerzSPP2019, GoerzSPIEO2021, GoerzQ2022, GoerzA2023
 ```
 
-With `KEY`, list the names of the groups that entry belongs to, one
-per line ({py:attr}`~bibdeskparser.Entry.groups`; with `--json`: an
-array of strings):
+Group membership is modified with `add_to_group`, `remove_from_group`,
+`set_group`, and `delete_group`.
+
+(cli-keywords)=
+
+### `keywords [KEY...]`
+
+List the keywords each entry is tagged with. The output shape matches
+[`files`](cli-files): a map from each citation key to its list of
+keywords (see {py:attr}`~bibdeskparser.Entry.keywords`), covering the
+requested keys or -- with no key -- every entry that has at least one
+keyword.
 
 ```console
-$ bibdeskparser groups tests/Refs/refs.bib GoerzQ2022
-My Papers
+$ bibdeskparser keywords tests/Refs/refs.bib LapertPRA09
+LapertPRA09: Filtering, OCT
 ```
 
-### `keywords [KEY]`
-
-Without `KEY`, list all keywords and the keys of the entries using
-them. See {py:attr}`~bibdeskparser.Library.keywords`. With `--json`:
-an object mapping each keyword to an array of keys.
+`--flat` prints just the keywords as a bare list. `--index` instead
+prints the inverse map, from each keyword to the citation keys tagged
+with it (see {py:attr}`~bibdeskparser.Library.keywords`); it takes no
+`KEY`:
 
 ```console
-$ bibdeskparser keywords tests/Refs/refs.bib
+$ bibdeskparser keywords tests/Refs/refs.bib --index
 OCT: BrifNJP2010, KochJPCM2016, SolaAAMOP2018, MorzhinRMS2019, ...
 Coherent Control: BrifNJP2010, Shapiro2012, SolaAAMOP2018, ...
 ...
 ```
 
-With `KEY`, list the keywords of that entry, one per line
-({py:attr}`~bibdeskparser.Entry.keywords`; with `--json`: an array of
-strings):
-
-```console
-$ bibdeskparser keywords tests/Refs/refs.bib LapertPRA09
-Filtering
-OCT
-```
+Keywords are modified with `add_to_keyword` and `remove_from_keyword`.
 
 (cli-strings)=
 
