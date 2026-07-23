@@ -993,6 +993,109 @@ def test_check_unknown_key(runner, bibfile):
     assert "unknown citation key 'NoSuchKey'" in result.stderr
 
 
+# A first name that splits cleanly but cannot be initialized: the
+# quoted nickname "`Eunice'" and the detached hyphenated initial "-D"
+# both parse as names, so the old audit passed them, yet `render`
+# turns them into "Y. K. `. Lee" and drops the hyphen of "H.-D.". The
+# TeX-accented entry is well-formed and must keep passing: after
+# TeX-to-unicode conversion, "{\.I}lhan" is "İlhan", which initializes
+# fine.
+_ILL_INITIAL_BIB = r"""@string{prl = {Phys. Rev. Lett.}}
+
+@article{Nickname2026,
+    author = {Lee, Yoo Kyung `Eunice' and Doe, John},
+    doi = {10.1000/nickname},
+    journal = prl,
+    pages = {110501},
+    title = {An Author with a Quoted Nickname},
+    volume = {137},
+    year = {2026}}
+
+@article{StrayHyphen2026,
+    author = {Meyer, H -D},
+    doi = {10.1000/stray-hyphen},
+    journal = prl,
+    pages = {110502},
+    title = {An Author with a Detached Hyphenated Initial},
+    volume = {137},
+    year = {2026}}
+
+@article{Accent2026,
+    author = {Polat, {\.I}lhan and Ribeiro, Ant{\^o}nio H.},
+    doi = {10.1000/accent},
+    journal = prl,
+    pages = {110503},
+    title = {Authors with TeX-Accented First Names},
+    volume = {137},
+    year = {2026}}
+"""
+
+
+def test_check_flags_names_with_ill_defined_initials(runner, tmp_path):
+    bibfile = tmp_path / "library.bib"
+    bibfile.write_text(_ILL_INITIAL_BIB, encoding="utf-8")
+    result = runner.invoke(main, ["check", str(bibfile)])
+    assert result.exit_code == 1
+    lines = result.output.splitlines()
+    assert lines[0] == (
+        'Nickname2026: author name "Lee, Yoo Kyung `Eunice\'" has a '
+        'first-name part ("`Eunice\'") that cannot be initialized'
+    )
+    assert lines[1] == (
+        'StrayHyphen2026: author name "Meyer, H -D" has a first-name '
+        'part ("-D") that cannot be initialized'
+    )
+    assert not any(line.startswith("Accent2026: ") for line in lines)
+    assert lines[-1] == "FAIL (2 problems, 3 entries checked)"
+
+
+def test_check_ill_defined_initials_json(runner, tmp_path):
+    bibfile = tmp_path / "library.bib"
+    bibfile.write_text(_ILL_INITIAL_BIB, encoding="utf-8")
+    result = runner.invoke(main, ["check", str(bibfile), "--json"])
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert [(p["check"], p["key"]) for p in data["problems"]] == [
+        ("names", "Nickname2026"),
+        ("names", "StrayHyphen2026"),
+    ]
+
+
+# A hyphen that trails a first-name token (`H-`, from `Meyer, H- D`)
+# or doubles inside one (`A--B`) is the mirror of the leading-hyphen
+# `-D` case: `render` drops the empty segment, so `H- D` and `H -D`
+# both render as "H. D. Meyer" for what should be "H.-D.". Both must
+# be flagged, not just the leading-hyphen form.
+_HYPHEN_MIRROR_BIB = r"""@article{TrailingHyphen2026,
+    author = {Meyer, H- D},
+    doi = {10.1000/trailing},
+    title = {t},
+    year = {2026}}
+
+@article{DoubledHyphen2026,
+    author = {Foo, A--B},
+    doi = {10.1000/doubled},
+    title = {t},
+    year = {2026}}
+"""
+
+
+def test_check_flags_trailing_and_doubled_hyphen_initials(runner, tmp_path):
+    bibfile = tmp_path / "library.bib"
+    bibfile.write_text(_HYPHEN_MIRROR_BIB, encoding="utf-8")
+    result = runner.invoke(main, ["check", str(bibfile)])
+    assert result.exit_code == 1
+    lines = result.output.splitlines()
+    assert (
+        'TrailingHyphen2026: author name "Meyer, H- D" has a '
+        'first-name part ("H-") that cannot be initialized'
+    ) in lines
+    assert (
+        'DoubledHyphen2026: author name "Foo, A--B" has a '
+        'first-name part ("A--B") that cannot be initialized'
+    ) in lines
+
+
 def test_timestamp(runner, bibfile):
     result = _run(runner, "timestamp", bibfile)
     expected = _load(bibfile).timestamp.isoformat()
