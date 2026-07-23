@@ -233,6 +233,47 @@ def _journal_macro_name(name):
     return initials.lower()
 
 
+def _journal_matches_macro_value(name, value):
+    """Whether the journal `name` and the `@string` value `value` are
+    spellings of the same journal name, one possibly abbreviating the
+    other word by word.
+
+    Both strings are split on whitespace and must have the same
+    number of words. Two words match if they are equal (ignoring
+    case), or if one of them is dot-terminated and its stem is a
+    case-insensitive prefix of the other ("Phys." matches
+    "Physical"); two dot-terminated words match if either stem is a
+    prefix of the other ("Let." matches "Lett."). A bare word never
+    matches as a mere prefix, so "Phys. Rev. A" does not match
+    "Physical Review Applied"."""
+    name_words = name.split()
+    value_words = value.split()
+    if len(name_words) != len(value_words):
+        return False
+    for a, b in zip(name_words, value_words):
+        a, b = a.lower(), b.lower()
+        if a == b:
+            continue
+        a_stem = a[:-1] if (a.endswith(".") and len(a) > 1) else None
+        b_stem = b[:-1] if (b.endswith(".") and len(b) > 1) else None
+        if a_stem is not None and b_stem is not None:
+            if a_stem.startswith(b_stem) or b_stem.startswith(a_stem):
+                continue
+        elif a_stem is not None and b.startswith(a_stem):
+            continue
+        elif b_stem is not None and a.startswith(b_stem):
+            continue
+        return False
+    return True
+
+
+def _journal_macros_line(macro, names):
+    """A `[journal_macros]` configuration line defining `macro` as
+    the alias list `names`, for use in notices and error messages."""
+    aliases = ", ".join(f'"{journal}"' for journal in names)
+    return f"{macro} = [{aliases}]"
+
+
 def _plan_config_macro(name, existing_strings, planned_strings):
     """If macro `name` is not yet defined but has a `[journal_macros]`
     configuration entry, plan its `@string` definition (using the
@@ -250,7 +291,10 @@ def _resolve_journal(name, existing_strings, planned_strings):
     Tried in order: a library/planned macro whose value is `name`; a
     `[journal_macros]` configuration entry listing `name` (planning
     the macro's `@string` definition if needed); a newly created macro
-    named by `_journal_macro_name` (planned, with a notice). Returns
+    named by `_journal_macro_name` (planned, with a notice). When the
+    derived name is taken by a macro whose value matches `name` word
+    by word as an abbreviation (per `_journal_matches_macro_value`),
+    that macro is reused, with a notice. Returns
     `(macro, problem, notice)` where exactly one of `macro` and
     `problem` is not `None`."""
     for strings in (existing_strings, planned_strings):
@@ -261,13 +305,21 @@ def _resolve_journal(name, existing_strings, planned_strings):
         if name in names:
             if macro in existing_strings:
                 if existing_strings[macro] not in names:
-                    return (
-                        None,
+                    taken = existing_strings[macro]
+                    line = _journal_macros_line(macro, (taken, *names))
+                    problem = (
                         f"the journal macro {macro!r} configured for "
-                        f"{name!r} is already defined as "
-                        f"{existing_strings[macro]!r}",
-                        None,
+                        f"{name!r} is already defined as {taken!r}\n"
+                        "  if these are the same journal, make the "
+                        "library's value the canonical\n"
+                        "  (first) element of the [journal_macros] "
+                        "alias list:\n"
+                        f"    {line}\n"
+                        "  if they are different journals, move the "
+                        "[journal_macros] entry to a\n"
+                        "  macro name that is not already defined"
                     )
+                    return None, problem, None
                 return macro, None, None
             planned_strings.setdefault(macro, names[0])
             return macro, None, None
@@ -281,12 +333,31 @@ def _resolve_journal(name, existing_strings, planned_strings):
         )
     if macro in existing_strings or macro in planned_strings:
         taken = existing_strings.get(macro, planned_strings.get(macro))
-        return (
-            None,
+        if _journal_matches_macro_value(name, taken):
+            line = _journal_macros_line(macro, (taken, name))
+            notice = (
+                f"journal {name!r} matches the @string macro "
+                f"{macro} = {{{taken}}} as an abbreviation and "
+                "resolves to that macro; to make this mapping "
+                f"explicit, configure [journal_macros]: {line}"
+            )
+            return macro, None, notice
+        same = _journal_macros_line(macro, (taken, name))
+        fresh = _journal_macros_line("<macro>", (name,))
+        problem = (
             f"cannot create @string macro {macro!r} for journal "
-            f"{name!r}: the name is already defined as {taken!r}",
-            None,
+            f"{name!r}: the name is already defined as {taken!r}\n"
+            "  if these are the same journal, declare the incoming "
+            "spelling as a\n"
+            "  [journal_macros] alias (canonical value first):\n"
+            f"    {same}\n"
+            "  if they are different journals, add a [journal_macros] "
+            "entry under a\n"
+            "  fresh macro name:\n"
+            f"    {fresh}\n"
+            f"  or an [initials.journal] exception for {name!r}"
         )
+        return None, problem, None
     planned_strings[macro] = name
     notice = (
         f"created new @string macro for journal: {macro} = {{{name}}}; "

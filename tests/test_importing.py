@@ -1,5 +1,6 @@
 """Tests for `Library.import_bibtex` (the `importing` module)."""
 
+import re
 import shutil
 import warnings
 from datetime import datetime
@@ -9,6 +10,7 @@ import pytest
 
 import bibdeskparser.config as config
 from bibdeskparser import Library, MacroString, ValueString
+from bibdeskparser.importing import _journal_matches_macro_value
 
 
 @pytest.fixture(autouse=True)
@@ -122,12 +124,129 @@ def test_journal_new_macro_honors_initials_exception():
     assert bib.strings["npjqi"] == "npj Quantum Inf"
 
 
+def test_journal_full_name_matches_abbreviated_macro():
+    bib = Library()
+    bib.strings["prl"] = "Phys. Rev. Lett."
+    line = 'prl = ["Phys. Rev. Lett.", "Physical Review Letters"]'
+    pattern = "matches the @string macro.*" + re.escape(line)
+    with pytest.warns(UserWarning, match=pattern):
+        (key,) = bib.import_bibtex(
+            ARTICLE.replace("{Phys. Rev. A}", "{Physical Review Letters}")
+        )
+    assert key == "GoerzPRL2014"
+    assert bib[key]["journal"] == MacroString("prl")
+    assert bib.strings["prl"] == "Phys. Rev. Lett."
+
+
+def test_journal_lowercased_full_name_matches_abbreviated_macro():
+    """A lowercased full journal name (as in Google Scholar exports)
+    also matches the abbreviated macro."""
+    bib = Library()
+    bib.strings["prl"] = "Phys. Rev. Lett."
+    with pytest.warns(UserWarning, match="matches the @string macro"):
+        (key,) = bib.import_bibtex(
+            ARTICLE.replace("{Phys. Rev. A}", "{Physical review letters}")
+        )
+    assert bib[key]["journal"] == MacroString("prl")
+    assert bib.strings["prl"] == "Phys. Rev. Lett."
+
+
+def test_journal_full_name_matches_planned_macro():
+    """A full journal name matches an abbreviated macro planned
+    earlier in the same import."""
+    bib = Library()
+    text = """
+    @article{PhysRevLett.100.000001,
+        Author = {Goerz, Michael},
+        Title = {First article},
+        Journal = {Phys. Rev. Lett.},
+        Year = {2014},
+        Pages = {000001},
+        Volume = {100},
+    }
+    @article{PhysRevLett.101.000002,
+        Author = {Reich, Daniel M.},
+        Title = {Second article},
+        Journal = {Physical Review Letters},
+        Year = {2015},
+        Pages = {000002},
+        Volume = {101},
+    }
+    """
+    with pytest.warns(UserWarning) as record:
+        keys = bib.import_bibtex(text)
+    messages = [str(warning.message) for warning in record]
+    assert any("created new @string macro" in msg for msg in messages)
+    assert any("matches the @string macro" in msg for msg in messages)
+    for key in keys:
+        assert bib[key]["journal"] == MacroString("prl")
+    assert bib.strings["prl"] == "Phys. Rev. Lett."
+
+
+def test_journal_abbreviated_name_matches_full_macro():
+    """An abbreviated journal name matches a macro that holds the
+    full journal name (the reverse of the usual direction)."""
+    bib = Library()
+    bib.strings["prl"] = "Physical Review Letters"
+    line = 'prl = ["Physical Review Letters", "Phys. Rev. Lett."]'
+    pattern = "matches the @string macro.*" + re.escape(line)
+    with pytest.warns(UserWarning, match=pattern):
+        (key,) = bib.import_bibtex(
+            ARTICLE.replace("{Phys. Rev. A}", "{Phys. Rev. Lett.}")
+        )
+    assert bib[key]["journal"] == MacroString("prl")
+    assert bib.strings["prl"] == "Physical Review Letters"
+
+
 def test_journal_macro_name_collision_is_an_error():
     bib = Library()
     bib.strings["njp"] = "Nederlands Juristen Podium"
     with pytest.raises(ValueError, match="already defined"):
         bib.import_bibtex(ARTICLE.replace("{Phys. Rev. A}", "{New J. Phys.}"))
     assert len(bib) == 0
+
+
+def test_journal_lookalike_collision_is_actionable_error():
+    """A journal that shares its initials with an existing macro but
+    does not match its value as an abbreviation is an error, and the
+    error suggests the [journal_macros] configuration."""
+    bib = _library_with_pra()
+    text = ARTICLE.replace("{Phys. Rev. A}", "{Physical Review Applied}")
+    line = 'pra = ["Phys. Rev. A", "Physical Review Applied"]'
+    pattern = "(?s)already defined as 'Phys. Rev. A'.*" + re.escape(line)
+    with pytest.raises(ValueError, match=pattern):
+        bib.import_bibtex(text)
+    assert len(bib) == 0
+
+
+def test_journal_prefix_mismatch_collision_is_an_error():
+    """An abbreviated word that is not a prefix of the incoming word
+    ("Rev." vs "Reports") does not match."""
+    bib = Library()
+    bib.strings["pr"] = "Phys. Rev."
+    text = ARTICLE.replace("{Phys. Rev. A}", "{Physics Reports}")
+    line = '<macro> = ["Physics Reports"]'
+    pattern = "(?s)already defined.*" + re.escape(line)
+    with pytest.raises(ValueError, match=pattern):
+        bib.import_bibtex(text)
+
+
+@pytest.mark.parametrize(
+    "name, value, expected",
+    [
+        ("Physical Review Letters", "Phys. Rev. Lett.", True),
+        ("Physical review letters", "Phys. Rev. Lett.", True),
+        ("Phys. Rev. Lett.", "Physical Review Letters", True),
+        ("Phys. Rev. Let.", "Phys. Rev. Lett.", True),
+        ("Astrophysical Journal", "Astrophys. J.", True),
+        ("Physical Review Applied", "Phys. Rev. A", False),
+        ("Physics Reports", "Phys. Rev.", False),
+        ("Annalen der Physik", "Ann. Phys.", False),
+        ("Phy", "Phys.", False),
+    ],
+)
+def test_journal_abbreviation_matcher(name, value, expected):
+    assert _journal_matches_macro_value(name, value) is expected
 
 
 def test_journal_underivable_macro_name_is_an_error():
@@ -141,6 +260,18 @@ def test_journal_config_conflicts_with_existing_macro():
     bib.strings["pra"] = "Something Else Entirely"
     config.active.journal_macros = {"pra": ("Phys. Rev. A",)}
     with pytest.raises(ValueError, match="already defined as"):
+        bib.import_bibtex(ARTICLE)
+
+
+def test_journal_config_conflict_error_suggests_alias_list():
+    """The error for a [journal_macros] entry conflicting with an
+    existing @string definition suggests the alias list that lists
+    the library's value as the canonical (first) element."""
+    bib = Library()
+    bib.strings["pra"] = "Something Else Entirely"
+    config.active.journal_macros = {"pra": ("Phys. Rev. A",)}
+    line = 'pra = ["Something Else Entirely", "Phys. Rev. A"]'
+    with pytest.raises(ValueError, match=re.escape(line)):
         bib.import_bibtex(ARTICLE)
 
 
