@@ -24,10 +24,12 @@ invocations, guided by the `--help` output alone (see
 $ bibdeskparser <command> [BIBFILE] <args> <options>
 ```
 
-Run `bibdeskparser --help` for the list of commands,
+Run `bibdeskparser --help` for the full list of commands,
 `bibdeskparser <command> --help` for the arguments and options of a
 specific command, and `bibdeskparser --version` for the installed
-version.
+version. `bibdeskparser --usage` (or `bibdeskparser` with no command)
+prints a short usage summary listing just the command names, without
+the full `--help` output.
 
 Every command operates on a single `.bib` file, given as the first
 argument after the command name. An argument counts as the `BIBFILE`

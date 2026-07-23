@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Added: a `--usage` option on the `bibdeskparser` command-line tool, printing a short usage summary (the one-line description, the usage line, and the list of command names) as a compact alternative to the full `--help` output. [[#47]]
+* Changed: running `bibdeskparser` with no command now prints the short usage summary (see `--usage`) on stderr and exits 2, instead of dumping the entire `--help` output. [[#47]]
 * Fixed: the network commands no longer fail in an environment that routes traffic through a SOCKS proxy (`ALL_PROXY=socks5h://...`, e.g. an SSH tunnel). Both HTTP stacks used by the package refuse to even attempt a SOCKS connection without an optional helper package, each with a different error: httpx (behind `add` and `import --url`) needs `socksio`, and requests (behind `add_preprint`, `add_doi`, and `add_abstract`, via the `arxiv` and `habanero` packages) needs `pysocks`. Both helpers are now regular dependencies.
 * Fixed: with `--dry-run`, the per-key reports of the `add_abstract`, `add_preprint`, and `add_doi` CLI commands (and the preprint report of `add --add-preprint`) now say `would store` / `would mark known missing` instead of the past-tense `stored` / `marked known missing`, which misread as the file having been modified. The JSON reports are unchanged: `applied` marks what a real run would store.
 * Changed: the command-line tool now reports save-time warnings as the same clean `Warning:` lines on stderr it uses for all other warnings, instead of letting them surface through Python's warning machinery with a meaningless `cli.py` source location. Warnings about linked files that do not exist are printed individually only up to five; beyond that, they collapse into a single summary line with the total count and the first missing file. Previously, saving a `.bib` file separated from its attachment tree (e.g. a copy in another directory) flooded stderr with one location-prefixed `UserWarning` per linked file, on every mutating command.
@@ -155,3 +157,4 @@ Initial release.
 [#40]: https://github.com/goerz/bibdeskparser/issues/40
 [#41]: https://github.com/goerz/bibdeskparser/pull/41
 [#42]: https://github.com/goerz/bibdeskparser/pull/42
+[#47]: https://github.com/goerz/bibdeskparser/pull/47
