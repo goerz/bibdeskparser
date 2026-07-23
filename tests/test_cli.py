@@ -254,6 +254,36 @@ def test_keys_filter_group_unknown(runner, bibfile):
     assert "unknown static group 'No Such Group'" in result.stderr
 
 
+def test_keys_filter_by_attachment(runner, bibfile):
+    all_keys = set(_load(bibfile).keys())
+    with_files = _run(
+        runner, "keys", bibfile, "--with-files"
+    ).output.splitlines()
+    without_files = _run(
+        runner, "keys", bibfile, "--without-files"
+    ).output.splitlines()
+
+    assert len(with_files) == 30
+    assert len(without_files) == 31
+    assert set(with_files) | set(without_files) == all_keys  # exhaustive
+    assert set(with_files) & set(without_files) == set()  # disjoint
+    assert "BrifNJP2010" in with_files
+    assert "Shapiro2012" in without_files
+
+    # no flag = no filtering
+    assert len(_run(runner, "keys", bibfile).output.splitlines()) == 61
+
+    # composes with the other filters
+    articles_no_pdf = _run(
+        runner, "keys", bibfile, "--type", "article", "--without-files"
+    ).output.splitlines()
+    lib = _load(bibfile)
+    assert articles_no_pdf  # non-empty, else the assertions below are vacuous
+    for key in articles_no_pdf:
+        assert lib[key].entry_type == "article"
+        assert not lib[key].files
+
+
 def test_show(runner, bibfile):
     result = _run(runner, "show", bibfile, "GoerzJPB2011")
     assert result.output.startswith("GoerzJPB2011 (article)")
@@ -588,35 +618,29 @@ def test_editor(runner, bibfile):
     ]
 
 
-def test_files(runner, bibfile):
-    result = _run(runner, "files", bibfile, "GoerzJPB2011")
+def test_files_single_key(runner, bibfile):
+    # one KEY -> a {key: [paths]} map (absolute by default)
     expected = bibfile.resolve().parent / "GoerzJPB2011.pdf"
-    assert result.output.splitlines() == [str(expected)]
-    assert expected.is_absolute()
-    assert expected.is_file()
-
-
-def test_files_relative(runner, bibfile):
-    result = _run(runner, "files", bibfile, "GoerzJPB2011", "--relative")
-    assert result.output.splitlines() == ["GoerzJPB2011.pdf"]
-
-
-def test_files_json(runner, bibfile):
+    assert expected.is_absolute() and expected.is_file()
     result = _run(runner, "files", bibfile, "GoerzJPB2011", "--json")
-    expected = bibfile.resolve().parent / "GoerzJPB2011.pdf"
-    assert json.loads(result.output) == [str(expected)]
+    assert json.loads(result.output) == {"GoerzJPB2011": [str(expected)]}
+    result = _run(runner, "files", bibfile, "GoerzJPB2011")
+    assert result.output.splitlines() == [f"GoerzJPB2011: {expected}"]
+
+
+def test_files_single_key_relative(runner, bibfile):
     result = _run(
         runner, "files", bibfile, "GoerzJPB2011", "--relative", "--json"
     )
-    assert json.loads(result.output) == ["GoerzJPB2011.pdf"]
+    assert json.loads(result.output) == {"GoerzJPB2011": ["GoerzJPB2011.pdf"]}
 
 
 def test_files_empty(runner, bibfile):
-    # SolaAAMOP2018 has no file attachments
-    result = _run(runner, "files", bibfile, "SolaAAMOP2018")
-    assert result.output == ""
+    # SolaAAMOP2018 has no file attachments -> present, mapped to []
     result = _run(runner, "files", bibfile, "SolaAAMOP2018", "--json")
-    assert json.loads(result.output) == []
+    assert json.loads(result.output) == {"SolaAAMOP2018": []}
+    result = _run(runner, "files", bibfile, "SolaAAMOP2018")
+    assert result.output.splitlines() == ["SolaAAMOP2018: "]
 
 
 def test_files_unknown_key(runner, bibfile):
@@ -625,27 +649,146 @@ def test_files_unknown_key(runner, bibfile):
     assert "Error: unknown citation key 'NoSuchKey'" in result.stderr
 
 
-def test_urls(runner, bibfile):
-    result = _run(runner, "urls", bibfile, "TomzaPRA2012")
+def test_files_whole_library_json(runner, bibfile):
+    data = json.loads(_run(runner, "files", bibfile, "--json").output)
+    assert len(data) == 30  # only entries with files
+    assert "BrifNJP2010" in data
+    assert "Shapiro2012" not in data  # no attachment -> absent
+    for _, paths in data.items():
+        assert isinstance(paths, list) and paths
+        assert all(p.endswith(".pdf") for p in paths)
+
+
+def test_files_whole_library_relative(runner, bibfile):
+    data = json.loads(
+        _run(runner, "files", bibfile, "--relative", "--json").output
+    )
+    assert data["GoerzPRA2014"] == ["GoerzPRA2014.pdf"]  # stored path
+
+
+def test_files_whole_library_absolute_default(runner, bibfile):
+    data = json.loads(_run(runner, "files", bibfile, "--json").output)
+    assert all(p.startswith("/") for paths in data.values() for p in paths)
+
+
+def test_files_flat(runner, bibfile):
+    # --flat -> a bare list; a single key keeps that entry's own order
+    result = _run(
+        runner,
+        "files",
+        bibfile,
+        "GoerzPRA2014",
+        "--relative",
+        "--flat",
+        "--json",
+    )
+    assert json.loads(result.output) == ["GoerzPRA2014.pdf"]  # list, not map
+    # whole library --flat -> every referenced file, de-duplicated
+    flat = json.loads(
+        _run(runner, "files", bibfile, "--relative", "--flat", "--json").output
+    )
+    assert isinstance(flat, list)
+    assert len(flat) == 30
+    assert "GoerzPRA2014.pdf" in flat
+    assert len(set(flat)) == len(flat)
+
+
+def test_files_multiple_keys(runner, bibfile):
+    # several keys -> a map, requested entries always present (empty if none)
+    data = json.loads(
+        _run(
+            runner,
+            "files",
+            bibfile,
+            "GoerzPRA2014",
+            "Shapiro2012",
+            "--relative",
+            "--json",
+        ).output
+    )
+    assert data == {
+        "GoerzPRA2014": ["GoerzPRA2014.pdf"],
+        "Shapiro2012": [],
+    }
+
+
+def test_files_multiple_keys_text(runner, bibfile):
+    # the text form of the map mirrors `groups`/`keywords`
+    result = _run(
+        runner,
+        "files",
+        bibfile,
+        "GoerzPRA2014",
+        "Shapiro2012",
+        "--relative",
+    )
     assert result.output.splitlines() == [
+        "GoerzPRA2014: GoerzPRA2014.pdf",
+        "Shapiro2012: ",
+    ]
+
+
+def test_files_multiple_keys_unknown(runner, bibfile):
+    result = runner.invoke(
+        main, ["files", str(bibfile), "GoerzPRA2014", "NoSuchKey"]
+    )
+    assert result.exit_code == 1
+    assert "unknown citation key 'NoSuchKey'" in result.stderr
+
+
+def test_reconcile_orphans_and_gaps(runner, bibfile):
+    # entries missing a PDF
+    no_pdf = _run(runner, "keys", bibfile, "--without-files").output.split()
+    assert "Shapiro2012" in no_pdf
+
+    # every referenced file, as a set, to diff against files on disk
+    referenced = set(
+        json.loads(
+            _run(
+                runner, "files", bibfile, "--relative", "--flat", "--json"
+            ).output
+        )
+    )
+    assert "GoerzPRA2014.pdf" in referenced
+
+
+def test_urls_single_key(runner, bibfile):
+    # one KEY -> a {key: [urls]} map
+    result = _run(runner, "urls", bibfile, "TomzaPRA2012", "--json")
+    assert json.loads(result.output) == {
+        "TomzaPRA2012": [
+            "http://link.aps.org/doi/10.1103/PhysRevA.86.043424",
+            "http://dx.doi.org/10.1103/PhysRevA.86.043424",
+        ]
+    }
+    result = _run(runner, "urls", bibfile, "KochJPCM2016")
+    assert result.output.splitlines() == [
+        "KochJPCM2016: http://dx.doi.org/10.1088/0953-8984/28/21/213001"
+    ]
+
+
+def test_urls_flat(runner, bibfile):
+    result = _run(runner, "urls", bibfile, "TomzaPRA2012", "--flat", "--json")
+    assert json.loads(result.output) == [
         "http://link.aps.org/doi/10.1103/PhysRevA.86.043424",
         "http://dx.doi.org/10.1103/PhysRevA.86.043424",
     ]
 
 
-def test_urls_json(runner, bibfile):
-    result = _run(runner, "urls", bibfile, "KochJPCM2016", "--json")
-    assert json.loads(result.output) == [
-        "http://dx.doi.org/10.1088/0953-8984/28/21/213001"
-    ]
-
-
 def test_urls_empty(runner, bibfile):
-    # MorzhinRMS2019 has a file attachment but no linked URLs
-    result = _run(runner, "urls", bibfile, "MorzhinRMS2019")
-    assert result.output == ""
+    # MorzhinRMS2019 has a file attachment but no linked URLs -> mapped to []
     result = _run(runner, "urls", bibfile, "MorzhinRMS2019", "--json")
-    assert json.loads(result.output) == []
+    assert json.loads(result.output) == {"MorzhinRMS2019": []}
+    result = _run(runner, "urls", bibfile, "MorzhinRMS2019")
+    assert result.output.splitlines() == ["MorzhinRMS2019: "]
+
+
+def test_urls_whole_library(runner, bibfile):
+    data = json.loads(_run(runner, "urls", bibfile, "--json").output)
+    assert isinstance(data, dict)
+    assert "TomzaPRA2012" in data  # has URLs
+    assert "MorzhinRMS2019" not in data  # no URLs -> absent
+    assert all(isinstance(v, list) and v for v in data.values())
 
 
 def test_search(runner, bibfile):
@@ -719,45 +862,103 @@ def test_search_help_documents_match_levels(runner):
 
 
 def test_groups(runner, bibfile):
+    # no KEY -> forward {key: [groups]} map (entries in >=1 group)
+    data = json.loads(_run(runner, "groups", bibfile, "--json").output)
+    assert isinstance(data, dict)
+    assert data["GoerzJPB2011"] == ["My Papers"]
+    lib = _load(bibfile)
+    for key in data:  # only entries that are in some group appear
+        assert lib[key].groups
     result = _run(runner, "groups", bibfile)
-    assert "My Papers: " in result.output
-    assert "GoerzJPB2011, GoerzNJP2014" in result.output
+    assert "GoerzJPB2011: My Papers" in result.output.splitlines()
 
 
-def test_groups_json(runner, bibfile):
-    result = _run(runner, "groups", bibfile, "--json")
-    data = json.loads(result.output)
+def test_groups_of_entry(runner, bibfile):
+    # one KEY -> a {key: [groups]} map (was a bare list before)
+    result = _run(runner, "groups", bibfile, "GoerzJPB2011", "--json")
+    assert json.loads(result.output) == {"GoerzJPB2011": ["My Papers"]}
+    result = _run(runner, "groups", bibfile, "GoerzJPB2011")
+    assert result.output.splitlines() == ["GoerzJPB2011: My Papers"]
+
+
+def test_groups_flat(runner, bibfile):
+    data = json.loads(
+        _run(runner, "groups", bibfile, "--flat", "--json").output
+    )
+    assert isinstance(data, list)
+    assert set(data) == {"My Papers", "Diploma"}
+
+
+def test_groups_index(runner, bibfile):
+    # --index -> the inverse {group: [member keys]} map (Library.groups)
+    data = json.loads(
+        _run(runner, "groups", bibfile, "--index", "--json").output
+    )
     expected = {
         name: list(keys) for name, keys in _load(bibfile).groups.items()
     }
     assert data == expected
     assert "GoerzJPB2011" in data["My Papers"]
+    result = _run(runner, "groups", bibfile, "--index")
+    assert "My Papers: GoerzDiploma2010, GoerzJPB2011" in result.output
 
 
-def test_groups_of_entry(runner, bibfile):
-    result = _run(runner, "groups", bibfile, "GoerzJPB2011")
-    assert result.output.splitlines() == ["My Papers"]
-    result = _run(runner, "groups", bibfile, "GoerzJPB2011", "--json")
-    assert json.loads(result.output) == ["My Papers"]
+def test_groups_index_rejects_keys_and_flat(runner, bibfile):
+    result = runner.invoke(
+        main, ["groups", str(bibfile), "--index", "GoerzJPB2011"]
+    )
+    assert result.exit_code == 2
+    assert "--index cannot be combined" in result.stderr
+    result = runner.invoke(main, ["groups", str(bibfile), "--index", "--flat"])
+    assert result.exit_code == 2
 
 
 def test_keywords(runner, bibfile):
+    # no KEY -> forward {key: [keywords]} map (entries with >=1 keyword)
+    data = json.loads(_run(runner, "keywords", bibfile, "--json").output)
+    assert isinstance(data, dict)
+    assert "OCT" in data["LapertPRA09"]
     result = _run(runner, "keywords", bibfile)
-    assert "Filtering: LapertPRA09" in result.output
-
-
-def test_keywords_json(runner, bibfile):
-    result = _run(runner, "keywords", bibfile, "--json")
-    data = json.loads(result.output)
-    assert data["Filtering"] == ["LapertPRA09"]
+    assert any(
+        line.startswith("LapertPRA09: ") for line in result.output.splitlines()
+    )
 
 
 def test_keywords_of_entry(runner, bibfile):
-    result = _run(runner, "keywords", bibfile, "GoerzDiploma2010")
-    assert "Quantum Gates" in result.output.splitlines()
+    # one KEY -> a {key: [keywords]} map
     result = _run(runner, "keywords", bibfile, "GoerzDiploma2010", "--json")
     data = json.loads(result.output)
-    assert data == list(_load(bibfile)["GoerzDiploma2010"].keywords)
+    assert data == {
+        "GoerzDiploma2010": list(_load(bibfile)["GoerzDiploma2010"].keywords)
+    }
+    assert "Quantum Gates" in data["GoerzDiploma2010"]
+
+
+def test_keywords_flat(runner, bibfile):
+    result = _run(
+        runner, "keywords", bibfile, "LapertPRA09", "--flat", "--json"
+    )
+    assert json.loads(result.output) == ["Filtering", "OCT"]
+
+
+def test_keywords_index(runner, bibfile):
+    data = json.loads(
+        _run(runner, "keywords", bibfile, "--index", "--json").output
+    )
+    assert data["Filtering"] == ["LapertPRA09"]
+    result = _run(runner, "keywords", bibfile, "--index")
+    assert "Filtering: LapertPRA09" in result.output
+
+
+def test_keywords_index_rejects_keys_and_flat(runner, bibfile):
+    result = runner.invoke(
+        main, ["keywords", str(bibfile), "--index", "LapertPRA09"]
+    )
+    assert result.exit_code == 2
+    result = runner.invoke(
+        main, ["keywords", str(bibfile), "--index", "--flat"]
+    )
+    assert result.exit_code == 2
 
 
 def test_strings(runner, bibfile):

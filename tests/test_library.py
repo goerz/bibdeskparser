@@ -1000,6 +1000,26 @@ def test_keys_filter_group_unknown(bib):
         bib.keys(not_group="No Such Group")
 
 
+def test_keys_with_files_argument(bib):
+    """`with_files` is a tri-state filter on file attachments: `True`
+    keeps only entries with an attachment, `False` only those without,
+    `None` (the default) does not filter."""
+    assert len(bib.keys(with_files=True)) == 30
+    assert len(bib.keys(with_files=False)) == 31
+    assert len(bib.keys(with_files=None)) == 61  # default: no filter
+    assert bib.keys(with_files=None) == bib.keys()
+    assert "Shapiro2012" in bib.keys(with_files=False)
+    assert "BrifNJP2010" in bib.keys(with_files=True)
+    # partitions the library, and composes with the other filters
+    with_files = set(bib.keys(with_files=True))
+    without_files = set(bib.keys(with_files=False))
+    assert with_files | without_files == set(bib.keys())
+    assert with_files & without_files == set()
+    assert set(bib.keys(types="article", with_files=False)) == {
+        key for key in bib.keys(types="article") if not bib[key].files
+    }
+
+
 def test_add_new_entry(bib):
     """Adding a new entry sets `date-added` and wires up `.groups`."""
     entry = Entry("article", "NewKey2026", fields={"title": "T"})

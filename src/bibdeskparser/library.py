@@ -1254,6 +1254,7 @@ class Library(MutableMapping):
         missing=None,
         group=None,
         not_group=None,
+        with_files=None,
     ):
         """Citation keys of the entries, as a `tuple`, optionally
         filtered.
@@ -1265,6 +1266,7 @@ class Library(MutableMapping):
             missing=None,
             group=None,
             not_group=None,
+            with_files=None,
         )
         ```
 
@@ -1283,6 +1285,10 @@ class Library(MutableMapping):
           static group (see {attr}`groups`).
         * `not_group`: keep only entries that are members of none of
           the given static groups.
+        * `with_files`: a tri-state filter on file attachments (the
+          `bdsk-file-N` fields, see {attr}`Entry.files`). `None` (the
+          default) does not filter; `True` keeps only entries with at
+          least one attachment; `False` keeps only entries with none.
 
         For any field, exactly one of `has` and `missing` holds. A
         field that is defined with an empty (or whitespace-only)
@@ -1304,6 +1310,10 @@ class Library(MutableMapping):
         >>> bib.keys(types="book")
         ()
         >>> bib.keys(has="title", missing="doi")
+        ('Key2026',)
+        >>> bib.keys(with_files=True)   # no attachment yet
+        ()
+        >>> bib.keys(with_files=False)
         ('Key2026',)
         >>> bib.groups["My Papers"] = ("Key2026",)
         >>> bib.keys(group="My Papers")
@@ -1327,6 +1337,8 @@ class Library(MutableMapping):
         result = []
         for key, entry in self._entries.items():
             if types and entry.entry_type.lower() not in types:
+                continue
+            if with_files is not None and bool(entry.files) != with_files:
                 continue
             if not all(key in members for members in include):
                 continue
