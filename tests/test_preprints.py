@@ -23,6 +23,16 @@ TITLE_CLOSE = (
 #: A clearly different title (ratio well below the acceptance floor).
 TITLE_OTHER = "Optimal quantum control via semi-automatic differentiation"
 
+#: A title with atomic non-ASCII letters (issue #36), unicode (as arXiv
+#: stores it) and TeX-encoded (as a `.bib` field may spell it).
+TITLE_UNI = (
+    "Correction Formulas for the Mølmer-Sørensen Gate Under Strong Driving"
+)
+TITLE_TEX = (
+    r"Correction Formulas for the M{\o}lmer-S{\o}rensen Gate"
+    r" Under Strong Driving"
+)
+
 
 class FakeResult:
     """A stand-in for an `arxiv.Result`."""
@@ -130,6 +140,14 @@ def test_parse_year(raw, expected):
     assert preprints._parse_year(raw) == expected
 
 
+def test_deaccent_atomic_letters():
+    # U+00F8 etc. have no NFKD decomposition; strip-combining-marks
+    # alone leaves them in place.
+    assert preprints._deaccent("Mølmer-Sørensen") == "Molmer-Sorensen"
+    assert preprints._deaccent("Łukasz") == "Lukasz"
+    assert preprints._deaccent("Weißkopf") == "Weisskopf"
+
+
 # -- query building --------------------------------------------------------- #
 
 
@@ -161,6 +179,32 @@ def test_build_queries_empty_title():
 
 def test_distinctive_words_short_title():
     assert preprints._distinctive_words("On Maps") == ["maps", "on"]
+
+
+def test_build_queries_no_shattered_tokens():
+    for query in preprints._build_queries(TITLE_UNI, "kirchhoff"):
+        assert " lmer" not in query
+        assert " rensen" not in query
+
+
+def test_build_queries_preserves_unicode():
+    # arXiv's index stores title characters literally (verified against
+    # the live API: ti:"mølmer sørensen" matches, ti:"molmer sorensen"
+    # does not), so queries must keep the unicode intact.
+    queries = preprints._build_queries(TITLE_UNI, "kirchhoff")
+    assert queries[0] == (
+        'ti:"correction formulas for the mølmer sørensen gate'
+        ' under strong driving" AND au:kirchhoff'
+    )
+
+
+def test_build_queries_tex_equals_unicode():
+    # find_preprint documents raw bib field values as input; a
+    # TeX-encoded title must produce the same queries as its decoded
+    # form.
+    assert preprints._build_queries(
+        TITLE_TEX, "kirchhoff"
+    ) == preprints._build_queries(TITLE_UNI, "kirchhoff")
 
 
 # -- matching --------------------------------------------------------------- #
@@ -263,6 +307,33 @@ def test_pick_match_next_year_ok():
     )
     assert result is results[0]
     assert reason == "title"
+
+
+def test_title_ratio_cross_encoding():
+    # The same title, unicode (arXiv) vs ASCII-folded (publisher)
+    # spelling, must compare as identical.
+    assert (
+        preprints._title_ratio(
+            "The Mølmer-Sørensen gate", "The Molmer-Sorensen gate"
+        )
+        == 1.0
+    )
+
+
+def test_title_ratio_tex_vs_unicode():
+    assert preprints._title_ratio(TITLE_TEX, TITLE_UNI) == 1.0
+
+
+def test_author_matches_roundtrip_stroked():
+    lastname = preprints._first_author_lastname("Mølmer, Klaus")
+    result = SimpleNamespace(authors=[SimpleNamespace(name="Klaus Mølmer")])
+    assert preprints._author_matches(lastname, result)
+
+
+def test_author_matches_cross_encoding():
+    # Entry spells the name ASCII-folded, arXiv has the unicode form.
+    result = SimpleNamespace(authors=[SimpleNamespace(name="Klaus Mølmer")])
+    assert preprints._author_matches("molmer", result)
 
 
 # -- find_preprint ---------------------------------------------------------- #
@@ -371,6 +442,43 @@ def _forbid_find(monkeypatch):
 FOUND_RESULT = PreprintResult("2205.15044", "doi", 1.0, "", False, "quant-ph")
 NONE_RESULT = PreprintResult("", "none", 0.55, "best-ratio=0.55", False)
 ERROR_RESULT = PreprintResult("", "error", 0.0, "arxiv-error(X: y)", False)
+
+
+def test_add_preprint_atomic_letter_title(monkeypatch):
+    """End-to-end (network-free) regression for issue #36: the
+    Mølmer-Sørensen reproducer is matched via its DOI instead of being
+    reported as a false no-results. The arXiv record's title keeps the
+    unicode ø, so this exercises the fold-for-comparison path."""
+    arxiv_record = FakeResult(
+        TITLE_UNI,
+        authors=["Susanna Kirchhoff", "Frank K. Wilhelm", "Felix Motzoi"],
+        doi="10.1103/PRXQuantum.6.010328",
+        short_id="2404.17478v1",
+    )
+    monkeypatch.setattr(
+        preprints, "_search", lambda title, lastname: [arxiv_record]
+    )
+    lib = Library()
+    lib["KirchhoffPRXQ2025"] = Entry(
+        "article",
+        "KirchhoffPRXQ2025",
+        fields={
+            "author": (
+                "Kirchhoff, Susanna and Wilhelm, Frank K. and Motzoi, Felix"
+            ),
+            "doi": "10.1103/prxquantum.6.010328",
+            "title": (
+                "Correction Formulas for the Mølmer-Sørensen Gate "
+                "Under Strong Driving"
+            ),
+            "year": "2025",
+        },
+    )
+    result = lib.add_preprint("KirchhoffPRXQ2025")
+    assert result.eprint == "2404.17478"
+    assert result.match == "doi"
+    assert result.applied
+    assert str(lib["KirchhoffPRXQ2025"].get("eprint")) == "2404.17478"
 
 
 def test_add_preprint_stores_match(monkeypatch):
