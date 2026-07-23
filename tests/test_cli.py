@@ -81,6 +81,18 @@ def fixture_brokenfile(tmp_path):
     return Path(shutil.copy(FAIL_CHECKS_DIR / "broken_block.bib", tmp_path))
 
 
+@pytest.fixture(name="keyformatfile")
+def fixture_keyformatfile(tmp_path):
+    """A copy of `test_cli_fail_checks/keyformat.bib` in `tmp_path`: a
+    library that passes every audit except the opt-in `--key-format`
+    audit. Against `%p1%c{journal}0%Y%u0`, `ConformingPRA2015`, the
+    colliding pair `CollidingPRA2015`/`CollidingPRA2015a`, and the
+    preprint `Preprint2205.15044` conform, while `Deviation2015`
+    deviates and `Unevaluable2015` (an article with no `journal`)
+    cannot be evaluated."""
+    return Path(shutil.copy(FAIL_CHECKS_DIR / "keyformat.bib", tmp_path))
+
+
 @pytest.fixture(name="runner")
 def fixture_runner():
     try:
@@ -1870,6 +1882,189 @@ def test_eval_format_spec_empty_filename(runner, bibfile):
         "",
     )
     assert result.output.strip() == "GoerzJPB2011"
+
+
+# -- check --key-format (citation-key audit) --------------------------- #
+
+_KEY_SPEC = "%p1%c{journal}0%Y%u0"
+
+
+def test_check_key_format_pass(runner, keyformatfile):
+    # conforming key, disambiguated sibling, and preprint all conform
+    result = _run(
+        runner,
+        "check",
+        keyformatfile,
+        "--format-spec",
+        _KEY_SPEC,
+        "ConformingPRA2015",
+        "CollidingPRA2015",
+        "CollidingPRA2015a",
+        "Preprint2205.15044",
+    )
+    assert result.output == "PASS (4 entries checked)\n"
+
+
+def test_check_key_format_deviation(runner, keyformatfile):
+    result = runner.invoke(
+        main, ["check", str(keyformatfile), "--format-spec", _KEY_SPEC]
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "Deviation2015: does not match the citation-key format "
+        "(would be 'DeviationPRA2015')",
+        "Unevaluable2015: cannot evaluate citation-key format: the "
+        "format '%p1%c{journal}0%Y%u0' requires the missing field(s) "
+        "journal",
+        "FAIL (2 problems, 6 entries checked)",
+    ]
+
+
+def test_check_key_format_off_by_default(runner, keyformatfile):
+    # the two nonconforming keys are ignored without the flag
+    result = _run(runner, "check", keyformatfile)
+    assert result.output == "PASS (6 entries checked)\n"
+
+
+def test_check_key_format_colliding_pair_passes(runner, keyformatfile):
+    result = _run(
+        runner,
+        "check",
+        keyformatfile,
+        "--format-spec",
+        _KEY_SPEC,
+        "CollidingPRA2015",
+        "CollidingPRA2015a",
+    )
+    assert result.output == "PASS (2 entries checked)\n"
+
+
+def test_check_key_format_preprint_passes(runner, keyformatfile):
+    # audited against the preprint format, not the article format
+    result = _run(
+        runner,
+        "check",
+        keyformatfile,
+        "--format-spec",
+        _KEY_SPEC,
+        "Preprint2205.15044",
+    )
+    assert result.output == "PASS (1 entry checked)\n"
+
+
+def test_check_key_format_unevaluable(runner, keyformatfile):
+    result = runner.invoke(
+        main,
+        [
+            "check",
+            str(keyformatfile),
+            "--format-spec",
+            _KEY_SPEC,
+            "Unevaluable2015",
+        ],
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "Unevaluable2015: cannot evaluate citation-key format: the "
+        "format '%p1%c{journal}0%Y%u0' requires the missing field(s) "
+        "journal",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+def test_check_key_format_configured(runner, keyformatfile):
+    """`--key-format` without `--format-spec` uses the configured
+    `[auto_key]` format."""
+    (keyformatfile.parent / "bibdeskparser.toml").write_text(
+        f'[auto_key]\nformat_spec = "{_KEY_SPEC}"\n', encoding="utf-8"
+    )
+    result = runner.invoke(main, ["check", str(keyformatfile), "--key-format"])
+    assert result.exit_code == 1
+    assert result.output.splitlines()[-1] == (
+        "FAIL (2 problems, 6 entries checked)"
+    )
+    assert "Deviation2015: does not match" in result.output
+
+
+def test_check_key_format_no_format(runner, keyformatfile):
+    """`--key-format` with no format available reports one message,
+    not one failure per entry."""
+    result = runner.invoke(main, ["check", str(keyformatfile), "--key-format"])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "no citation-key format available; configure an [auto_key] "
+        "format_spec or pass a format pattern",
+        "FAIL (1 problem, 6 entries checked)",
+    ]
+
+
+def test_check_key_format_invalid_pattern(runner, keyformatfile):
+    """A malformed `--format-spec` is reported once, not per entry."""
+    result = runner.invoke(
+        main, ["check", str(keyformatfile), "--format-spec", "%q"]
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "invalid citation-key format pattern: invalid specifier %q "
+        "in format",
+        "FAIL (1 problem, 6 entries checked)",
+    ]
+
+
+def test_check_key_format_unimplemented_pattern(runner, keyformatfile):
+    """A pattern using an unimplemented specifier (`%i`) is reported
+    once, like any other invalid pattern (not a crash, and not per
+    entry)."""
+    result = runner.invoke(
+        main, ["check", str(keyformatfile), "--format-spec", "%i"]
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "invalid citation-key format pattern: the %i specifier "
+        "(BibDesk document info) is not implemented",
+        "FAIL (1 problem, 6 entries checked)",
+    ]
+
+
+def test_check_key_format_spec_implies_flag(runner, keyformatfile):
+    """`--format-spec` runs the audit without an explicit
+    `--key-format`."""
+    result = runner.invoke(
+        main, ["check", str(keyformatfile), "--format-spec", _KEY_SPEC]
+    )
+    assert result.exit_code == 1
+    assert "FAIL (2 problems, 6 entries checked)" in result.output
+
+
+def test_check_key_format_conflict(runner, keyformatfile):
+    """`--format-spec` combined with `--no-key-format` is an error."""
+    result = runner.invoke(
+        main,
+        [
+            "check",
+            str(keyformatfile),
+            "--no-key-format",
+            "--format-spec",
+            _KEY_SPEC,
+        ],
+    )
+    assert result.exit_code == 2
+    assert "--format-spec implies --key-format" in result.stderr
+
+
+def test_check_key_format_json(runner, keyformatfile):
+    result = runner.invoke(
+        main,
+        ["check", str(keyformatfile), "--format-spec", _KEY_SPEC, "--json"],
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["passed"] is False
+    assert data["entries_checked"] == 6
+    assert [(p["check"], p["key"]) for p in data["problems"]] == [
+        ("key_format", "Deviation2015"),
+        ("key_format", "Unevaluable2015"),
+    ]
 
 
 # -- mutating commands -------------------------------------------------- #

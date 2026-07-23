@@ -131,6 +131,11 @@ The table is exposed as `Library.config.auto_key` (see
 `clean` attributes; assigning `format_spec` validates every format
 string in it.
 
+The {ref}`check CLI command <cli-check>` audits an existing library
+against this format on request: `check --key-format` reports every
+stored citation key that does not match its `[auto_key]` format
+(preprint-only entries against the arXiv preprint format).
+
 (config-auto-key-per-type)=
 
 ### Per-type formats

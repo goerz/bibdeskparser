@@ -1331,9 +1331,36 @@ def duplicate_keys(bibfile, as_json):
         "are not under version control would fail wholesale."
     ),
 )
+@click.option(
+    "--key-format/--no-key-format",
+    "audit_key_format",
+    default=None,
+    help=(
+        "Also audit that each entry's citation key matches its "
+        "expected auto-key format: a preprint-only entry against the "
+        "arXiv preprint format, every other entry against the "
+        "configured [auto_key] format (or --format-spec). Off by "
+        "default. A key that cannot be regenerated (the entry lacks a "
+        "field the format requires) is reported as unevaluable."
+    ),
+)
+@click.option(
+    "--format-spec",
+    "format_spec",
+    metavar="PATTERN",
+    default=None,
+    help=(
+        "Audit citation keys against this auto-key format pattern "
+        '(e.g. "%a1%c{journal}0%Y%u0") instead of the configured '
+        "[auto_key] one. Implies --key-format; cannot be combined with "
+        "--no-key-format."
+    ),
+)
 @_json_option
 @click.pass_obj
-def check(bibfile, citekeys, audit_files, as_json):
+def check(
+    bibfile, citekeys, audit_files, audit_key_format, format_spec, as_json
+):
     """Run the standing audits and report every problem found, then
     exit 0 if all pass and 1 otherwise: a read-only pass/fail gate,
     e.g. after a batch of edits.
@@ -1363,6 +1390,19 @@ def check(bibfile, citekeys, audit_files, as_json):
     broken on a case-sensitive one). It can therefore FAIL a library
     that saves without warnings.
 
+    With --key-format, an additional per-entry audit reports every
+    citation key that does not match its expected auto-key format,
+    i.e. every key that 'rekey' (or 'eval_format_spec') would
+    regenerate differently. A preprint-only entry is audited against
+    the arXiv preprint format, every other entry against the
+    configured [auto_key] format; --format-spec PATTERN audits against
+    that pattern instead and implies --key-format. A disambiguated
+    sibling key (e.g. 'SmithPRA2015a') still matches. An entry lacking
+    a field the format requires cannot be evaluated and is reported as
+    such. If no usable format is available (neither --format-spec nor
+    a configured [auto_key] format, or a --format-spec that does not
+    compile), a single message is reported.
+
     With KEY..., only the given entries are audited (an unknown key
     is an error): the per-entry audits cover just those entries, the
     duplicate-key audit reports only the given keys, and the
@@ -1375,9 +1415,20 @@ def check(bibfile, citekeys, audit_files, as_json):
     {"passed": ..., "entries_checked": ..., "problems": [{"check":
     ..., "key": ..., "message": ...}]}, where "check" names the audit
     ("parse", "duplicate_keys", "doi", "empty_fields",
-    "known_missing", "journal", "names", "unused_strings", or
-    "files") and "key" is null for a problem not tied to an entry.
+    "known_missing", "journal", "names", "unused_strings", "files", or
+    "key_format") and "key" is null for a problem not tied to an entry.
     """
+    if format_spec is not None and audit_key_format is False:
+        raise click.UsageError(
+            "--format-spec implies --key-format and cannot be combined "
+            "with --no-key-format"
+        )
+    if format_spec is not None:
+        key_format = format_spec
+    elif audit_key_format:
+        key_format = True
+    else:
+        key_format = None
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         lib = Library(bibfile)
@@ -1395,7 +1446,10 @@ def check(bibfile, citekeys, audit_files, as_json):
             continue
         click.echo(f"Warning: {message}", err=True)
     problems = collect_problems(
-        lib, keys=citekeys or None, audit_files=audit_files
+        lib,
+        keys=citekeys or None,
+        audit_files=audit_files,
+        key_format=key_format,
     )
     n_entries = len(dict.fromkeys(citekeys)) if citekeys else len(lib)
     entries = "entry" if n_entries == 1 else "entries"
