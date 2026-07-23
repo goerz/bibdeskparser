@@ -38,4 +38,6 @@ See @CONTRIBUTING.md, but do not make commits or pull requests until specificall
 
 When a commit is requested, its message must describe the change in a self-contained way and must not reference the issue it addresses — no `#N` references and no `Closes #N` line. The issue reference and any discussion of how the change relates to the issue belong in a separate PR message instead; draft it in `./pr_message.md`, without hard-wrapping (GitHub-flavored markdown preserves line breaks, unlike the hard-wrapped commit message body). A PR that is not in response to an issue needs a separate PR message only if it has multiple commits; for a single commit, GitHub turns the commit message into the PR message automatically.
 
+When creating issues, the issue text must be GitHub-flavored markdown without hard-wrapping.
+
 When asked a design/architecture question (e.g. "wouldn't it make sense if...", "is this a bug?", "should X work differently?"), answer with a recommendation and the relevant tradeoffs — do not implement any change until explicitly told to proceed.
