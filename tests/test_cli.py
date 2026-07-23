@@ -11,7 +11,7 @@ from click.testing import CliRunner
 
 import bibdeskparser
 import bibdeskparser.config as config
-from bibdeskparser import Library
+from bibdeskparser import Entry, Library
 from bibdeskparser.cli import main
 from bibdeskparser.groups import render_static_groups
 
@@ -1295,6 +1295,328 @@ def test_check_flags_trailing_and_doubled_hyphen_initials(runner, tmp_path):
         'DoubledHyphen2026: author name "Foo, A--B" has a '
         'first-name part ("A--B") that cannot be initialized'
     ) in lines
+
+
+# -- check --files (attachment-link audit) ----------------------------- #
+
+
+def test_check_files_pass(runner, bibfile):
+    # all 30 attachments of the 61 entries resolve, exact case
+    result = _run(runner, "check", bibfile, "--files")
+    assert result.output == "PASS (61 entries checked)\n"
+
+
+def test_check_files_dead_link(runner, bibfile):
+    (bibfile.parent / "GoerzNJP2014.pdf").unlink()
+    result = runner.invoke(main, ["check", str(bibfile), "--files"])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "GoerzNJP2014: linked file does not exist: 'GoerzNJP2014.pdf'",
+        "FAIL (1 problem, 61 entries checked)",
+    ]
+
+
+def test_check_files_off_by_default(runner, bibfile):
+    (bibfile.parent / "GoerzNJP2014.pdf").unlink()
+    result = _run(runner, "check", bibfile)  # no --files
+    assert result.output == "PASS (61 entries checked)\n"
+
+
+def test_check_files_per_key(runner, bibfile):
+    (bibfile.parent / "GoerzNJP2014.pdf").unlink()
+    result = _run(runner, "check", bibfile, "--files", "KochJPCM2016")
+    assert result.output == "PASS (1 entry checked)\n"
+    result = runner.invoke(
+        main, ["check", str(bibfile), "--files", "GoerzNJP2014"]
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "GoerzNJP2014: linked file does not exist: 'GoerzNJP2014.pdf'",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+def test_check_files_json(runner, bibfile):
+    (bibfile.parent / "GoerzNJP2014.pdf").unlink()
+    result = runner.invoke(main, ["check", str(bibfile), "--files", "--json"])
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["passed"] is False
+    assert data["entries_checked"] == 61
+    assert data["problems"] == [
+        {
+            "check": "files",
+            "key": "GoerzNJP2014",
+            "message": "linked file does not exist: 'GoerzNJP2014.pdf'",
+        }
+    ]
+
+
+def test_check_files_case_mismatch(runner, bibfile):
+    # stored link says KochJPCM2016.pdf; rename the file on disk so
+    # only the case differs. The walk-based audit reports the same
+    # problem on case-sensitive and case-insensitive filesystems.
+    (bibfile.parent / "KochJPCM2016.pdf").rename(
+        bibfile.parent / "KochJPCM2016.PDF"
+    )
+    result = runner.invoke(
+        main, ["check", str(bibfile), "--files", "KochJPCM2016"]
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "KochJPCM2016: linked file 'KochJPCM2016.pdf' exists only as "
+        "'KochJPCM2016.PDF' (case mismatch)",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+# A decodable bdsk-file blob whose relativePath is the empty string
+# (entry.files == ['']); the files audit flags it explicitly rather
+# than letting it resolve silently to the .bib directory itself. The
+# base64 blob is split across adjacent string literals to keep each
+# source line within the line-length limit.
+_EMPTY_BLOB = (
+    "YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoUAgLGAAA"
+    "AAAAAAEBAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAZ"
+)
+_EMPTY_FILE_BIB = (
+    "@article{EmptyPath2026,\n"
+    "\tauthor = {Doe, John},\n"
+    "\tdoi = {10.1000/empty},\n"
+    "\ttitle = {An Article with an Empty Attachment Path},\n"
+    "\tyear = {2026},\n"
+    "\tbdsk-file-1 = {" + _EMPTY_BLOB + "}}\n"
+)
+
+
+def test_check_files_empty_path(runner, tmp_path):
+    bib = tmp_path / "library.bib"
+    bib.write_text(_EMPTY_FILE_BIB, encoding="utf-8")
+    result = runner.invoke(main, ["check", str(bib), "--files"])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "EmptyPath2026: linked file attachment has an empty path",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+def test_check_files_directory_link_passes(runner, tmp_path):
+    # BibDesk can link a folder; a link resolving to a directory
+    # passes the audit (existence + exact case, no is_file() check).
+    lib = Library()
+    lib["Dir2026"] = Entry(
+        "article",
+        "Dir2026",
+        fields={
+            "author": "Doe, John",
+            "doi": "10.1000/dir",
+            "title": "An Article Linking a Folder",
+            "year": "2026",
+        },
+    )
+    lib.save(tmp_path / "library.bib")
+    lib = Library(tmp_path / "library.bib")
+    (tmp_path / "attachments").mkdir()
+    lib.add_file("Dir2026", "attachments", check_that_file_exists=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        lib.save()
+    result = _run(runner, "check", tmp_path / "library.bib", "--files")
+    assert result.output == "PASS (1 entry checked)\n"
+
+
+def test_check_files_broken_symlink_and_nonfile_component(runner, tmp_path):
+    # A broken symlink and a path descending through a regular file
+    # both count as "does not exist": the walk lists the symlink but
+    # its target is gone, and a file cannot be walked into.
+    lib = Library()
+    for key in ("Sym2026", "NotDir2026"):
+        lib[key] = Entry(
+            "article",
+            key,
+            fields={
+                "author": "Doe, John",
+                "doi": f"10.0/{key}",
+                "title": "T",
+                "year": "2026",
+            },
+        )
+    lib.save(tmp_path / "library.bib")
+    lib = Library(tmp_path / "library.bib")
+    # store plain paths first (add_file resolves an existing symlink),
+    # then materialize the pathological on-disk state
+    lib.add_file("Sym2026", "link.pdf", check_that_file_exists=False)
+    lib.add_file(
+        "NotDir2026", "notadir/inner.pdf", check_that_file_exists=False
+    )
+    (tmp_path / "link.pdf").symlink_to(tmp_path / "gone.pdf")
+    (tmp_path / "notadir").write_bytes(b"x")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        lib.save()
+    result = runner.invoke(
+        main, ["check", str(tmp_path / "library.bib"), "--files"]
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "Sym2026: linked file does not exist: 'link.pdf'",
+        "NotDir2026: linked file does not exist: 'notadir/inner.pdf'",
+        "FAIL (2 problems, 2 entries checked)",
+    ]
+
+
+def _one_entry_lib(tmp_path, key):
+    """A saved one-entry library in `tmp_path`, ready for `add_file`."""
+    lib = Library()
+    lib[key] = Entry(
+        "article",
+        key,
+        fields={
+            "author": "Doe, John",
+            "doi": f"10.0/{key}",
+            "title": "T",
+            "year": "2026",
+        },
+    )
+    lib.save(tmp_path / "library.bib")
+    return Library(tmp_path / "library.bib")
+
+
+def test_check_files_case_variant_ancestor_missing_tail(runner, tmp_path):
+    # A stored path whose ancestor directory exists only under a
+    # different case, but whose deeper component is absent, is a dead
+    # link, not a case mismatch: the walk must resolve the whole path
+    # before reporting a case mismatch.
+    lib = _one_entry_lib(tmp_path, "Ancestor2026")
+    (tmp_path / "Sub").mkdir()
+    (tmp_path / "Sub" / "Deep2026.pdf").write_bytes(b"%PDF-1.4 fake")
+    lib.add_file("Ancestor2026", str(tmp_path / "Sub" / "Deep2026.pdf"))
+    (tmp_path / "Sub" / "Deep2026.pdf").unlink()  # tail now missing
+    (tmp_path / "Sub").rename(tmp_path / "sub")  # ancestor case differs
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        lib.save()
+    result = runner.invoke(
+        main, ["check", str(tmp_path / "library.bib"), "--files"]
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "Ancestor2026: linked file does not exist: 'Sub/Deep2026.pdf'",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+def test_check_files_nested_case_mismatch(runner, tmp_path):
+    # A resolving path with case differences in more than one
+    # component is reported with the actual on-disk spelling of every
+    # component, not the stored spelling of the tail.
+    lib = _one_entry_lib(tmp_path, "Nested2026")
+    (tmp_path / "Sub").mkdir()
+    (tmp_path / "Sub" / "Nested2026.pdf").write_bytes(b"%PDF-1.4 fake")
+    lib.add_file("Nested2026", str(tmp_path / "Sub" / "Nested2026.pdf"))
+    (tmp_path / "Sub" / "Nested2026.pdf").rename(
+        tmp_path / "Sub" / "nested2026.pdf"
+    )
+    (tmp_path / "Sub").rename(tmp_path / "sub")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        lib.save()
+    result = runner.invoke(
+        main, ["check", str(tmp_path / "library.bib"), "--files"]
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "Nested2026: linked file 'Sub/Nested2026.pdf' exists only as "
+        "'sub/nested2026.pdf' (case mismatch)",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+@pytest.fixture(name="deadlinks_bib")
+def fixture_deadlinks_bib(tmp_path):
+    """A library exhibiting every files-audit problem class.
+
+    Good2020 resolves; Missing2021 links a deleted file; BishopPhD2010
+    links 'BishopPhd2010.pdf' while the on-disk file is
+    'BishopPhD2010.pdf' (case mismatch); GoneDir2022 links into a
+    removed directory; Outside2023 resolves outside the .bib
+    directory ('../outside/...'); NoFiles2024 has no attachments.
+    """
+    bibdir = tmp_path / "Refs"
+    bibdir.mkdir()
+    (tmp_path / "outside").mkdir()
+    lib = Library()
+    keys = (
+        "Good2020",
+        "Missing2021",
+        "BishopPhD2010",
+        "GoneDir2022",
+        "Outside2023",
+        "NoFiles2024",
+    )
+    for key in keys:
+        lib[key] = Entry(
+            "article",
+            key,
+            fields={
+                "author": "J. Doe",
+                "title": f"Title {key}",
+                "year": key[-4:],
+                "doi": f"10.0/{key}",
+            },
+        )
+    lib.save(bibdir / "refs.bib")
+    lib = Library(bibdir / "refs.bib")
+    (bibdir / "Good2020.pdf").write_bytes(b"%PDF-1.4 fake")
+    lib.add_file("Good2020", str(bibdir / "Good2020.pdf"))
+    (bibdir / "Missing2021.pdf").write_bytes(b"%PDF-1.4 fake")
+    lib.add_file("Missing2021", str(bibdir / "Missing2021.pdf"))
+    (bibdir / "Missing2021.pdf").unlink()
+    (bibdir / "BishopPhD2010.pdf").write_bytes(b"%PDF-1.4 fake")
+    lib.add_file(  # stored link uses lowercase 'd'; on disk it is 'D'
+        "BishopPhD2010",
+        str(bibdir / "BishopPhd2010.pdf"),
+        check_that_file_exists=False,
+    )
+    subdir = bibdir / "GoodReader" / "SC Qubits"
+    subdir.mkdir(parents=True)
+    (subdir / "GoneDir2022.pdf").write_bytes(b"%PDF-1.4 fake")
+    lib.add_file("GoneDir2022", str(subdir / "GoneDir2022.pdf"))
+    shutil.rmtree(bibdir / "GoodReader")
+    (tmp_path / "outside" / "Outside2023.pdf").write_bytes(b"%PDF-1.4 fake")
+    lib.add_file("Outside2023", str(tmp_path / "outside" / "Outside2023.pdf"))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # save warns about the dead links
+        lib.save()
+    return bibdir / "refs.bib"
+
+
+def test_check_files_all_problem_classes(runner, deadlinks_bib):
+    result = _run(runner, "check", deadlinks_bib)  # no --files
+    assert result.output == "PASS (6 entries checked)\n"
+    result = runner.invoke(main, ["check", str(deadlinks_bib), "--files"])
+    assert result.exit_code == 1
+    problems = [
+        "Missing2021: linked file does not exist: 'Missing2021.pdf'",
+        "BishopPhD2010: linked file 'BishopPhd2010.pdf' exists only as "
+        "'BishopPhD2010.pdf' (case mismatch)",
+        "GoneDir2022: linked file does not exist: "
+        "'GoodReader/SC Qubits/GoneDir2022.pdf'",
+    ]
+    if sys.platform == "win32":
+        # On Windows, add_file could not store BishopPhD2010's
+        # wrong-case link: BibDeskFile does Path(path).resolve()
+        # (bdskfile.py), and resolve() folds an existing path to its
+        # true on-disk case there (but not on macOS), so the stored
+        # link matches disk and the audit sees no mismatch. The audit's
+        # own case detection is platform-independent -- see
+        # test_check_files_case_mismatch, which builds the mismatch by
+        # renaming the file on disk instead and passes on Windows.
+        problems.pop(1)
+    n = len(problems)
+    assert result.output.splitlines() == problems + [
+        f"FAIL ({n} problems, 6 entries checked)"
+    ]
 
 
 def test_timestamp(runner, bibfile):

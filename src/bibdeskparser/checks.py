@@ -1,11 +1,15 @@
 """Standing audits backing the `check` CLI command.
 
-Pure inspection of a loaded {class}`bibdeskparser.Library`: each
-function returns {class}`Problem` records and never modifies the
-library. The CLI command turns the records into a report and a
+Inspection of a loaded {class}`bibdeskparser.Library`: each function
+returns {class}`Problem` records and never modifies the library. Most
+audits look only at the parsed data; the opt-in files audit
+additionally *reads* the filesystem to check that linked attachments
+resolve on disk. The CLI command turns the records into a report and a
 pass/fail exit code.
 """
 
+import os
+import posixpath
 from collections import namedtuple
 
 from bibtexparser.model import DuplicateBlockKeyBlock
@@ -25,13 +29,13 @@ __private__ = ["Problem", "collect_problems"]
 
 #: One audit finding. `check` names the audit (`"parse"`,
 #: `"duplicate_keys"`, `"doi"`, `"empty_fields"`, `"known_missing"`,
-#: `"journal"`, `"names"`, or `"unused_strings"`), `key` is the
-#: citation key the problem is tied to (`None` for a problem that
+#: `"journal"`, `"names"`, `"unused_strings"`, or `"files"`), `key` is
+#: the citation key the problem is tied to (`None` for a problem that
 #: concerns the file as a whole), and `message` describes the problem.
 Problem = namedtuple("Problem", ["check", "key", "message"])
 
 
-def collect_problems(library, keys=None):
+def collect_problems(library, keys=None, audit_files=False):
     """Every standing-audit problem in `library`, as a `list` of
     {class}`Problem`.
 
@@ -41,6 +45,12 @@ def collect_problems(library, keys=None):
     entries, the duplicate-keys audit reports only those keys, and
     the unused-macros audit is skipped; problems parsing the file
     itself are always included.
+
+    With `audit_files`, an additional per-entry audit checks that each
+    linked attachment (`bdsk-file-N` field) resolves to a real path on
+    disk, relative to the library's `.bib` directory, matching case
+    exactly. It is off by default because attachments may legitimately
+    live only on another machine.
     """
     problems = _parse_problems(library)
     if keys is None:
@@ -54,8 +64,13 @@ def collect_problems(library, keys=None):
         Problem("duplicate_keys", key, "duplicate citation key")
         for key in duplicates
     ]
+    # pylint: disable-next=protected-access
+    base_dir = library._files_base_dir() if audit_files else None
+    listdir_cache = {}
     for entry in entries:
         problems += _entry_problems(entry, library)
+        if audit_files:
+            problems += _file_problems(entry, base_dir, listdir_cache)
     if keys is None:
         problems += _unused_string_problems(library)
     return problems
@@ -186,3 +201,116 @@ def _unused_string_problems(library):
         for name in library.strings
         if name not in referenced
     ]
+
+
+def _file_problems(entry, base_dir, listdir_cache):
+    """Problems for `entry`'s linked attachments (`bdsk-file-N`
+    fields) that do not resolve on disk relative to `base_dir` (the
+    library's `.bib` directory, a resolved `Path`).
+
+    Each stored relative path is walked one component at a time,
+    matching case exactly against a cached `os.listdir` of each
+    directory. This is deterministic across platforms: a
+    case-insensitive filesystem cannot hold two names differing only
+    in case, so a case-mismatched link is reported on macOS and on a
+    case-sensitive Linux CI alike, whereas plain `os.path.exists`
+    would accept it on macOS and reject it on Linux. Three problem
+    classes: an empty stored path, a link that does not resolve, and
+    a link whose on-disk spelling differs only in case (a directory
+    resolves like any other path -- BibDesk can link folders).
+
+    `listdir_cache` maps a directory `Path` to its `set` of entry
+    names; pass the same dict across a whole audit run so each
+    directory is listed at most once.
+    """
+    problems = []
+    for rel_path in entry.files:
+        if not rel_path.strip():
+            problems.append(
+                Problem(
+                    "files",
+                    entry.key,
+                    "linked file attachment has an empty path",
+                )
+            )
+            continue
+        status, on_disk = _resolve_exact_case(
+            base_dir, rel_path, listdir_cache
+        )
+        if status == "missing":
+            problems.append(
+                Problem(
+                    "files",
+                    entry.key,
+                    f"linked file does not exist: {rel_path!r}",
+                )
+            )
+        elif status == "case":
+            problems.append(
+                Problem(
+                    "files",
+                    entry.key,
+                    f"linked file {rel_path!r} exists only as "
+                    f"{on_disk!r} (case mismatch)",
+                )
+            )
+    return problems
+
+
+def _resolve_exact_case(base_dir, rel_path, listdir_cache):
+    """Resolve `rel_path` (a stored POSIX relative path) below
+    `base_dir`, checking every component's case exactly.
+
+    Returns `("ok", None)` if the path resolves with exact case,
+    `("missing", None)` if it does not resolve at all (or resolves
+    only to a broken symlink), and `("case", on_disk)` if the full
+    path resolves but at least one component's on-disk case differs,
+    where `on_disk` is the path as actually spelled on disk.
+
+    The whole path must resolve for a case mismatch to be reported:
+    the walk descends into the real on-disk name of each component and
+    keeps going after a case-only match, so a case-variant ancestor
+    whose subtree is missing the rest of the path is reported as a
+    missing link, not a case mismatch."""
+    current = base_dir
+    on_disk = []  # the matched components as actually spelled on disk
+    mismatch = False
+    for part in posixpath.normpath(rel_path).split("/"):
+        if part in ("", "."):
+            continue
+        if part == "..":
+            current = current.parent
+            on_disk.append("..")
+            continue
+        names = _listdir(current, listdir_cache)
+        if part in names:
+            current = current / part
+            on_disk.append(part)
+            continue
+        match = next(
+            (name for name in names if name.lower() == part.lower()), None
+        )
+        if match is None:
+            return ("missing", None)
+        mismatch = True
+        current = current / match
+        on_disk.append(match)
+    # A final exists() check follows symlinks, catching a link whose
+    # target was removed.
+    if not os.path.exists(current):
+        return ("missing", None)
+    return ("case", "/".join(on_disk)) if mismatch else ("ok", None)
+
+
+def _listdir(directory, listdir_cache):
+    """The `set` of entry names in `directory` (a `Path`), cached in
+    `listdir_cache`; an empty set if `directory` is missing or is not
+    a directory."""
+    names = listdir_cache.get(directory)
+    if names is None:
+        try:
+            names = set(os.listdir(directory))
+        except OSError:
+            names = set()
+        listdir_cache[directory] = names
+    return names

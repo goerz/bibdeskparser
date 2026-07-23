@@ -1318,9 +1318,22 @@ def duplicate_keys(bibfile, as_json):
     ),
 )
 @click.argument("citekeys", metavar="[KEY...]", nargs=-1)
+@click.option(
+    "--files/--no-files",
+    "audit_files",
+    default=False,
+    show_default=True,
+    help=(
+        "Also audit that each entry's linked file attachments "
+        "(bdsk-file paths) resolve on disk, matching case exactly. "
+        "Off by default: attachments may legitimately live only on "
+        "another machine, and a fresh clone of a library whose PDFs "
+        "are not under version control would fail wholesale."
+    ),
+)
 @_json_option
 @click.pass_obj
-def check(bibfile, citekeys, as_json):
+def check(bibfile, citekeys, audit_files, as_json):
     """Run the standing audits and report every problem found, then
     exit 0 if all pass and 1 otherwise: a read-only pass/fail gate,
     e.g. after a batch of edits.
@@ -1340,6 +1353,16 @@ def check(bibfile, citekeys, as_json):
     names; and every @string macro defined in the file is referenced
     by some entry.
 
+    With --files, an additional per-entry audit reports every linked
+    attachment (bdsk-file path) that does not resolve to a real path
+    on disk, relative to the .bib directory. It is stricter than the
+    warning printed at save time (which uses a plain existence check):
+    it walks each path component matching case exactly, so it also
+    reports a link whose stored spelling differs only in case from the
+    file on disk (invisible on a case-insensitive filesystem but
+    broken on a case-sensitive one). It can therefore FAIL a library
+    that saves without warnings.
+
     With KEY..., only the given entries are audited (an unknown key
     is an error): the per-entry audits cover just those entries, the
     duplicate-key audit reports only the given keys, and the
@@ -1352,8 +1375,8 @@ def check(bibfile, citekeys, as_json):
     {"passed": ..., "entries_checked": ..., "problems": [{"check":
     ..., "key": ..., "message": ...}]}, where "check" names the audit
     ("parse", "duplicate_keys", "doi", "empty_fields",
-    "known_missing", "journal", "names", or "unused_strings") and
-    "key" is null for a problem not tied to an entry.
+    "known_missing", "journal", "names", "unused_strings", or
+    "files") and "key" is null for a problem not tied to an entry.
     """
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
@@ -1371,7 +1394,9 @@ def check(bibfile, citekeys, as_json):
         if "could not be parsed" in message:
             continue
         click.echo(f"Warning: {message}", err=True)
-    problems = collect_problems(lib, keys=citekeys or None)
+    problems = collect_problems(
+        lib, keys=citekeys or None, audit_files=audit_files
+    )
     n_entries = len(dict.fromkeys(citekeys)) if citekeys else len(lib)
     entries = "entry" if n_entries == 1 else "entries"
     if as_json:
