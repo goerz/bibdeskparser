@@ -222,8 +222,13 @@ entry sits in a [known-missing group](config-known-missing) for a
 field it actually has; every `journal` field references a defined
 `@string` macro (a literal journal value is a problem, unless it is a
 recognized preprint pseudo-journal like `arXiv:2205.15044`); every
-`author` and `editor` field parses as names; and every `@string`
-macro defined in the file is referenced by some entry.
+`author` and `editor` field parses as names, each first name having
+only parts that can be initialized (a hyphen-separated segment that
+does not begin with a letter after TeX-to-unicode conversion -- a
+nickname like `` `Eunice' `` copied into the author list, or a stray
+hyphen that detaches an initial, as in `Meyer, H -D` or `Meyer, H- D`
+-- would otherwise corrupt [`render`](cli-render)'s initials); and
+every `@string` macro defined in the file is referenced by some entry.
 
 An `article` verified to have no `doi` passes the doi audit if it is
 a member of the known-missing group configured for `doi` in the

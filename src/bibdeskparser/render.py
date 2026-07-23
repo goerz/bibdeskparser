@@ -386,6 +386,21 @@ def _initial(name_part):
     return "-".join(f"{p[0]}." for p in subparts)
 
 
+def _can_initialize(name_part):
+    """Whether `_initial` yields a clean initial for `name_part`.
+
+    True only if every hyphen-separated segment begins with a letter.
+    False for a part that does not begin with a letter (e.g.
+    ``"`Eunice'"``), or that has an empty segment `_initial` would
+    silently drop, losing hyphen structure: a leading hyphen
+    (``"-D"``), a trailing one (``"H-"``), or a doubled one
+    (``"A--B"``). Assumes `name_part` has already been converted from
+    TeX to unicode, as `Entry.author`/`.editor` do, so ``"{\\.I}lhan"``
+    is tested as ``"İlhan"``.
+    """
+    return all(sub[:1].isalpha() for sub in name_part.split("-"))
+
+
 def _format_name(name):
     """Format a single `NameParts` as `"Initials von Last, Jr"`."""
     first_initials = " ".join(_initial(part) for part in name.first if part)

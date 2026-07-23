@@ -14,6 +14,7 @@ from .config import active
 from .identifiers import _entry_preprint, _preprint_journal
 from .library import _bare_macro_fields, _has_field
 from .macros import MacroString
+from .render import _can_initialize
 
 __all__ = []
 
@@ -117,7 +118,7 @@ def _entry_problems(entry, library):
     for field in ("author", "editor"):
         if field in entry:
             try:
-                getattr(entry, field)
+                names = getattr(entry, field)
             except Exception as exc:  # pylint: disable=broad-except
                 problems.append(
                     Problem(
@@ -126,6 +127,20 @@ def _entry_problems(entry, library):
                         f"{field} does not parse as names: {exc}",
                     )
                 )
+                continue
+            for name in names:
+                for part in name.first:
+                    if part and not _can_initialize(part):
+                        problems.append(
+                            Problem(
+                                "names",
+                                entry.key,
+                                f"{field} name "
+                                f'"{name.merge_last_name_first}" has a '
+                                f'first-name part ("{part}") that '
+                                "cannot be initialized",
+                            )
+                        )
     return problems
 
 
