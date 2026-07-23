@@ -15,6 +15,7 @@ in place.
 
 import json
 import sys
+import textwrap
 import warnings
 from pathlib import Path
 
@@ -187,7 +188,17 @@ class _BibCommand(click.Command):
         return super().parse_args(ctx, args)
 
     def collect_usage_pieces(self, ctx):
-        return ["[BIBFILE]", *super().collect_usage_pieces(ctx)]
+        # Like `click.Command.collect_usage_pieces`, but with `[BIBFILE]`
+        # first and `[OPTIONS]` last, so the usage line reads
+        # `<command> [BIBFILE] ARGS... [OPTIONS]` -- the order the
+        # examples use -- instead of wedging `[OPTIONS]` between the
+        # bibfile and the positional arguments.
+        pieces = ["[BIBFILE]"]
+        for param in self.get_params(ctx):
+            pieces.extend(param.get_usage_pieces(ctx))
+        if self.options_metavar:
+            pieces.append(self.options_metavar)
+        return pieces
 
     def invoke(self, ctx):
         if ctx.obj is None:
@@ -312,7 +323,37 @@ def _examples(*lines):
     )
 
 
+def _short_usage(ctx):
+    """The short usage message: a one-line summary, the usage line, the
+    command names, and a pointer to `--help` for the full help."""
+    summary = (ctx.command.help or "").strip().splitlines()[0]
+    names = ", ".join(ctx.command.list_commands(ctx))
+    commands = textwrap.fill(
+        names, width=72, initial_indent="  ", subsequent_indent="  "
+    )
+    return (
+        f"{summary}\n\n"
+        f"{ctx.get_usage()}\n\n"
+        f"Commands:\n{commands}\n\n"
+        "Run 'bibdeskparser --help' for the full help on the commands "
+        "and options,\nor 'bibdeskparser COMMAND --help' for one "
+        "command."
+    )
+
+
+def _print_short_usage(ctx, _param, value):
+    """Eager callback for `--usage`: print the short usage and exit 0."""
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo(_short_usage(ctx))
+    ctx.exit()
+
+
 @click.group(
+    invoke_without_command=True,
+    no_args_is_help=False,
+    options_metavar="",
+    subcommand_metavar="COMMAND [ARGS]...",
     epilog=_examples(
         "bibdeskparser create new.bib  # start a new library",
         "bibdeskparser keys     # list all citation keys",
@@ -330,10 +371,19 @@ def _examples(*lines):
         "bibdeskparser check  # run the standing audits (exit 0/1)",
         "bibdeskparser add 10.1103/PhysRevA.89.032334  # by DOI",
         "pbpaste | bibdeskparser import --stdin",
-    )
+    ),
+)
+@click.option(
+    "--usage",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=_print_short_usage,
+    help="Show a short usage summary (the commands and how to get help).",
 )
 @click.version_option(version=__version__)
-def main():
+@click.pass_context
+def main(ctx):
     """Command-line interface for BibDesk `.bib` databases.
 
     Every command takes the `.bib` file to operate on as its first
@@ -365,8 +415,14 @@ def main():
     key or a `.bib` file changed on disk since it was read). The
     `check` command additionally exits 1, after printing its report,
     when any audit finds a problem. Run
-    `bibdeskparser COMMAND --help` for a command's arguments.
+    `bibdeskparser COMMAND --help` for a command's arguments, or
+    `bibdeskparser --usage` for just the usage line and command names.
     """
+    if ctx.invoked_subcommand is None:
+        # Run without a command: print the short usage (not the full
+        # help) as a usage error.
+        click.echo(_short_usage(ctx), err=True)
+        ctx.exit(2)
 
 
 # -- read-only commands ------------------------------------------------ #

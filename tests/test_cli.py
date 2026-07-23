@@ -2579,6 +2579,51 @@ def test_help(runner):
     assert "edit_strings" in result.output
 
 
+def test_usage_flag(runner):
+    """`--usage` prints the short usage (usage line, command names, and
+    a pointer to `--help`), not the full help, and exits 0."""
+    result = _run(runner, "--usage")
+    assert "Command-line interface for BibDesk" in result.output
+    assert "Usage:" in result.output
+    assert "Commands:" in result.output
+    assert "set_field" in result.output
+    assert "bibdeskparser --help" in result.output
+    # short, not the full help: no Examples epilog, no option help
+    assert "Examples:" not in result.output
+
+
+def test_no_command_prints_short_usage(runner):
+    """Running with no command prints the short usage (not the full
+    help) on stderr and exits 2."""
+    result = runner.invoke(main, [])
+    assert result.exit_code == 2
+    assert result.stdout == ""
+    assert "Command-line interface for BibDesk" in result.stderr
+    assert "Usage:" in result.stderr
+    assert "Commands:" in result.stderr
+    assert "set_field" in result.stderr
+    assert "bibdeskparser --help" in result.stderr
+    assert "Examples:" not in result.stderr
+
+
+def test_group_usage_line_has_no_leading_options(runner):
+    """The group usage line reads `COMMAND [ARGS]...`, without a
+    misleading leading `[OPTIONS]` (the global options are just
+    `--help`/`--version`/`--usage`)."""
+    result = _run(runner, "--help")
+    usage = result.output.splitlines()[0]
+    assert usage.endswith("COMMAND [ARGS]...")
+    assert "[OPTIONS]" not in usage
+
+
+def test_subcommand_usage_options_last(runner):
+    """A subcommand usage line puts `[OPTIONS]` after the positional
+    arguments, matching how the examples call it."""
+    result = _run(runner, "set_field", "--help")
+    usage = result.output.splitlines()[0]
+    assert usage.endswith("[BIBFILE] KEY FIELDNAME VALUE [OPTIONS]")
+
+
 def test_show_help(runner):
     result = _run(runner, "show", "--help")
     assert "[BIBFILE]" in result.output
