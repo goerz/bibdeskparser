@@ -16,9 +16,11 @@ from bibtexparser.model import DuplicateBlockKeyBlock
 
 from .config import active
 from .identifiers import _entry_preprint, _preprint_journal
+from .importing import _PREPRINT_KEY_SPEC
 from .library import _bare_macro_fields, _has_field
 from .macros import MacroString
 from .render import _can_initialize
+from .specifiers import compile_format
 
 __all__ = []
 
@@ -29,13 +31,16 @@ __private__ = ["Problem", "collect_problems"]
 
 #: One audit finding. `check` names the audit (`"parse"`,
 #: `"duplicate_keys"`, `"doi"`, `"empty_fields"`, `"known_missing"`,
-#: `"journal"`, `"names"`, `"unused_strings"`, or `"files"`), `key` is
-#: the citation key the problem is tied to (`None` for a problem that
-#: concerns the file as a whole), and `message` describes the problem.
+#: `"journal"`, `"names"`, `"unused_strings"`, `"files"`, or
+#: `"key_format"`), `key` is the citation key the problem is tied to
+#: (`None` for a problem that concerns the file as a whole), and
+#: `message` describes the problem.
 Problem = namedtuple("Problem", ["check", "key", "message"])
 
 
-def collect_problems(library, keys=None, audit_files=False):
+def collect_problems(
+    library, keys=None, *, audit_files=False, key_format=None
+):
     """Every standing-audit problem in `library`, as a `list` of
     {class}`Problem`.
 
@@ -51,6 +56,20 @@ def collect_problems(library, keys=None, audit_files=False):
     disk, relative to the library's `.bib` directory, matching case
     exactly. It is off by default because attachments may legitimately
     live only on another machine.
+
+    With `key_format`, an additional per-entry audit checks that each
+    entry's citation key matches its expected auto-key format, i.e.
+    that {meth}`~bibdeskparser.Library.eval_format_spec` evaluates the
+    key to itself. `key_format=True` audits against the configured
+    `[auto_key]` format; `key_format` as a `str` audits against that
+    format pattern instead. A preprint-only entry is always audited
+    against the preprint format (`%p1%f{eprint}[.]`) regardless. An
+    entry lacking a field the format requires is reported as
+    unevaluable. If no usable format is available -- none configured
+    and none given (`key_format=True` with no configured `[auto_key]`
+    format), or a given pattern that does not compile -- a single
+    file-wide problem is reported instead of one per entry.
+    `key_format=None` (the default) skips this audit.
     """
     problems = _parse_problems(library)
     if keys is None:
@@ -67,10 +86,19 @@ def collect_problems(library, keys=None, audit_files=False):
     # pylint: disable-next=protected-access
     base_dir = library._files_base_dir() if audit_files else None
     listdir_cache = {}
+    audit_key_format = key_format is not None
+    format_spec = None if key_format is True else key_format
+    if audit_key_format:
+        unavailable = _key_format_unavailable(format_spec)
+        if unavailable is not None:
+            problems.append(Problem("key_format", None, unavailable))
+            audit_key_format = False
     for entry in entries:
         problems += _entry_problems(entry, library)
         if audit_files:
             problems += _file_problems(entry, base_dir, listdir_cache)
+        if audit_key_format:
+            problems += _key_format_problems(entry, library, format_spec)
     if keys is None:
         problems += _unused_string_problems(library)
     return problems
@@ -184,6 +212,74 @@ def _journal_problems(entry, library, archives):
                 entry.key,
                 f"journal is the literal string {text!r}, not an "
                 "@string macro reference",
+            )
+        ]
+    return []
+
+
+def _key_format_unavailable(format_spec):
+    """A message explaining why the key-format audit cannot run, or
+    `None` if it can.
+
+    `format_spec` is an explicit format pattern (a `str`), or `None`
+    to use the configured `[auto_key]` format. There is no usable
+    format when none is configured and none was given, or when a given
+    pattern does not compile (compiling it once here reports such a
+    pattern as a single problem, rather than one per entry). A
+    configured format is validated when the configuration is loaded,
+    so it is not re-checked. The preprint-only entries use the
+    always-valid preprint format, so they are unaffected by this."""
+    if format_spec is None:
+        if active.auto_key.format_spec is None:
+            return (
+                "no citation-key format available; configure an "
+                "[auto_key] format_spec or pass a format pattern"
+            )
+        return None
+    try:
+        compile_format(format_spec)
+    except (ValueError, NotImplementedError) as exc:
+        return f"invalid citation-key format pattern: {exc}"
+    return None
+
+
+def _key_format_problems(entry, library, format_spec):
+    """Problems for `entry` whose citation key does not match its
+    expected auto-key format.
+
+    A preprint-only entry is audited against the preprint format
+    (`%p1%f{eprint}[.]`); every other entry against `format_spec` (a
+    format pattern, or `None` to fall back to the configured
+    `[auto_key]` format). The key conforms when
+    {meth}`~bibdeskparser.Library.eval_format_spec` evaluates it to
+    itself. An entry lacking a field the format requires cannot be
+    evaluated and is reported as such."""
+    key = entry.key
+    if _entry_preprint(entry, active.preprint_archives) is not None:
+        spec = _PREPRINT_KEY_SPEC
+    else:
+        spec = format_spec
+    try:
+        generated = library.eval_format_spec(key, spec)
+    except ValueError as exc:
+        reason = str(exc)
+        prefix = f"cannot generate a citation key for {key!r}: "
+        if reason.startswith(prefix):
+            reason = reason[len(prefix) :]
+        return [
+            Problem(
+                "key_format",
+                key,
+                f"cannot evaluate citation-key format: {reason}",
+            )
+        ]
+    if generated != key:
+        return [
+            Problem(
+                "key_format",
+                key,
+                "does not match the citation-key format "
+                f"(would be {generated!r})",
             )
         ]
     return []

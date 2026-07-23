@@ -293,12 +293,36 @@ Case2020: linked file 'case2020.pdf' exists only as 'Case2020.pdf' (case mismatc
 FAIL (2 problems, 2 entries checked)
 ```
 
+With `--key-format`, an additional per-entry audit reports every
+citation key that does not match its expected auto-key format: every
+key that [`eval_format_spec`](cli-eval-format-spec) (or
+[`rekey`](cli-rekey) without `NEW_KEY`) would regenerate differently.
+A preprint-only entry is audited against the arXiv preprint format;
+every other entry against the configured
+[`[auto_key]` format](config-auto-key). Pass `--format-spec PATTERN`
+to audit against that pattern instead of the configured one; it
+implies `--key-format` and cannot be combined with `--no-key-format`.
+A key already matching the format evaluates to itself, so a
+disambiguated sibling like `CollidingPRA2015a` still conforms; an
+entry lacking a field the format requires cannot be evaluated and is
+reported as such. If no usable format is available (no `--format-spec`
+and no configured `[auto_key]` format, or a `--format-spec` that does
+not compile), a single message is reported rather than one failure per
+entry.
+
+```console
+$ bibdeskparser check tests/test_cli_fail_checks/keyformat.bib --format-spec "%p1%c{journal}0%Y%u0"
+Deviation2015: does not match the citation-key format (would be 'DeviationPRA2015')
+Unevaluable2015: cannot evaluate citation-key format: the format '%p1%c{journal}0%Y%u0' requires the missing field(s) journal
+FAIL (2 problems, 6 entries checked)
+```
+
 With `--json`: an object `{"passed": ..., "entries_checked": ...,
 "problems": [...]}`, where each problem is an object with `check`
 (the audit that failed: `parse`, `duplicate_keys`, `doi`,
 `empty_fields`, `known_missing`, `journal`, `names`,
-`unused_strings`, or `files`), `key` (the citation key, or `null` for
-a problem not tied to an entry), and `message`.
+`unused_strings`, `files`, or `key_format`), `key` (the citation key,
+or `null` for a problem not tied to an entry), and `message`.
 
 (cli-show)=
 

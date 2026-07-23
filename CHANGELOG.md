@@ -5,6 +5,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Added: a `--key-format` option on the `check` CLI command, an opt-in audit (off by default) that reports every citation key not matching its expected auto-key format, i.e. every key that `eval_format_spec` (or single-argument `rekey`) would regenerate differently. A preprint-only entry is audited against the arXiv preprint format, every other entry against the configured auto-key format; a `--format-spec PATTERN` option audits against that pattern instead and implies `--key-format` (combining it with `--no-key-format` is an error). A key already matching the format evaluates to itself, so disambiguated sibling keys such as `SmithPRA2015` and `SmithPRA2015a` both pass; an entry that lacks a field the format requires is reported as unevaluable rather than silently skipped; and when no format is available at all (no `--format-spec` and nothing configured), a single message is reported instead of one failure per entry. The audit name `key_format` also appears in the `--json` output. [[#44], [#49]]
 * Added: a `--files` option on the `check` CLI command, an opt-in audit (off by default) that reports every linked attachment (`bdsk-file` path) that does not resolve to a real path on disk relative to the `.bib` directory. It walks each stored path one component at a time, matching case exactly, so besides a link to a deleted file it also catches a link whose spelling differs only in case from the file on disk, one that works on a case-insensitive filesystem (macOS) but breaks on a case-sensitive one (a collaborator's machine or a Linux CI job); the plain existence check behind the warning a write-in-place command prints for a missing link cannot detect that case-mismatch class, so `check --files` can fail a library that would be written without any such warning. It is off by default because attachments may legitimately live only on another machine, so a fresh clone of a library whose PDFs are not under version control would otherwise fail wholesale. The audit name `files` also appears in the `--json` output; an attachment whose stored path is empty is flagged, and a link resolving to a directory passes (BibDesk can link folders). [[#43], [#48]]
 * Added: a `--usage` option on the `bibdeskparser` command-line tool, printing a short usage summary (the one-line description, the usage line, and the list of command names) as a compact alternative to the full `--help` output. [[#47]]
 * Changed: running `bibdeskparser` with no command now prints the short usage summary (see `--usage`) on stderr and exits 2, instead of dumping the entire `--help` output. [[#47]]
@@ -159,5 +160,7 @@ Initial release.
 [#41]: https://github.com/goerz/bibdeskparser/pull/41
 [#42]: https://github.com/goerz/bibdeskparser/pull/42
 [#43]: https://github.com/goerz/bibdeskparser/issues/43
+[#44]: https://github.com/goerz/bibdeskparser/issues/44
 [#47]: https://github.com/goerz/bibdeskparser/pull/47
 [#48]: https://github.com/goerz/bibdeskparser/pull/48
+[#49]: https://github.com/goerz/bibdeskparser/pull/49
