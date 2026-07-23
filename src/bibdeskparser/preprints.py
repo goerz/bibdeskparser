@@ -88,6 +88,7 @@ _ATOMIC = str.maketrans(
         "ħ": "h",
         "Ħ": "H",
         "ß": "ss",
+        "ẞ": "SS",
         "æ": "ae",
         "Æ": "AE",
         "œ": "oe",
