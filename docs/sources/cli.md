@@ -1004,10 +1004,12 @@ entry.
 `--min-confidence` defaults to the
 [`[add_abstract]` configuration table](config-add). Requires
 network access; `--dry-run` prints the report without modifying the
-`.bib` file, and `--json` maps each key to
-`{abstract, source, confidence, note, applied}` (`source` may also
-be `none`, `error`, `existing`, or `known-missing`; `applied` says
-whether the library was modified, counting group membership).
+`.bib` file (the report then says `would store`), and `--json` maps
+each key to `{abstract, source, confidence, note, applied}`
+(`source` may also be `none`, `error`, `existing`, or
+`known-missing`; `applied` says whether the library was modified,
+counting group membership -- under `--dry-run`, what a real run
+would store).
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing abstract
@@ -1077,10 +1079,12 @@ the group. On a failed search (network/API error) the entry is never
 modified, and in particular never marked, so a re-run picks it up.
 
 The command prints a per-key report; `--dry-run` prints it without
-modifying the `.bib` file, and `--json` maps each key to
+modifying the `.bib` file (the report then says `would store`), and
+`--json` maps each key to
 `{eprint, match, ratio, note, applied, primaryclass}` (`match` may
 also be `none`, `error`, `existing`, or `known-missing`; `applied`
-says whether the library was modified, counting group membership).
+says whether the library was modified, counting group membership --
+under `--dry-run`, what a real run would store).
 Requires network access (except with `--eprint`) and respects the
 arXiv API's rate limit of one request every three seconds, so large
 runs take time.
@@ -1160,12 +1164,13 @@ Membership in the group also makes the [`check`](cli-check) command
 accept an `article` without a `doi`.
 
 The command prints a per-key report; `--dry-run` prints it without
-modifying the `.bib` file, and `--json` maps each key to
+modifying the `.bib` file (the report then says `would store`), and
+`--json` maps each key to
 `{doi, match, ratio, note, applied}` (`match` is `eprint`, `title`,
 `title+author`, or `explicit` for a stored DOI, and may also be
 `none`, `error`, `existing`, `known-missing`, or `preprint`;
 `applied` says whether the library was modified, counting group
-membership). Requires network access (except with `--doi`); an
+membership -- under `--dry-run`, what a real run would store). Requires network access (except with `--doi`); an
 `eprint` lookup respects the arXiv API's rate limit of one request
 every three seconds.
 

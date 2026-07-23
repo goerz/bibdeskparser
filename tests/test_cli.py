@@ -2965,7 +2965,7 @@ def test_add_abstract_dry_run(runner, bibfile, monkeypatch):
     _mock_fetch_abstract(monkeypatch, [(ABSTRACT, "crossref", "high", "ok")])
     before = bibfile.read_text(encoding="utf-8")
     result = _run(runner, "add_abstract", bibfile, "--dry-run", "GoerzPhd2015")
-    assert "GoerzPhd2015: stored (crossref, high)" in result.stdout
+    assert "GoerzPhd2015: would store (crossref, high)" in result.stdout
     assert bibfile.read_text(encoding="utf-8") == before
 
 
@@ -3172,7 +3172,7 @@ def test_add_preprint_dry_run(runner, bibfile, monkeypatch):
     result = _run(
         runner, "add_preprint", bibfile, "--dry-run", "WinckelIP2008"
     )
-    assert "WinckelIP2008: stored eprint 2510.12345" in result.stdout
+    assert "WinckelIP2008: would store eprint 2510.12345" in result.stdout
     assert bibfile.read_text(encoding="utf-8") == before
 
 
@@ -3391,7 +3391,7 @@ def test_add_doi_dry_run(runner, bibfile, monkeypatch):
     _mock_find_doi(monkeypatch, [("10.5555/xyz", "title", 1.0, "")])
     before = bibfile.read_text(encoding="utf-8")
     result = _run(runner, "add_doi", bibfile, "--dry-run", "GoerzPhd2015")
-    assert "GoerzPhd2015: stored doi 10.5555/xyz" in result.stdout
+    assert "GoerzPhd2015: would store doi 10.5555/xyz" in result.stdout
     assert bibfile.read_text(encoding="utf-8") == before
 
 

@@ -2611,7 +2611,9 @@ def add(bibfile, query, dry_run, fix_uppercase, add_abstract, add_preprint):
         click.echo(f"Warning: {warning.message}", err=True)
     if preprint_result is not None:
         # to stderr: stdout stays the citation key / dry-run entry
-        _echo_preprint_result(citekey, preprint_result, err=True)
+        _echo_preprint_result(
+            citekey, preprint_result, err=True, dry_run=dry_run
+        )
     if dry_run:
         _echo_block(lib.export(citekey))
     else:
@@ -2653,7 +2655,11 @@ def add(bibfile, query, dry_run, fix_uppercase, add_abstract, add_preprint):
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Print the per-key report without modifying the .bib file.",
+    help=(
+        "Print the per-key report without modifying the .bib file; "
+        "'would store' marks what a real run would store (in the "
+        "JSON report: 'applied')."
+    ),
 )
 @_json_option
 @click.pass_obj
@@ -2714,16 +2720,18 @@ def add_abstract(
             click.echo(f"Warning: {warning.message}", err=True)
         results[key] = result._asdict()
         if not as_json:
-            _echo_abstract_result(key, result)
+            _echo_abstract_result(key, result, dry_run=dry_run)
     if as_json:
         click.echo(json.dumps(results, indent=2, ensure_ascii=False))
     if not dry_run and any(r["applied"] for r in results.values()):
         _save(lib)
 
 
-def _echo_abstract_result(key, result):
+def _echo_abstract_result(key, result, dry_run=False):
     """One report line (plus the abstract text, where it needs
     review) for an `add_abstract` result."""
+    stored = "would store" if dry_run else "stored"
+    marked = "would mark" if dry_run else "marked"
     if result.source == "existing":
         click.echo(
             f"{key}: skipped (already has an abstract; --overwrite to "
@@ -2737,13 +2745,13 @@ def _echo_abstract_result(key, result):
         if result.applied:
             group = config.active.known_missing.get("abstract")
             click.echo(
-                f"{key}: no abstract found (marked known missing in "
+                f"{key}: no abstract found ({marked} known missing in "
                 f"group {group!r}) [{result.note}]"
             )
         else:
             click.echo(f"{key}: no abstract found [{result.note}]")
     elif result.applied:
-        click.echo(f"{key}: stored ({result.source}, {result.confidence})")
+        click.echo(f"{key}: {stored} ({result.source}, {result.confidence})")
     else:
         click.echo(
             f"{key}: needs review ({result.source}, {result.confidence}) "
@@ -2789,7 +2797,11 @@ def _echo_abstract_result(key, result):
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Print the per-key report without modifying the .bib file.",
+    help=(
+        "Print the per-key report without modifying the .bib file; "
+        "'would store' marks what a real run would store (in the "
+        "JSON report: 'applied')."
+    ),
 )
 @_json_option
 @click.pass_obj
@@ -2850,15 +2862,17 @@ def add_preprint(bibfile, citekeys, eprint, overwrite, dry_run, as_json):
             click.echo(f"Warning: {warning.message}", err=True)
         results[key] = result._asdict()
         if not as_json:
-            _echo_preprint_result(key, result)
+            _echo_preprint_result(key, result, dry_run=dry_run)
     if as_json:
         click.echo(json.dumps(results, indent=2, ensure_ascii=False))
     if not dry_run and any(r["applied"] for r in results.values()):
         _save(lib)
 
 
-def _echo_preprint_result(key, result, err=False):
+def _echo_preprint_result(key, result, err=False, dry_run=False):
     """One report line for an `add_preprint` result."""
+    stored = "would store" if dry_run else "stored"
+    marked = "would mark" if dry_run else "marked"
     if result.match == "existing":
         click.echo(
             f"{key}: skipped (already has an eprint; --overwrite to "
@@ -2871,11 +2885,11 @@ def _echo_preprint_result(key, result, err=False):
             err=err,
         )
     elif result.match == "explicit":
-        click.echo(f"{key}: stored eprint {result.eprint}", err=err)
+        click.echo(f"{key}: {stored} eprint {result.eprint}", err=err)
     elif result.eprint:
         tag = f" [{result.primaryclass}]" if result.primaryclass else ""
         click.echo(
-            f"{key}: stored eprint {result.eprint}{tag} "
+            f"{key}: {stored} eprint {result.eprint}{tag} "
             f"(match={result.match}, ratio={result.ratio:.2f})",
             err=err,
         )
@@ -2885,7 +2899,7 @@ def _echo_preprint_result(key, result, err=False):
         if result.applied:
             group = config.active.known_missing.get("eprint")
             click.echo(
-                f"{key}: no preprint found (marked known missing in "
+                f"{key}: no preprint found ({marked} known missing in "
                 f"group {group!r}) [{result.note}]",
                 err=err,
             )
@@ -2930,7 +2944,11 @@ def _echo_preprint_result(key, result, err=False):
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Print the per-key report without modifying the .bib file.",
+    help=(
+        "Print the per-key report without modifying the .bib file; "
+        "'would store' marks what a real run would store (in the "
+        "JSON report: 'applied')."
+    ),
 )
 @_json_option
 @click.pass_obj
@@ -2995,15 +3013,17 @@ def add_doi(bibfile, citekeys, doi, overwrite, dry_run, as_json):
             click.echo(f"Warning: {warning.message}", err=True)
         results[key] = result._asdict()
         if not as_json:
-            _echo_doi_result(key, result)
+            _echo_doi_result(key, result, dry_run=dry_run)
     if as_json:
         click.echo(json.dumps(results, indent=2, ensure_ascii=False))
     if not dry_run and any(r["applied"] for r in results.values()):
         _save(lib)
 
 
-def _echo_doi_result(key, result):
+def _echo_doi_result(key, result, dry_run=False):
     """One report line for an `add_doi` result."""
+    stored = "would store" if dry_run else "stored"
+    marked = "would mark" if dry_run else "marked"
     if result.match == "existing":
         click.echo(
             f"{key}: skipped (already has a doi; --overwrite to replace)"
@@ -3013,19 +3033,19 @@ def _echo_doi_result(key, result):
     elif result.match == "preprint":
         click.echo(f"{key}: skipped (preprint-only entry) [{result.note}]")
     elif result.match == "explicit":
-        click.echo(f"{key}: stored doi {result.doi}")
+        click.echo(f"{key}: {stored} doi {result.doi}")
     elif result.doi:
         detail = f"match={result.match}"
         if result.ratio is not None:
             detail += f", ratio={result.ratio:.2f}"
-        click.echo(f"{key}: stored doi {result.doi} ({detail})")
+        click.echo(f"{key}: {stored} doi {result.doi} ({detail})")
     elif result.match == "error":
         click.echo(f"{key}: lookup failed [{result.note}]")
     else:
         if result.applied:
             group = config.active.known_missing.get("doi")
             click.echo(
-                f"{key}: no doi found (marked known missing in "
+                f"{key}: no doi found ({marked} known missing in "
                 f"group {group!r}) [{result.note}]"
             )
         else:
