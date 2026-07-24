@@ -1,0 +1,710 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BibDesk’s .bib Format &mdash; BibDeskParser 0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/docs-versions-menu.js?v=2187e224"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Preprints" href="preprints.html" />
+    <link rel="prev" title="How-to Guides" href="howto.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+  <a href="index.html" class="icon icon-home">
+    BibDeskParser
+  </a>
+
+  <div class="version">
+    v0.5.0
+  </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#development">Development</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="howto.html">How-to Guides</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">BibDesk's .bib Format</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-file-header">The file header</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#date-added-and-date-modified"><code class="docutils literal notranslate"><span class="pre">date-added</span></code> and <code class="docutils literal notranslate"><span class="pre">date-modified</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#linked-files-bdsk-file-n-fields">Linked files (<code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> fields)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#linked-urls-bdsk-url-n-fields">Linked URLs (<code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code> fields)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#string-macros-and-journal-abbreviations"><code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macros and journal abbreviations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#default-macros">Default macros</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#bibdesk-static-groups">BibDesk Static Groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bibdesk-smart-groups">BibDesk Smart Groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#empty-fields">Empty fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#keywords">Keywords</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unicode-and-tex-escaped-characters">Unicode and TeX-escaped characters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#duplicate-citation-keys">Duplicate citation keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#byte-exact-round-tripping">Byte-exact round-tripping</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BibDeskParser</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>BibDesk’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code> Format</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="bibdesk-s-bib-format">
+<h1>BibDesk’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code> Format<a class="headerlink" href="#bibdesk-s-bib-format" title="Link to this heading"></a></h1>
+<p>BibDesk stores its database as an ordinary BibTeX <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file, but it leans on
+a handful of BibDesk-specific conventions on top of plain BibTeX: a header
+comment, extra bookkeeping fields, an encoding of linked files and URLs into
+otherwise-plain-looking fields, and <code class="docutils literal notranslate"><span class="pre">&#64;comment</span></code> blocks for user-defined
+groups. The <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> library understands all of these and reproduces
+them exactly, so that a file loaded and saved again – without any changes –
+comes back byte-for-byte identical. This page walks through each of these
+features and the API that exposes it. For the full method and property
+reference, see the <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#module-bibdeskparser" title="bibdeskparser"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bibdeskparser</span></code></a> API documentation, in particular the
+<code class="docutils literal notranslate"><span class="pre">Library</span></code> and <code class="docutils literal notranslate"><span class="pre">Entry</span></code> classes. The examples on this page operate on the
+example database shipped in the repository at <code class="docutils literal notranslate"><span class="pre">tests/Refs/refs.bib</span></code>, a
+BibDesk-authored library that exercises every feature described here.</p>
+<section id="the-file-header">
+<h2>The file header<a class="headerlink" href="#the-file-header" title="Link to this heading"></a></h2>
+<p>Every <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file BibDesk writes starts with a fixed comment block:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span> <span class="n">This</span> <span class="n">BibTeX</span> <span class="n">bibliography</span> <span class="n">file</span> <span class="n">was</span> <span class="n">created</span> <span class="n">using</span> <span class="n">BibDesk</span><span class="o">.</span>
+<span class="o">%%</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">bibdesk</span><span class="o">.</span><span class="n">sourceforge</span><span class="o">.</span><span class="n">net</span><span class="o">/</span>
+
+
+<span class="o">%%</span> <span class="n">Created</span> <span class="k">for</span> <span class="n">Michael</span> <span class="n">Goerz</span> <span class="n">at</span> <span class="mi">2026</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">18</span> <span class="mi">16</span><span class="p">:</span><span class="mi">02</span><span class="p">:</span><span class="mi">00</span> <span class="o">-</span><span class="mi">0400</span>
+
+
+<span class="o">%%</span> <span class="n">Saved</span> <span class="k">with</span> <span class="n">string</span> <span class="n">encoding</span> <span class="n">Unicode</span> <span class="p">(</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">Created</span> <span class="pre">for</span></code> line records who saved the file and when; BibDesk
+updates the timestamp on that line in place every time it saves,
+leaving everything else untouched.
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library" title="bibdeskparser.library.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a> exposes this timestamp as
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.timestamp" title="bibdeskparser.library.Library.timestamp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">timestamp</span></code></a>, and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.save" title="bibdeskparser.library.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a> advances it – but only
+when something in the library actually changed. Saving an unmodified
+library leaves the header (and the rest of the file) untouched:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Library</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">(</span><span class="s2">&quot;tests/Refs/refs.bib&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">timestamp</span>
+<span class="go">datetime.datetime(2026, 7, 18, 16, 2, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>  <span class="c1"># no changes made: the header timestamp is unchanged</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">timestamp</span>
+<span class="go">datetime.datetime(2026, 7, 18, 16, 2, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=72000)))</span>
+
+</pre></div>
+</div>
+<p>A library created from scratch has no header until it is first saved,
+at which point one is synthesized (using the current user’s full name,
+or an explicit <code class="docutils literal notranslate"><span class="pre">creator=</span></code> passed to the <code class="docutils literal notranslate"><span class="pre">Library</span></code> constructor).</p>
+</section>
+<section id="date-added-and-date-modified">
+<h2><code class="docutils literal notranslate"><span class="pre">date-added</span></code> and <code class="docutils literal notranslate"><span class="pre">date-modified</span></code><a class="headerlink" href="#date-added-and-date-modified" title="Link to this heading"></a></h2>
+<p>BibDesk stamps every entry with a <code class="docutils literal notranslate"><span class="pre">date-added</span></code> and a <code class="docutils literal notranslate"><span class="pre">date-modified</span></code>
+field the moment it is created, and updates <code class="docutils literal notranslate"><span class="pre">date-modified</span></code> on every
+edit. These two fields are bookkeeping, not bibliographic data, so
+they are not part of <code class="docutils literal notranslate"><span class="pre">Entry</span></code>’s dict-like interface; instead they are
+exposed as read-only <code class="docutils literal notranslate"><span class="pre">datetime.datetime</span></code> objects:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzNJP2014&quot;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">date_added</span><span class="p">)</span>
+<span class="go">2026-07-18 07:49:28-04:00</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">date_modified</span><span class="p">)</span>
+<span class="go">2026-07-18 16:00:04-04:00</span>
+
+</pre></div>
+</div>
+<p>Any mutation of an <code class="docutils literal notranslate"><span class="pre">Entry</span></code> – setting or deleting a field, changing
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.entry_type" title="bibdeskparser.Entry.entry_type"><code class="xref py py-attr docutils literal notranslate"><span class="pre">entry_type</span></code></a>, adding or removing a URL with
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_url" title="bibdeskparser.Entry.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a> and friends, or a file-attachment
+change made through the owning <code class="docutils literal notranslate"><span class="pre">Library</span></code> – updates
+<code class="docutils literal notranslate"><span class="pre">date-modified</span></code> to the current time and marks the entry as modified
+since it was loaded. For ordinary fields and
+the entry type this mirrors what BibDesk itself does when a record is
+edited in its UI; for <code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code>/<code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code> changes BibDesk
+leaves <code class="docutils literal notranslate"><span class="pre">date-modified</span></code> untouched, and <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> deliberately
+updates it anyway, since the entry’s stored fields do change. That
+modified state is what
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a> uses to decide which
+entries need to be rewritten (and reordered into BibDesk’s field
+order) rather than copied through verbatim.</p>
+</section>
+<section id="linked-files-bdsk-file-n-fields">
+<h2>Linked files (<code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> fields)<a class="headerlink" href="#linked-files-bdsk-file-n-fields" title="Link to this heading"></a></h2>
+<p>When a PDF or other file is attached to an entry in BibDesk, it shows
+up in the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file as a <code class="docutils literal notranslate"><span class="pre">bdsk-file-1</span></code>, <code class="docutils literal notranslate"><span class="pre">bdsk-file-2</span></code>, … field
+(numbered in attachment order). The value looks like an opaque base64
+blob because it is one: a binary property list containing the file’s
+path relative to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file and, on macOS, a <em>bookmark</em>.
+BibDesk locates the file by its relative path first; when that fails
+(the file was moved or renamed), it falls back to the bookmark, which
+tracks the file by inode, and then repairs the stored path from it on
+its next save.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> decodes all of this for you.
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.files" title="bibdeskparser.entry.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">files</span></code></a> presents the attachments
+as a plain list of relative path strings:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="o">.</span><span class="n">files</span>
+<span class="go">[&#39;GoerzNJP2014.pdf&#39;]</span>
+
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">.files</span></code> is read-only; attachments are modified through the owning
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library" title="bibdeskparser.library.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a>
+(<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_file" title="bibdeskparser.library.Library.add_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_file()</span></code></a>,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.replace_file" title="bibdeskparser.library.Library.replace_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_file()</span></code></a>,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.unlink_file" title="bibdeskparser.library.Library.unlink_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unlink_file()</span></code></a>,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.library.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a>). This is a
+direct consequence of how the attachments are stored: the paths in a
+<code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> field are relative to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file, and only the
+<code class="docutils literal notranslate"><span class="pre">Library</span></code> knows where that file lives – an <code class="docutils literal notranslate"><span class="pre">Entry</span></code> on its own could
+not tell what <code class="docutils literal notranslate"><span class="pre">GoerzNJP2014.pdf</span></code> is relative <em>to</em>. Operating at the
+library level also lets these methods handle concerns that span
+entries: the same file can be linked from several entries, so
+deleting a file from disk must check all of them, and renaming a file
+on disk must update every entry that links it (see the <a class="reference internal" href="howto.html"><span class="doc std std-doc">How-To on
+managing attachments</span></a>).</p>
+<p>An attachment whose path is unchanged keeps its original bookmark
+data byte-for-byte (rather than dropping it or requiring you to
+regenerate it); only genuinely new paths get a freshly created
+bookmark (macOS only, requires the <code class="docutils literal notranslate"><span class="pre">bibdeskparser[macos]</span></code> extra).
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> never resolves a bookmark itself – it is opaque data
+that BibDesk uses to re-locate a moved or renamed file, preserved so
+BibDesk keeps working after <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> has touched the entry.
+<code class="docutils literal notranslate"><span class="pre">entry.files</span></code> always reflects the <em>stored</em> relative path, not a live
+lookup, so it does not change if the file is moved outside of
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> (or by BibDesk itself, resolving a bookmark). To audit
+the stored paths against what is actually on disk, use
+<a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span> <span class="pre">--files</span></code></span></a>, which reports links that no longer
+resolve or whose spelling differs only in case from the file on disk.</p>
+</section>
+<section id="linked-urls-bdsk-url-n-fields">
+<h2>Linked URLs (<code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code> fields)<a class="headerlink" href="#linked-urls-bdsk-url-n-fields" title="Link to this heading"></a></h2>
+<p>BibDesk also lets you link a URL to an entry, independently of the
+<code class="docutils literal notranslate"><span class="pre">url</span></code> bibliographic field; these become <code class="docutils literal notranslate"><span class="pre">bdsk-url-1</span></code>, <code class="docutils literal notranslate"><span class="pre">bdsk-url-2</span></code>,
+… fields, again numbered in order. Unlike linked files, there is no
+bookmark or path resolution involved: each field is just the URL
+string itself. <code class="docutils literal notranslate"><span class="pre">Entry</span></code> exposes them as
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.urls" title="bibdeskparser.Entry.urls"><code class="xref py py-attr docutils literal notranslate"><span class="pre">urls</span></code></a>, a read-only tuple of URL
+strings:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="o">.</span><span class="n">urls</span>
+<span class="go">(&#39;http://stacks.iop.org/1367-2630/16/i=5/a=055012&#39;,)</span>
+
+</pre></div>
+</div>
+<p>Because URLs are self-contained (no path resolution is needed), they
+can be managed directly on the <code class="docutils literal notranslate"><span class="pre">Entry</span></code> with
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_url" title="bibdeskparser.Entry.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a>,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.replace_url" title="bibdeskparser.Entry.replace_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_url()</span></code></a>, and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.remove_url" title="bibdeskparser.Entry.remove_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_url()</span></code></a> (or the equivalent
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_url" title="bibdeskparser.Library.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a>,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.replace_url" title="bibdeskparser.Library.replace_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_url()</span></code></a>, and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.remove_url" title="bibdeskparser.Library.remove_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_url()</span></code></a>).</p>
+</section>
+<section id="string-macros-and-journal-abbreviations">
+<h2><code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macros and journal abbreviations<a class="headerlink" href="#string-macros-and-journal-abbreviations" title="Link to this heading"></a></h2>
+<p>BibTeX lets a field reference a named string instead of spelling out
+its value: <code class="docutils literal notranslate"><span class="pre">&#64;string{njp</span> <span class="pre">=</span> <span class="pre">{New</span> <span class="pre">J.</span> <span class="pre">Phys.}}</span></code> defines the macro <code class="docutils literal notranslate"><span class="pre">njp</span></code>,
+and any later <code class="docutils literal notranslate"><span class="pre">journal</span> <span class="pre">=</span> <span class="pre">njp</span></code> (no braces or quotes) expands to <code class="docutils literal notranslate"><span class="pre">New</span> <span class="pre">J.</span> <span class="pre">Phys.</span></code> wherever the entry is used. BibDesk’s own journal-abbreviation
+lists work this way, and its UI shows the same expanded text whether a
+field holds a macro reference or the literal string.</p>
+<p>This creates one genuine ambiguity: a bare, unquoted field value that
+happens to look like a valid macro name (say, <code class="docutils literal notranslate"><span class="pre">journal</span> <span class="pre">=</span> <span class="pre">prl</span></code>) could
+be a macro reference, or it could be someone’s literal (if unusual)
+text that just happens to match a macro name. <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> resolves
+it the same way BibDesk does: a bare value is always treated as a
+macro reference, and its expansion (rather than the macro name itself)
+is what BibDesk would display – but through <code class="docutils literal notranslate"><span class="pre">Entry</span></code>’s dict interface,
+you get the macro name back in its normalized (lowercase) form, since
+that is the value you would need to write back:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzNJP2014&quot;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>  <span class="c1"># &#39;njp&#39; -- the normalized macro name</span>
+<span class="go">&#39;njp&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">&quot;njp&quot;</span><span class="p">]</span>  <span class="c1"># &#39;New J. Phys.&#39; -- its expansion</span>
+<span class="go">&#39;New J. Phys.&#39;</span>
+
+</pre></div>
+</div>
+<p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.strings" title="bibdeskparser.library.Library.strings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strings</span></code></a> is a read-write view
+of the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> table: assign to it to define or redefine a macro,
+delete a key to remove one (rejected with a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if any entry
+still references it), and use
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_string" title="bibdeskparser.library.Library.rename_string"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_string()</span></code></a> to rename a
+macro everywhere it is used in one step. Assigning an invalid name (one
+that doesn’t follow BibDesk’s own naming rules – a subset of ASCII, no
+leading digit) raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> right away, with a message
+explaining what’s wrong.</p>
+<p>Macro names are case-insensitive, matching BibDesk’s macro table:
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> stores them in their canonical lowercase form
+(mixed-case names in a hand-edited file – both <code class="docutils literal notranslate"><span class="pre">&#64;string{JAN</span> <span class="pre">=</span> <span class="pre">...}</span></code>
+definitions and bare <code class="docutils literal notranslate"><span class="pre">month</span> <span class="pre">=</span> <span class="pre">JAN</span></code> references – are lowercased on
+load), and every operation (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.strings" title="bibdeskparser.library.Library.strings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strings</span></code></a>
+lookups, deletion, and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_string" title="bibdeskparser.library.Library.rename_string"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_string()</span></code></a>) matches names
+case-insensitively. A hand-edited <code class="docutils literal notranslate"><span class="pre">&#64;string{JAN</span> <span class="pre">=</span> <span class="pre">...}</span></code> therefore
+overrides the built-in <code class="docutils literal notranslate"><span class="pre">jan</span></code> month macro, and a <code class="docutils literal notranslate"><span class="pre">month</span> <span class="pre">=</span> <span class="pre">JAN</span></code> field
+resolves against it, exactly as in BibDesk.</p>
+<p>When you <em>do</em> want to store literal text that happens to look like a
+macro name – so that it round-trips as a quoted/braced string rather
+than a bare reference – wrap it in
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.ValueString" title="bibdeskparser.ValueString"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueString</span></code></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValueString</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="s2">&quot;prl&quot;</span><span class="p">)</span>  <span class="c1"># stored as literal text {prl}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>  <span class="c1"># still just reads back as &#39;prl&#39;</span>
+<span class="go">&#39;prl&#39;</span>
+
+</pre></div>
+</div>
+<p>A plain <code class="docutils literal notranslate"><span class="pre">str</span></code> assigned to a field that happens to match a defined (or
+even undefined) macro name is instead stored as a bare reference, the
+same way BibDesk would read it back. To make that intent explicit –
+or to force bare-reference storage in code that cannot rely on the
+value’s shape – wrap the value in
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.MacroString" title="bibdeskparser.MacroString"><code class="xref py py-class docutils literal notranslate"><span class="pre">MacroString</span></code></a> instead, the mirror image of
+<code class="docutils literal notranslate"><span class="pre">ValueString</span></code>.</p>
+<section id="default-macros">
+<h3>Default macros<a class="headerlink" href="#default-macros" title="Link to this heading"></a></h3>
+<p>BibTeX itself has no built-in macros, but the standard <code class="docutils literal notranslate"><span class="pre">.bst</span></code> style
+files (<code class="docutils literal notranslate"><span class="pre">plain.bst</span></code> etc.) all define the twelve month macros <code class="docutils literal notranslate"><span class="pre">jan</span></code>
+… <code class="docutils literal notranslate"><span class="pre">dec</span></code> (“January” … “December”, or the abbreviated names in the
+abbreviating styles), plus a couple of journal abbreviations such as
+<code class="docutils literal notranslate"><span class="pre">acmcs</span></code> or <code class="docutils literal notranslate"><span class="pre">ieeetr</span></code>; biblatex’s <code class="docutils literal notranslate"><span class="pre">biber</span></code> likewise treats <code class="docutils literal notranslate"><span class="pre">jan</span></code> …
+<code class="docutils literal notranslate"><span class="pre">dec</span></code> as predefined (mapping them to month numbers). Writing <code class="docutils literal notranslate"><span class="pre">month</span> <span class="pre">=</span> <span class="pre">jan</span></code> without any <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definition is therefore standard, portable
+BibTeX.</p>
+<p>BibDesk builds in exactly the twelve month macros – resolving to the
+full (localized) month names – and nothing else; the <code class="docutils literal notranslate"><span class="pre">.bst</span></code> journal
+abbreviations are <em>not</em> built in. <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> does the same: <code class="docutils literal notranslate"><span class="pre">jan</span></code>
+… <code class="docutils literal notranslate"><span class="pre">dec</span></code> are always defined, expanding to the full English month
+names. They resolve at the lowest priority and are not part of
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.strings" title="bibdeskparser.library.Library.strings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strings</span></code></a> (nor ever written to
+the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file), but in every other respect they behave as macro
+references: <code class="docutils literal notranslate"><span class="pre">month</span> <span class="pre">=</span> <span class="pre">jan</span></code> does not count as an undefined macro, and a
+<code class="docutils literal notranslate"><span class="pre">&#64;string{jan</span> <span class="pre">=</span> <span class="pre">...}</span></code> definition in the file is an ordinary macro that
+overrides the built-in month name and round-trips like any other. A
+bare reference to a <code class="docutils literal notranslate"><span class="pre">.bst</span></code> journal abbreviation, by contrast, is
+undefined unless the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file defines it.</p>
+</section>
+</section>
+<section id="bibdesk-static-groups">
+<span id="id1"></span><h2>BibDesk Static Groups<a class="headerlink" href="#bibdesk-static-groups" title="Link to this heading"></a></h2>
+<p>BibDesk lets you organize entries into user-curated “static” groups
+(as opposed to smart groups, which are just saved searches). These are
+recorded in a single <code class="docutils literal notranslate"><span class="pre">&#64;comment</span></code> block at the end of the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file,
+holding an Apple property list:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>@comment{BibDesk Static Groups{
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!DOCTYPE plist PUBLIC &quot;-//Apple//DTD PLIST 1.0//EN&quot; ...&gt;
+&lt;plist version=&quot;1.0&quot;&gt;
+&lt;array&gt;
+	&lt;dict&gt;
+		&lt;key&gt;group name&lt;/key&gt;
+		&lt;string&gt;My Papers&lt;/string&gt;
+		&lt;key&gt;keys&lt;/key&gt;
+		&lt;string&gt;GoerzJPB2011,GoerzNJP2014,...&lt;/string&gt;
+	&lt;/dict&gt;
+	...
+&lt;/array&gt;
+&lt;/plist&gt;
+}}
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> decodes this into
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.groups" title="bibdeskparser.library.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>, a read-write
+<code class="docutils literal notranslate"><span class="pre">dict</span></code>-like mapping from each group name to the tuple of the group’s
+citation keys:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">sorted</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">)</span>
+<span class="go">[&#39;Diploma&#39;, &#39;My Papers&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;Diploma&quot;</span><span class="p">]</span>
+<span class="go">(&#39;Tannor2007&#39;, &#39;NielsenChuangCh10QEC&#39;, &#39;Evans1983&#39;, &#39;LapertPRA09&#39;)</span>
+
+</pre></div>
+</div>
+<p>Whole groups are created, replaced, or deleted through the mapping
+interface (<code class="docutils literal notranslate"><span class="pre">bib.groups[name]</span> <span class="pre">=</span> <span class="pre">(key,</span> <span class="pre">...)</span></code>, with an empty tuple for a
+new empty group, and <code class="docutils literal notranslate"><span class="pre">del</span> <span class="pre">bib.groups[name]</span></code>); individual keys are
+added or removed with
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_to_group" title="bibdeskparser.library.Library.add_to_group"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_to_group()</span></code></a> /
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.remove_from_group" title="bibdeskparser.library.Library.remove_from_group"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_from_group()</span></code></a>. The
+values are always tuples, so a group’s membership can never be edited
+in place, behind the library’s back. This matters because group
+membership is visible from two sides – the mapping above, and each
+entry’s read-only <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.groups" title="bibdeskparser.entry.Entry.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a> tuple
+– and <code class="docutils literal notranslate"><span class="pre">Library</span></code>, as the sole point through which membership can
+change, keeps the two consistent at all times:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="o">.</span><span class="n">groups</span>  <span class="c1"># already in one group</span>
+<span class="go">(&#39;My Papers&#39;,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">add_to_group</span><span class="p">(</span><span class="s2">&quot;Diploma&quot;</span><span class="p">,</span> <span class="s2">&quot;GoerzNJP2014&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="o">.</span><span class="n">groups</span>
+<span class="go">(&#39;Diploma&#39;, &#39;My Papers&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;Numerics&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;GoerzSPP2019&quot;</span><span class="p">,</span> <span class="s2">&quot;GoerzQ2022&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzSPP2019&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">groups</span>
+<span class="go">(&#39;My Papers&#39;, &#39;Numerics&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;Numerics&quot;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzSPP2019&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">groups</span>
+<span class="go">(&#39;My Papers&#39;,)</span>
+
+</pre></div>
+</div>
+<p>The consistency extends to the entries themselves: deleting an entry
+from the library removes its citation key from every group, and
+renaming one with <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rekey" title="bibdeskparser.library.Library.rekey"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rekey()</span></code></a>
+rewrites the key inside each group it belongs to, so the stored group
+data never accumulates dangling keys. Conversely, keys assigned to a
+group must belong to entries in the library (a <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> otherwise);
+only keys already present in a group loaded from a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file are
+exempt, so a file with stale group data still loads and round-trips.</p>
+</section>
+<section id="bibdesk-smart-groups">
+<h2>BibDesk Smart Groups<a class="headerlink" href="#bibdesk-smart-groups" title="Link to this heading"></a></h2>
+<p>Besides static groups, BibDesk supports <em>smart</em> groups: saved
+searches that dynamically collect every entry matching a set of
+conditions, e.g. “all <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code> entries whose author contains
+‘Goerz’”. A smart group is recorded in an <code class="docutils literal notranslate"><span class="pre">&#64;comment</span></code> block of the
+same shape as the static groups, but its plist stores the group’s
+<em>query</em> – an array of conditions plus the AND/OR <code class="docutils literal notranslate"><span class="pre">conjunction</span></code>
+combining them – rather than a list of citation keys:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>@comment{BibDesk Smart Groups{
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!DOCTYPE plist PUBLIC &quot;-//Apple//DTD PLIST 1.0//EN&quot; ...&gt;
+&lt;plist version=&quot;1.0&quot;&gt;
+&lt;array&gt;
+	&lt;dict&gt;
+		&lt;key&gt;conditions&lt;/key&gt;
+		&lt;array&gt;
+			&lt;dict&gt;
+				&lt;key&gt;comparison&lt;/key&gt;
+				&lt;integer&gt;2&lt;/integer&gt;
+				&lt;key&gt;key&lt;/key&gt;
+				&lt;string&gt;Author&lt;/string&gt;
+				&lt;key&gt;value&lt;/key&gt;
+				&lt;string&gt;Goerz&lt;/string&gt;
+				&lt;key&gt;version&lt;/key&gt;
+				&lt;string&gt;1&lt;/string&gt;
+			&lt;/dict&gt;
+			...
+		&lt;/array&gt;
+		&lt;key&gt;conjunction&lt;/key&gt;
+		&lt;integer&gt;0&lt;/integer&gt;
+		&lt;key&gt;group name&lt;/key&gt;
+		&lt;string&gt;Goerz Articles&lt;/string&gt;
+	&lt;/dict&gt;
+&lt;/array&gt;
+&lt;/plist&gt;
+}}
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> preserves this block verbatim: it survives any
+combination of modifications and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.save" title="bibdeskparser.library.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a> byte-for-byte, exactly
+as BibDesk wrote it. Beyond that, smart groups are deliberately <em>not</em>
+supported: they do not appear in
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.groups" title="bibdeskparser.library.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>, and there is no API
+to evaluate one. A smart group is a live query against BibDesk’s
+search machinery, not a list of keys. Its conditions are typed –
+string, date, attachment count, boolean, rating, and more, each type
+with its own set of comparison operators (the <code class="docutils literal notranslate"><span class="pre">comparison</span></code> integer
+above; strings alone have ten, from “contains” to “smaller than”) –
+and date conditions include relative ones like “in the last two
+weeks”, which BibDesk re-evaluates continuously as time passes.
+Computing a smart group’s membership faithfully would mean
+reimplementing all of BibDesk’s matching semantics, and any
+divergence would silently disagree with what BibDesk displays for the
+same group. For ad-hoc queries from Python or the command line, use
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.search" title="bibdeskparser.library.Library.search"><code class="xref py py-meth docutils literal notranslate"><span class="pre">search()</span></code></a> instead.</p>
+<p>BibDesk’s <em>external file groups</em> and <em>script groups</em> are stored in
+analogous <code class="docutils literal notranslate"><span class="pre">BibDesk</span> <span class="pre">URL</span> <span class="pre">Groups</span></code> / <code class="docutils literal notranslate"><span class="pre">BibDesk</span> <span class="pre">Script</span> <span class="pre">Groups</span></code> <code class="docutils literal notranslate"><span class="pre">&#64;comment</span></code>
+blocks, and are likewise preserved verbatim without being
+interpreted.</p>
+</section>
+<section id="empty-fields">
+<span id="bibdesk-empty-fields"></span><h2>Empty fields<a class="headerlink" href="#empty-fields" title="Link to this heading"></a></h2>
+<p>A field with an empty value, like <code class="docutils literal notranslate"><span class="pre">doi</span> <span class="pre">=</span> <span class="pre">{}</span></code>, is valid BibTeX, and
+BibDesk parses it without complaint. It does not survive, though:
+whenever BibDesk saves a library, its serializer silently omits every
+field whose value is empty, so the field is deleted from the <code class="docutils literal notranslate"><span class="pre">.bib</span></code>
+file the next time the user saves in BibDesk, without any warning. An
+empty field therefore cannot carry durable information.</p>
+<p>That rules out a marker convention that would otherwise be natural: an
+<em>empty</em> field meaning “this information was searched for and verified
+not to exist” (say, an article confirmed to have no DOI), as opposed
+to an <em>absent</em> field meaning “never checked”. Any tool sharing a
+<code class="docutils literal notranslate"><span class="pre">.bib</span></code> file with BibDesk would lose those markers on the first save.
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> consequently treats a defined-but-empty field as
+missing everywhere – in <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--missing</span></code>, in the fetching commands,
+and in the audits – and the <code class="docutils literal notranslate"><span class="pre">check</span></code> command flags every empty field
+as a problem, since whatever it was meant to record is about to
+disappear.</p>
+<p>The verified status “searched, this info does not exist” is recorded
+as membership in a <em>known-missing group</em> instead: a regular
+<a class="reference internal" href="#bibdesk-static-groups"><span class="std std-ref">static group</span></a>, named per field in the
+<code class="docutils literal notranslate"><span class="pre">[known_missing]</span></code> table of <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code>
+(<a class="reference internal" href="config.html#config-known-missing"><span class="std std-ref">configuration</span></a>), e.g. <code class="docutils literal notranslate"><span class="pre">&quot;No</span> <span class="pre">Abstract&quot;</span></code> for
+<code class="docutils literal notranslate"><span class="pre">abstract</span></code>. Unlike an empty field, a static group survives every
+BibDesk save; BibDesk itself keeps its membership intact when
+citation keys change and when entries are deleted; the marker never
+travels into exported or shared entries, since it is not part of the
+entry; and membership can be inspected and changed directly in
+BibDesk’s group sidebar, by drag and drop. With the table configured,
+<code class="docutils literal notranslate"><span class="pre">add_abstract</span></code> and <code class="docutils literal notranslate"><span class="pre">add_preprint</span></code> maintain the groups declared for
+<code class="docutils literal notranslate"><span class="pre">abstract</span></code> and <code class="docutils literal notranslate"><span class="pre">eprint</span></code> automatically (recording clean no-finds,
+skipping members, unmarking when a value is stored), <code class="docutils literal notranslate"><span class="pre">check</span></code> accepts
+an <code class="docutils literal notranslate"><span class="pre">article</span></code> without a <code class="docutils literal notranslate"><span class="pre">doi</span></code> when the entry is in the group
+configured for <code class="docutils literal notranslate"><span class="pre">doi</span></code> and reports any entry whose membership in a
+declared group contradicts a non-empty value in that field, and
+<code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--group</span></code> selects the members. Groups declared for other fields
+are maintained by hand and get the contradiction audit; the
+<a class="reference internal" href="config.html#config-known-missing"><span class="std std-ref">configuration reference</span></a> spells out what a
+declaration does per field. The how-to recipes for
+<a class="reference internal" href="howto.html#howto-add-abstract"><span class="std std-ref">abstracts</span></a> and
+<a class="reference internal" href="howto.html#howto-add-preprint"><span class="std std-ref">preprints</span></a> show the full workflow.</p>
+</section>
+<section id="keywords">
+<h2>Keywords<a class="headerlink" href="#keywords" title="Link to this heading"></a></h2>
+<p>BibTeX’s conventional <code class="docutils literal notranslate"><span class="pre">keywords</span></code> field – a comma-separated list of
+tags inside each entry – is how BibDesk populates its “Keywords”
+sidebar. <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> treats it as structured data rather than as
+an ordinary field: it is readable through the entry’s <code class="docutils literal notranslate"><span class="pre">dict</span></code>
+interface (<code class="docutils literal notranslate"><span class="pre">entry[&quot;keywords&quot;]</span></code> returns the comma-joined string, and
+<code class="docutils literal notranslate"><span class="pre">keywords</span></code> appears in iteration and <code class="docutils literal notranslate"><span class="pre">len</span></code>), but <em>not</em> writable that
+way – <code class="docutils literal notranslate"><span class="pre">entry[&quot;keywords&quot;]</span> <span class="pre">=</span> <span class="pre">...</span></code> and <code class="docutils literal notranslate"><span class="pre">del</span> <span class="pre">entry[&quot;keywords&quot;]</span></code> raise
+<code class="docutils literal notranslate"><span class="pre">KeyError</span></code>. Instead, each entry exposes
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.keywords" title="bibdeskparser.Entry.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a>, a read-only tuple,
+and the library exposes
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.keywords" title="bibdeskparser.Library.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a>, a <code class="docutils literal notranslate"><span class="pre">dict</span></code>-like
+mapping from each keyword to the tuple of citation keys of the
+entries carrying it, mirroring <code class="docutils literal notranslate"><span class="pre">.groups</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzJPB2011&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keywords</span>
+<span class="go">(&#39;OCT&#39;, &#39;Quantum Gates&#39;, &#39;Ultracold Atoms&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keywords</span><span class="p">[</span><span class="s2">&quot;Filtering&quot;</span><span class="p">]</span>
+<span class="go">(&#39;LapertPRA09&#39;,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">add_to_keyword</span><span class="p">(</span><span class="s2">&quot;Filtering&quot;</span><span class="p">,</span> <span class="s2">&quot;GoerzJPB2011&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keywords</span><span class="p">[</span><span class="s2">&quot;Filtering&quot;</span><span class="p">]</span>
+<span class="go">(&#39;GoerzJPB2011&#39;, &#39;LapertPRA09&#39;)</span>
+
+</pre></div>
+</div>
+<p>Hiding the raw field is what makes this mapping trustworthy: since
+every keyword edit goes through the <code class="docutils literal notranslate"><span class="pre">Library</span></code>
+(<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_to_keyword" title="bibdeskparser.library.Library.add_to_keyword"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_to_keyword()</span></code></a>,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.remove_from_keyword" title="bibdeskparser.library.Library.remove_from_keyword"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_from_keyword()</span></code></a>, or
+assignment/deletion on <code class="docutils literal notranslate"><span class="pre">bib.keywords</span></code>), the mapping and each entry’s
+<code class="docutils literal notranslate"><span class="pre">.keywords</span></code> can never disagree.</p>
+<p>The storage difference from groups shows up in three ways. First, a
+keyword exists only inside entries’ <code class="docutils literal notranslate"><span class="pre">keywords</span></code> fields, so an empty
+keyword cannot be represented: <code class="docutils literal notranslate"><span class="pre">add_to_keyword</span></code> creates a keyword
+implicitly with its first entry, and assigning <code class="docutils literal notranslate"><span class="pre">()</span></code> is equivalent to
+deleting it. Second, keyword edits change the affected entries’
+stored fields, so they bump each entry’s <code class="docutils literal notranslate"><span class="pre">date-modified</span></code> and mark it
+as modified since it was loaded, whereas group edits only
+touch the groups <code class="docutils literal notranslate"><span class="pre">&#64;comment</span></code> block. Third, keywords travel with an
+entry – <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.copy" title="bibdeskparser.Entry.copy"><code class="xref py py-meth docutils literal notranslate"><span class="pre">copy()</span></code></a> preserves them –
+while group membership belongs to the library and does not.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">keywords</span></code> field is also always literal text: a value that
+happens to look like a macro name is never treated as a <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code>
+reference, so a one-word keyword is always written braced, never
+counts as a use of a macro of the same name, and is left alone when a
+macro is renamed. This matches BibDesk, whose keyword handling works
+on the plain field text.</p>
+</section>
+<section id="unicode-and-tex-escaped-characters">
+<h2>Unicode and TeX-escaped characters<a class="headerlink" href="#unicode-and-tex-escaped-characters" title="Link to this heading"></a></h2>
+<p>BibDesk’s UI always displays accented and special characters as plain
+Unicode, but when it writes the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file, some of those characters
+are TeX-escaped for compatibility with tools that expect ASCII BibTeX
+– e.g. <code class="docutils literal notranslate"><span class="pre">Universit{\&quot;a}t</span></code> for <code class="docutils literal notranslate"><span class="pre">Universität</span></code> – while others that have
+no standard TeX equivalent (like <code class="docutils literal notranslate"><span class="pre">π</span></code> or <code class="docutils literal notranslate"><span class="pre">ℏ</span></code>) are written out as literal
+Unicode either way. Which characters get escaped, and how, follows
+BibDesk’s own conversion tables exactly.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> hides this distinction completely: <code class="docutils literal notranslate"><span class="pre">Entry</span></code>’s dict
+interface always shows and accepts plain Unicode, converting to and
+from the on-disk TeX escaping transparently, so a field you set in
+Python and one loaded from a BibDesk-written file behave identically:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzDiploma2010&quot;</span><span class="p">][</span><span class="s2">&quot;school&quot;</span><span class="p">]</span>
+<span class="go">&#39;Freie Universität Berlin&#39;</span>
+
+</pre></div>
+</div>
+<p>URL-like fields (<code class="docutils literal notranslate"><span class="pre">url</span></code>, and the <code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code> fields) are the one
+exception: BibDesk stores and displays these verbatim, without TeX
+conversion, since escaping would corrupt the URL – <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code>
+does the same.</p>
+</section>
+<section id="duplicate-citation-keys">
+<h2>Duplicate citation keys<a class="headerlink" href="#duplicate-citation-keys" title="Link to this heading"></a></h2>
+<p>BibDesk itself does not enforce unique citation keys: if a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file
+somehow ends up with two entries sharing the same key (for instance,
+after a manual edit or a merge gone wrong), BibDesk loads the file
+anyway, keeping only the first entry for each duplicated key. Rather
+than raise on such a file, <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> does the same, and reports
+the affected keys via
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.duplicate_keys" title="bibdeskparser.library.Library.duplicate_keys"><code class="xref py py-attr docutils literal notranslate"><span class="pre">duplicate_keys</span></code></a> (along with a
+<code class="docutils literal notranslate"><span class="pre">UserWarning</span></code> at load time) so the situation is visible without
+blocking you from working with the rest of the file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">duplicate_keys</span>  <span class="c1"># the example database itself is clean</span>
+<span class="go">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># the duplicate-key warning</span>
+<span class="gp">... </span>    <span class="n">dup_bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">(</span><span class="s2">&quot;tests/Refs/with_duplicates.bib&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dup_bib</span><span class="o">.</span><span class="n">duplicate_keys</span>
+<span class="go">(&#39;GoerzSPP2019&#39;,)</span>
+
+</pre></div>
+</div>
+</section>
+<section id="byte-exact-round-tripping">
+<h2>Byte-exact round-tripping<a class="headerlink" href="#byte-exact-round-tripping" title="Link to this heading"></a></h2>
+<p>Taken together, these behaviors add up to one guarantee: loading a
+BibDesk-authored <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file with
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library" title="bibdeskparser.library.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a> and saving it again without
+touching anything reproduces the original file byte-for-byte,
+including the header, comments, blank lines, and field ordering. The
+one exception: hand-edited mixed-case macro names (a <code class="docutils literal notranslate"><span class="pre">&#64;string{JAN</span> <span class="pre">=</span> <span class="pre">...}</span></code> definition, or a bare <code class="docutils literal notranslate"><span class="pre">month</span> <span class="pre">=</span> <span class="pre">JAN</span></code> reference) are normalized to
+their canonical lowercase form on load and written back that way. Once
+you do make changes,
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.save" title="bibdeskparser.library.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a> rewrites only the
+entries that were actually modified or newly added (in BibDesk’s
+canonical field order) and copies everything else through verbatim,
+and it only advances the header timestamp when something in the
+library actually changed. This is what lets <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> sit
+alongside BibDesk itself, editing the same file, without producing
+noisy diffs or clobbering data BibDesk would have preserved.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="howto.html" class="btn btn-neutral float-left" title="How-to Guides" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="preprints.html" class="btn btn-neutral float-right" title="Preprints" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Michael Goerz.
+      <span class="lastupdated">Last updated on Jul 24, 2026.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

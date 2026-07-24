@@ -1,0 +1,488 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preprints &mdash; BibDeskParser 0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/docs-versions-menu.js?v=2187e224"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Bib Entry Types" href="bib_entry_types.html" />
+    <link rel="prev" title="BibDesk’s .bib Format" href="bibdesk_format.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+  <a href="index.html" class="icon icon-home">
+    BibDeskParser
+  </a>
+
+  <div class="version">
+    v0.5.0
+  </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#development">Development</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="howto.html">How-to Guides</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Preprints</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#encoding-preprints-in-bibtex">Encoding preprints in BibTeX</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-structured-eprint-fields">The structured <code class="docutils literal notranslate"><span class="pre">eprint</span></code> fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-unpublished-for-preprints">Using <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> for preprints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-misc-for-preprints">Using <code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code> for preprints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-article-for-preprints">Using <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code> for preprints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nonstandard-biblatex-types">Nonstandard BibLaTeX types</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#how-bibdeskparser-stores-preprint-only-entries">How <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> stores preprint-only entries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#exporting-preprint-only-entries">Exporting preprint-only entries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-archive-field">The <code class="docutils literal notranslate"><span class="pre">archive</span></code> field</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#preprint-information-on-published-papers">Preprint information on <em>published</em> papers</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BibDeskParser</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Preprints</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="preprints">
+<h1>Preprints<a class="headerlink" href="#preprints" title="Link to this heading"></a></h1>
+<p>Preprint servers like <a class="reference external" href="https://arxiv.org">arXiv</a>,
+<a class="reference external" href="https://www.biorxiv.org">bioRxiv</a>, <a class="reference external" href="https://www.medrxiv.org">medRxiv</a>,
+<a class="reference external" href="https://chemrxiv.org">ChemRxiv</a>, <a class="reference external" href="https://hal.science">HAL</a>,
+or <a class="reference external" href="https://www.ssrn.com">SSRN</a> are a routine part of scholarly
+publishing, but the original BibTeX had no notion of them: there is no
+<code class="docutils literal notranslate"><span class="pre">&#64;preprint</span></code> entry type, and no standard field for a preprint
+identifier. Several competing conventions have grown up to fill the
+gap, and none of them works everywhere. This page surveys those
+conventions, explains the one <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> recommends and
+implements, and spells out its tradeoffs.</p>
+<section id="encoding-preprints-in-bibtex">
+<h2>Encoding preprints in BibTeX<a class="headerlink" href="#encoding-preprints-in-bibtex" title="Link to this heading"></a></h2>
+<p>The choices for representing a preprint as an entry in a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file are
+guided by pragmatism and the limitation of particular BibTeX <code class="docutils literal notranslate"><span class="pre">.bst</span></code> styles.
+The first choice is which entry type to use for a preprint.
+As far as <a class="reference external" href="https://www.bibtex.com/e/entry-types/">standard entry types</a> go,
+the potential candidates are <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code>, or <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code>.
+<a class="reference external" href="https://ctan.org/pkg/biblatex">BibLaTeX</a> has
+<a class="reference external" href="https://tex.stackexchange.com/questions/639734/canonical-list-of-bib-entry-types">additional types</a>,
+like <code class="docutils literal notranslate"><span class="pre">&#64;online</span></code>, but these are not supported by more traditional
+tooling.</p>
+<p>The second question is in which <em>fields</em> to encode the preprint
+information. Styles only take into account standard fields (fields
+they <em>know</em> about, that is), and silently ignore all other data. For
+older styles, the list of fields is rather short.</p>
+<section id="the-structured-eprint-fields">
+<h3>The structured <code class="docutils literal notranslate"><span class="pre">eprint</span></code> fields<a class="headerlink" href="#the-structured-eprint-fields" title="Link to this heading"></a></h3>
+<p>The modern de-facto standard for machine-readable preprint
+information is the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field family: <code class="docutils literal notranslate"><span class="pre">eprint</span></code> holds the
+identifier, <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> names the server (assumed to be arXiv
+when absent), <code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> gives the arXiv category (e.g.,
+<code class="docutils literal notranslate"><span class="pre">quant-ph</span></code>), and a fourth, <code class="docutils literal notranslate"><span class="pre">archive</span></code>, gives the base URL of the
+server’s identifier pages (see <a class="reference internal" href="#preprints-archive-field"><span class="std std-ref">below</span></a>).
+The convention originated with the SLAC/SPIRES database (today’s
+<a class="reference external" href="https://inspirehep.net">INSPIRE-HEP</a>) and the first three fields
+are included in arXiv’s own “Export BibTeX citation”. It is fully
+supported by many slightly more modern styles, and most importantly
+by <a class="reference external" href="https://journals.aps.org/revtex">REVTeX</a>’s
+<code class="docutils literal notranslate"><span class="pre">apsrev4-x</span></code>/<code class="docutils literal notranslate"><span class="pre">aipnum4-x</span></code>, by Elsevier’s <code class="docutils literal notranslate"><span class="pre">elsarticle</span></code> styles, by
+<a class="reference external" href="https://ctan.org/pkg/biblatex">biblatex</a> (which reads
+<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>/<code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> as aliases for its native
+<code class="docutils literal notranslate"><span class="pre">eprinttype</span></code>/<code class="docutils literal notranslate"><span class="pre">eprintclass</span></code> fields, on any entry type, and hyperlinks
+<code class="docutils literal notranslate"><span class="pre">arXiv:</span> <span class="pre">2205.15044</span> <span class="pre">[quant-ph]</span></code> by default), and by classic styles
+retrofitted with <a class="reference external" href="https://ctan.org/pkg/urlbst">urlbst</a>.</p>
+<p>The catch is that under the plain classic styles the fields are
+invisible: with <code class="docutils literal notranslate"><span class="pre">plain</span></code>, <code class="docutils literal notranslate"><span class="pre">unsrt</span></code>, <code class="docutils literal notranslate"><span class="pre">abbrv</span></code>, <code class="docutils literal notranslate"><span class="pre">alpha</span></code>, the natbib
+variants, or <code class="docutils literal notranslate"><span class="pre">IEEEtran</span></code>, an entry whose identifier lives only in
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code> renders as just “Author. Title, year.” – the identifier is
+dropped without a trace.</p>
+<p>Thus, for use with older styles that do not support these fields, preprint
+information must be additionally included in one of the standard fields.
+For styles that <em>do</em> support <code class="docutils literal notranslate"><span class="pre">eprint</span></code>, the way the information is rendered
+still depends on which entry type is used.</p>
+<p>As a concrete example,
+<a class="reference download internal" download="" href="_downloads/5a7c3f6b84b264dfab79020f94073043/preprints.pdf"><code class="xref download docutils literal notranslate"><span class="pre">preprints.pdf</span></code></a>
+renders fourteen variants of the same references – an arXiv
+preprint-only paper, a HAL preprint-only paper, and a published
+paper with a preprint – in one REVTeX document (<code class="docutils literal notranslate"><span class="pre">revtex4-2</span></code> with
+the default <code class="docutils literal notranslate"><span class="pre">apsrev4-2</span></code> style and <code class="docutils literal notranslate"><span class="pre">hyperref</span></code> loaded).</p>
+</section>
+<section id="using-unpublished-for-preprints">
+<h3>Using <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> for preprints<a class="headerlink" href="#using-unpublished-for-preprints" title="Link to this heading"></a></h3>
+<p>A preprint-only work has, by definition, not been published, so
+<code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> is arguably a “semantically accurate” type. However,
+unlike the other possible entry types, <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> <em>requires</em> a
+<code class="docutils literal notranslate"><span class="pre">note</span></code> field in every classic style. This represents both an
+opportunity and a challenge. If the style does not support the
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code> fields, then putting the preprint information in the note
+as plain text, <code class="docutils literal notranslate"><span class="pre">note</span> <span class="pre">=</span> <span class="pre">{arXiv:2205.15044}</span></code>, would be appropriate.
+The drawback is that this is unstructured text: nothing hyperlinks
+it, and reference managers cannot parse it back out. Moreover, a
+<code class="docutils literal notranslate"><span class="pre">note</span></code> is usually positioned at the end of the citation instead of
+as “venue” between title and year, which may be undesired (and
+<code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> ignores <code class="docutils literal notranslate"><span class="pre">howpublished</span></code>).</p>
+<p>When the style does support the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field and renders it
+independently, the “challenge” is what to put in the mandatory
+<code class="docutils literal notranslate"><span class="pre">note</span></code> field. An attractive option is to use the <code class="docutils literal notranslate"><span class="pre">note</span></code> for the
+publication <em>status</em>, e.g. “preprint” for preprints that have not
+yet been submitted, “submitted” or “submitted to Phys. Rev. A” for
+preprints that are known to have been submitted, and a more
+descriptive note like “unpublished report” or “lecture notes” for
+material that has been uploaded to arXiv without the intention of
+publishing it as a peer-reviewed article.</p>
+<p>REVTeX in particular (see
+<a class="reference download internal" download="" href="_downloads/5a7c3f6b84b264dfab79020f94073043/preprints.pdf"><code class="xref download docutils literal notranslate"><span class="pre">preprints.pdf</span></code></a>)
+renders this combination best of any option: the hyperlinked,
+category-tagged <code class="docutils literal notranslate"><span class="pre">eprint</span></code> moves into the venue position, before the
+publication year, followed by the note (“arXiv:2003.10132 [quant-ph]
+(2020), lecture notes”). This makes <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> by far the most
+attractive and richly featured option, as long as one is okay with
+defining a <code class="docutils literal notranslate"><span class="pre">note</span></code>.</p>
+</section>
+<section id="using-misc-for-preprints">
+<h3>Using <code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code> for preprints<a class="headerlink" href="#using-misc-for-preprints" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code> with the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> fields is what arXiv’s own “Export BibTeX
+citation” hands out. Its advantage over <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> is that
+<code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code> has no mandatory fields, i.e., no required <code class="docutils literal notranslate"><span class="pre">note</span></code> field. If
+a <code class="docutils literal notranslate"><span class="pre">note</span></code> field (and/or a <code class="docutils literal notranslate"><span class="pre">howpublished</span></code> field) is present, it is
+rendered. However (at least in REVTeX), the <em>placement</em> is different
+from <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code>: The <code class="docutils literal notranslate"><span class="pre">eprint</span></code> information is not in the “venue”
+location, but instead after the <code class="docutils literal notranslate"><span class="pre">note</span></code>. Instead, <code class="docutils literal notranslate"><span class="pre">howpublished</span></code>
+takes the “venue” location. This makes <code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code> acceptable for styles
+that do not support <code class="docutils literal notranslate"><span class="pre">eprint</span></code>. The preprint information should be
+stored in <code class="docutils literal notranslate"><span class="pre">howpublished</span></code>.</p>
+<p>If the style does support <code class="docutils literal notranslate"><span class="pre">eprint</span></code>, it would render the information
+redundantly with <code class="docutils literal notranslate"><span class="pre">howpublished</span></code>, so <code class="docutils literal notranslate"><span class="pre">howpublished</span></code> should be omitted
+in that scenario. The result will be properly linked, but the
+preprint information will not appear in the “venue” slot.</p>
+</section>
+<section id="using-article-for-preprints">
+<h3>Using <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code> for preprints<a class="headerlink" href="#using-article-for-preprints" title="Link to this heading"></a></h3>
+<p>The last option abandons the eprint fields and instead puts the
+preprint reference directly in the <code class="docutils literal notranslate"><span class="pre">journal</span></code> field of a regular
+<code class="docutils literal notranslate"><span class="pre">&#64;article</span></code>, e.g. <code class="docutils literal notranslate"><span class="pre">journal</span> <span class="pre">=</span> <span class="pre">{arXiv:2205.15044}</span></code> (Google Scholar’s
+BibTeX export popularized a variant of this). No style guide documents
+the practice, but it buys the one thing the structured forms cannot
+guarantee: <em>every</em> BibTeX style renders an article’s <code class="docutils literal notranslate"><span class="pre">journal</span></code>, so the
+identifier is never dropped. The citation comes out essentially as</p>
+<blockquote>
+<div><p>M. H. Goerz <em>et al.</em>, “Quantum optimal control via semi-automatic
+differentiation”, arXiv:2205.15044 (2022)</p>
+</div></blockquote>
+<p>under <code class="docutils literal notranslate"><span class="pre">plain</span></code>, <code class="docutils literal notranslate"><span class="pre">unsrt</span></code>, <code class="docutils literal notranslate"><span class="pre">IEEEtran</span></code>, and REVTeX alike – the preprint
+reference formatted exactly like a journal reference, which is how
+readers actually treat it.</p>
+<p>What it gives up is structure. Because the identifier is plain text
+in <code class="docutils literal notranslate"><span class="pre">journal</span></code>, the rendering shows “arXiv:2205.15044 (2022)”,
+unlinked by default. Proper linking may be reproduced by having a
+<code class="docutils literal notranslate"><span class="pre">url</span></code> field pointing to the URL of the preprint. Using a
+“pseudo-journal” like this is a double-edged sword: In a tool like
+BibDesk, we can potentially filter on the <code class="docutils literal notranslate"><span class="pre">arXiv</span></code> prefix, but any
+tool that reads <code class="docutils literal notranslate"><span class="pre">journal</span></code> strictly as a venue name
+(journal-abbreviation pipelines, reference-manager imports) may be
+misled by it.</p>
+<p>Like <code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code> with <code class="docutils literal notranslate"><span class="pre">howpublished</span></code>, any <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field should be
+omitted, or used exclusively with styles that do not support
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code>. Otherwise, the preprint information will be presented
+redundantly in the resulting bibliography.</p>
+</section>
+<section id="nonstandard-biblatex-types">
+<h3>Nonstandard BibLaTeX types<a class="headerlink" href="#nonstandard-biblatex-types" title="Link to this heading"></a></h3>
+<p>Under <a class="reference external" href="https://ctan.org/pkg/biblatex">BibLaTeX</a>, an <code class="docutils literal notranslate"><span class="pre">&#64;online</span></code> entry with the
+structured eprint fields renders and hyperlinks natively, in the right place,
+with the category tag, and without a required <code class="docutils literal notranslate"><span class="pre">note</span></code> to leave empty.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> library does not build around a non-standard
+type like <code class="docutils literal notranslate"><span class="pre">&#64;online</span></code> because BibDesk at its heart is a classic-BibTeX
+program. Its preview pane runs real <code class="docutils literal notranslate"><span class="pre">bibtex</span></code>, not <code class="docutils literal notranslate"><span class="pre">biber</span></code>, and a
+<code class="docutils literal notranslate"><span class="pre">.bib</span></code> database maintained for years across collaborations and
+journal submission systems cannot assume that every document
+downstream of it will use biblatex. An <code class="docutils literal notranslate"><span class="pre">&#64;online</span></code> entry that renders
+beautifully under biblatex degrades to “Author. Title, year.” the
+moment someone feeds the same file to <code class="docutils literal notranslate"><span class="pre">plain</span></code> or <code class="docutils literal notranslate"><span class="pre">IEEEtran</span></code>. The
+stored form therefore stays within classic BibTeX; biblatex reads
+the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> fields it carries anyway.</p>
+</section>
+</section>
+<section id="how-bibdeskparser-stores-preprint-only-entries">
+<span id="preprints-convention"></span><h2>How <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> stores preprint-only entries<a class="headerlink" href="#how-bibdeskparser-stores-preprint-only-entries" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> stores a preprint-only work as an <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code>
+entry that carries the structured <code class="docutils literal notranslate"><span class="pre">eprint</span></code> fields, a pseudo-journal,
+the DOI, and a publication-status note:</p>
+<div class="highlight-bibtex notranslate"><div class="highlight"><pre><span></span><span class="nc">@unpublished</span><span class="p">{</span><span class="nl">Wilhelm2003.10132</span><span class="p">,</span>
+<span class="w">    </span><span class="na">Author</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Wilhelm, Frank K. and others}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">Title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{An introduction into optimal control for quantum technologies}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">Journal</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{arXiv:2003.10132}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">Eprint</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2003.10132}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">Archiveprefix</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{arXiv}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">Primaryclass</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{quant-ph}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">Doi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{10.48550/arxiv.2003.10132}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">Note</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{preprint only}</span><span class="p">,</span>
+<span class="w">    </span><span class="na">Year</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{2020}</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">journal</span></code> value has the fixed shape <code class="docutils literal notranslate"><span class="pre">&lt;Archive&gt;:&lt;identifier&gt;</span></code> – a
+<em>pseudo-journal</em>. The recognized archives (arXiv, bioRxiv, medRxiv,
+ChemRxiv, HAL, and SSRN by default) are configurable via the
+<a class="reference internal" href="config.html#config-preprint-archives"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[preprint_archives]</span></code> table</span></a>. Since arXiv
+<a class="reference external" href="https://info.arxiv.org/help/doi.html">assigns a DOI</a>
+(<code class="docutils literal notranslate"><span class="pre">10.48550/arXiv.&lt;identifier&gt;</span></code>) to every preprint, and
+bioRxiv/medRxiv/ChemRxiv/SSRN identifiers are DOI-based to begin
+with, essentially every preprint-only entry can carry a <code class="docutils literal notranslate"><span class="pre">doi</span></code>; HAL
+deposits carry a stable URL instead.</p>
+<p>The stored form redundantly combines fields that are relevant to
+different choices for exported entry types. The <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> type
+with the eprint fields is both semantically accurate and the
+best-rendering REVTeX form, so the stored entry can be copied
+<em>verbatim</em> into an external <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file (the extra <code class="docutils literal notranslate"><span class="pre">journal</span></code> field is
+ignored on <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code>), and BibDesk’s preview pane, which runs
+real BibTeX, shows the same clean rendering. The <code class="docutils literal notranslate"><span class="pre">note</span></code> records the
+publication status – “preprint only”, “submitted to Phys. Rev. A”,
+“lecture notes” – which renders in every BibTeX style and satisfies
+<code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code>’s required-field check; <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> <em>never</em> fills
+it in automatically in the database, so a missing note (which BibDesk
+flags as an incomplete required field) is a deliberate signal to
+record the status by hand. The pseudo-journal gives the entry a venue
+inside the database: BibDesk’s table view shows <code class="docutils literal notranslate"><span class="pre">arXiv:2003.10132</span></code>
+in its journal column. The <code class="docutils literal notranslate"><span class="pre">doi</span></code>, last, is the canonical identifier
+for duplicate detection and the preferred hyperlink target.</p>
+<p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.import_bibtex" title="bibdeskparser.Library.import_bibtex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">import_bibtex()</span></code></a> (and
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add" title="bibdeskparser.Library.add"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add()</span></code></a>) normalize incoming
+preprint-only entries into this form. Recognition does not depend on
+any single marker: an entry is preprint-only if its <code class="docutils literal notranslate"><span class="pre">journal</span></code> is a
+recognized pseudo-journal (any entry type – including the earlier
+<code class="docutils literal notranslate"><span class="pre">&#64;article</span></code>-based form of this convention), or if it is a <code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code> or
+<code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> entry with an <code class="docutils literal notranslate"><span class="pre">eprint</span></code> from a recognized archive
+(e.g. arXiv’s own BibTeX export). Everything derivable is derived –
+the pseudo-journal from the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> or vice versa, the <code class="docutils literal notranslate"><span class="pre">doi</span></code> from a
+<code class="docutils literal notranslate"><span class="pre">doi.org</span></code> resolver URL or (for arXiv) from the identifier itself –
+and a <code class="docutils literal notranslate"><span class="pre">url</span></code> that merely restates the archive’s page for the
+identifier is dropped when the entry carries a <code class="docutils literal notranslate"><span class="pre">doi</span></code>. Only the
+<code class="docutils literal notranslate"><span class="pre">note</span></code> is never derived.</p>
+</section>
+<section id="exporting-preprint-only-entries">
+<h2>Exporting preprint-only entries<a class="headerlink" href="#exporting-preprint-only-entries" title="Link to this heading"></a></h2>
+<p>When <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a> writes a preprint-only
+entry (of any stored form) for use with LaTeX, one choice remains,
+and it depends on the <em>bibliography style</em> the document will use –
+does it render the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field, or silently drop it? That choice
+is the <code class="docutils literal notranslate"><span class="pre">preprint</span></code> parameter of <code class="docutils literal notranslate"><span class="pre">export</span></code> (<code class="docutils literal notranslate"><span class="pre">--preprint</span></code> on the command
+line), with the default set by the
+<a class="reference internal" href="config.html#config-preprint-export"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">preprint_export</span></code> setting</span></a>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">preprint=&quot;unpublished&quot;</span></code> (the built-in default): <code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code>
+with <code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>/<code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> and the <code class="docutils literal notranslate"><span class="pre">doi</span></code>. Under
+REVTeX (<code class="docutils literal notranslate"><span class="pre">apsrev4-x</span></code>, <code class="docutils literal notranslate"><span class="pre">aipnum4-x</span></code>) this is the best-rendering form
+(venue-position identifier, category tag, status note); it is
+equally understood by <code class="docutils literal notranslate"><span class="pre">elsarticle</span></code> and biblatex. Minimal exports
+guarantee the required <code class="docutils literal notranslate"><span class="pre">note</span></code>: the stored one, or the synthesized
+text “preprint” for an entry without one (full exports never
+synthesize it, so that re-importing a full export cannot plant a
+note in a library).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">preprint=&quot;misc&quot;</span></code>: the same structured fields as a <code class="docutils literal notranslate"><span class="pre">&#64;misc</span></code> entry
+– the form arXiv itself exports. Equivalent information; the
+eprint renders after the year instead of in the venue position,
+and there is no required <code class="docutils literal notranslate"><span class="pre">note</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">preprint=&quot;article&quot;</span></code>: the pseudo-journal form – <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code> with
+<code class="docutils literal notranslate"><span class="pre">journal</span> <span class="pre">=</span> <span class="pre">{arXiv:2003.10132}</span></code> and the DOI written as its resolver
+address in <code class="docutils literal notranslate"><span class="pre">url</span></code>. Use this for classic styles (<code class="docutils literal notranslate"><span class="pre">plain</span></code>, <code class="docutils literal notranslate"><span class="pre">unsrt</span></code>,
+<code class="docutils literal notranslate"><span class="pre">abbrv</span></code>, <code class="docutils literal notranslate"><span class="pre">IEEEtran</span></code>, …), where the structured forms would lose
+the identifier entirely.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">preprint=&quot;stored&quot;</span></code>: no transformation, for inspecting the entry
+as stored.</p></li>
+</ul>
+<p>Every form derives whatever it needs (<code class="docutils literal notranslate"><span class="pre">eprint</span></code> from the
+pseudo-journal or vice versa), so all stored forms export
+identically; minimal exports reduce to the essential fields of the
+chosen form – always including <code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> for the
+structured forms, and always keeping a stored <code class="docutils literal notranslate"><span class="pre">note</span></code>. The stored
+entry itself never changes.</p>
+</section>
+<section id="the-archive-field">
+<span id="preprints-archive-field"></span><h2>The <code class="docutils literal notranslate"><span class="pre">archive</span></code> field<a class="headerlink" href="#the-archive-field" title="Link to this heading"></a></h2>
+<p>REVTeX’s <code class="docutils literal notranslate"><span class="pre">apsrev4-x</span></code>/<code class="docutils literal notranslate"><span class="pre">aipnum4-x</span></code> styles construct the hyperlink of a
+rendered eprint as <code class="docutils literal notranslate"><span class="pre">&lt;archive&gt;/&lt;eprint&gt;</span></code>, where <code class="docutils literal notranslate"><span class="pre">archive</span></code> is a
+BibTeX field with the built-in default <code class="docutils literal notranslate"><span class="pre">https://arxiv.org/abs</span></code> –
+the SPIRES-era companion of <code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> that modern
+BibTeX exports no longer emit. For arXiv identifiers the default is
+right; for any other archive it produces a broken link, and no other
+field can compensate (<code class="docutils literal notranslate"><span class="pre">&#64;unpublished</span></code> ignores <code class="docutils literal notranslate"><span class="pre">url</span></code> entirely).</p>
+<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> therefore emits the <code class="docutils literal notranslate"><span class="pre">archive</span></code> field automatically
+wherever the structured eprint fields of a non-arXiv preprint are
+exported: <code class="docutils literal notranslate"><span class="pre">Archive</span> <span class="pre">=</span> <span class="pre">{https://hal.science}</span></code> for a HAL identifier,
+<code class="docutils literal notranslate"><span class="pre">Archive</span> <span class="pre">=</span> <span class="pre">{https://www.biorxiv.org/content/10.1101}</span></code> for bioRxiv,
+and so on. The base URL is derived from the archive’s URL template
+in the <a class="reference internal" href="config.html#config-preprint-archives"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[preprint_archives]</span></code> table</span></a>
+whenever the template has the form <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/{id}</span></code>; archives whose
+page URLs embed the identifier differently (SSRN, ChemRxiv) get no
+<code class="docutils literal notranslate"><span class="pre">archive</span></code> field – for those, prefer the <code class="docutils literal notranslate"><span class="pre">article</span></code> export form,
+whose link does not rely on the eprint machinery. A stored <code class="docutils literal notranslate"><span class="pre">archive</span></code>
+field is always exported as-is; conversely, <code class="docutils literal notranslate"><span class="pre">import</span></code> drops an
+<code class="docutils literal notranslate"><span class="pre">archive</span></code> field that matches the derivable base, since exports
+regenerate it.</p>
+</section>
+<section id="preprint-information-on-published-papers">
+<h2>Preprint information on <em>published</em> papers<a class="headerlink" href="#preprint-information-on-published-papers" title="Link to this heading"></a></h2>
+<p>Recording <code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code> on a published paper is valuable:
+The journal reference and DOI of a published article often lead to a
+paywall, while the eprint link leads to a free copy, so a
+bibliography that carries both serves every reader. High-energy
+physics has done this for decades: INSPIRE-HEP retains the arXiv
+identifier on every published record, and the SPIRES-era guidance
+explicitly asked for identifiers “for both published and unpublished
+papers”. The styles cooperate, rendering both parts – REVTeX’s
+<code class="docutils literal notranslate"><span class="pre">apsrev4-x</span></code> prints the journal reference <em>followed by</em> the
+hyperlinked <code class="docutils literal notranslate"><span class="pre">arXiv:2205.15044</span> <span class="pre">[quant-ph]</span></code>, biblatex does the
+equivalent with <code class="docutils literal notranslate"><span class="pre">eprint=true</span></code> (its default), and <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code>’s
+own <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.render" title="bibdeskparser.Library.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">render()</span></code></a> does the same, with the
+DOI-linked journal segment ahead of the eprint link. And it costs
+almost nothing to keep up:
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_preprint" title="bibdeskparser.Library.add_preprint"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_preprint()</span></code></a> searches arXiv for the
+preprint matching a published entry and fills in the fields
+automatically; see <a class="reference internal" href="howto.html#howto-add-preprint"><span class="std std-ref">How to fill in missing arXiv identifiers</span></a>.</p>
+<p>Minimal exports of published articles therefore include the
+<code class="docutils literal notranslate"><span class="pre">eprint</span></code>/<code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>/<code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> fields – and, like full
+exports, the <code class="docutils literal notranslate"><span class="pre">archive</span></code> link base when the preprint is on a
+non-arXiv archive, so its link renders correctly.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="bibdesk_format.html" class="btn btn-neutral float-left" title="BibDesk’s .bib Format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="bib_entry_types.html" class="btn btn-neutral float-right" title="Bib Entry Types" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Michael Goerz.
+      <span class="lastupdated">Last updated on Jul 24, 2026.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

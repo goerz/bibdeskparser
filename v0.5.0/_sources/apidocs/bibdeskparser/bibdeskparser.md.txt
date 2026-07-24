@@ -1,0 +1,529 @@
+# Package API
+
+{py:mod}`bibdeskparser` – Parser for [BibDesk](https://bibdesk.sourceforge.io) `.bib` files.
+
+```{py:module} bibdeskparser
+```
+
+This package builds on [bibtexparser](
+https://bibtexparser.readthedocs.io/en/main/) to read and write BibTeX
+databases as maintained by the BibDesk application.
+
+## Package Contents
+
+### Classes
+
+````{list-table}
+:class: autosummary longtable
+:align: left
+
+* - {py:obj}`Entry <bibdeskparser.entry.Entry>`
+  - ```{autodoc2-docstring} bibdeskparser.entry.Entry
+    :parser: myst
+    :summary:
+    ```
+* - {py:obj}`Library <bibdeskparser.library.Library>`
+  - ```{autodoc2-docstring} bibdeskparser.library.Library
+    :parser: myst
+    :summary:
+    ```
+* - {py:obj}`MacroString <bibdeskparser.macros.MacroString>`
+  - ```{autodoc2-docstring} bibdeskparser.macros.MacroString
+    :parser: myst
+    :summary:
+    ```
+* - {py:obj}`ValueString <bibdeskparser.macros.ValueString>`
+  - ```{autodoc2-docstring} bibdeskparser.macros.ValueString
+    :parser: myst
+    :summary:
+    ```
+````
+
+### API
+
+`````{py:class} Entry(entry_type, key, fields=None)
+:canonical: bibdeskparser.entry.Entry
+
+Bases: {py:obj}`collections.abc.MutableMapping`
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry
+:parser: myst
+```
+
+````{py:method} add_url(url)
+:canonical: bibdeskparser.entry.Entry.add_url
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.add_url
+:parser: myst
+```
+
+````
+
+````{py:property} author
+:canonical: bibdeskparser.entry.Entry.author
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.author
+:parser: myst
+```
+
+````
+
+````{py:method} copy()
+:canonical: bibdeskparser.entry.Entry.copy
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.copy
+:parser: myst
+```
+
+````
+
+````{py:property} date_added
+:canonical: bibdeskparser.entry.Entry.date_added
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.date_added
+:parser: myst
+```
+
+````
+
+````{py:property} date_modified
+:canonical: bibdeskparser.entry.Entry.date_modified
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.date_modified
+:parser: myst
+```
+
+````
+
+````{py:property} editor
+:canonical: bibdeskparser.entry.Entry.editor
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.editor
+:parser: myst
+```
+
+````
+
+````{py:property} entry_type
+:canonical: bibdeskparser.entry.Entry.entry_type
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.entry_type
+:parser: myst
+```
+
+````
+
+````{py:property} files
+:canonical: bibdeskparser.entry.Entry.files
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.files
+:parser: myst
+```
+
+````
+
+````{py:property} groups
+:canonical: bibdeskparser.entry.Entry.groups
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.groups
+:parser: myst
+```
+
+````
+
+````{py:property} key
+:canonical: bibdeskparser.entry.Entry.key
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.key
+:parser: myst
+```
+
+````
+
+````{py:property} keywords
+:canonical: bibdeskparser.entry.Entry.keywords
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.keywords
+:parser: myst
+```
+
+````
+
+````{py:method} remove_url(url)
+:canonical: bibdeskparser.entry.Entry.remove_url
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.remove_url
+:parser: myst
+```
+
+````
+
+````{py:method} replace_url(old_url, new_url)
+:canonical: bibdeskparser.entry.Entry.replace_url
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.replace_url
+:parser: myst
+```
+
+````
+
+````{py:property} urls
+:canonical: bibdeskparser.entry.Entry.urls
+
+```{autodoc2-docstring} bibdeskparser.entry.Entry.urls
+:parser: myst
+```
+
+````
+
+`````
+
+`````{py:class} Library(path=None, creator=None)
+:canonical: bibdeskparser.library.Library
+
+Bases: {py:obj}`collections.abc.MutableMapping`
+
+```{autodoc2-docstring} bibdeskparser.library.Library
+:parser: myst
+```
+
+````{py:method} add(query, *, fix_uppercase=None, add_abstract=None, add_preprint=None)
+:canonical: bibdeskparser.library.Library.add
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add
+:parser: myst
+```
+
+````
+
+````{py:method} add_abstract(key, *, min_confidence=None, overwrite=False)
+:canonical: bibdeskparser.library.Library.add_abstract
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add_abstract
+:parser: myst
+```
+
+````
+
+````{py:method} add_doi(key, doi=None, *, overwrite=False)
+:canonical: bibdeskparser.library.Library.add_doi
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add_doi
+:parser: myst
+```
+
+````
+
+````{py:method} add_file(key, filename, *, check_that_file_exists=True, format_spec=None, auto_file_location=None)
+:canonical: bibdeskparser.library.Library.add_file
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add_file
+:parser: myst
+```
+
+````
+
+````{py:method} add_preprint(key, eprint=None, *, overwrite=False)
+:canonical: bibdeskparser.library.Library.add_preprint
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add_preprint
+:parser: myst
+```
+
+````
+
+````{py:method} add_to_group(name, *keys)
+:canonical: bibdeskparser.library.Library.add_to_group
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add_to_group
+:parser: myst
+```
+
+````
+
+````{py:method} add_to_keyword(keyword, *keys)
+:canonical: bibdeskparser.library.Library.add_to_keyword
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add_to_keyword
+:parser: myst
+```
+
+````
+
+````{py:method} add_url(key, url)
+:canonical: bibdeskparser.library.Library.add_url
+
+```{autodoc2-docstring} bibdeskparser.library.Library.add_url
+:parser: myst
+```
+
+````
+
+````{py:attribute} config
+:canonical: bibdeskparser.library.Library.config
+
+```{autodoc2-docstring} bibdeskparser.library.Library.config
+:parser: myst
+```
+
+````
+
+````{py:property} duplicate_keys
+:canonical: bibdeskparser.library.Library.duplicate_keys
+
+```{autodoc2-docstring} bibdeskparser.library.Library.duplicate_keys
+:parser: myst
+```
+
+````
+
+````{py:method} edit(*keys, editor=None)
+:canonical: bibdeskparser.library.Library.edit
+
+```{autodoc2-docstring} bibdeskparser.library.Library.edit
+:parser: myst
+```
+
+````
+
+````{py:method} edit_strings(editor=None)
+:canonical: bibdeskparser.library.Library.edit_strings
+
+```{autodoc2-docstring} bibdeskparser.library.Library.edit_strings
+:parser: myst
+```
+
+````
+
+````{py:property} entries
+:canonical: bibdeskparser.library.Library.entries
+
+```{autodoc2-docstring} bibdeskparser.library.Library.entries
+:parser: myst
+```
+
+````
+
+````{py:method} eval_format_spec(key, format_spec=None, *, filename=None)
+:canonical: bibdeskparser.library.Library.eval_format_spec
+
+```{autodoc2-docstring} bibdeskparser.library.Library.eval_format_spec
+:parser: myst
+```
+
+````
+
+````{py:method} export(*keys, unicode=True, expand_strings=False, fields='full', outfile=None, preprint=None)
+:canonical: bibdeskparser.library.Library.export
+
+```{autodoc2-docstring} bibdeskparser.library.Library.export
+:parser: myst
+```
+
+````
+
+````{py:property} groups
+:canonical: bibdeskparser.library.Library.groups
+
+```{autodoc2-docstring} bibdeskparser.library.Library.groups
+:parser: myst
+```
+
+````
+
+````{py:method} import_bibtex(text, *, keep_keys=False, fix_uppercase=False, keep_journals=False)
+:canonical: bibdeskparser.library.Library.import_bibtex
+
+```{autodoc2-docstring} bibdeskparser.library.Library.import_bibtex
+:parser: myst
+```
+
+````
+
+````{py:method} keys(*, types=None, has=None, missing=None, group=None, not_group=None, with_files=None)
+:canonical: bibdeskparser.library.Library.keys
+
+```{autodoc2-docstring} bibdeskparser.library.Library.keys
+:parser: myst
+```
+
+````
+
+````{py:property} keywords
+:canonical: bibdeskparser.library.Library.keywords
+
+```{autodoc2-docstring} bibdeskparser.library.Library.keywords
+:parser: myst
+```
+
+````
+
+````{py:property} path
+:canonical: bibdeskparser.library.Library.path
+
+```{autodoc2-docstring} bibdeskparser.library.Library.path
+:parser: myst
+```
+
+````
+
+````{py:method} rekey(old_key, new_key=None, *, format_spec=None)
+:canonical: bibdeskparser.library.Library.rekey
+
+```{autodoc2-docstring} bibdeskparser.library.Library.rekey
+:parser: myst
+```
+
+````
+
+````{py:method} remove_from_group(name, *keys)
+:canonical: bibdeskparser.library.Library.remove_from_group
+
+```{autodoc2-docstring} bibdeskparser.library.Library.remove_from_group
+:parser: myst
+```
+
+````
+
+````{py:method} remove_from_keyword(keyword, *keys)
+:canonical: bibdeskparser.library.Library.remove_from_keyword
+
+```{autodoc2-docstring} bibdeskparser.library.Library.remove_from_keyword
+:parser: myst
+```
+
+````
+
+````{py:method} remove_url(key, url)
+:canonical: bibdeskparser.library.Library.remove_url
+
+```{autodoc2-docstring} bibdeskparser.library.Library.remove_url
+:parser: myst
+```
+
+````
+
+````{py:method} rename_file(key, old_filename, new_filename=None, *, format_spec=None, auto_file_location=None)
+:canonical: bibdeskparser.library.Library.rename_file
+
+```{autodoc2-docstring} bibdeskparser.library.Library.rename_file
+:parser: myst
+```
+
+````
+
+````{py:method} rename_string(old_name, new_name)
+:canonical: bibdeskparser.library.Library.rename_string
+
+```{autodoc2-docstring} bibdeskparser.library.Library.rename_string
+:parser: myst
+```
+
+````
+
+````{py:method} render(*keys, format='markdown', style='default')
+:canonical: bibdeskparser.library.Library.render
+
+```{autodoc2-docstring} bibdeskparser.library.Library.render
+:parser: myst
+```
+
+````
+
+````{py:method} replace_file(key, old_filename, new_filename, *, remove, check_that_file_exists=True)
+:canonical: bibdeskparser.library.Library.replace_file
+
+```{autodoc2-docstring} bibdeskparser.library.Library.replace_file
+:parser: myst
+```
+
+````
+
+````{py:method} replace_url(key, old_url, new_url)
+:canonical: bibdeskparser.library.Library.replace_url
+
+```{autodoc2-docstring} bibdeskparser.library.Library.replace_url
+:parser: myst
+```
+
+````
+
+````{py:method} save(path=None, force=False)
+:canonical: bibdeskparser.library.Library.save
+
+```{autodoc2-docstring} bibdeskparser.library.Library.save
+:parser: myst
+```
+
+````
+
+````{py:method} search(query, *, fields=None, match='words')
+:canonical: bibdeskparser.library.Library.search
+
+```{autodoc2-docstring} bibdeskparser.library.Library.search
+:parser: myst
+```
+
+````
+
+````{py:property} strings
+:canonical: bibdeskparser.library.Library.strings
+
+```{autodoc2-docstring} bibdeskparser.library.Library.strings
+:parser: myst
+```
+
+````
+
+````{py:property} timestamp
+:canonical: bibdeskparser.library.Library.timestamp
+
+```{autodoc2-docstring} bibdeskparser.library.Library.timestamp
+:parser: myst
+```
+
+````
+
+````{py:method} unlink_file(key, filename, *, remove)
+:canonical: bibdeskparser.library.Library.unlink_file
+
+```{autodoc2-docstring} bibdeskparser.library.Library.unlink_file
+:parser: myst
+```
+
+````
+
+`````
+
+````{py:class} MacroString()
+:canonical: bibdeskparser.macros.MacroString
+
+Bases: {py:obj}`str`
+
+```{autodoc2-docstring} bibdeskparser.macros.MacroString
+:parser: myst
+```
+
+````
+
+````{py:exception} StaleFileError()
+:canonical: bibdeskparser.library.StaleFileError
+
+Bases: {py:obj}`RuntimeError`
+
+```{autodoc2-docstring} bibdeskparser.library.StaleFileError
+:parser: myst
+```
+
+````
+
+````{py:class} ValueString()
+:canonical: bibdeskparser.macros.ValueString
+
+Bases: {py:obj}`str`
+
+```{autodoc2-docstring} bibdeskparser.macros.ValueString
+:parser: myst
+```
+
+````

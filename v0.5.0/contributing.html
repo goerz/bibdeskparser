@@ -1,0 +1,323 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributing &mdash; BibDeskParser 0.5.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/docs-versions-menu.js?v=2187e224"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Credits" href="authors.html" />
+    <link rel="prev" title="Package API" href="apidocs/bibdeskparser/bibdeskparser.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+  <a href="index.html" class="icon icon-home">
+    BibDeskParser
+  </a>
+
+  <div class="version">
+    v0.5.0
+  </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#development">Development</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="howto.html">How-to Guides</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#report-bugs-and-submit-feedback">Report Bugs and Submit Feedback</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#development-setup">Development Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pull-request-guidelines">Pull Request Guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#branching-model">Branching Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#commit-messages">Commit Messages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#code-style">Code Style</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#changelog">Changelog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#versioning">Versioning</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BibDeskParser</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Contributing</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Link to this heading"></a></h1>
+<p>Contributions are welcome and greatly appreciated! Every little bit helps, and credit is always given.</p>
+<p>Everyone interacting in the BibDeskParser code base, issue tracker, and communication channels is expected to follow the <a class="reference external" href="https://www.pypa.io/en/latest/code-of-conduct/">PyPA Code of Conduct</a>.</p>
+<section id="report-bugs-and-submit-feedback">
+<h2>Report Bugs and Submit Feedback<a class="headerlink" href="#report-bugs-and-submit-feedback" title="Link to this heading"></a></h2>
+<p>Report bugs and request features at <a class="reference external" href="https://github.com/goerz/bibdeskparser/issues">https://github.com/goerz/bibdeskparser/issues</a>.</p>
+<p>When reporting a bug, please include:</p>
+<ul class="simple">
+<li><p>Your operating system name and version.</p></li>
+<li><p>Any details about your local setup relevant to troubleshooting.</p></li>
+<li><p>Detailed steps to reproduce the bug, ideally a minimal but complete script.</p></li>
+<li><p>All error messages in full, as plain text (attach long output as a file).</p></li>
+</ul>
+<p>When proposing a feature, explain how it would work and keep the scope as narrow as possible. Remember that this is a volunteer-driven project.</p>
+</section>
+<section id="development-setup">
+<h2>Development Setup<a class="headerlink" href="#development-setup" title="Link to this heading"></a></h2>
+<p>The project uses <a class="reference external" href="https://docs.astral.sh/uv/">uv</a> to manage the development environment and <a class="reference external" href="https://www.gnu.org/software/make/"><code class="docutils literal notranslate"><span class="pre">make</span></code></a> as a task runner. Install both; uv downloads and manages the required Python interpreters for you.</p>
+<p>Clone the repository and run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">make help     # list available targets</span>
+<span class="go">make develop  # create the virtual environment with all dev dependencies</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">develop</span></code> sets up a virtual environment with all development dependencies and an editable install of the package. <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span></code> (used by every <code class="docutils literal notranslate"><span class="pre">make</span></code> target) syncs the environment automatically, so you rarely need to call <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">develop</span></code> directly.</p>
+<p>To set a debugger breakpoint, use Python’s built-in <code class="docutils literal notranslate"><span class="pre">breakpoint()</span></code>. The development environment includes <a class="reference external" href="https://github.com/gotcha/ipdb">ipdb</a>; activate it by setting the environment variable:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export PYTHONBREAKPOINT=ipdb.set_trace</span>
+</pre></div>
+</div>
+</section>
+<section id="pull-request-guidelines">
+<h2>Pull Request Guidelines<a class="headerlink" href="#pull-request-guidelines" title="Link to this heading"></a></h2>
+<p>Before submitting a pull request:</p>
+<ol class="arabic simple">
+<li><p>Add tests for any new functionality.</p></li>
+<li><p>Update the documentation for any changed behavior.</p></li>
+<li><p>Check <a class="reference external" href="https://github.com/goerz/bibdeskparser/actions">https://github.com/goerz/bibdeskparser/actions</a> and make sure the tests pass for all supported Python versions.</p></li>
+</ol>
+<p>Follow <a class="reference external" href="https://www.asmeurer.com/git-workflow/">Aaron Meurer’s Git Workflow Notes</a>: fork the repo, add your fork as a remote, create a topic branch, commit your changes, push to your fork, and open a pull request against the <code class="docutils literal notranslate"><span class="pre">master</span></code> branch.</p>
+</section>
+<section id="branching-model">
+<h2>Branching Model<a class="headerlink" href="#branching-model" title="Link to this heading"></a></h2>
+<p>Development happens directly on the <code class="docutils literal notranslate"><span class="pre">master</span></code> branch, and releases are tags on <code class="docutils literal notranslate"><span class="pre">master</span></code>. Every commit on <code class="docutils literal notranslate"><span class="pre">master</span></code> <em>should</em> pass all tests and be well-documented, so that <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">bisect</span></code> stays effective. For any non-trivial change, work on a topic branch instead; topic-branch commits have no such restrictions.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span><span class="m">1</span>-title-of-issue<span class="w">   </span><span class="c1"># branch named after issue #1</span>
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span><span class="m">1</span>-title-of-issue<span class="w"> </span><span class="c1"># push to trigger CI</span>
+</pre></div>
+</div>
+<p>Commit early and often, and feel free to rewrite history on topic branches by force-pushing (<code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">commit</span> <span class="pre">--amend</span></code>, <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">rebase</span> <span class="pre">-i</span></code>, <code class="docutils literal notranslate"><span class="pre">--fixup</span></code>/<code class="docutils literal notranslate"><span class="pre">--autosquash</span></code>). Clean up the commit history before merging. If a topic branch is long-lived, periodically rebase it on <code class="docutils literal notranslate"><span class="pre">master</span></code> rather than merging <code class="docutils literal notranslate"><span class="pre">master</span></code> into it. Coordinate with collaborators before rewriting shared history.</p>
+<p>Merge a finished topic branch back with an explicit merge commit, then delete it:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>checkout<span class="w"> </span>master
+git<span class="w"> </span>merge<span class="w"> </span>--no-ff<span class="w"> </span><span class="m">1</span>-title-of-issue
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>master
+git<span class="w"> </span>push<span class="w"> </span>--delete<span class="w"> </span>origin<span class="w"> </span><span class="m">1</span>-title-of-issue
+git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </span><span class="m">1</span>-title-of-issue
+</pre></div>
+</div>
+</section>
+<section id="commit-messages">
+<h2>Commit Messages<a class="headerlink" href="#commit-messages" title="Link to this heading"></a></h2>
+<p>Write a short imperative subject line (50 chars or less) that completes the sentence “If applied, this commit will …”, followed by a blank line and an optional body wrapped at 72 characters. Reference issues as e.g. <code class="docutils literal notranslate"><span class="pre">#1</span></code>, and close them with a <code class="docutils literal notranslate"><span class="pre">Closes</span> <span class="pre">#1</span></code> line (see <a class="reference external" href="https://help.github.com/articles/closing-issues-using-keywords/">closing issues using keywords</a>).</p>
+<p>Use markdown syntax (GitHub Flavored Markdown) in the commit message. In particular, use inline code (backticks) for any snippet of text that refers to code.</p>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>BibDeskParser uses <a class="reference external" href="https://docs.pytest.org/en/latest/">pytest</a>; we aim for <a class="reference external" href="https://codecov.io/gh/goerz/bibdeskparser">test coverage</a> above 90%.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">make test          # run the full suite</span>
+<span class="go">make test-lowest   # run against the lowest supported Python and dependencies</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code> runs on the highest installed Python compatible with the project (currently 3.14); override with e.g. <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">PYTHON=3.11</span> <span class="pre">test</span></code>. Supported versions are Python 3.10 through 3.14.</p>
+<p>Tests live in the <code class="docutils literal notranslate"><span class="pre">tests</span></code> subfolder, in <code class="docutils literal notranslate"><span class="pre">test_*.py</span></code> files with <code class="docutils literal notranslate"><span class="pre">test_*</span></code> functions. In addition, <a class="reference external" href="https://docs.python.org/3/library/doctest.html">doctests</a> are collected from every docstring and from documentation files (<code class="docutils literal notranslate"><span class="pre">*.rst</span></code> and <code class="docutils literal notranslate"><span class="pre">*.md</span></code>, including <code class="docutils literal notranslate"><span class="pre">README.md</span></code>). Write doctests inside fenced <code class="docutils literal notranslate"><span class="pre">```python</span></code> blocks.</p>
+<p>Two <code class="docutils literal notranslate"><span class="pre">conftest.py</span></code> files configure the suite via <a class="reference external" href="https://docs.pytest.org/en/stable/how-to/doctest.html#the-doctest-namespace-fixture">pytest fixtures</a>. The one at the repository root isolates every test from a developer’s personal configuration, and <code class="docutils literal notranslate"><span class="pre">src/conftest.py</span></code> injects the <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> package into the <a class="reference external" href="https://docs.pytest.org/en/stable/how-to/doctest.html">doctest namespace</a> so doctests can use it without an explicit import. Extend the latter’s autouse fixture to make more names available to every doctest.</p>
+<p>The command-line examples in the documentation are tested as well. The doctest collector only executes <code class="docutils literal notranslate"><span class="pre">```python</span></code> blocks; the <code class="docutils literal notranslate"><span class="pre">```console</span></code> blocks of the how-to page (<code class="docutils literal notranslate"><span class="pre">docs/sources/howto.md</span></code>) and the CLI-reference page (<code class="docutils literal notranslate"><span class="pre">docs/sources/cli.md</span></code>) are instead executed by <code class="docutils literal notranslate"><span class="pre">tests/test_doc_console.py</span></code>. That harness extracts every <code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">bibdeskparser</span> <span class="pre">...</span></code> command, replays it through click’s <code class="docutils literal notranslate"><span class="pre">CliRunner</span></code> in a temporary directory holding a fresh copy of <code class="docutils literal notranslate"><span class="pre">tests/Refs</span></code> (and <code class="docutils literal notranslate"><span class="pre">tests/test_cli_fail_checks</span></code>), and compares the output shown in the documentation against the actual output with doctest semantics, so <code class="docutils literal notranslate"><span class="pre">...</span></code> in the shown output matches any text. A failure names the page and line of the offending command. A <code class="docutils literal notranslate"><span class="pre">console</span></code> example on these pages is therefore a doctest, and is written under the following contract:</p>
+<ul class="simple">
+<li><p>The example operates on the example database at the relative path <code class="docutils literal notranslate"><span class="pre">tests/Refs/refs.bib</span></code>, and no <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> is in effect. An example that depends on configuration (e.g. <code class="docutils literal notranslate"><span class="pre">rekey</span></code> without an explicit <code class="docutils literal notranslate"><span class="pre">--format-spec</span></code>) cannot run and must be excluded (see below).</p></li>
+<li><p>On the how-to page, all blocks run in order, in one shared sandbox (like the Python doctests of a single file), so an example may rely on the effects of earlier blocks. On the CLI-reference page, every block runs in isolation, in a fresh sandbox, so each example must be self-contained; in particular, it cannot delete or rename something that only an example in another block created.</p></li>
+<li><p>The harness understands a small shell subset: <code class="docutils literal notranslate"><span class="pre">$</span> </code> prompts, backslash continuations, trailing <code class="docutils literal notranslate"><span class="pre">#</span></code> comments, <code class="docutils literal notranslate"><span class="pre">&lt;&lt;</span> <span class="pre">'EOF'</span></code> heredocs, one level of <code class="docutils literal notranslate"><span class="pre">$(...)</span></code> command substitution, and pipelines in which every stage is a <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> invocation. Any other shell syntax fails the test; extend the harness if a new example needs it.</p></li>
+<li><p>Commands that need network access (<code class="docutils literal notranslate"><span class="pre">add</span></code>, <code class="docutils literal notranslate"><span class="pre">add_abstract</span></code>, <code class="docutils literal notranslate"><span class="pre">add_preprint</span></code>, <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">--url</span></code>), would open an interactive editor (<code class="docutils literal notranslate"><span class="pre">edit</span></code>/<code class="docutils literal notranslate"><span class="pre">edit_strings</span></code> without <code class="docutils literal notranslate"><span class="pre">--stdin</span></code>), or pipe through other programs (<code class="docutils literal notranslate"><span class="pre">pbpaste</span></code>, <code class="docutils literal notranslate"><span class="pre">sed</span></code>) are skipped automatically, and their shown output goes unverified, so double-check it by hand. Later blocks on the how-to page must not depend on the effects of a skipped command.</p></li>
+<li><p>A command with no output shown below it is only required to succeed; what it actually prints is not compared (in particular, it is <em>not</em> required to print nothing). The <code class="docutils literal notranslate"><span class="pre">check</span></code> command may exit with code 1, since reporting problems is its purpose.</p></li>
+<li><p>An HTML comment <code class="docutils literal notranslate"><span class="pre">&lt;!--</span> <span class="pre">notest</span> <span class="pre">--&gt;</span></code> on the line directly above a fence excludes that block; the comment is invisible in the rendered documentation. Use it for purely illustrative examples, e.g. ones referencing files that do not exist outside the reader’s setting.</p></li>
+</ul>
+<p>The pages under test are listed in <code class="docutils literal notranslate"><span class="pre">PAGES</span></code> at the top of <code class="docutils literal notranslate"><span class="pre">tests/test_doc_console.py</span></code>; a new documentation page with <code class="docutils literal notranslate"><span class="pre">console</span></code> examples must be registered there.</p>
+</section>
+<section id="code-style">
+<h2>Code Style<a class="headerlink" href="#code-style" title="Link to this heading"></a></h2>
+<p>All code must comply with <a class="reference external" href="https://www.python.org/dev/peps/pep-0008/">PEP 8</a> and the <a class="reference external" href="https://github.com/psf/black">Black code style</a>, with a line length of 79. Imports are sorted with <a class="reference external" href="https://pycqa.github.io/isort/">isort</a> per the <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> configuration.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">make black        # apply Black formatting (make black-check to only check)</span>
+<span class="go">make isort        # sort imports (make isort-check to only check)</span>
+<span class="go">make lint         # run black-check, isort-check, flake8, and pylint</span>
+</pre></div>
+</div>
+<p>Style is enforced by the test suite and by <a class="reference external" href="https://pre-commit.com">pre-commit</a> git hooks; install them with <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">pre-commit</span></code>. The <a class="reference external" href="https://flake8.pycqa.org">flake8</a> and <a class="reference external" href="https://pylint.pycqa.org">pylint</a> checks (<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">flake8</span></code>, <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">pylint</span></code>) are guidelines only and do not require a perfect score.</p>
+</section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
+<p>The documentation is generated with <a class="reference external" href="https://www.sphinx-doc.org/">Sphinx</a> and written in <a class="reference external" href="https://myst-parser.readthedocs.io/">MyST Markdown</a>. Docstrings are also MyST Markdown and are rendered on the auto-generated API page by <a class="reference external" href="https://sphinx-autodoc2.readthedocs.io/">autodoc2</a>; math may be written in LaTeX syntax using <code class="docutils literal notranslate"><span class="pre">$…$</span></code>. Structure content along the four <a class="reference external" href="https://diataxis.fr">Diátaxis</a> categories: a <strong>Tutorial</strong> (a linear, learning-oriented walkthrough for a newcomer), <strong>How-to guides</strong> (short, task-oriented recipes that assume basic familiarity), <strong>Explanation</strong> (background/conceptual material — why the BibDesk <code class="docutils literal notranslate"><span class="pre">.bib</span></code> format works the way it does, and how <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> handles each feature), and <strong>Reference</strong> (the auto-generated API page). Don’t mix categories within one page (e.g. don’t bury conceptual background inside a how-to recipe).</p>
+<p>Every public name (one not starting with <code class="docutils literal notranslate"><span class="pre">_</span></code>) in a module must be listed in either <code class="docutils literal notranslate"><span class="pre">__all__</span></code> or <code class="docutils literal notranslate"><span class="pre">__private__</span></code>; <code class="docutils literal notranslate"><span class="pre">autodoc2</span></code> only renders <code class="docutils literal notranslate"><span class="pre">__all__</span></code> members. Keep the public API surface minimal: expose only what a <em>user</em> of the library needs (currently just <code class="docutils literal notranslate"><span class="pre">Library</span></code>, <code class="docutils literal notranslate"><span class="pre">Entry</span></code>, <code class="docutils literal notranslate"><span class="pre">ValueString</span></code>, <code class="docutils literal notranslate"><span class="pre">MacroString</span></code>, and <code class="docutils literal notranslate"><span class="pre">StaleFileError</span></code>, all re-exported from the top-level <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> package). In particular:</p>
+<ul class="simple">
+<li><p>Don’t add a standalone public function for something already reachable as an <code class="docutils literal notranslate"><span class="pre">Entry</span></code>/<code class="docutils literal notranslate"><span class="pre">Library</span></code> method (e.g. the citation-rendering, export, and <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>-editing logic lives in private free functions in <code class="docutils literal notranslate"><span class="pre">render.py</span></code>/<code class="docutils literal notranslate"><span class="pre">exporting.py</span></code>/<code class="docutils literal notranslate"><span class="pre">editing.py</span></code>, used only internally by the corresponding methods).</p></li>
+<li><p>Don’t make a validation/normalization helper public just because it’s used internally (e.g. <code class="docutils literal notranslate"><span class="pre">is_valid_macro_name</span></code>/<code class="docutils literal notranslate"><span class="pre">normalize_macro_name</span></code> in <code class="docutils literal notranslate"><span class="pre">macros.py</span></code> stay private, since <code class="docutils literal notranslate"><span class="pre">Entry</span></code>/<code class="docutils literal notranslate"><span class="pre">Library</span></code> already apply them automatically and surface a clear <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> on invalid input).</p></li>
+<li><p>Don’t make a supporting data type or helper class public just because a public property’s value is derived from it, if the property already presents that data in a simpler public form (e.g. <code class="docutils literal notranslate"><span class="pre">library.py</span></code>’s <code class="docutils literal notranslate"><span class="pre">GroupInfo</span></code> namedtuple and <code class="docutils literal notranslate"><span class="pre">bdskfile.py</span></code>’s <code class="docutils literal notranslate"><span class="pre">BibDeskFile</span></code> class stay private – <code class="docutils literal notranslate"><span class="pre">Library.groups</span></code>/<code class="docutils literal notranslate"><span class="pre">Entry.files</span></code> are the public surface, and document the derived data/behavior directly in their own docstrings rather than relying on a separately-documented type).</p></li>
+</ul>
+<p>The bar for a new public symbol is a concrete task a user cannot otherwise accomplish, not “this might be handy.”</p>
+<p>All submodules are excluded from documentation generation (<code class="docutils literal notranslate"><span class="pre">autodoc2_skip_module_regexes</span></code> in <code class="docutils literal notranslate"><span class="pre">docs/sources/conf.py</span></code>), so every public symbol — regardless of which module it’s actually defined in — is documented exactly once, on the single top-level <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> API page; <code class="docutils literal notranslate"><span class="pre">autodoc2_hidden_objects</span></code> additionally hides single-underscore members of otherwise-public classes (e.g. <code class="docutils literal notranslate"><span class="pre">Entry._touch</span></code>). When adding a new public symbol, re-export it from <code class="docutils literal notranslate"><span class="pre">src/bibdeskparser/__init__.py</span></code>’s <code class="docutils literal notranslate"><span class="pre">__all__</span></code> — don’t rely on its own module page, since none exists.</p>
+<p>Build the docs locally with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">make docs</span>
+</pre></div>
+</div>
+</section>
+<section id="changelog">
+<h2>Changelog<a class="headerlink" href="#changelog" title="Link to this heading"></a></h2>
+<p>User-facing changes are tracked in <a class="reference external" href="https://github.com/goerz/bibdeskparser/blob/master/CHANGELOG.md"><code class="docutils literal notranslate"><span class="pre">CHANGELOG.md</span></code></a>, which follows the <a class="reference external" href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a> format. Whenever you make a user-facing change — in a pull request or a direct commit, add a bullet under the <code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">[Unreleased]</span></code> heading at the top of the file, with an inline category prefix (<code class="docutils literal notranslate"><span class="pre">Added:</span></code>, <code class="docutils literal notranslate"><span class="pre">Changed:</span></code>, <code class="docutils literal notranslate"><span class="pre">Deprecated:</span></code>, <code class="docutils literal notranslate"><span class="pre">Removed:</span></code>, <code class="docutils literal notranslate"><span class="pre">Fixed:</span></code>, or <code class="docutils literal notranslate"><span class="pre">Security:</span></code>):</p>
+<div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span><span class="gu">## [Unreleased]</span>
+
+<span class="k">*</span><span class="w"> </span>Added: <span class="sb">`Entry.foo`</span> method for frobnicating entries [[#12]]
+<span class="k">*</span><span class="w"> </span>Fixed: crash when parsing an empty <span class="sb">`@string`</span> macro [[#15], [#16]]
+</pre></div>
+</div>
+<p>Link the relevant issue and pull request with a reference-style label <code class="docutils literal notranslate"><span class="pre">[[#N]]</span></code> (listing the issue before the pull request that closes it). You only need to write the <code class="docutils literal notranslate"><span class="pre">[[#N]]</span></code> marker in the bullet; run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">changelog</span></code> to fill in the matching link definition at the bottom of the file (it queries the GitHub API to record whether <code class="docutils literal notranslate"><span class="pre">#N</span></code> is an issue or a pull request, so it needs network access). Skip changelog entries for changes that are not user-facing: CI, dependency bumps, formatting, typo fixes, and internal-only refactoring (a leading underscore, e.g. <code class="docutils literal notranslate"><span class="pre">_helper</span></code>, marks a name as internal).</p>
+<p>Validate the file with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">make check-changelog   # verify every reference has a link definition (no network)</span>
+<span class="go">make changelog         # additionally add any missing [#N] link definitions</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">check-changelog</span></code> runs as part of <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">lint</span></code> and in CI. It is purely textual and makes no network calls; it does not verify that the links actually resolve or that the issue-vs-pull-request category is correct, so double-check those manually.</p>
+<p>You never edit the release headings or version links by hand: <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">release</span></code> transforms the changelog automatically. For the release commit it renames <code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">[Unreleased]</span></code> to <code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">[vX.Y.Z]</span> <span class="pre">-</span> <span class="pre">YYYY-MM-DD</span></code> and updates the version links at the bottom (pointing <code class="docutils literal notranslate"><span class="pre">[Unreleased]</span></code> at <code class="docutils literal notranslate"><span class="pre">…/compare/vX.Y.Z..HEAD</span></code> and adding <code class="docutils literal notranslate"><span class="pre">[vX.Y.Z]:</span> <span class="pre">…/releases/tag/vX.Y.Z</span></code>), opening the file in your editor first so you can review and refine the release notes. The tagged release commit therefore contains no <code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">[Unreleased]</span></code> section; a fresh empty one is added back in the immediately following <code class="docutils literal notranslate"><span class="pre">+dev</span></code> version-bump commit that opens the next development cycle. The signed git tag and the GitHub release for the version reuse that section’s notes verbatim, so the release notes never have to be retyped.</p>
+</section>
+<section id="versioning">
+<h2>Versioning<a class="headerlink" href="#versioning" title="Link to this heading"></a></h2>
+<p>Releases follow <a class="reference external" href="https://semver.org">Semantic Versioning</a> (<code class="docutils literal notranslate"><span class="pre">major.minor.patch</span></code>) and version numbers must be compatible with <a class="reference external" href="https://peps.python.org/pep-0440/">PEP 440</a>. Pre-releases use suffixes such as <code class="docutils literal notranslate"><span class="pre">-dev1</span></code> or <code class="docutils literal notranslate"><span class="pre">-rc1</span></code>; documentation-only fixes may use a <code class="docutils literal notranslate"><span class="pre">.postN</span></code> release.</p>
+<p>Between releases, <code class="docutils literal notranslate"><span class="pre">__version__</span></code> on <code class="docutils literal notranslate"><span class="pre">master</span></code> carries a <code class="docutils literal notranslate"><span class="pre">+dev</span></code> local-version suffix (or a <code class="docutils literal notranslate"><span class="pre">-dev</span></code> pre-release suffix for the next planned release); the <code class="docutils literal notranslate"><span class="pre">+dev</span></code> suffix must never appear in a PyPI release. The current version is available as <code class="docutils literal notranslate"><span class="pre">bibdeskparser.__version__</span></code>.</p>
+<p>Make a release with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">make release</span>
+</pre></div>
+</div>
+<p>This applies the versioning conventions automatically. Releases are tagged in git with a <code class="docutils literal notranslate"><span class="pre">v</span></code> prefix (e.g. <code class="docutils literal notranslate"><span class="pre">v1.0.0</span></code>), making them available at <a class="reference external" href="https://github.com/goerz/bibdeskparser/releases">https://github.com/goerz/bibdeskparser/releases</a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="apidocs/bibdeskparser/bibdeskparser.html" class="btn btn-neutral float-left" title="Package API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="authors.html" class="btn btn-neutral float-right" title="Credits" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Michael Goerz.
+      <span class="lastupdated">Last updated on Jul 24, 2026.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
