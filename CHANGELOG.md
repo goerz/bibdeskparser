@@ -3,6 +3,8 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [v0.5.0] - 2026-07-23
 
 * Changed: the `import` command now reads its source file from a `--file FILE` option instead of a positional `FILE` argument, so a positional argument ending in `.bib` always names the library, like every other command. This removes the collision where, with a `default_bib_file` configured, `bibdeskparser import from_paper.bib` silently claimed the snippet as the library and then failed for lack of a source. Migration: `bibdeskparser import library.bib entries.bib` becomes `bibdeskparser import library.bib --file entries.bib`, and `bibdeskparser import from_paper.bib` (into the default library) becomes `bibdeskparser import --file from_paper.bib`. `Library.import_bibtex`, which takes the BibTeX text directly, is unaffected. [[#46], [#51]]
