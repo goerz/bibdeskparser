@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.5.0] - 2026-07-23
 
 * Changed: the `import` command now reads its source file from a `--file FILE` option instead of a positional `FILE` argument, so a positional argument ending in `.bib` always names the library, like every other command. This removes the collision where, with a `default_bib_file` configured, `bibdeskparser import from_paper.bib` silently claimed the snippet as the library and then failed for lack of a source. Migration: `bibdeskparser import library.bib entries.bib` becomes `bibdeskparser import library.bib --file entries.bib`, and `bibdeskparser import from_paper.bib` (into the default library) becomes `bibdeskparser import --file from_paper.bib`. `Library.import_bibtex`, which takes the BibTeX text directly, is unaffected. [[#46], [#51]]
 * Added: a read-only `config` CLI command that dumps the *resolved* configuration -- the built-in defaults merged with whatever a discovered `bibdeskparser.toml` sets. Unlike `config_path` (which reports only the file in effect, and fails when none is found), `config` shows the effective value of every setting, including the ones a file omits (`auto_key.clean`, `preprint_export`, the built-in `preprint_archives`, ...) and the built-in defaults in full when no file exists. The default text output is TOML-shaped, mirroring what a `bibdeskparser.toml` would contain to reproduce the resolved tunable state (an unset value, or an `auto_key`/`auto_file` table without a `format_spec`, is omitted); `--no-types` restricts the dump to those user-tunable settings, while the default additionally lists the resolved entry-type/field data model (`documented_types`, `recognized_entry_types`, `universal_fields`, `known_fields`), and `--json` prints the complete state as an object with unset values as `null`. The `BIBFILE` argument is optional -- it only fixes the config-discovery directory, defaulting to the current directory -- so the command needs no `.bib` file and never fails for a missing configuration file. [[#45], [#50]]
@@ -120,7 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial release.
 
-[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.4.0..HEAD
+[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.5.0..HEAD
+[v0.5.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.5.0
 [v0.4.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.4.0
 [v0.3.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.3.0
 [v0.2.1]: https://github.com/goerz/bibdeskparser/releases/tag/v0.2.1
