@@ -1839,7 +1839,7 @@ def eval_format_spec(bibfile, citekey, format_spec, filename, as_json):
         "bibdeskparser create new.bib",
         "bibdeskparser create   # the configured default_bib_file",
         "bibdeskparser create new.bib && \\\n"
-        "    bibdeskparser import new.bib entries.bib",
+        "    bibdeskparser import new.bib --file entries.bib",
     ),
 )
 @click.pass_obj
@@ -2628,18 +2628,20 @@ def _fix_uppercase_option(help_suffix, default=False):
     cls=_BibCommand,
     short_help="Import entries from a BibTeX snippet.",
     epilog=_examples(
-        "bibdeskparser import library.bib entries.bib",
+        "bibdeskparser import library.bib --file entries.bib",
         "pbpaste | bibdeskparser import --stdin",
         "bibdeskparser import --url " "https://example.com/refs.bib",
         "bibdeskparser export Key1 \\\n"
         "    | bibdeskparser import other.bib --stdin",
     ),
 )
-@click.argument(
+@click.option(
+    "--file",
     "source",
-    metavar="[FILE]",
-    required=False,
+    metavar="FILE",
+    default=None,
     type=click.Path(exists=True, dir_okay=False),
+    help="Read the BibTeX text from FILE.",
 )
 @_stdin_option
 @click.option(
@@ -2669,10 +2671,10 @@ def _fix_uppercase_option(help_suffix, default=False):
 def import_bibtex(
     bibfile, source, use_stdin, url, keep_keys, keep_journals, fix_uppercase
 ):
-    """Import the entries of a BibTeX snippet -- read from FILE, from
-    standard input (--stdin), or from a URL (--url); exactly one of
-    the three -- into the library, and print their citation keys
-    (modifies the `.bib` file in place).
+    """Import the entries of a BibTeX snippet -- read from a file
+    (--file), from standard input (--stdin), or from a URL (--url);
+    exactly one of the three -- into the library, and print their
+    citation keys (modifies the `.bib` file in place).
 
     Every entry is sanitized: the journal becomes an `@string` macro
     reference (an existing macro matched by value, one configured in
@@ -2700,13 +2702,11 @@ def import_bibtex(
     about the snippet is not acceptable, all problems are reported
     and nothing is imported.
 
-    Note that the library itself is always the *first* argument
-    ending in `.bib`: importing from a `.bib` file requires naming
-    the library explicitly (`import library.bib entries.bib`), even
-    with a configured `default_bib_file`.
+    A positional argument ending in `.bib` always names the library,
+    like every other command; give the import source with `--file`.
     """
     if (source is not None) + use_stdin + (url is not None) != 1:
-        raise click.UsageError("give exactly one of FILE, --stdin, or --url")
+        raise click.UsageError("give exactly one of --file, --stdin, or --url")
     if use_stdin:
         text = sys.stdin.read()
         if not text.strip():

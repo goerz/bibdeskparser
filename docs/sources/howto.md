@@ -906,7 +906,7 @@ On the command line, `import` reads from a file, stdin, or a URL
 
 <!-- notest -->
 ```console
-$ bibdeskparser import tests/Refs/refs.bib entries.bib
+$ bibdeskparser import tests/Refs/refs.bib --file entries.bib
 $ pbpaste | bibdeskparser import tests/Refs/refs.bib --stdin
 $ bibdeskparser import tests/Refs/refs.bib --url https://example.com/refs.bib
 ```
