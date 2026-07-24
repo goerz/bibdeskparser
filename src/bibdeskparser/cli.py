@@ -51,6 +51,7 @@ __private__ = [
     "timestamp",
     "path",
     "config_path",
+    "dump_config",
     "render",
     "export",
     "eval_format_spec",
@@ -222,6 +223,24 @@ class _NewBibCommand(_BibCommand):
     bibfile_must_exist = False
 
 
+class _ConfigCommand(_BibCommand):
+    """A `_BibCommand` whose BIBFILE is optional and need not exist.
+
+    Unlike a plain `_BibCommand`, a missing BIBFILE is not filled in
+    from `default_bib_file`: the argument only fixes the
+    config-discovery directory, which defaults to the current
+    directory when omitted (`config` command).
+    """
+
+    def invoke(self, ctx):
+        # Skip `_BibCommand.invoke`'s default-bibfile lookup and
+        # must-exist check, but keep the API-error wrapping.
+        try:
+            return click.Command.invoke(self, ctx)
+        except _API_ERRORS as exc:
+            raise click.ClickException(_error_message(exc)) from exc
+
+
 _json_option = click.option(
     "--json",
     "as_json",
@@ -391,7 +410,7 @@ def main(ctx):
     named by the `default_bib_file` key of a discovered
     `bibdeskparser.toml` is used instead.
 
-    Read-only commands (`author`, `check`, `config_path`,
+    Read-only commands (`author`, `check`, `config`, `config_path`,
     `duplicate_keys`, `editor`, `eval_format_spec`, `fields`, `files`,
     `get_field`, `groups`, `keys`, `keywords`, `path`, `search`,
     `show`, `strings`, `timestamp`, `urls`) print to stdout and accept
@@ -1541,6 +1560,59 @@ def config_path(bibfile, as_json):
         )
     data = str(found.resolve())
     _emit(data, as_json, data)
+
+
+@main.command(
+    name="config",
+    cls=_ConfigCommand,
+    short_help="Print the resolved (defaults + file) configuration.",
+    epilog=_examples(
+        "bibdeskparser config",
+        "bibdeskparser config --no-types",
+        "bibdeskparser config --json",
+    ),
+)
+@click.option(
+    "--types/--no-types",
+    "include_types",
+    default=True,
+    show_default=True,
+    help=(
+        "Include the resolved entry-type/field data model "
+        "(documented_types, recognized_entry_types, universal_fields, "
+        "known_fields) in the dump, or omit it (--no-types) to show "
+        "only the user-tunable settings."
+    ),
+)
+@_json_option
+@click.pass_obj
+def dump_config(bibfile, include_types, as_json):
+    """Print the resolved configuration: the built-in defaults merged
+    with whatever a discovered `bibdeskparser.toml` sets.
+
+    Unlike `config_path`, which reports only the file in effect, this
+    shows the effective value of every setting, including the ones the
+    file omits (and everything, when no configuration file is found at
+    all). The default text output is TOML-shaped, mirroring what a
+    `bibdeskparser.toml` would contain to reproduce the resolved
+    tunable state; with --json, the complete state as an object (unset
+    values as `null`).
+
+    A BIBFILE fixes the config-discovery directory, checked before
+    `$BIBDESKPARSER_CONFIG` and the XDG location
+    (`~/.config/bibdeskparser/bibdeskparser.toml`); without one,
+    discovery starts in the current directory. This command needs no
+    `.bib` file and never fails for a missing configuration file.
+    Read-only."""
+    bib_dir = None if bibfile is None else Path(bibfile).resolve().parent
+    config.active.load(bib_dir=bib_dir)
+    if as_json:
+        data = config._config_dict(config.active, include_types=include_types)
+        click.echo(json.dumps(data, indent=2, ensure_ascii=False))
+    else:
+        _echo_block(
+            config._config_toml(config.active, include_types=include_types)
+        )
 
 
 @main.command(

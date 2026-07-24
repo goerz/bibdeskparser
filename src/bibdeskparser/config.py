@@ -29,6 +29,8 @@ import os
 import warnings
 from pathlib import Path
 
+import tomli_w
+
 from . import entrytypes, specifiers
 from .identifiers import _BUILTIN_ARCHIVES, _Archive
 from .macros import is_valid_macro_name, normalize_macro_name
@@ -800,6 +802,106 @@ def _parse_protected_words(raw):
     ):
         raise ValueError("protected_words must be a list of non-empty strings")
     return [word.strip() for word in value]
+
+
+# -- serialization (the `config` CLI command) ------------------------- #
+
+
+def _settings_dict(cfg):
+    """The user-tunable settings of `cfg` as a JSON-serializable dict.
+
+    Complete: a `None` value (an unset `default_bib_file` or
+    `format_spec`) is kept as `None`. `Path`s become strings, the
+    nested settings objects become tables, `preprint_archives` maps
+    each archive's canonical name to its URL template, and a
+    single-value `journal_macros` entry collapses to a bare string."""
+    return {
+        "verify_types": cfg.verify_types,
+        "verify_fields": cfg.verify_fields,
+        "default_bib_file": (
+            None if cfg.default_bib_file is None else str(cfg.default_bib_file)
+        ),
+        "preprint_export": cfg.preprint_export,
+        "protected_words": list(cfg.protected_words),
+        "auto_key": {
+            "format_spec": cfg.auto_key.format_spec,
+            "lowercase": cfg.auto_key.lowercase,
+            "clean": cfg.auto_key.clean,
+        },
+        "auto_file": {
+            "format_spec": cfg.auto_file.format_spec,
+            "location": str(cfg.auto_file.location),
+            "lowercase": cfg.auto_file.lowercase,
+            "clean": cfg.auto_file.clean,
+            "file_automatically": cfg.auto_file.file_automatically,
+        },
+        "add": {
+            "fix_uppercase": cfg.add.fix_uppercase,
+            "add_abstract": cfg.add.add_abstract,
+            "add_preprint": cfg.add.add_preprint,
+        },
+        "add_abstract": {"min_confidence": cfg.add_abstract.min_confidence},
+        "known_missing": dict(cfg.known_missing),
+        "initials": {
+            field: dict(mapping) for field, mapping in cfg.initials.items()
+        },
+        "journal_macros": {
+            name: (names[0] if len(names) == 1 else list(names))
+            for name, names in cfg.journal_macros.items()
+        },
+        "preprint_archives": {
+            archive.name: archive.url
+            for archive in cfg.preprint_archives.values()
+        },
+    }
+
+
+def _types_dict(cfg):
+    """The resolved entry-type/field data model of `cfg` as a
+    JSON-serializable dict (the sets sorted for a stable order)."""
+    return {
+        "documented_types": {
+            entry_type: {
+                "required": list(spec["required"]),
+                "optional": list(spec["optional"]),
+            }
+            for entry_type, spec in cfg.documented_types.items()
+        },
+        "recognized_entry_types": sorted(cfg.recognized_entry_types),
+        "universal_fields": sorted(cfg.universal_fields),
+        "known_fields": sorted(cfg.known_fields),
+    }
+
+
+def _config_dict(cfg, *, include_types):
+    """The resolved configuration `cfg` as a complete JSON-serializable
+    dict: the user-tunable settings, plus (when `include_types`) the
+    entry-type/field data model. `None` values are kept, becoming
+    `null` when dumped as JSON."""
+    data = _settings_dict(cfg)
+    if include_types:
+        data.update(_types_dict(cfg))
+    return data
+
+
+def _config_toml(cfg, *, include_types):
+    """The resolved configuration `cfg` as a TOML string.
+
+    Shaped like a `bibdeskparser.toml` that reproduces the same
+    resolved tunable state, so keys TOML cannot express (`None`) or
+    that would be inert (an `[auto_key]`/`[auto_file]` table without a
+    `format_spec`, which the parser rejects) are omitted. When
+    `include_types`, the resolved entry-type/field data model is
+    appended (informational, re-parsed idempotently)."""
+    data = _settings_dict(cfg)
+    if data["default_bib_file"] is None:
+        del data["default_bib_file"]
+    for table in ("auto_key", "auto_file"):
+        if data[table]["format_spec"] is None:
+            del data[table]
+    if include_types:
+        data.update(_types_dict(cfg))
+    return tomli_w.dumps(data)
 
 
 # -- the active configuration ----------------------------------------- #

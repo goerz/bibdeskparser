@@ -856,3 +856,118 @@ def test_known_missing_validation(tmp_path, monkeypatch):
         match="maps both 'eprint' and 'abstract' to group 'No Data'",
     ):
         config.active.load(bib_dir=tmp_path)
+
+
+# -- serialization (backing the `config` CLI command) ----------------- #
+
+
+def test_config_dict_defaults():
+    """`_config_dict` of the built-in defaults: complete, `None` kept."""
+    data = config._config_dict(config.active, include_types=False)
+    assert data["verify_types"] is True
+    assert data["verify_fields"] is True
+    assert data["default_bib_file"] is None
+    assert data["preprint_export"] == "unpublished"
+    assert data["protected_words"] == []
+    # auto_key/auto_file are always present in the dict, unset spec kept:
+    assert data["auto_key"]["format_spec"] is None
+    assert data["auto_key"]["clean"] == "tex"
+    assert data["auto_file"]["format_spec"] is None
+    # preprint_archives are keyed by the archive's canonical name:
+    assert data["preprint_archives"]["arXiv"] == "https://arxiv.org/abs/{id}"
+    assert data["preprint_archives"]["ChemRxiv"] == ""
+    # the data model is gated behind include_types:
+    assert "documented_types" not in data
+    assert "known_fields" not in data
+
+
+def test_config_dict_include_types():
+    """`include_types` adds the resolved data model (sets sorted)."""
+    data = config._config_dict(config.active, include_types=True)
+    assert set(data["documented_types"]["article"]["required"]) >= {
+        "author",
+        "title",
+    }
+    for key in (
+        "recognized_entry_types",
+        "universal_fields",
+        "known_fields",
+    ):
+        assert data[key] == sorted(data[key])
+        assert "article" in data["recognized_entry_types"]
+
+
+def test_config_toml_defaults_valid_and_pruned():
+    """The default TOML is parseable and omits what TOML can't express:
+    an unset `default_bib_file`, and the inert `[auto_key]`/`[auto_file]`
+    tables (which have no `format_spec` by default)."""
+    text = config._config_toml(config.active, include_types=False)
+    parsed = config.tomllib.loads(text)
+    assert "default_bib_file" not in parsed
+    assert "auto_key" not in parsed
+    assert "auto_file" not in parsed
+    assert parsed["verify_types"] is True
+    assert parsed["preprint_archives"]["arXiv"].endswith("{id}")
+
+
+def test_config_serialization_reflects_loaded_settings(tmp_path):
+    """Loading a config file is reflected in the serialized forms."""
+    _write(
+        tmp_path,
+        '[auto_key]\nformat_spec = "%a1%Y%u0"\n\n'
+        '[journal_macros]\nprl = "Phys. Rev. Lett."\n'
+        'jcp = ["J. Chem. Phys.", "The Journal of Chemical Physics"]\n\n'
+        '[preprint_archives]\nZenodo = "https://zenodo.org/records/{id}"\n\n'
+        '[types.dataset]\nrequired = ["author", "title"]\n'
+        'optional = ["doi"]\n',
+    )
+    config.active.load(bib_dir=tmp_path)
+    data = config._config_dict(config.active, include_types=True)
+    assert data["auto_key"]["format_spec"] == "%a1%Y%u0"
+    # a single-value journal_macros entry collapses to a bare string,
+    # a multi-value one stays a list:
+    assert data["journal_macros"]["prl"] == "Phys. Rev. Lett."
+    assert data["journal_macros"]["jcp"] == [
+        "J. Chem. Phys.",
+        "The Journal of Chemical Physics",
+    ]
+    # a configured archive extends the built-ins:
+    assert data["preprint_archives"]["Zenodo"].endswith("{id}")
+    assert "arXiv" in data["preprint_archives"]
+    # a custom type appears in the resolved data model:
+    assert data["documented_types"]["dataset"]["required"] == [
+        "author",
+        "title",
+    ]
+    assert "dataset" in data["recognized_entry_types"]
+    # the (now non-None) auto_key table survives into the TOML:
+    text = config._config_toml(config.active, include_types=False)
+    assert 'format_spec = "%a1%Y%u0"' in text
+
+
+def test_config_toml_round_trips(tmp_path):
+    """The TOML dump re-parses into the same resolved tunable state."""
+    _write(
+        tmp_path,
+        'default_bib_file = "refs.bib"\n'
+        'preprint_export = "article"\n'
+        'protected_words = ["NMR"]\n\n'
+        '[auto_key]\nformat_spec = "%a1%Y%u0"\nlowercase = true\n\n'
+        '[auto_file]\nformat_spec = "%f{Cite Key}%u0%e"\n\n'
+        '[known_missing]\neprint = "No Eprint"\n',
+    )
+    config.active.load(bib_dir=tmp_path)
+    text = config._config_toml(config.active, include_types=False)
+    # Write the dump back out as the sole config and reload it.
+    reloaded_dir = tmp_path / "reloaded"
+    reloaded_dir.mkdir()
+    _write(reloaded_dir, text)
+    reloaded = config.Config()
+    reloaded.load(bib_dir=reloaded_dir)
+    assert reloaded.preprint_export == "article"
+    assert reloaded.protected_words == ["NMR"]
+    assert reloaded.auto_key.format_spec == "%a1%Y%u0"
+    assert reloaded.auto_key.lowercase is True
+    assert reloaded.auto_file.format_spec == "%f{Cite Key}%u0%e"
+    assert reloaded.known_missing == {"eprint": "No Eprint"}
+    assert str(reloaded.default_bib_file).endswith("refs.bib")
