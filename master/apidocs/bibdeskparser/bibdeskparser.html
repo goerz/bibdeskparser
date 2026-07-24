@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Package API &mdash; BibDeskParser 0.5.0 documentation</title>
+  <title>Package API &mdash; BibDeskParser 0.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="../../_static/documentation_options.js?v=8fa8b3e9"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.5.0
+    v0.6.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -862,9 +862,9 @@ renamed; where a bookmark can’t be created, the file is
 attached by path only, with a <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>.</p>
 <p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if the file is already attached to the
 entry, if auto-filing cannot generate a name (no format
-configured, or a required field is missing), or if this
-library has no file path yet (a from-scratch library must be
-saved first, so that relative paths are well-defined).</p>
+configured), or if this library has no file path yet (a
+from-scratch library must be saved first, so that relative
+paths are well-defined).</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1078,9 +1078,10 @@ evaluates to itself (the same idempotency as the key context),
 so the attachments that do not follow a given format are
 exactly those where the result differs from the current path.</p>
 <p>Raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> if <code class="docutils literal notranslate"><span class="pre">key</span></code> is not present, and <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>
-if no format is available for the entry’s type, if the entry
-lacks a field the format requires, or (in the key context) if
-the resulting key would equal the entry’s own <code class="docutils literal notranslate"><span class="pre">crossref</span></code> value.</p>
+if no format is available for the entry’s type. Evaluation
+never refuses a result: a generated key that <a class="reference internal" href="#bibdeskparser.Library.rekey" title="bibdeskparser.Library.rekey"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rekey()</span></code></a>
+would decline to apply (one equal to the entry’s own
+<code class="docutils literal notranslate"><span class="pre">crossref</span></code> value) is still returned.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1424,13 +1425,14 @@ names (with <code class="docutils literal notranslate"><span class="pre">&quot;&
 own type selects the format. A key that already matches the
 format is kept as is, so regenerating is idempotent; a
 <code class="docutils literal notranslate"><span class="pre">%u</span></code>/<code class="docutils literal notranslate"><span class="pre">%U</span></code>/<code class="docutils literal notranslate"><span class="pre">%n</span></code> specifier in the format resolves collisions
-with the other entries in the library.</p>
+with the other entries in the library. A field the entry does
+not have renders as empty, so an entry lacking a field the
+format references just gets a shorter key.</p>
 <p>Raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> if <code class="docutils literal notranslate"><span class="pre">old_key</span></code> is not present, and
 <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if <code class="docutils literal notranslate"><span class="pre">new_key</span></code> is already used by a different
 entry, if both <code class="docutils literal notranslate"><span class="pre">new_key</span></code> and <code class="docutils literal notranslate"><span class="pre">format_spec</span></code> are given, if no
-auto-key format is available for the entry’s type or the entry
-lacks a field the format requires, or if the generated key
-would equal the entry’s own <code class="docutils literal notranslate"><span class="pre">crossref</span></code> value.</p>
+auto-key format is available for the entry’s type, or if the
+generated key would equal the entry’s own <code class="docutils literal notranslate"><span class="pre">crossref</span></code> value.</p>
 <p>To preview the key a format would generate, without renaming
 anything, use <a class="reference internal" href="#bibdeskparser.Library.eval_format_spec" title="bibdeskparser.Library.eval_format_spec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">eval_format_spec()</span></code></a>.</p>
 </dd></dl>
@@ -1687,7 +1689,9 @@ does, plus more – and are all case-insensitive:</p>
 substring of a raw or decoded value.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;folded&quot;</span></code>: additionally ignores accents, including their
 transliterations: <code class="docutils literal notranslate"><span class="pre">&quot;Schrodinger&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;Schroedinger&quot;</span></code> both
-find <code class="docutils literal notranslate"><span class="pre">&quot;Schrödinger&quot;</span></code>.</p></li>
+find <code class="docutils literal notranslate"><span class="pre">&quot;Schrödinger&quot;</span></code>. Any letter is matched by its plain
+ASCII spelling, so <code class="docutils literal notranslate"><span class="pre">&quot;Molmer&quot;</span></code> finds <code class="docutils literal notranslate"><span class="pre">&quot;Mølmer&quot;</span></code> and
+<code class="docutils literal notranslate"><span class="pre">&quot;Kilic&quot;</span></code> finds <code class="docutils literal notranslate"><span class="pre">&quot;Kılıç&quot;</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;words&quot;</span></code> (the default): additionally matches when most of
 the query’s words occur in a value, in any order (e.g. a
 title search from a partially remembered phrase).</p></li>
@@ -1895,7 +1899,7 @@ of the stored values (<code class="docutils literal notranslate"><span class="pr
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 24, 2026.
+      <span class="lastupdated">Last updated on Jul 27, 2026.
       </span></p>
   </div>
 

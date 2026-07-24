@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BibDesk’s .bib Format &mdash; BibDeskParser 0.5.0 documentation</title>
+  <title>BibDesk’s .bib Format &mdash; BibDeskParser 0.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="_static/documentation_options.js?v=8fa8b3e9"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.5.0
+    v0.6.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -366,7 +366,7 @@ value’s shape – wrap the value in
 <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.MacroString" title="bibdeskparser.MacroString"><code class="xref py py-class docutils literal notranslate"><span class="pre">MacroString</span></code></a> instead, the mirror image of
 <code class="docutils literal notranslate"><span class="pre">ValueString</span></code>.</p>
 <section id="default-macros">
-<h3>Default macros<a class="headerlink" href="#default-macros" title="Link to this heading"></a></h3>
+<span id="bibdesk-default-macros"></span><h3>Default macros<a class="headerlink" href="#default-macros" title="Link to this heading"></a></h3>
 <p>BibTeX itself has no built-in macros, but the standard <code class="docutils literal notranslate"><span class="pre">.bst</span></code> style
 files (<code class="docutils literal notranslate"><span class="pre">plain.bst</span></code> etc.) all define the twelve month macros <code class="docutils literal notranslate"><span class="pre">jan</span></code>
 … <code class="docutils literal notranslate"><span class="pre">dec</span></code> (“January” … “December”, or the abbreviated names in the
@@ -386,6 +386,14 @@ references: <code class="docutils literal notranslate"><span class="pre">month</
 overrides the built-in month name and round-trips like any other. A
 bare reference to a <code class="docutils literal notranslate"><span class="pre">.bst</span></code> journal abbreviation, by contrast, is
 undefined unless the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file defines it.</p>
+<p>These twelve are the canonical way to write a <code class="docutils literal notranslate"><span class="pre">month</span></code> field
+(<code class="docutils literal notranslate"><span class="pre">btxdoc.tex</span></code>: “You should use the standard three-letter
+abbreviation”). Writing the month out as literal text – <code class="docutils literal notranslate"><span class="pre">month</span> <span class="pre">=</span> <span class="pre">{June}</span></code>, or <code class="docutils literal notranslate"><span class="pre">month</span> <span class="pre">=</span> <span class="pre">{06}</span></code> – freezes one rendering into the database
+and takes the choice away from the style, which is free to typeset
+<code class="docutils literal notranslate"><span class="pre">jun</span></code> as <code class="docutils literal notranslate"><span class="pre">June</span></code>, <code class="docutils literal notranslate"><span class="pre">Jun.</span></code>, <code class="docutils literal notranslate"><span class="pre">Juni</span></code>, or <code class="docutils literal notranslate"><span class="pre">6</span></code>. The
+<a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span></code> command</span></a> reports a literal <code class="docutils literal notranslate"><span class="pre">month</span></code>, and a bare
+reference to a macro outside the twelve, for the same reason it
+reports a literal <code class="docutils literal notranslate"><span class="pre">journal</span></code> value.</p>
 </section>
 </section>
 <section id="bibdesk-static-groups">
@@ -686,7 +694,7 @@ noisy diffs or clobbering data BibDesk would have preserved.</p>
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 24, 2026.
+      <span class="lastupdated">Last updated on Jul 27, 2026.
       </span></p>
   </div>
 

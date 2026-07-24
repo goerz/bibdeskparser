@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.macros &mdash; BibDeskParser 0.5.0 documentation</title>
+  <title>bibdeskparser.macros &mdash; BibDeskParser 0.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="../../_static/documentation_options.js?v=8fa8b3e9"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.5.0
+    v0.6.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -155,20 +155,15 @@
     <span class="s2">&quot;is_valid_macro_name&quot;</span><span class="p">,</span>
     <span class="s2">&quot;normalize_macro_name&quot;</span><span class="p">,</span>
     <span class="s2">&quot;STANDARD_MACROS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;STANDARD_MONTH_MACROS&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
-<span class="c1"># BibDesk&#39;s built-in &quot;standard&quot; macros: exactly the twelve BibTeX month</span>
-<span class="c1"># macros, and nothing else (`standardMacroDefinitions` in</span>
-<span class="c1"># `BDSKMacroResolver.m`). BibDesk maps them to the localized full month</span>
-<span class="c1"># names; we use the (deterministic) English names, which is also what</span>
-<span class="c1"># the standard BibTeX style `plain.bst` defines. These are a</span>
-<span class="c1"># lowest-priority *fallback* for resolving a bare reference, never part</span>
-<span class="c1"># of `Library.strings` and never written to the `.bib` file. A</span>
-<span class="c1"># `@string` definition of the same name is an ordinary macro -- it</span>
-<span class="c1"># overrides the fallback (as in BibTeX/BibDesk, where a `.bib`</span>
-<span class="c1"># `@string` beats a `.bst`/built-in definition) and round-trips through</span>
-<span class="c1"># `Library.strings` and save like any other macro.</span>
-<span class="n">STANDARD_MACROS</span> <span class="o">=</span> <span class="p">{</span>
+<span class="c1"># The twelve BibTeX month macros, the canonical way to write a `month`</span>
+<span class="c1"># field (`btxdoc.tex`: &quot;You should use the standard three-letter</span>
+<span class="c1"># abbreviation&quot;). BibDesk maps them to the localized full month names;</span>
+<span class="c1"># we use the (deterministic) English names, which is also what the</span>
+<span class="c1"># standard BibTeX style `plain.bst` defines.</span>
+<span class="n">STANDARD_MONTH_MACROS</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;jan&quot;</span><span class="p">:</span> <span class="s2">&quot;January&quot;</span><span class="p">,</span>
     <span class="s2">&quot;feb&quot;</span><span class="p">:</span> <span class="s2">&quot;February&quot;</span><span class="p">,</span>
     <span class="s2">&quot;mar&quot;</span><span class="p">:</span> <span class="s2">&quot;March&quot;</span><span class="p">,</span>
@@ -182,6 +177,18 @@
     <span class="s2">&quot;nov&quot;</span><span class="p">:</span> <span class="s2">&quot;November&quot;</span><span class="p">,</span>
     <span class="s2">&quot;dec&quot;</span><span class="p">:</span> <span class="s2">&quot;December&quot;</span><span class="p">,</span>
 <span class="p">}</span>
+
+<span class="c1"># BibDesk&#39;s built-in &quot;standard&quot; macros, i.e. the names that resolve</span>
+<span class="c1"># without a `@string` definition: exactly the twelve months and nothing</span>
+<span class="c1"># else (`standardMacroDefinitions` in `BDSKMacroResolver.m` builds the</span>
+<span class="c1"># table in a hardcoded twelve-iteration loop, with no way to extend it).</span>
+<span class="c1"># These are a lowest-priority *fallback* for resolving a bare</span>
+<span class="c1"># reference, never part of `Library.strings` and never written to the</span>
+<span class="c1"># `.bib` file. A `@string` definition of the same name is an ordinary</span>
+<span class="c1"># macro -- it overrides the fallback (as in BibTeX/BibDesk, where a</span>
+<span class="c1"># `.bib` `@string` beats a `.bst`/built-in definition) and round-trips</span>
+<span class="c1"># through `Library.strings` and save like any other macro.</span>
+<span class="n">STANDARD_MACROS</span> <span class="o">=</span> <span class="n">STANDARD_MONTH_MACROS</span>
 
 <span class="c1"># Characters BibDesk allows in a field/macro name. Built exactly as</span>
 <span class="c1"># `invalidCiteKeyCharSet` in `BDSKTypeManager.m` (which</span>
@@ -384,7 +391,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 24, 2026.
+      <span class="lastupdated">Last updated on Jul 27, 2026.
       </span></p>
   </div>
 

@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.library &mdash; BibDeskParser 0.5.0 documentation</title>
+  <title>bibdeskparser.library &mdash; BibDeskParser 0.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="../../_static/documentation_options.js?v=8fa8b3e9"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.5.0
+    v0.6.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -1599,14 +1599,15 @@
 <span class="sd">        own type selects the format. A key that already matches the</span>
 <span class="sd">        format is kept as is, so regenerating is idempotent; a</span>
 <span class="sd">        `%u`/`%U`/`%n` specifier in the format resolves collisions</span>
-<span class="sd">        with the other entries in the library.</span>
+<span class="sd">        with the other entries in the library. A field the entry does</span>
+<span class="sd">        not have renders as empty, so an entry lacking a field the</span>
+<span class="sd">        format references just gets a shorter key.</span>
 
 <span class="sd">        Raises `KeyError` if `old_key` is not present, and</span>
 <span class="sd">        `ValueError` if `new_key` is already used by a different</span>
 <span class="sd">        entry, if both `new_key` and `format_spec` are given, if no</span>
-<span class="sd">        auto-key format is available for the entry&#39;s type or the entry</span>
-<span class="sd">        lacks a field the format requires, or if the generated key</span>
-<span class="sd">        would equal the entry&#39;s own `crossref` value.</span>
+<span class="sd">        auto-key format is available for the entry&#39;s type, or if the</span>
+<span class="sd">        generated key would equal the entry&#39;s own `crossref` value.</span>
 
 <span class="sd">        To preview the key a format would generate, without renaming</span>
 <span class="sd">        anything, use {meth}`eval_format_spec`.</span>
@@ -1615,6 +1616,15 @@
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">old_key</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">new_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_key</span><span class="p">(</span><span class="n">old_key</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">)</span>
+            <span class="c1"># a generated key is never applied when it equals the</span>
+            <span class="c1"># entry&#39;s own crossref parent (BibDesk skips such entries</span>
+            <span class="c1"># when generating cite keys, `BibDocument_Actions.m`)</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">old_key</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">new_key</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;crossref&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;the generated key </span><span class="si">{</span><span class="n">new_key</span><span class="si">!r}</span><span class="s2"> for </span><span class="si">{</span><span class="n">old_key</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+                    <span class="s2">&quot;would equal the entry&#39;s own crossref&quot;</span>
+                <span class="p">)</span>
         <span class="k">elif</span> <span class="n">format_spec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;give either new_key or format_spec, not both&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_key</span> <span class="o">==</span> <span class="n">old_key</span><span class="p">:</span>
@@ -1672,9 +1682,10 @@
 <span class="sd">        exactly those where the result differs from the current path.</span>
 
 <span class="sd">        Raises `KeyError` if `key` is not present, and `ValueError`</span>
-<span class="sd">        if no format is available for the entry&#39;s type, if the entry</span>
-<span class="sd">        lacks a field the format requires, or (in the key context) if</span>
-<span class="sd">        the resulting key would equal the entry&#39;s own `crossref` value.</span>
+<span class="sd">        if no format is available for the entry&#39;s type. Evaluation</span>
+<span class="sd">        never refuses a result: a generated key that {meth}`rekey`</span>
+<span class="sd">        would decline to apply (one equal to the entry&#39;s own</span>
+<span class="sd">        `crossref` value) is still returned.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
@@ -1757,20 +1768,18 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a citation key for the entry at `key`, from</span>
 <span class="sd">        `format_spec` or (if that is `None`) the configured</span>
 <span class="sd">        `config.auto_key.format_spec`; backs {meth}`rekey` and</span>
-<span class="sd">        {meth}`eval_format_spec`.&quot;&quot;&quot;</span>
+<span class="sd">        {meth}`eval_format_spec`.</span>
+
+<span class="sd">        Pure evaluation (like BibDesk&#39;s `suggestedCiteKey`): any rule</span>
+<span class="sd">        about whether the generated key may be *applied* -- like the</span>
+<span class="sd">        crossref guard -- belongs to the caller that applies it</span>
+<span class="sd">        ({meth}`rekey`).&quot;&quot;&quot;</span>
         <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="n">format_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_format_spec</span><span class="p">(</span>
             <span class="n">format_spec</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">entry_type</span>
         <span class="p">)</span>
         <span class="n">fmt</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">compile_format</span><span class="p">(</span><span class="n">format_string</span><span class="p">)</span>
-        <span class="n">missing</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">missing_required_fields</span><span class="p">(</span><span class="n">fmt</span><span class="p">,</span> <span class="n">entry</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;cannot generate a citation key for </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">: the &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;format </span><span class="si">{</span><span class="n">format_string</span><span class="si">!r}</span><span class="s2"> requires the missing &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;field(s) </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-        <span class="n">new_key</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">render_format</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">render_format</span><span class="p">(</span>
             <span class="n">fmt</span><span class="p">,</span>
             <span class="n">entry</span><span class="p">,</span>
             <span class="n">strings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_all_strings</span><span class="p">(),</span>
@@ -1783,33 +1792,17 @@
                 <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
             <span class="p">),</span>
         <span class="p">)</span>
-        <span class="c1"># a key must never equal the entry&#39;s own crossref parent</span>
-        <span class="c1"># (BibDesk skips generation for such entries)</span>
-        <span class="k">if</span> <span class="n">new_key</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;crossref&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;the generated key </span><span class="si">{</span><span class="n">new_key</span><span class="si">!r}</span><span class="s2"> for </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> would &quot;</span>
-                <span class="s2">&quot;equal the entry&#39;s own crossref&quot;</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">new_key</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_compile_file_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve and compile a file-name `format_spec` (or, if it is</span>
 <span class="sd">        `None`, the configured `config.auto_file.format_spec`) for entry</span>
-<span class="sd">        `key`, checking that the entry has every field the format</span>
-<span class="sd">        requires. Returns the `(entry, fmt)` pair; backs</span>
+<span class="sd">        `key`. Returns the `(entry, fmt)` pair; backs</span>
 <span class="sd">        {meth}`_generate_filename` and {meth}`eval_format_spec`.&quot;&quot;&quot;</span>
         <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="n">format_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_format_spec</span><span class="p">(</span>
             <span class="n">format_spec</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">entry_type</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;file&quot;</span>
         <span class="p">)</span>
         <span class="n">fmt</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">compile_format</span><span class="p">(</span><span class="n">format_string</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;file&quot;</span><span class="p">)</span>
-        <span class="n">missing</span> <span class="o">=</span> <span class="n">specifiers</span><span class="o">.</span><span class="n">missing_required_fields</span><span class="p">(</span><span class="n">fmt</span><span class="p">,</span> <span class="n">entry</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;cannot generate a file name for </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">: the &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;format </span><span class="si">{</span><span class="n">format_string</span><span class="si">!r}</span><span class="s2"> requires the missing &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;field(s) </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
         <span class="k">return</span> <span class="n">entry</span><span class="p">,</span> <span class="n">fmt</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_auto_file_location_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location</span><span class="p">):</span>
@@ -2043,9 +2036,9 @@
 
 <span class="sd">        Raises `ValueError` if the file is already attached to the</span>
 <span class="sd">        entry, if auto-filing cannot generate a name (no format</span>
-<span class="sd">        configured, or a required field is missing), or if this</span>
-<span class="sd">        library has no file path yet (a from-scratch library must be</span>
-<span class="sd">        saved first, so that relative paths are well-defined).</span>
+<span class="sd">        configured), or if this library has no file path yet (a</span>
+<span class="sd">        from-scratch library must be saved first, so that relative</span>
+<span class="sd">        paths are well-defined).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
         <span class="n">base_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span>
@@ -2562,7 +2555,9 @@
 <span class="sd">          substring of a raw or decoded value.</span>
 <span class="sd">        * `&quot;folded&quot;`: additionally ignores accents, including their</span>
 <span class="sd">          transliterations: `&quot;Schrodinger&quot;` and `&quot;Schroedinger&quot;` both</span>
-<span class="sd">          find `&quot;Schrödinger&quot;`.</span>
+<span class="sd">          find `&quot;Schrödinger&quot;`. Any letter is matched by its plain</span>
+<span class="sd">          ASCII spelling, so `&quot;Molmer&quot;` finds `&quot;Mølmer&quot;` and</span>
+<span class="sd">          `&quot;Kilic&quot;` finds `&quot;Kılıç&quot;`.</span>
 <span class="sd">        * `&quot;words&quot;` (the default): additionally matches when most of</span>
 <span class="sd">          the query&#39;s words occur in a value, in any order (e.g. a</span>
 <span class="sd">          title search from a partially remembered phrase).</span>
@@ -3373,7 +3368,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 24, 2026.
+      <span class="lastupdated">Last updated on Jul 27, 2026.
       </span></p>
   </div>
 

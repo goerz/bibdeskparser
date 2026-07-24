@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configuration &mdash; BibDeskParser 0.5.0 documentation</title>
+  <title>Configuration &mdash; BibDeskParser 0.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="_static/documentation_options.js?v=8fa8b3e9"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.5.0
+    v0.6.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -226,6 +226,11 @@ not appropriate for an entry’s type emits a <a class="reference external" href
 value is stored regardless). Set it to <code class="docutils literal notranslate"><span class="pre">false</span></code> to suppress those
 warnings entirely.</p></li>
 </ul>
+<p>Both flags govern what happens at <em>write</em> time, in Python. Neither
+affects <a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span></code></span></a>, whose entry-type and required-field
+audits always run: turning off a write-time complaint is not a reason
+for an explicitly requested gate to stay quiet about what is in the
+file.</p>
 <p>The active configuration is exposed as the <code class="docutils literal notranslate"><span class="pre">config</span></code> class attribute
 of <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library" title="bibdeskparser.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a> (equally readable from any library
 instance, as <code class="docutils literal notranslate"><span class="pre">bib.config</span></code>), so every setting can also be changed from
@@ -571,12 +576,15 @@ apply. Words that are already braced are left alone. The list is
 exposed as <code class="docutils literal notranslate"><span class="pre">Library.config.protected_words</span></code>.</p>
 </section>
 <section id="custom-and-extended-entry-types">
-<h2>Custom and extended entry types<a class="headerlink" href="#custom-and-extended-entry-types" title="Link to this heading"></a></h2>
+<span id="config-types"></span><h2>Custom and extended entry types<a class="headerlink" href="#custom-and-extended-entry-types" title="Link to this heading"></a></h2>
 <p>A <code class="docutils literal notranslate"><span class="pre">[types.NAME]</span></code> table defines the mandatory (<code class="docutils literal notranslate"><span class="pre">required</span></code>) and optional
 (<code class="docutils literal notranslate"><span class="pre">optional</span></code>) fields of an entry type, exactly like BibDesk’s
 per-type field templates. This both makes <code class="docutils literal notranslate"><span class="pre">NAME</span></code> a recognized entry
 type and, when <code class="docutils literal notranslate"><span class="pre">verify_fields</span></code> is on, determines which fields are
-considered appropriate for it.</p>
+considered appropriate for it. The <code class="docutils literal notranslate"><span class="pre">required</span></code> list is also what
+<a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span></code></span></a> audits every entry of that type against, so
+declaring a type here is how an entry of an otherwise unknown type
+passes the gate.</p>
 <p>For an entry type that is <strong>not</strong> already built in, the table simply
 defines it:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[types.dataset]</span>
@@ -734,7 +742,7 @@ proper nouns and acronyms brace-protected in every imported title.</p>
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 24, 2026.
+      <span class="lastupdated">Last updated on Jul 27, 2026.
       </span></p>
   </div>
 

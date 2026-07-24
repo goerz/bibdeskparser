@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bib Entry Types &mdash; BibDeskParser 0.5.0 documentation</title>
+  <title>Bib Entry Types &mdash; BibDeskParser 0.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="_static/documentation_options.js?v=8fa8b3e9"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.5.0
+    v0.6.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -173,11 +173,16 @@ for the per-type field lists reproduced below.</p>
 modified</em> in Python – <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a> construction or an
 <code class="docutils literal notranslate"><span class="pre">entry_type</span></code> assignment. An unrecognized entry type raises a
 <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a>. <strong>Loading a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file never validates</strong>, so a file
-using an unusual entry type still loads and round-trips unchanged.</p>
+using an unusual entry type still loads and round-trips unchanged. The
+<a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span></code></span></a> command is where such a file is examined: it
+reports every entry whose type is unrecognized, and every mandatory
+field an entry’s type lists that the entry does not have.</p>
 <p>Assigning a field that is not appropriate for the entry type emits a
 <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#UserWarning" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">UserWarning</span></code></a> (the value is still stored). A field is appropriate
 if it is one of the type’s mandatory or optional fields listed below, or
-one of the <a class="reference internal" href="#common-fields">fields common to all entry types</a>.</p>
+one of the <a class="reference internal" href="#common-fields">fields common to all entry types</a>. Nothing
+requires the mandatory fields to be <em>present</em> at write time; that is
+what <code class="docutils literal notranslate"><span class="pre">check</span></code> audits.</p>
 <p>The extended biblatex entry types and fields are also recognized
 (accepted without error), though only the types below are given field
 templates.</p>
@@ -510,7 +515,7 @@ than the plain <code class="docutils literal notranslate"><span class="pre">dict
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 24, 2026.
+      <span class="lastupdated">Last updated on Jul 27, 2026.
       </span></p>
   </div>
 

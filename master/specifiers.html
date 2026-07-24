@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Format Specifiers &mdash; BibDeskParser 0.5.0 documentation</title>
+  <title>Format Specifiers &mdash; BibDeskParser 0.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="_static/documentation_options.js?v=8fa8b3e9"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.5.0
+    v0.6.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -245,6 +245,15 @@ each.</p></li>
 <p>A bare <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference as a field value (e.g.
 <code class="docutils literal notranslate"><span class="pre">journal</span> <span class="pre">=</span> <span class="pre">pra</span></code>) is expanded using the library’s macro definitions
 before any specifier is applied.</p>
+<p>A field the entry does not have renders as empty, so a format may
+reference a field that only some entries carry; those entries get a
+correspondingly shorter result. Under <code class="docutils literal notranslate"><span class="pre">%a1%c{booktitle}%Y</span></code>, a
+conference paper keys as <code class="docutils literal notranslate"><span class="pre">GoerzPECC2019</span></code>, an article as:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{booktitle}</span><span class="s2">%Y&quot;</span><span class="p">)</span>
+<span class="go">&#39;Goerz2014&#39;</span>
+
+</pre></div>
+</div>
 <p>The subsections below are the complete reference for each group of
 specifiers. The examples evaluate a format against the
 <code class="docutils literal notranslate"><span class="pre">GoerzPRA2014</span></code> entry defined above (an <code class="docutils literal notranslate"><span class="pre">&#64;article</span></code> by Goerz and Koch).</p>
@@ -305,7 +314,7 @@ words are kept (they simply do not count toward the number).</p></li>
 </div>
 </section>
 <section id="date-y-y-m">
-<h3>Date: <code class="docutils literal notranslate"><span class="pre">%y</span></code>, <code class="docutils literal notranslate"><span class="pre">%Y</span></code>, <code class="docutils literal notranslate"><span class="pre">%m</span></code><a class="headerlink" href="#date-y-y-m" title="Link to this heading"></a></h3>
+<span id="specifiers-dates"></span><h3>Date: <code class="docutils literal notranslate"><span class="pre">%y</span></code>, <code class="docutils literal notranslate"><span class="pre">%Y</span></code>, <code class="docutils literal notranslate"><span class="pre">%m</span></code><a class="headerlink" href="#date-y-y-m" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">%y</span></code> / <code class="docutils literal notranslate"><span class="pre">%Y</span></code> – the year, two-digit / four-digit.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">%m</span></code> – the month as two digits, read from a number or an English
@@ -316,6 +325,60 @@ month name (<code class="docutils literal notranslate"><span class="pre">aug</sp
 
 </pre></div>
 </div>
+<p>All three read whatever the field happens to contain, and none of
+them reports a value it cannot make sense of. The rules are BibDesk’s,
+inherited rather than chosen, so <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> reproduces them
+instead of correcting them.</p>
+<p><code class="docutils literal notranslate"><span class="pre">%Y</span></code> (and with it <code class="docutils literal notranslate"><span class="pre">%y</span></code>) reads the <em>leading</em> digits of the <code class="docutils literal notranslate"><span class="pre">year</span></code>
+field, and yields <code class="docutils literal notranslate"><span class="pre">0</span></code> when there are none. That is the opposite end of
+the value from BibTeX itself, whose standard styles take the last four
+nonpunctuation characters. A <code class="docutils literal notranslate"><span class="pre">year</span></code> like <code class="docutils literal notranslate"><span class="pre">(about</span> <span class="pre">1984)</span></code> therefore
+typesets as 1984 in the bibliography and still keys as <code class="docutils literal notranslate"><span class="pre">0</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">&quot;Vague&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Vague&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;(about 1984)&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Vague&quot;</span><span class="p">,</span> <span class="s2">&quot;%Y&quot;</span><span class="p">)</span>
+<span class="go">&#39;0&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">&quot;Pressed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Pressed&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;in press&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Pressed&quot;</span><span class="p">,</span> <span class="s2">&quot;%Y&quot;</span><span class="p">)</span>
+<span class="go">&#39;0&#39;</span>
+
+</pre></div>
+</div>
+<p>Trailing text after the digits is harmless (<code class="docutils literal notranslate"><span class="pre">2008a</span></code> and <code class="docutils literal notranslate"><span class="pre">2001--</span></code> both
+give <code class="docutils literal notranslate"><span class="pre">2008</span></code> and <code class="docutils literal notranslate"><span class="pre">2001</span></code>), and a <code class="docutils literal notranslate"><span class="pre">year</span></code> whose value is exactly two
+characters long maps into 1950–2049:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">&quot;Short&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Short&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;08&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Short&quot;</span><span class="p">,</span> <span class="s2">&quot;%Y&quot;</span><span class="p">)</span>
+<span class="go">&#39;2008&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">&quot;Fifty&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Fifty&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;50&quot;</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Fifty&quot;</span><span class="p">,</span> <span class="s2">&quot;%Y&quot;</span><span class="p">)</span>
+<span class="go">&#39;1950&#39;</span>
+
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">%m</span></code> falls back to <code class="docutils literal notranslate"><span class="pre">01</span></code> for anything it cannot parse, so an
+out-of-range or unrecognized month silently becomes January rather
+than rendering empty. Full English month names and their standard
+abbreviations are both recognized (<code class="docutils literal notranslate"><span class="pre">June</span></code> as well as <code class="docutils literal notranslate"><span class="pre">jun</span></code>), but
+nothing else – <code class="docutils literal notranslate"><span class="pre">sep</span></code> is, <code class="docutils literal notranslate"><span class="pre">sept</span></code> is not – and a value whose leading
+letters are not a month name is unparseable even when it carries a
+usable number:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">month</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;jun&quot;</span><span class="p">,</span> <span class="s2">&quot;June&quot;</span><span class="p">,</span> <span class="s2">&quot;6&quot;</span><span class="p">,</span> <span class="s2">&quot;sept&quot;</span><span class="p">,</span> <span class="s2">&quot;13&quot;</span><span class="p">,</span> <span class="s2">&quot;8th&quot;</span><span class="p">]:</span>
+<span class="gp">... </span>    <span class="n">dates</span><span class="p">[</span><span class="s2">&quot;Month&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Month&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;month&quot;</span><span class="p">:</span> <span class="n">month</span><span class="p">})</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">month</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s1">&#39;Month&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;%m&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="go">  jun -&gt; 06</span>
+<span class="go"> June -&gt; 06</span>
+<span class="go">    6 -&gt; 06</span>
+<span class="go"> sept -&gt; 01</span>
+<span class="go">   13 -&gt; 01</span>
+<span class="go">  8th -&gt; 01</span>
+
+</pre></div>
+</div>
+<p>These edge cases are exactly what the <code class="docutils literal notranslate"><span class="pre">year</span></code> and <code class="docutils literal notranslate"><span class="pre">month</span></code> audits of
+<a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span></code></span></a> report. A bare four-digit <code class="docutils literal notranslate"><span class="pre">year</span></code> and a <code class="docutils literal notranslate"><span class="pre">month</span></code>
+written as one of the twelve
+<a class="reference internal" href="bibdesk_format.html#bibdesk-default-macros"><span class="std std-ref">standard month macros</span></a> avoid all of them.</p>
 </section>
 <section id="arbitrary-fields-f-w">
 <h3>Arbitrary fields: <code class="docutils literal notranslate"><span class="pre">%f</span></code>, <code class="docutils literal notranslate"><span class="pre">%w</span></code><a class="headerlink" href="#arbitrary-fields-f-w" title="Link to this heading"></a></h3>
@@ -544,10 +607,13 @@ before it enters the key:</p>
 configuration table: <code class="docutils literal notranslate"><span class="pre">&quot;tex&quot;</span></code> (the default) removes commands like
 <code class="docutils literal notranslate"><span class="pre">\emph{...}</span></code> and all braces, <code class="docutils literal notranslate"><span class="pre">&quot;braces&quot;</span></code> removes only braces, and
 <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> disables this step.</p></li>
-<li><p>Accents and ligatures are decomposed to plain ASCII letters
-(<code class="docutils literal notranslate"><span class="pre">ü</span></code> → <code class="docutils literal notranslate"><span class="pre">u</span></code>, <code class="docutils literal notranslate"><span class="pre">ø</span></code> → <code class="docutils literal notranslate"><span class="pre">o</span></code>, <code class="docutils literal notranslate"><span class="pre">æ</span></code> → <code class="docutils literal notranslate"><span class="pre">ae</span></code>, <code class="docutils literal notranslate"><span class="pre">ß</span></code> → <code class="docutils literal notranslate"><span class="pre">ss</span></code>, …).</p></li>
+<li><p>Every letter is reduced to its plain-ASCII spelling: <code class="docutils literal notranslate"><span class="pre">ü</span></code> → <code class="docutils literal notranslate"><span class="pre">u</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ø</span></code> → <code class="docutils literal notranslate"><span class="pre">o</span></code>, <code class="docutils literal notranslate"><span class="pre">ł</span></code> → <code class="docutils literal notranslate"><span class="pre">l</span></code>, <code class="docutils literal notranslate"><span class="pre">ı</span></code> → <code class="docutils literal notranslate"><span class="pre">i</span></code>, <code class="docutils literal notranslate"><span class="pre">æ</span></code> → <code class="docutils literal notranslate"><span class="pre">ae</span></code>, <code class="docutils literal notranslate"><span class="pre">ß</span></code> → <code class="docutils literal notranslate"><span class="pre">ss</span></code>.</p></li>
 <li><p>Whitespace becomes <code class="docutils literal notranslate"><span class="pre">-</span></code>, and any remaining character outside
-<code class="docutils literal notranslate"><span class="pre">a-z</span> <span class="pre">A-Z</span> <span class="pre">0-9</span> <span class="pre">-</span> <span class="pre">.</span> <span class="pre">/</span> <span class="pre">:</span> <span class="pre">;</span></code> is dropped.</p></li>
+<code class="docutils literal notranslate"><span class="pre">a-z</span> <span class="pre">A-Z</span> <span class="pre">0-9</span> <span class="pre">-</span> <span class="pre">.</span> <span class="pre">/</span> <span class="pre">:</span> <span class="pre">;</span></code> is dropped. Text in a script that has no
+ASCII spelling (Greek, Cyrillic, CJK) disappears here, so an entry
+whose author names are not written in the Latin alphabet needs a
+hand-written key.</p></li>
 </ol>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Mueller&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
 <span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
@@ -562,14 +628,29 @@ configuration table: <code class="docutils literal notranslate"><span class="pre
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Mueller&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y:%t&quot;</span><span class="p">)</span>
 <span class="go">&#39;MullerNJP2020:Its-a-Schrodinger-World&#39;</span>
 
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Kilic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">&quot;Kilic&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">{</span>
+<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Kılıç, Ayşe and Masłowski, Tomasz&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;New J. Phys.&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2024&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">},</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Kilic&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a%c{journal}</span><span class="s2">0%Y&quot;</span><span class="p">)</span>
+<span class="go">&#39;KilicMaslowskiNJP2024&#39;</span>
+
 </pre></div>
 </div>
-<p>Note that BibDesk simply strips accented characters of their accent
-(<code class="docutils literal notranslate"><span class="pre">Müller</span></code> → <code class="docutils literal notranslate"><span class="pre">Muller</span></code>); it does not apply German transliteration
-(<code class="docutils literal notranslate"><span class="pre">Mueller</span></code>). If you want <code class="docutils literal notranslate"><span class="pre">Mueller</span></code>, hard-code the intended key with a
-two-argument <code class="docutils literal notranslate"><span class="pre">rekey</span></code>. Literal text in the format itself is sanitized
-similarly (whitespace becomes <code class="docutils literal notranslate"><span class="pre">-</span></code>; characters invalid in a hand-typed
-key are dropped, which notably includes <code class="docutils literal notranslate"><span class="pre">(</span></code>, <code class="docutils literal notranslate"><span class="pre">)</span></code>, and <code class="docutils literal notranslate"><span class="pre">&#64;</span></code>).</p>
+<p>The result is a spelling approximation, not a transliteration: BibDesk
+strips accented characters of their accent (<code class="docutils literal notranslate"><span class="pre">Müller</span></code> → <code class="docutils literal notranslate"><span class="pre">Muller</span></code>) and
+does not apply German conventions (<code class="docutils literal notranslate"><span class="pre">Mueller</span></code>). If you want <code class="docutils literal notranslate"><span class="pre">Mueller</span></code>,
+hard-code the intended key with a two-argument <code class="docutils literal notranslate"><span class="pre">rekey</span></code>. Literal text
+in the format itself is sanitized similarly (whitespace becomes <code class="docutils literal notranslate"><span class="pre">-</span></code>;
+characters invalid in a hand-typed key are dropped, which notably
+includes <code class="docutils literal notranslate"><span class="pre">(</span></code>, <code class="docutils literal notranslate"><span class="pre">)</span></code>, and <code class="docutils literal notranslate"><span class="pre">&#64;</span></code>), except that it is not ASCII-folded, so a
+non-ASCII character written into a format is dropped rather than
+folded.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">lowercase</span></code> option of the <code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> table lowercases the whole
 generated key; a <code class="docutils literal notranslate"><span class="pre">%U</span></code> specifier then adds lowercase characters, like
 <code class="docutils literal notranslate"><span class="pre">%u</span></code>.</p>
@@ -590,7 +671,10 @@ name is interpreted relative to the configured auto-file <em>location</em>.</p>
 <li><p>A <strong>unique specifier</strong> (<code class="docutils literal notranslate"><span class="pre">%u</span></code>/<code class="docutils literal notranslate"><span class="pre">%U</span></code>/<code class="docutils literal notranslate"><span class="pre">%n</span></code>) is <strong>required</strong>, so that
 generated names can never collide. Uniqueness is checked against
 the <em>files on disk</em> at the target location, not against the
-library: a candidate name is taken if a file already exists there.</p></li>
+library: a candidate name is taken if a file already exists there.
+It also fills in for an entry that renders every other specifier
+empty, which would otherwise leave the bare extension (<code class="docutils literal notranslate"><span class="pre">.pdf</span></code>) as
+the name: such a file is filed as <code class="docutils literal notranslate"><span class="pre">a.pdf</span></code>, not as a hidden file.</p></li>
 <li><p>A literal <code class="docutils literal notranslate"><span class="pre">/</span></code> in the format is a <strong>directory separator</strong>: the file
 is filed into (newly created, as needed) subfolders of the
 location. A <code class="docutils literal notranslate"><span class="pre">/</span></code> inside a <em>field value</em> becomes <code class="docutils literal notranslate"><span class="pre">-</span></code> instead, so
@@ -688,6 +772,10 @@ format. Here, <code class="docutils literal notranslate"><span class="pre">forma
 to each entry type — a <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> extension.</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> exception mapping for <code class="docutils literal notranslate"><span class="pre">%c</span></code> is a <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code>
 extension; BibDesk always uses the plain acronym.</p></li>
+<li><p>BibDesk guarantees a non-empty result but not a non-empty <em>stem</em>, so
+an entry rendering every specifier of a file-name format empty is
+filed under the bare extension (<code class="docutils literal notranslate"><span class="pre">.pdf</span></code>, a hidden file). Here the
+unique specifier fills the stem instead (<code class="docutils literal notranslate"><span class="pre">a.pdf</span></code>).</p></li>
 </ul>
 </section>
 </section>
@@ -704,7 +792,7 @@ extension; BibDesk always uses the plain acronym.</p></li>
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 24, 2026.
+      <span class="lastupdated">Last updated on Jul 27, 2026.
       </span></p>
   </div>
 

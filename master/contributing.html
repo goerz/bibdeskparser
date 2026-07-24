@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contributing &mdash; BibDeskParser 0.5.0 documentation</title>
+  <title>Contributing &mdash; BibDeskParser 0.6.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=1dd76d02"></script>
+      <script src="_static/documentation_options.js?v=8fa8b3e9"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.5.0
+    v0.6.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -81,6 +81,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#pull-request-guidelines">Pull Request Guidelines</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#branching-model">Branching Model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#commit-messages">Commit Messages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pull-request-description">Pull Request Description</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#code-style">Code Style</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
@@ -207,8 +208,12 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
 </section>
 <section id="commit-messages">
 <h2>Commit Messages<a class="headerlink" href="#commit-messages" title="Link to this heading"></a></h2>
-<p>Write a short imperative subject line (50 chars or less) that completes the sentence “If applied, this commit will …”, followed by a blank line and an optional body wrapped at 72 characters. Reference issues as e.g. <code class="docutils literal notranslate"><span class="pre">#1</span></code>, and close them with a <code class="docutils literal notranslate"><span class="pre">Closes</span> <span class="pre">#1</span></code> line (see <a class="reference external" href="https://help.github.com/articles/closing-issues-using-keywords/">closing issues using keywords</a>).</p>
+<p>Write a short imperative subject line (50 chars or less) that completes the sentence “If applied, this commit will …”, followed by a blank line and an optional body wrapped at 72 characters. A commit message describes <em>what</em> the change does, self-contained; it does not reference the issue it addresses (that belongs in the pull request description).</p>
 <p>Use markdown syntax (GitHub Flavored Markdown) in the commit message. In particular, use inline code (backticks) for any snippet of text that refers to code.</p>
+</section>
+<section id="pull-request-description">
+<h2>Pull Request Description<a class="headerlink" href="#pull-request-description" title="Link to this heading"></a></h2>
+<p>Where the commit message says <em>what</em> the change does, the pull request description adds <em>why</em>: the motivation, the alternatives considered and rejected, and the issues it relates to. If the pull request is intended to resolve an issue, its last line <em>must</em> be <code class="docutils literal notranslate"><span class="pre">Closes</span> <span class="pre">#N</span></code> (see <a class="reference external" href="https://help.github.com/articles/closing-issues-using-keywords/">closing issues using keywords</a>).</p>
 </section>
 <section id="testing">
 <h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
@@ -299,7 +304,7 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 24, 2026.
+      <span class="lastupdated">Last updated on Jul 27, 2026.
       </span></p>
   </div>
 

@@ -94,6 +94,17 @@ A bare `@string` macro reference as a field value (e.g.
 `journal = pra`) is expanded using the library's macro definitions
 before any specifier is applied.
 
+A field the entry does not have renders as empty, so a format may
+reference a field that only some entries carry; those entries get a
+correspondingly shorter result. Under `%a1%c{booktitle}%Y`, a
+conference paper keys as `GoerzPECC2019`, an article as:
+
+```python
+>>> bib.eval_format_spec("GoerzPRA2014", "%a1%c{booktitle}%Y")
+'Goerz2014'
+
+```
+
 The subsections below are the complete reference for each group of
 specifiers. The examples evaluate a format against the
 `GoerzPRA2014` entry defined above (an `@article` by Goerz and Koch).
@@ -153,6 +164,8 @@ rendering the first author followed by `X` (`GoerzX`).
 
 ```
 
+(specifiers-dates)=
+
 ### Date: `%y`, `%Y`, `%m`
 
 * `%y` / `%Y` -- the year, two-digit / four-digit.
@@ -164,6 +177,68 @@ rendering the first author followed by `X` (`GoerzX`).
 '2014-14-08'
 
 ```
+
+All three read whatever the field happens to contain, and none of
+them reports a value it cannot make sense of. The rules are BibDesk's,
+inherited rather than chosen, so `bibdeskparser` reproduces them
+instead of correcting them.
+
+`%Y` (and with it `%y`) reads the *leading* digits of the `year`
+field, and yields `0` when there are none. That is the opposite end of
+the value from BibTeX itself, whose standard styles take the last four
+nonpunctuation characters. A `year` like `(about 1984)` therefore
+typesets as 1984 in the bibliography and still keys as `0`:
+
+```python
+>>> dates = Library()
+>>> dates["Vague"] = Entry("article", "Vague", {"year": "(about 1984)"})
+>>> dates.eval_format_spec("Vague", "%Y")
+'0'
+>>> dates["Pressed"] = Entry("article", "Pressed", {"year": "in press"})
+>>> dates.eval_format_spec("Pressed", "%Y")
+'0'
+
+```
+
+Trailing text after the digits is harmless (`2008a` and `2001--` both
+give `2008` and `2001`), and a `year` whose value is exactly two
+characters long maps into 1950--2049:
+
+```python
+>>> dates["Short"] = Entry("article", "Short", {"year": "08"})
+>>> dates.eval_format_spec("Short", "%Y")
+'2008'
+>>> dates["Fifty"] = Entry("article", "Fifty", {"year": "50"})
+>>> dates.eval_format_spec("Fifty", "%Y")
+'1950'
+
+```
+
+`%m` falls back to `01` for anything it cannot parse, so an
+out-of-range or unrecognized month silently becomes January rather
+than rendering empty. Full English month names and their standard
+abbreviations are both recognized (`June` as well as `jun`), but
+nothing else -- `sep` is, `sept` is not -- and a value whose leading
+letters are not a month name is unparseable even when it carries a
+usable number:
+
+```python
+>>> for month in ["jun", "June", "6", "sept", "13", "8th"]:
+...     dates["Month"] = Entry("article", "Month", {"month": month})
+...     print(f"{month:>5} -> {dates.eval_format_spec('Month', '%m')}")
+  jun -> 06
+ June -> 06
+    6 -> 06
+ sept -> 01
+   13 -> 01
+  8th -> 01
+
+```
+
+These edge cases are exactly what the `year` and `month` audits of
+[`check`](cli-check) report. A bare four-digit `year` and a `month`
+written as one of the twelve
+[standard month macros](bibdesk-default-macros) avoid all of them.
 
 ### Arbitrary fields: `%f`, `%w`
 
@@ -409,10 +484,13 @@ before it enters the key:
    configuration table: `"tex"` (the default) removes commands like
    `\emph{...}` and all braces, `"braces"` removes only braces, and
    `"none"` disables this step.
-2. Accents and ligatures are decomposed to plain ASCII letters
-   (`ü` → `u`, `ø` → `o`, `æ` → `ae`, `ß` → `ss`, ...).
+2. Every letter is reduced to its plain-ASCII spelling: `ü` → `u`,
+   `ø` → `o`, `ł` → `l`, `ı` → `i`, `æ` → `ae`, `ß` → `ss`.
 3. Whitespace becomes `-`, and any remaining character outside
-   `a-z A-Z 0-9 - . / : ;` is dropped.
+   `a-z A-Z 0-9 - . / : ;` is dropped. Text in a script that has no
+   ASCII spelling (Greek, Cyrillic, CJK) disappears here, so an entry
+   whose author names are not written in the Latin alphabet needs a
+   hand-written key.
 
 ```python
 >>> bib["Mueller"] = Entry(
@@ -428,14 +506,29 @@ before it enters the key:
 >>> bib.eval_format_spec("Mueller", "%a1%c{journal}0%Y:%t")
 'MullerNJP2020:Its-a-Schrodinger-World'
 
+>>> bib["Kilic"] = Entry(
+...     "article",
+...     "Kilic",
+...     {
+...         "author": "Kılıç, Ayşe and Masłowski, Tomasz",
+...         "journal": "New J. Phys.",
+...         "year": "2024",
+...     },
+... )
+>>> bib.eval_format_spec("Kilic", "%a%c{journal}0%Y")
+'KilicMaslowskiNJP2024'
+
 ```
 
-Note that BibDesk simply strips accented characters of their accent
-(`Müller` → `Muller`); it does not apply German transliteration
-(`Mueller`). If you want `Mueller`, hard-code the intended key with a
-two-argument `rekey`. Literal text in the format itself is sanitized
-similarly (whitespace becomes `-`; characters invalid in a hand-typed
-key are dropped, which notably includes `(`, `)`, and `@`).
+The result is a spelling approximation, not a transliteration: BibDesk
+strips accented characters of their accent (`Müller` → `Muller`) and
+does not apply German conventions (`Mueller`). If you want `Mueller`,
+hard-code the intended key with a two-argument `rekey`. Literal text
+in the format itself is sanitized similarly (whitespace becomes `-`;
+characters invalid in a hand-typed key are dropped, which notably
+includes `(`, `)`, and `@`), except that it is not ASCII-folded, so a
+non-ASCII character written into a format is dropped rather than
+folded.
 
 The `lowercase` option of the `[auto_key]` table lowercases the whole
 generated key; a `%U` specifier then adds lowercase characters, like
@@ -460,6 +553,9 @@ name is interpreted relative to the configured auto-file *location*.
   generated names can never collide. Uniqueness is checked against
   the *files on disk* at the target location, not against the
   library: a candidate name is taken if a file already exists there.
+  It also fills in for an entry that renders every other specifier
+  empty, which would otherwise leave the bare extension (`.pdf`) as
+  the name: such a file is filed as `a.pdf`, not as a hidden file.
 * A literal `/` in the format is a **directory separator**: the file
   is filed into (newly created, as needed) subfolders of the
   location. A `/` inside a *field value* becomes `-` instead, so
@@ -563,3 +659,7 @@ renders identically for PDFs and stays correct for everything else.
   to each entry type — a `bibdeskparser` extension.
 - The `[initials]` exception mapping for `%c` is a `bibdeskparser`
   extension; BibDesk always uses the plain acronym.
+- BibDesk guarantees a non-empty result but not a non-empty *stem*, so
+  an entry rendering every specifier of a file-name format empty is
+  filed under the bare extension (`.pdf`, a hidden file). Here the
+  unique specifier fills the stem instead (`a.pdf`).
