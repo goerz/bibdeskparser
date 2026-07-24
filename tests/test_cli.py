@@ -3240,7 +3240,7 @@ IMPORT_SNIPPET = """\
 def test_import_from_file(runner, bibfile, tmp_path):
     snippet = tmp_path / "entries.bib"
     snippet.write_text(IMPORT_SNIPPET, encoding="utf-8")
-    result = _run(runner, "import", bibfile, snippet)
+    result = _run(runner, "import", bibfile, "--file", snippet)
     assert result.stdout == "BaumgratzPRL2014\n"
     assert "created new @string macro" in result.stderr
     lib = _load(bibfile)
@@ -3275,16 +3275,16 @@ def test_import_url(runner, bibfile, monkeypatch):
 def test_import_requires_exactly_one_source(runner, bibfile, tmp_path):
     result = runner.invoke(main, ["import", str(bibfile)])
     assert result.exit_code == 2
-    assert "exactly one of FILE, --stdin, or --url" in result.stderr
+    assert "exactly one of --file, --stdin, or --url" in result.stderr
     snippet = tmp_path / "entries.bib"
     snippet.write_text(IMPORT_SNIPPET, encoding="utf-8")
     result = runner.invoke(
         main,
-        ["import", str(bibfile), str(snippet), "--stdin"],
+        ["import", str(bibfile), "--file", str(snippet), "--stdin"],
         input=IMPORT_SNIPPET,
     )
     assert result.exit_code == 2
-    assert "exactly one of FILE, --stdin, or --url" in result.stderr
+    assert "exactly one of --file, --stdin, or --url" in result.stderr
 
 
 def test_import_empty_stdin(runner, bibfile):
@@ -3375,10 +3375,11 @@ def test_import_duplicate_doi(runner, bibfile):
     assert "already in the library as entry 'GoerzPRA2014'" in result.stderr
 
 
-def test_import_default_bibfile_gotcha(runner, bibfile, monkeypatch):
-    """With a configured default_bib_file, a `.bib` FILE argument is
-    still consumed as the library (the documented limitation): the
-    command then fails for lack of an import source."""
+def test_import_default_bibfile(runner, bibfile, monkeypatch):
+    """With a configured default_bib_file, a positional `.bib`
+    argument always names the library, so `import entries.bib`
+    (no `--file`) fails cleanly for lack of a source, while
+    `import --file entries.bib` imports into the default library."""
     monkeypatch.chdir(bibfile.parent)
     Path("bibdeskparser.toml").write_text(
         f'default_bib_file = "{bibfile.name}"\n', encoding="utf-8"
@@ -3387,7 +3388,11 @@ def test_import_default_bibfile_gotcha(runner, bibfile, monkeypatch):
     snippet.write_text(IMPORT_SNIPPET, encoding="utf-8")
     result = runner.invoke(main, ["import", "entries.bib"])
     assert result.exit_code == 2
-    assert "exactly one of FILE, --stdin, or --url" in result.stderr
+    assert "exactly one of --file, --stdin, or --url" in result.stderr
+    result = runner.invoke(main, ["import", "--file", "entries.bib"])
+    assert result.exit_code == 0, result.output + result.stderr
+    assert result.stdout == "BaumgratzPRL2014\n"
+    assert "BaumgratzPRL2014" in _load(bibfile)
 
 
 def test_add(runner, bibfile, monkeypatch):

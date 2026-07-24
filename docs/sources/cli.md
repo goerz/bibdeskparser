@@ -133,7 +133,7 @@ is started with `create` and then filled with entries:
 <!-- notest -->
 ```console
 $ bibdeskparser create new.bib
-$ bibdeskparser import new.bib entries.bib
+$ bibdeskparser import new.bib --file entries.bib
 ```
 
 With a `default_bib_file` configured in `bibdeskparser.toml` (see
@@ -925,11 +925,11 @@ $ bibdeskparser delete_field tests/Refs/refs.bib GoerzJPB2011 note
 
 (cli-import)=
 
-### `import [FILE]`
+### `import`
 
-Import the entries of a BibTeX snippet -- read from `FILE`, from
-standard input (`--stdin`), or downloaded from a URL (`--url URL`);
-exactly one of the three -- into the library, via
+Import the entries of a BibTeX snippet -- read from a file
+(`--file FILE`), from standard input (`--stdin`), or downloaded from a
+URL (`--url URL`); exactly one of the three -- into the library, via
 {py:meth}`~bibdeskparser.Library.import_bibtex`, and print their
 citation keys. The snippet may be anything from a single
 publisher-provided entry to a complete `.bib` file (including
@@ -966,7 +966,7 @@ reporting all problems at once, with the `.bib` file untouched.
 
 <!-- notest -->
 ```console
-$ bibdeskparser import tests/Refs/refs.bib entries.bib
+$ bibdeskparser import tests/Refs/refs.bib --file entries.bib
 BaumgratzPRL2014
 $ pbpaste | bibdeskparser import tests/Refs/refs.bib --stdin
 GrapeJMR2005
@@ -974,10 +974,9 @@ $ bibdeskparser import tests/Refs/refs.bib --url https://example.com/more.bib
 MotzoiPRL2009
 ```
 
-Note that the *first* argument ending in `.bib` names the library, so
-importing from a `.bib` file requires naming the library explicitly
-(`import tests/Refs/refs.bib entries.bib`), even with a configured
-`default_bib_file`.
+A positional argument ending in `.bib` always names the library, like
+every other command; give the import source with `--file` (so
+`--file` is required even with a configured `default_bib_file`).
 
 (cli-add)=
 
