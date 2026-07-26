@@ -44,12 +44,7 @@ from .macros import (
     is_valid_macro_name,
     normalize_macro_name,
 )
-from .specifiers import (
-    _acronym,
-    compile_format,
-    missing_required_fields,
-    render_format,
-)
+from .specifiers import _acronym, compile_format, render_format
 from .texmap import detexify, skip_texify
 
 __all__ = []
@@ -734,13 +729,6 @@ def _final_key(entry, incoming_key, taken, keep_keys, strings):
     if problem is not None:
         return None, [f"entry {incoming_key!r}: {problem}"]
     fmt = compile_format(format_string)
-    missing = missing_required_fields(fmt, entry)
-    if missing:
-        return None, [
-            f"entry {incoming_key!r}: cannot generate a citation key: "
-            f"the format {format_string!r} requires the missing "
-            f"field(s) {', '.join(sorted(missing))}"
-        ]
     new_key = render_format(
         fmt,
         entry,

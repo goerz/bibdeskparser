@@ -484,9 +484,9 @@ the plain acronym (see [Venue initials](specifiers-initials)).
 
 The `format_spec` argument overrides the configured format ad hoc; keys
 that already match the format are kept unchanged, so regenerating is
-idempotent and safe to re-run over many entries (here, one group;
-entries lacking a field the format requires, such as `author`, are
-reported with a `ValueError`):
+idempotent and safe to re-run over many entries (here, one group; an
+entry lacking a field the format references, such as `journal`, gets a
+correspondingly shorter key):
 
 ```python
 >>> bib.rekey("GoerzPRA2014", format_spec="%a1%c{journal}0%Y%u0")

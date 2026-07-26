@@ -967,13 +967,15 @@ def test_key_for_inproceedings_uses_booktitle():
     assert key == "GoerzPECC2019"
 
 
-def test_key_generation_missing_fields_is_an_error():
+def test_key_generation_with_missing_fields():
+    """A field the entry does not have renders as empty, so an entry
+    without an `author` is keyed by the journal and year alone."""
     bib = _library_with_pra()
     text = ARTICLE.replace(
         "    Author = {Goerz, Michael and Reich, Daniel M.},\n", ""
     )
-    with pytest.raises(ValueError, match="missing field"):
-        bib.import_bibtex(text)
+    (key,) = bib.import_bibtex(text)
+    assert key == "PRA2014"
 
 
 # -- bdsk-* and other special fields ------------------------------------ #

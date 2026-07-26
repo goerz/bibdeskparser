@@ -1188,11 +1188,13 @@ def test_rekey_auto_both_args_raises(bib):
         bib.rekey("GoerzPRA2014", "NewKey", format_spec="%a1%Y%u0")
 
 
-def test_rekey_auto_missing_fields_raises(bib):
-    """A format that needs a field the entry does not have is an
-    error, not a degenerate key."""
-    with pytest.raises(ValueError, match="journal"):
+def test_rekey_auto_missing_fields_shortens_key(bib):
+    """A field the entry does not have renders as empty, so the key
+    is generated without it (the thesis has no `journal`)."""
+    assert (
         bib.rekey("GoerzDiploma2010", format_spec=GETBIBTEX_FORMAT)
+        == "Goerz2010"
+    )
 
 
 def test_rekey_auto_crossref_guard(bib):
@@ -1306,11 +1308,12 @@ def test_eval_format_spec_missing_key_raises(bib):
         bib.eval_format_spec("NoSuchKey", "%a1%Y%u0")
 
 
-def test_eval_format_spec_missing_fields_raises(bib):
-    """A format that needs a field the entry does not have is an
-    error, like in `rekey`."""
-    with pytest.raises(ValueError, match="journal"):
+def test_eval_format_spec_missing_fields_shortens_key(bib):
+    """A missing field renders as empty, like in `rekey`."""
+    assert (
         bib.eval_format_spec("GoerzDiploma2010", GETBIBTEX_FORMAT)
+        == "Goerz2010"
+    )
 
 
 def test_eval_format_spec_from_config(bib, auto_key_config):
@@ -2069,16 +2072,42 @@ def test_add_file_auto_filing_errors(tmp_path):
         )
     with pytest.raises(ValueError, match=r"\[auto_file\]"):
         bib.add_file("K1", "d.pdf", auto_file_location=".")
-    # K1 has no author/year, which "%a1%Y%u0%e" requires
-    with pytest.raises(ValueError, match="missing"):
+    assert bib["K1"].files == []
+    assert (tmp_path / "d.pdf").exists()
+
+
+def test_add_file_auto_filing_missing_fields(tmp_path):
+    """A format referencing a field the entry does not have (K1 has no
+    `journal`) files the attachment under the correspondingly shorter
+    name."""
+    bib = _file_bib(tmp_path, files=())
+    (tmp_path / "Doc.pdf").write_bytes(b"%PDF-1.4 fake")
+    with _quiet_bookmarks():
         bib.add_file(
             "K1",
-            "d.pdf",
+            "Doc.pdf",
+            format_spec="%c{journal}0%f{Cite Key}%u0%e",
+            auto_file_location=".",
+        )
+    assert bib["K1"].files == ["K1.pdf"]
+    assert (tmp_path / "K1.pdf").exists()
+
+
+def test_add_file_auto_filing_never_files_a_dotfile(tmp_path):
+    """A format whose every specifier renders empty would leave the
+    name as the bare extension; the unique specifier fills the stem
+    instead of filing a hidden file."""
+    bib = _file_bib(tmp_path, files=())
+    (tmp_path / "Doc.pdf").write_bytes(b"%PDF-1.4 fake")
+    with _quiet_bookmarks():
+        bib.add_file(
+            "K1",
+            "Doc.pdf",
             format_spec="%a1%Y%u0%e",
             auto_file_location=".",
         )
-    assert bib["K1"].files == []
-    assert (tmp_path / "d.pdf").exists()
+    assert bib["K1"].files == ["a.pdf"]
+    assert (tmp_path / "a.pdf").exists()
 
 
 def test_rename_file_auto(tmp_path, auto_file_config):

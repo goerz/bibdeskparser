@@ -12,12 +12,15 @@ to parse. `deadfiles.bib` passes every audit *except* the opt-in
 links `case2020.pdf` while the on-disk file (committed alongside) is
 `Case2020.pdf`, differing only in case. `keyformat.bib` passes every
 audit *except* the opt-in `--key-format` audit (against
-`%p1%c{journal}0%Y%u0`): `Deviation2015` deviates from the format and
-`Unevaluable2015` (an article with no `journal`) cannot be evaluated,
-while `ConformingPRA2015`, the colliding pair
-`CollidingPRA2015`/`CollidingPRA2015a`, and the preprint
-`Preprint2205.15044` conform. Since `check` is read-only, the files
-can also be used directly to get a feel for how the command behaves:
+`%p1%c{journal}0%Y%u0`): `Deviation2015` deviates from the format, as
+does `Handpicked`, an article with no `journal` whose key was chosen
+by hand instead of being the shortened `Venueless2015` that the format
+generates for it. `ConformingPRA2015`, the colliding pair
+`CollidingPRA2015`/`CollidingPRA2015a`, the preprint
+`Preprint2205.15044`, and `Shortened2015` (an article with no
+`journal`, keyed exactly as the format renders it without the venue)
+conform. Since `check` is read-only, the files can also be used
+directly to get a feel for how the command behaves:
 
 ~~~console
 $ bibdeskparser check tests/test_cli_fail_checks/problems.bib

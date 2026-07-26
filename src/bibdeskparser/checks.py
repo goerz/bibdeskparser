@@ -64,11 +64,12 @@ def collect_problems(
     `[auto_key]` format; `key_format` as a `str` audits against that
     format pattern instead. A preprint-only entry is always audited
     against the preprint format (`%p1%f{eprint}[.]`) regardless. An
-    entry lacking a field the format requires is reported as
-    unevaluable. If no usable format is available -- none configured
-    and none given (`key_format=True` with no configured `[auto_key]`
-    format), or a given pattern that does not compile -- a single
-    file-wide problem is reported instead of one per entry.
+    entry lacking a field the format references is audited against the
+    shorter key the format generates for it. If no usable format is
+    available -- none configured and none given (`key_format=True`
+    with no configured `[auto_key]` format), or a given pattern that
+    does not compile -- a single file-wide problem is reported instead
+    of one per entry.
     `key_format=None` (the default) skips this audit.
     """
     problems = _parse_problems(library)
@@ -252,8 +253,8 @@ def _key_format_problems(entry, library, format_spec):
     format pattern, or `None` to fall back to the configured
     `[auto_key]` format). The key conforms when
     {meth}`~bibdeskparser.Library.eval_format_spec` evaluates it to
-    itself. An entry lacking a field the format requires cannot be
-    evaluated and is reported as such."""
+    itself; a format that cannot be evaluated at all (e.g. a per-type
+    format with no entry for the entry's type) is reported as such."""
     key = entry.key
     if _entry_preprint(entry, active.preprint_archives) is not None:
         spec = _PREPRINT_KEY_SPEC
@@ -263,7 +264,9 @@ def _key_format_problems(entry, library, format_spec):
         generated = library.eval_format_spec(key, spec)
     except ValueError as exc:
         reason = str(exc)
-        prefix = f"cannot generate a citation key for {key!r}: "
+        # the problem line already says what failed, so drop the
+        # "cannot generate ..." lead-in of the underlying error
+        prefix = "cannot generate a citation key: "
         if reason.startswith(prefix):
             reason = reason[len(prefix) :]
         return [
