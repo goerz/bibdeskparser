@@ -1400,10 +1400,14 @@ def check(
     passes); no entry has a defined-but-empty field (BibDesk deletes
     empty fields on save, so the field would silently disappear); no
     entry sits in a configured known-missing group for a field it
-    actually has a non-empty value for; every journal field
-    references a *defined* @string macro (a literal journal value is
-    a problem, unless it is a recognized preprint pseudo-journal like
-    'arXiv:2205.15044'); every year reads as a four-digit year (so
+    actually has a non-empty value for; no bare (unbraced) field value
+    references an undefined @string macro (in any field, not just
+    'journal': a name that is defined nowhere renders as itself, and
+    'save' refuses to write it, so 'check' reports it too); every
+    journal field references an @string macro rather than a literal
+    value (a literal journal value is a problem, unless it is a
+    recognized preprint pseudo-journal like 'arXiv:2205.15044'); every
+    year reads as a four-digit year (so
     'August, 2008' and 'in press' are problems, while '08' and
     '2008a' are not); every month is a bare reference to one of the
     twelve standard month macros jan ... dec (a literal '06' or
@@ -1448,8 +1452,9 @@ def check(
     {"passed": ..., "entries_checked": ..., "problems": [{"check":
     ..., "key": ..., "message": ...}]}, where "check" names the audit
     ("parse", "duplicate_keys", "entry_type", "required_fields",
-    "doi", "empty_fields", "known_missing", "journal", "year",
-    "month", "names", "unused_strings", "files", or "key_format") and
+    "doi", "empty_fields", "known_missing", "journal",
+    "undefined_macro", "year", "month", "names", "unused_strings",
+    "files", or "key_format") and
     "key" is null for a problem not tied to an entry.
     """
     if format_spec is not None and audit_key_format is False:

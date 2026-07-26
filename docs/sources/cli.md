@@ -230,14 +230,16 @@ EmptyDoi2026: missing doi
 EmptyDoi2026: empty field 'doi' (BibDesk deletes empty fields on save)
 LiteralJournal2026: journal is the literal string 'Some Journal', not an @string macro reference
 UndefinedMacro2026: journal references undefined @string macro 'nosuchjournal'
+UndefinedField2026: publisher references undefined @string macro 'elsevir'
 BadNames2026: author does not parse as names: Cannot split the following name `Doe, John, Jr, X, Y` into parts: Too many commas
 MissingRequired2026: missing required field 'year' for entry type 'article'
 UnknownType2026: unrecognized entry type 'bogustype'
 BadYear2026: year 'August, 2026' does not read as a four-digit year (%Y gives '0')
 LiteralMonth2026: month is the literal string 'June', not one of the twelve standard month macros (jan ... dec)
 BadMonthMacro2026: month references the macro 'sept', not one of the twelve standard month macros (jan ... dec)
+BadMonthMacro2026: month references undefined @string macro 'sept'
 unused @string macro 'unusedjrnl'
-FAIL (13 problems, 12 entries checked)
+FAIL (15 problems, 13 entries checked)
 ```
 
 The audits: the file parses cleanly (no skipped blocks); no citation
@@ -248,8 +250,10 @@ every `article` that is not a
 field (BibDesk deletes empty fields when it saves, so the field would
 silently disappear -- see [Empty fields](bibdesk-empty-fields)); no
 entry sits in a [known-missing group](config-known-missing) for a
-field it actually has; every `journal` field references a defined
-`@string` macro (a literal journal value is a problem, unless it is a
+field it actually has; no bare (unbraced) field value references an
+undefined `@string` macro; every `journal` field references an
+`@string` macro rather than a literal value (a literal journal value
+is a problem, unless it is a
 recognized preprint pseudo-journal like `arXiv:2205.15044`); every
 `year` reads as a four-digit year and every `month` is a bare
 reference to one of the twelve standard month macros `jan` ... `dec`;
@@ -289,6 +293,21 @@ render correctly: a `.bst` style is free to typeset `jun` as `June`,
 `Jun.`, `Juni`, or `6`, and writing the month out freezes one of
 those choices into the database, exactly as a literal `journal` value
 does.
+
+The undefined-macro audit makes a passing `check` imply a writable
+file. A bare (unbraced) field value is a reference to a
+[`@string` macro](bibdesk-default-macros), and one whose name is
+defined nowhere, neither by a `@string` in the file nor as a built-in
+month macro, renders as the name itself (`month = sept` becomes
+literal `sept`). `save` refuses to write such a value, from whatever
+field, so `check` reports it from whatever field: the
+`UndefinedField2026` example above carries `publisher = elsevir`, a
+field with no audit of its own. A value that is not a valid macro name
+(a bare `volume = 90`) is not a macro reference and is left alone, and
+`keywords` is exempt (always literal text). The `journal` and `month`
+audits report their own, field-specific concerns on top of this one,
+so a `month = sept` that is both undefined and not a month is reported
+twice.
 
 An `article` verified to have no `doi` passes the doi audit if it is
 a member of the known-missing group configured for `doi` in the

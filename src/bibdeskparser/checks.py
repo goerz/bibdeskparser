@@ -19,7 +19,7 @@ from .config import active
 from .identifiers import _entry_preprint, _preprint_journal
 from .importing import _PREPRINT_KEY_SPEC
 from .library import _bare_macro_fields, _has_field
-from .macros import STANDARD_MONTH_MACROS, MacroString
+from .macros import STANDARD_MONTH_MACROS, MacroString, is_valid_macro_name
 from .render import _can_initialize
 from .specifiers import compile_format
 
@@ -32,9 +32,10 @@ __private__ = ["Problem", "collect_problems"]
 
 #: One audit finding. `check` names the audit (`"parse"`,
 #: `"duplicate_keys"`, `"entry_type"`, `"required_fields"`, `"doi"`,
-#: `"empty_fields"`, `"known_missing"`, `"journal"`, `"year"`,
-#: `"month"`, `"names"`, `"unused_strings"`, `"files"`, or
-#: `"key_format"`), `key` is the citation key the problem is tied to
+#: `"empty_fields"`, `"known_missing"`, `"journal"`,
+#: `"undefined_macro"`, `"year"`, `"month"`, `"names"`,
+#: `"unused_strings"`, `"files"`, or `"key_format"`), `key` is the
+#: citation key the problem is tied to
 #: (`None` for a problem that concerns the file as a whole), and
 #: `message` describes the problem.
 Problem = namedtuple("Problem", ["check", "key", "message"])
@@ -49,10 +50,10 @@ def collect_problems(
     Without `keys`, all audits run over the entire library. With
     `keys` (an iterable of citation keys, all of which must exist in
     `library`), the per-entry audits (entry type, required fields,
-    doi, empty fields, known-missing, journal, year, month, and names)
-    cover only those entries, the duplicate-keys audit reports only
-    those keys, and the unused-macros audit is skipped; problems
-    parsing the file itself are always included.
+    doi, empty fields, known-missing, journal, undefined macros, year,
+    month, and names) cover only those entries, the duplicate-keys
+    audit reports only those keys, and the unused-macros audit is
+    skipped; problems parsing the file itself are always included.
 
     With `audit_files`, an additional per-entry audit checks that each
     linked attachment (`bdsk-file-N` field) resolves to a real path on
@@ -90,6 +91,10 @@ def collect_problems(
     # pylint: disable-next=protected-access
     base_dir = library._files_base_dir() if audit_files else None
     listdir_cache = {}
+    # The macro mapping cannot change during an audit, so build it once
+    # rather than per entry in `_undefined_macro_problems`.
+    # pylint: disable-next=protected-access
+    strings = library._all_strings()
     audit_key_format = key_format is not None
     format_spec = None if key_format is True else key_format
     if audit_key_format:
@@ -98,7 +103,7 @@ def collect_problems(
             problems.append(Problem("key_format", None, unavailable))
             audit_key_format = False
     for entry in entries:
-        problems += _entry_problems(entry, library)
+        problems += _entry_problems(entry, library, strings)
         if audit_files:
             problems += _file_problems(entry, base_dir, listdir_cache)
         if audit_key_format:
@@ -125,10 +130,14 @@ def _parse_problems(library):
     ]
 
 
-def _entry_problems(entry, library):
+def _entry_problems(entry, library, strings):
     """The entry-type, required-field, doi, empty-field,
-    known-missing, journal, year, month, and names problems of a
-    single `entry`."""
+    known-missing, journal, undefined-macro, year, month, and names
+    problems of a single `entry`.
+
+    `strings` is the library's merged macro mapping
+    (`Library._all_strings()`), passed in so it is built once per audit
+    run rather than per entry."""
     problems = _type_problems(entry)
     archives = active.preprint_archives
     known_missing = active.known_missing
@@ -162,7 +171,7 @@ def _entry_problems(entry, library):
                 )
             )
     if "journal" in entry:
-        problems += _journal_problems(entry, library, archives)
+        problems += _journal_problems(entry, archives)
     if _has_field(entry, "year"):
         problems += _year_problems(entry, library)
     if _has_field(entry, "month"):
@@ -193,6 +202,7 @@ def _entry_problems(entry, library):
                                 "cannot be initialized",
                             )
                         )
+    problems += _undefined_macro_problems(entry, strings)
     return problems
 
 
@@ -238,22 +248,15 @@ def _type_problems(entry):
     ]
 
 
-def _journal_problems(entry, library, archives):
-    """The problems with `entry`'s `journal` field: a reference to an
-    undefined `@string` macro, or a non-empty literal value that is
-    not a recognized preprint pseudo-journal."""
+def _journal_problems(entry, archives):
+    """The problems with `entry`'s `journal` field: a non-empty
+    literal value that is not a recognized preprint pseudo-journal.
+
+    A `journal` that bare-references an undefined `@string` macro is
+    reported by `_undefined_macro_problems` instead, which audits every
+    bare field alike."""
     value = entry["journal"]
     if isinstance(value, MacroString):
-        name = str(value)
-        # pylint: disable-next=protected-access
-        if name.lower() not in library._all_strings():
-            return [
-                Problem(
-                    "journal",
-                    entry.key,
-                    f"journal references undefined @string macro {name!r}",
-                )
-            ]
         return []
     text = str(value).strip()
     if text and _preprint_journal(text, archives) is None:
@@ -266,6 +269,42 @@ def _journal_problems(entry, library, archives):
             )
         ]
     return []
+
+
+def _undefined_macro_problems(entry, strings):
+    """The problems with `entry`'s bare field values that reference an
+    undefined `@string` macro.
+
+    `strings` is the library's merged macro mapping
+    (`Library._all_strings()`), built once by `collect_problems`.
+
+    Every bare (unbraced) field is inspected except `keywords` (always
+    literal text), and only a value that is a valid macro name is
+    considered, so a bare non-macro value like `volume = 90` is not
+    flagged. A macro is undefined when it is defined neither by an
+    `@string` in the file nor as one of the built-in month macros
+    `jan` ... `dec`. This is the same scan
+    {meth}`~bibdeskparser.Library.save` applies before writing: it
+    rejects any such reference (a name that renders as itself, so
+    `month = sept` becomes literal `sept`), so reporting it here means
+    a passing `check` implies a writable file. The `journal` and
+    `month` audits report their own, field-specific concerns on top of
+    this one."""
+    problems = []
+    for field, value in _bare_macro_fields(entry):
+        if (
+            is_valid_macro_name(value, normalized=True)
+            and value not in strings
+        ):
+            problems.append(
+                Problem(
+                    "undefined_macro",
+                    entry.key,
+                    f"{field.key} references undefined @string macro "
+                    f"{value!r}",
+                )
+            )
+    return problems
 
 
 def _year_problems(entry, library):

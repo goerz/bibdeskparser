@@ -3,12 +3,15 @@
 The `.bib` files in this folder back the tests for the `check` CLI
 command in `tests/test_cli.py`. In `problems.bib`, one entry per
 audit fails, named after its problem (`MissingDoi2026`,
-`LiteralJournal2026`, `UndefinedMacro2026`, `BadNames2026`,
+`LiteralJournal2026`, `UndefinedMacro2026` (an undefined `journal`
+macro), `UndefinedField2026` (`publisher = elsevir`, an undefined
+macro in a field with no audit of its own), `BadNames2026`,
 `MissingRequired2026` (an `@article` with no `year`),
 `UnknownType2026` (a `@bogustype` entry), `BadYear2026` (a `year` of
 `August, 2026`), `LiteralMonth2026` (`month = {June}` written out
-instead of the macro), `BadMonthMacro2026` (`month = sept`, not one
-of the twelve), `Duplicate2026`), the
+instead of the macro), `BadMonthMacro2026` (`month = sept`, which is
+neither one of the twelve month macros nor defined, so it fails both
+the month and the undefined-macro audit), `Duplicate2026`), the
 `@string` macro `unusedjrnl` is never referenced, and `EmptyDoi2026`
 and `Preprint2026` demonstrate the passing exemptions;
 `broken_block.bib` contains a block that fails
