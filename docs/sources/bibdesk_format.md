@@ -232,6 +232,8 @@ value's shape -- wrap the value in
 {class}`~bibdeskparser.MacroString` instead, the mirror image of
 `ValueString`.
 
+(bibdesk-default-macros)=
+
 ### Default macros
 
 BibTeX itself has no built-in macros, but the standard `.bst` style
@@ -255,6 +257,16 @@ references: `month = jan` does not count as an undefined macro, and a
 overrides the built-in month name and round-trips like any other. A
 bare reference to a `.bst` journal abbreviation, by contrast, is
 undefined unless the `.bib` file defines it.
+
+These twelve are the canonical way to write a `month` field
+(`btxdoc.tex`: "You should use the standard three-letter
+abbreviation"). Writing the month out as literal text -- `month =
+{June}`, or `month = {06}` -- freezes one rendering into the database
+and takes the choice away from the style, which is free to typeset
+`jun` as `June`, `Jun.`, `Juni`, or `6`. The
+[`check` command](cli-check) reports a literal `month`, and a bare
+reference to a macro outside the twelve, for the same reason it
+reports a literal `journal` value.
 
 (bibdesk-static-groups)=
 

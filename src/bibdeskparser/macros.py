@@ -19,20 +19,15 @@ __private__ = [
     "is_valid_macro_name",
     "normalize_macro_name",
     "STANDARD_MACROS",
+    "STANDARD_MONTH_MACROS",
 ]
 
-# BibDesk's built-in "standard" macros: exactly the twelve BibTeX month
-# macros, and nothing else (`standardMacroDefinitions` in
-# `BDSKMacroResolver.m`). BibDesk maps them to the localized full month
-# names; we use the (deterministic) English names, which is also what
-# the standard BibTeX style `plain.bst` defines. These are a
-# lowest-priority *fallback* for resolving a bare reference, never part
-# of `Library.strings` and never written to the `.bib` file. A
-# `@string` definition of the same name is an ordinary macro -- it
-# overrides the fallback (as in BibTeX/BibDesk, where a `.bib`
-# `@string` beats a `.bst`/built-in definition) and round-trips through
-# `Library.strings` and save like any other macro.
-STANDARD_MACROS = {
+# The twelve BibTeX month macros, the canonical way to write a `month`
+# field (`btxdoc.tex`: "You should use the standard three-letter
+# abbreviation"). BibDesk maps them to the localized full month names;
+# we use the (deterministic) English names, which is also what the
+# standard BibTeX style `plain.bst` defines.
+STANDARD_MONTH_MACROS = {
     "jan": "January",
     "feb": "February",
     "mar": "March",
@@ -46,6 +41,18 @@ STANDARD_MACROS = {
     "nov": "November",
     "dec": "December",
 }
+
+# BibDesk's built-in "standard" macros, i.e. the names that resolve
+# without a `@string` definition: exactly the twelve months and nothing
+# else (`standardMacroDefinitions` in `BDSKMacroResolver.m` builds the
+# table in a hardcoded twelve-iteration loop, with no way to extend it).
+# These are a lowest-priority *fallback* for resolving a bare
+# reference, never part of `Library.strings` and never written to the
+# `.bib` file. A `@string` definition of the same name is an ordinary
+# macro -- it overrides the fallback (as in BibTeX/BibDesk, where a
+# `.bib` `@string` beats a `.bst`/built-in definition) and round-trips
+# through `Library.strings` and save like any other macro.
+STANDARD_MACROS = STANDARD_MONTH_MACROS
 
 # Characters BibDesk allows in a field/macro name. Built exactly as
 # `invalidCiteKeyCharSet` in `BDSKTypeManager.m` (which

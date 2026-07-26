@@ -164,6 +164,8 @@ rendering the first author followed by `X` (`GoerzX`).
 
 ```
 
+(specifiers-dates)=
+
 ### Date: `%y`, `%Y`, `%m`
 
 * `%y` / `%Y` -- the year, two-digit / four-digit.
@@ -175,6 +177,68 @@ rendering the first author followed by `X` (`GoerzX`).
 '2014-14-08'
 
 ```
+
+All three read whatever the field happens to contain, and none of
+them reports a value it cannot make sense of. The rules are BibDesk's,
+inherited rather than chosen, so `bibdeskparser` reproduces them
+instead of correcting them.
+
+`%Y` (and with it `%y`) reads the *leading* digits of the `year`
+field, and yields `0` when there are none. That is the opposite end of
+the value from BibTeX itself, whose standard styles take the last four
+nonpunctuation characters. A `year` like `(about 1984)` therefore
+typesets as 1984 in the bibliography and still keys as `0`:
+
+```python
+>>> dates = Library()
+>>> dates["Vague"] = Entry("article", "Vague", {"year": "(about 1984)"})
+>>> dates.eval_format_spec("Vague", "%Y")
+'0'
+>>> dates["Pressed"] = Entry("article", "Pressed", {"year": "in press"})
+>>> dates.eval_format_spec("Pressed", "%Y")
+'0'
+
+```
+
+Trailing text after the digits is harmless (`2008a` and `2001--` both
+give `2008` and `2001`), and a `year` whose value is exactly two
+characters long maps into 1950--2049:
+
+```python
+>>> dates["Short"] = Entry("article", "Short", {"year": "08"})
+>>> dates.eval_format_spec("Short", "%Y")
+'2008'
+>>> dates["Fifty"] = Entry("article", "Fifty", {"year": "50"})
+>>> dates.eval_format_spec("Fifty", "%Y")
+'1950'
+
+```
+
+`%m` falls back to `01` for anything it cannot parse, so an
+out-of-range or unrecognized month silently becomes January rather
+than rendering empty. Full English month names and their standard
+abbreviations are both recognized (`June` as well as `jun`), but
+nothing else -- `sep` is, `sept` is not -- and a value whose leading
+letters are not a month name is unparseable even when it carries a
+usable number:
+
+```python
+>>> for month in ["jun", "June", "6", "sept", "13", "8th"]:
+...     dates["Month"] = Entry("article", "Month", {"month": month})
+...     print(f"{month:>5} -> {dates.eval_format_spec('Month', '%m')}")
+  jun -> 06
+ June -> 06
+    6 -> 06
+ sept -> 01
+   13 -> 01
+  8th -> 01
+
+```
+
+These edge cases are exactly what the `year` and `month` audits of
+[`check`](cli-check) report. A bare four-digit `year` and a `month`
+written as one of the twelve
+[standard month macros](bibdesk-default-macros) avoid all of them.
 
 ### Arbitrary fields: `%f`, `%w`
 

@@ -1403,9 +1403,13 @@ def check(
     actually has a non-empty value for; every journal field
     references a *defined* @string macro (a literal journal value is
     a problem, unless it is a recognized preprint pseudo-journal like
-    'arXiv:2205.15044'); every author and editor field parses as
-    names; and every @string macro defined in the file is referenced
-    by some entry.
+    'arXiv:2205.15044'); every year reads as a four-digit year (so
+    'August, 2008' and 'in press' are problems, while '08' and
+    '2008a' are not); every month is a bare reference to one of the
+    twelve standard month macros jan ... dec (a literal '06' or
+    'June' is a problem, as is a non-standard macro like 'sept');
+    every author and editor field parses as names; and every @string
+    macro defined in the file is referenced by some entry.
 
     With --files, an additional per-entry audit reports every linked
     attachment (bdsk-file path) that does not resolve to a real path
@@ -1444,9 +1448,9 @@ def check(
     {"passed": ..., "entries_checked": ..., "problems": [{"check":
     ..., "key": ..., "message": ...}]}, where "check" names the audit
     ("parse", "duplicate_keys", "entry_type", "required_fields",
-    "doi", "empty_fields", "known_missing", "journal", "names",
-    "unused_strings", "files", or "key_format") and "key" is null for
-    a problem not tied to an entry.
+    "doi", "empty_fields", "known_missing", "journal", "year",
+    "month", "names", "unused_strings", "files", or "key_format") and
+    "key" is null for a problem not tied to an entry.
     """
     if format_spec is not None and audit_key_format is False:
         raise click.UsageError(

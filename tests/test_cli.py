@@ -1042,9 +1042,21 @@ def test_check_problems(runner, checkfile):
         "type 'article'"
     )
     assert lines[8] == "UnknownType2026: unrecognized entry type 'bogustype'"
-    assert lines[9] == "unused @string macro 'unusedjrnl'"
-    assert lines[10] == "FAIL (10 problems, 9 entries checked)"
-    assert len(lines) == 11
+    assert lines[9] == (
+        "BadYear2026: year 'August, 2026' does not read as a "
+        "four-digit year (%Y gives '0')"
+    )
+    assert lines[10] == (
+        "LiteralMonth2026: month is the literal string 'June', not "
+        "one of the twelve standard month macros (jan ... dec)"
+    )
+    assert lines[11] == (
+        "BadMonthMacro2026: month references the macro 'sept', not "
+        "one of the twelve standard month macros (jan ... dec)"
+    )
+    assert lines[12] == "unused @string macro 'unusedjrnl'"
+    assert lines[13] == "FAIL (13 problems, 12 entries checked)"
+    assert len(lines) == 14
 
 
 def test_check_problems_json(runner, checkfile):
@@ -1052,7 +1064,7 @@ def test_check_problems_json(runner, checkfile):
     assert result.exit_code == 1
     data = json.loads(result.output)
     assert data["passed"] is False
-    assert data["entries_checked"] == 9
+    assert data["entries_checked"] == 12
     assert [(p["check"], p["key"]) for p in data["problems"]] == [
         ("duplicate_keys", "Duplicate2026"),
         ("doi", "MissingDoi2026"),
@@ -1063,6 +1075,9 @@ def test_check_problems_json(runner, checkfile):
         ("names", "BadNames2026"),
         ("required_fields", "MissingRequired2026"),
         ("entry_type", "UnknownType2026"),
+        ("year", "BadYear2026"),
+        ("month", "LiteralMonth2026"),
+        ("month", "BadMonthMacro2026"),
         ("unused_strings", None),
     ]
     assert all("message" in p for p in data["problems"])
@@ -1140,6 +1155,188 @@ def _write_bib(tmp_path, text):
     bibfile = tmp_path / "library.bib"
     bibfile.write_text(text, encoding="utf-8")
     return bibfile
+
+
+def _check_year(runner, tmp_path, year):
+    """The problem lines `check` reports for an `@article` whose
+    `year` field holds `year`."""
+    bibfile = _write_bib(
+        tmp_path,
+        "@string{prl = {Phys. Rev. Lett.}}\n\n"
+        "@article{Entry,\n"
+        "    author = {Doe, John},\n"
+        "    doi = {10.1000/year},\n"
+        "    journal = prl,\n"
+        "    title = {An Article with a Year},\n"
+        f"    year = {{{year}}}}}\n",
+    )
+    return _problem_lines(runner.invoke(main, ["check", str(bibfile)]))
+
+
+def _problem_lines(result):
+    """The problem lines of a `check` invocation, i.e. its output
+    without the trailing summary line; asserts that `check` completed
+    (rather than crashed), so a failure shows the full output instead
+    of a confusing list diff."""
+    assert result.exit_code in (0, 1), result.output + str(result.exception)
+    *problems, summary = result.output.splitlines()
+    assert summary.startswith(("PASS", "FAIL")), result.output
+    return problems
+
+
+def test_check_year_readable(runner, tmp_path):
+    """A year `%Y` reads as four digits passes, even when it is not a
+    bare four-digit string: a two-digit year maps into 1950--2049, and
+    trailing junk is ignored."""
+    for year in ("2014", "1984", "08", "49", "50", "2008a", "2001--"):
+        assert _check_year(runner, tmp_path, year) == [], year
+
+
+def test_check_year_unreadable(runner, tmp_path):
+    """A year `%Y` cannot read reduces to the `0` sentinel and is
+    reported, naming the value and what `%Y` gives."""
+    assert _check_year(runner, tmp_path, "August, 2008") == [
+        "Entry: year 'August, 2008' does not read as a four-digit "
+        "year (%Y gives '0')"
+    ]
+    for year in ("(about 1984)", "in press", "n.d."):
+        problems = _check_year(runner, tmp_path, year)
+        assert problems == [
+            f"Entry: year {year!r} does not read as a four-digit "
+            "year (%Y gives '0')"
+        ], year
+
+
+def test_check_year_crossref_collision(runner, tmp_path):
+    """The year audit evaluates `%Y` even for an entry whose rendered
+    year equals its own `crossref` value; only applying such a key
+    (in `rekey`) is refused, not evaluating the format."""
+    bibfile = _write_bib(
+        tmp_path,
+        "@string{prl = {Phys. Rev. Lett.}}\n\n"
+        "@proceedings{2014,\n"
+        "    title = {Proceedings of Something},\n"
+        "    year = {2014}}\n\n"
+        "@article{Child2014,\n"
+        "    author = {Doe, John},\n"
+        "    crossref = {2014},\n"
+        "    doi = {10.1000/crossref},\n"
+        "    journal = prl,\n"
+        "    title = {An Article Crossref-ed to a Year-Named Parent},\n"
+        "    year = {2014}}\n",
+    )
+    result = _run(runner, "check", bibfile)
+    assert result.output == "PASS (2 entries checked)\n"
+
+
+def _check_month(runner, tmp_path, month):
+    """The problem lines `check` reports for an `@article` whose
+    `month` field is written as `month` (verbatim BibTeX, so
+    `month = jun` is a macro reference and `month = {jun}` is not)."""
+    bibfile = _write_bib(
+        tmp_path,
+        "@string{prl = {Phys. Rev. Lett.}}\n\n"
+        "@article{Entry,\n"
+        "    author = {Doe, John},\n"
+        "    doi = {10.1000/month},\n"
+        "    journal = prl,\n"
+        f"    month = {month},\n"
+        "    title = {An Article with a Month},\n"
+        "    year = {2014}}\n",
+    )
+    return _problem_lines(runner.invoke(main, ["check", str(bibfile)]))
+
+
+def test_check_month_standard_macro(runner, tmp_path):
+    """A bare reference to one of the twelve standard month macros
+    passes, in any case (parsing normalizes the name)."""
+    for month in ("jan", "jun", "sep", "dec", "JUN", "Jun"):
+        assert _check_month(runner, tmp_path, month) == [], month
+
+
+def test_check_month_literal(runner, tmp_path):
+    """A literal month is reported even when it renders correctly: the
+    macro is what lets the bibliography style abbreviate and localize
+    the month."""
+    for month in ("{June}", "{06}", "{6}", "{13}", "{Herbst}"):
+        stored = month.strip("{}")
+        assert _check_month(runner, tmp_path, month) == [
+            f"Entry: month is the literal string {stored!r}, not one "
+            "of the twelve standard month macros (jan ... dec)"
+        ], month
+
+
+def test_check_month_concatenated(runner, tmp_path):
+    """A concatenated month is a literal, not a macro reference, and
+    the message shows the raw source text."""
+    assert _check_month(runner, tmp_path, "jun # {~1st}") == [
+        "Entry: month is the literal string 'jun # {~1st}', not one "
+        "of the twelve standard month macros (jan ... dec)"
+    ]
+
+
+def test_check_month_nonstandard_macro(runner, tmp_path):
+    """A bare macro reference outside the twelve is reported, whether
+    or not the file defines it -- `%m` would silently render it as
+    January."""
+    assert _check_month(runner, tmp_path, "sept") == [
+        "Entry: month references the macro 'sept', not one of the "
+        "twelve standard month macros (jan ... dec)"
+    ]
+
+
+def test_check_month_defined_nonstandard_macro(runner, tmp_path):
+    """Defining the macro does not make it a month."""
+    bibfile = _write_bib(
+        tmp_path,
+        "@string{prl = {Phys. Rev. Lett.}}\n\n"
+        "@string{sept = {September}}\n\n"
+        "@article{Entry,\n"
+        "    author = {Doe, John},\n"
+        "    doi = {10.1000/month},\n"
+        "    journal = prl,\n"
+        "    month = sept,\n"
+        "    title = {An Article with a Month},\n"
+        "    year = {2014}}\n",
+    )
+    result = runner.invoke(main, ["check", str(bibfile)])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "Entry: month references the macro 'sept', not one of the "
+        "twelve standard month macros (jan ... dec)",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+def test_check_year_and_month_only_when_present(runner, tmp_path):
+    """Both audits look only at a field the entry defines with a
+    non-empty value; an absent or empty field is the required-field
+    and empty-field audits' business, not theirs."""
+    bibfile = _write_bib(
+        tmp_path,
+        "@misc{NoDate,\n"
+        "    author = {Doe, John},\n"
+        "    title = {An Entry with Neither Year nor Month}}\n",
+    )
+    result = _run(runner, "check", bibfile)
+    assert result.output == "PASS (1 entry checked)\n"
+    bibfile = _write_bib(
+        tmp_path,
+        "@misc{EmptyDate,\n"
+        "    author = {Doe, John},\n"
+        "    month = {},\n"
+        "    title = {An Entry with an Empty Year and Month},\n"
+        "    year = {}}\n",
+    )
+    result = runner.invoke(main, ["check", str(bibfile)])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "EmptyDate: empty field 'month' (BibDesk deletes empty fields "
+        "on save)",
+        "EmptyDate: empty field 'year' (BibDesk deletes empty fields "
+        "on save)",
+        "FAIL (2 problems, 1 entry checked)",
+    ]
 
 
 def test_check_required_field_defined_but_empty(runner, tmp_path):
