@@ -12,12 +12,17 @@ Every entry type is validated when an entry is *constructed or
 modified* in Python -- {class}`~bibdeskparser.Entry` construction or an
 `entry_type` assignment. An unrecognized entry type raises a
 {exc}`ValueError`. **Loading a `.bib` file never validates**, so a file
-using an unusual entry type still loads and round-trips unchanged.
+using an unusual entry type still loads and round-trips unchanged. The
+[`check`](cli-check) command is where such a file is examined: it
+reports every entry whose type is unrecognized, and every mandatory
+field an entry's type lists that the entry does not have.
 
 Assigning a field that is not appropriate for the entry type emits a
 {exc}`UserWarning` (the value is still stored). A field is appropriate
 if it is one of the type's mandatory or optional fields listed below, or
-one of the [fields common to all entry types](#common-fields).
+one of the [fields common to all entry types](#common-fields). Nothing
+requires the mandatory fields to be *present* at write time; that is
+what `check` audits.
 
 The extended biblatex entry types and fields are also recognized
 (accepted without error), though only the types below are given field

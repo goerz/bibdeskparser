@@ -65,10 +65,10 @@ def fixture_checkfile(tmp_path):
     named after it (`MissingDoi2026`, `EmptyDoi2026` -- failing both
     the doi audit and the empty-fields audit, since its `doi = {}`
     would be deleted by BibDesk on save -- `LiteralJournal2026`,
-    `UndefinedMacro2026`, `BadNames2026`, `Duplicate2026`), plus an
-    unused `@string` macro (`unusedjrnl`) and the *passing* entry
-    `Preprint2026` (a preprint-only entry, exempt from the doi and
-    journal audits)."""
+    `UndefinedMacro2026`, `BadNames2026`, `MissingRequired2026`,
+    `UnknownType2026`, `Duplicate2026`), plus an unused `@string`
+    macro (`unusedjrnl`) and the *passing* entry `Preprint2026` (a
+    preprint-only entry, exempt from the doi and journal audits)."""
     return Path(shutil.copy(FAIL_CHECKS_DIR / "problems.bib", tmp_path))
 
 
@@ -87,10 +87,10 @@ def fixture_keyformatfile(tmp_path):
     library that passes every audit except the opt-in `--key-format`
     audit. Against `%p1%c{journal}0%Y%u0`, `ConformingPRA2015`, the
     colliding pair `CollidingPRA2015`/`CollidingPRA2015a`, the
-    preprint `Preprint2205.15044`, and `Shortened2015` (an article
+    preprint `Preprint2205.15044`, and `Shortened2015` (a `misc` entry
     with no `journal`, keyed as the format renders without the venue)
-    conform, while `Deviation2015` and `Handpicked` (an article with
-    no `journal` and a hand-picked key) deviate."""
+    conform, while `Deviation2015` and `Handpicked` (a `misc` entry
+    with no `journal` and a hand-picked key) deviate."""
     return Path(shutil.copy(FAIL_CHECKS_DIR / "keyformat.bib", tmp_path))
 
 
@@ -1037,9 +1037,14 @@ def test_check_problems(runner, checkfile):
         "BadNames2026: author does not parse as names: "
     )
     assert "Too many commas" in lines[6]
-    assert lines[7] == "unused @string macro 'unusedjrnl'"
-    assert lines[8] == "FAIL (8 problems, 7 entries checked)"
-    assert len(lines) == 9
+    assert lines[7] == (
+        "MissingRequired2026: missing required field 'year' for entry "
+        "type 'article'"
+    )
+    assert lines[8] == "UnknownType2026: unrecognized entry type 'bogustype'"
+    assert lines[9] == "unused @string macro 'unusedjrnl'"
+    assert lines[10] == "FAIL (10 problems, 9 entries checked)"
+    assert len(lines) == 11
 
 
 def test_check_problems_json(runner, checkfile):
@@ -1047,7 +1052,7 @@ def test_check_problems_json(runner, checkfile):
     assert result.exit_code == 1
     data = json.loads(result.output)
     assert data["passed"] is False
-    assert data["entries_checked"] == 7
+    assert data["entries_checked"] == 9
     assert [(p["check"], p["key"]) for p in data["problems"]] == [
         ("duplicate_keys", "Duplicate2026"),
         ("doi", "MissingDoi2026"),
@@ -1056,6 +1061,8 @@ def test_check_problems_json(runner, checkfile):
         ("journal", "LiteralJournal2026"),
         ("journal", "UndefinedMacro2026"),
         ("names", "BadNames2026"),
+        ("required_fields", "MissingRequired2026"),
+        ("entry_type", "UnknownType2026"),
         ("unused_strings", None),
     ]
     assert all("message" in p for p in data["problems"])
@@ -1101,6 +1108,116 @@ def test_check_per_key_empty_doi(runner, checkfile):
         "fields on save)",
         "FAIL (2 problems, 1 entry checked)",
     ]
+
+
+def test_check_required_fields(runner, checkfile):
+    """A missing required field is reported once per field, naming the
+    entry type that requires it."""
+    result = runner.invoke(
+        main, ["check", str(checkfile), "MissingRequired2026"]
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "MissingRequired2026: missing required field 'year' for entry "
+        "type 'article'",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+def test_check_unrecognized_entry_type(runner, checkfile):
+    """An entry of a type the data model does not know is reported,
+    and is not additionally audited for required fields."""
+    result = runner.invoke(main, ["check", str(checkfile), "UnknownType2026"])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "UnknownType2026: unrecognized entry type 'bogustype'",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+def _write_bib(tmp_path, text):
+    """Write `text` as a `.bib` file in `tmp_path` and return its path."""
+    bibfile = tmp_path / "library.bib"
+    bibfile.write_text(text, encoding="utf-8")
+    return bibfile
+
+
+def test_check_required_field_defined_but_empty(runner, tmp_path):
+    """A defined-but-empty required field is missing (BibDesk would
+    delete it on save), so it fails both the required-field and the
+    empty-field audit."""
+    bibfile = _write_bib(
+        tmp_path,
+        "@string{prl = {Phys. Rev. Lett.}}\n\n"
+        "@article{EmptyYear2026,\n"
+        "    author = {Doe, John},\n"
+        "    doi = {10.1000/empty-year},\n"
+        "    journal = prl,\n"
+        "    title = {An Article Whose Year Is an Empty Field},\n"
+        "    year = {}}\n",
+    )
+    result = runner.invoke(main, ["check", str(bibfile)])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "EmptyYear2026: missing required field 'year' for entry type "
+        "'article'",
+        "EmptyYear2026: empty field 'year' (BibDesk deletes empty "
+        "fields on save)",
+        "FAIL (2 problems, 1 entry checked)",
+    ]
+
+
+def test_check_type_audits_ignore_verify_flags(runner, checkfile):
+    """`verify_types`/`verify_fields` govern validation at write time
+    in Python; they never switch off a standing audit."""
+    (checkfile.parent / "bibdeskparser.toml").write_text(
+        "verify_types = false\nverify_fields = false\n", encoding="utf-8"
+    )
+    result = runner.invoke(
+        main,
+        ["check", str(checkfile), "UnknownType2026", "MissingRequired2026"],
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "UnknownType2026: unrecognized entry type 'bogustype'",
+        "MissingRequired2026: missing required field 'year' for entry "
+        "type 'article'",
+        "FAIL (2 problems, 2 entries checked)",
+    ]
+
+
+def test_check_declared_type_passes(runner, checkfile):
+    """A `[types.NAME]` table makes an unknown type recognized, and
+    its `required` list becomes what the entry is audited against."""
+    toml = checkfile.parent / "bibdeskparser.toml"
+    toml.write_text(
+        '[types.bogustype]\nrequired = ["author", "title"]\n',
+        encoding="utf-8",
+    )
+    result = _run(runner, "check", checkfile, "UnknownType2026")
+    assert result.output == "PASS (1 entry checked)\n"
+    toml.write_text(
+        '[types.bogustype]\nrequired = ["author", "title", "publisher"]\n',
+        encoding="utf-8",
+    )
+    result = runner.invoke(main, ["check", str(checkfile), "UnknownType2026"])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "UnknownType2026: missing required field 'publisher' for "
+        "entry type 'bogustype'",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+def test_check_templateless_type_has_no_required_fields(runner, tmp_path):
+    """An extended biblatex type is recognized but has no field
+    template on record, so nothing is required of it."""
+    bibfile = _write_bib(
+        tmp_path,
+        "@dataset{Data2026,\n    title = {A Bare Dataset Entry}}\n",
+    )
+    result = _run(runner, "check", bibfile)
+    assert result.output == "PASS (1 entry checked)\n"
 
 
 def _add_static_group(bibfile, name, keys):
@@ -1393,10 +1510,10 @@ _EMPTY_BLOB = (
     "AAAAAAEBAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAZ"
 )
 _EMPTY_FILE_BIB = (
-    "@article{EmptyPath2026,\n"
+    "@misc{EmptyPath2026,\n"
     "\tauthor = {Doe, John},\n"
     "\tdoi = {10.1000/empty},\n"
-    "\ttitle = {An Article with an Empty Attachment Path},\n"
+    "\ttitle = {An Entry with an Empty Attachment Path},\n"
     "\tyear = {2026},\n"
     "\tbdsk-file-1 = {" + _EMPTY_BLOB + "}}\n"
 )
@@ -1418,12 +1535,12 @@ def test_check_files_directory_link_passes(runner, tmp_path):
     # passes the audit (existence + exact case, no is_file() check).
     lib = Library()
     lib["Dir2026"] = Entry(
-        "article",
+        "misc",
         "Dir2026",
         fields={
             "author": "Doe, John",
             "doi": "10.1000/dir",
-            "title": "An Article Linking a Folder",
+            "title": "An Entry Linking a Folder",
             "year": "2026",
         },
     )
@@ -1445,7 +1562,7 @@ def test_check_files_broken_symlink_and_nonfile_component(runner, tmp_path):
     lib = Library()
     for key in ("Sym2026", "NotDir2026"):
         lib[key] = Entry(
-            "article",
+            "misc",
             key,
             fields={
                 "author": "Doe, John",
@@ -1479,10 +1596,15 @@ def test_check_files_broken_symlink_and_nonfile_component(runner, tmp_path):
 
 
 def _one_entry_lib(tmp_path, key):
-    """A saved one-entry library in `tmp_path`, ready for `add_file`."""
+    """A saved one-entry library in `tmp_path`, ready for `add_file`.
+
+    The entry is a `misc`, the one type with no required fields, so
+    that it passes every audit except the `--files` one under test
+    (an `article` would need a `journal`, and a literal one would in
+    turn fail the journal audit)."""
     lib = Library()
     lib[key] = Entry(
-        "article",
+        "misc",
         key,
         fields={
             "author": "Doe, John",
@@ -1569,7 +1691,7 @@ def fixture_deadlinks_bib(tmp_path):
     )
     for key in keys:
         lib[key] = Entry(
-            "article",
+            "misc",  # no required fields; see `_one_entry_lib`
             key,
             fields={
                 "author": "J. Doe",
@@ -2041,7 +2163,7 @@ def test_check_key_format_missing_field(runner, keyformatfile):
 
 def test_check_key_format_unevaluable(runner, keyformatfile):
     """A format that cannot be evaluated at all (here: a per-type
-    format with no entry for `article` and no `""` fallback) is
+    format with no entry for `misc` and no `""` fallback) is
     reported as such."""
     (keyformatfile.parent / "bibdeskparser.toml").write_text(
         '[auto_key.format_spec]\nbook = "%a1%Y%u0"\n', encoding="utf-8"
@@ -2053,7 +2175,7 @@ def test_check_key_format_unevaluable(runner, keyformatfile):
     assert result.exit_code == 1
     assert result.output.splitlines() == [
         "Handpicked: cannot evaluate citation-key format: the "
-        "auto-key format_spec has no entry for type 'article' and "
+        "auto-key format_spec has no entry for type 'misc' and "
         "no '' fallback",
         "FAIL (1 problem, 1 entry checked)",
     ]

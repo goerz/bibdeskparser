@@ -4,22 +4,26 @@ The `.bib` files in this folder back the tests for the `check` CLI
 command in `tests/test_cli.py`. In `problems.bib`, one entry per
 audit fails, named after its problem (`MissingDoi2026`,
 `LiteralJournal2026`, `UndefinedMacro2026`, `BadNames2026`,
-`Duplicate2026`), the `@string` macro `unusedjrnl` is never
-referenced, and `EmptyDoi2026` and `Preprint2026` demonstrate the
-passing exemptions; `broken_block.bib` contains a block that fails
+`MissingRequired2026` (an `@article` with no `year`),
+`UnknownType2026` (a `@bogustype` entry), `Duplicate2026`), the
+`@string` macro `unusedjrnl` is never referenced, and `EmptyDoi2026`
+and `Preprint2026` demonstrate the passing exemptions;
+`broken_block.bib` contains a block that fails
 to parse. `deadfiles.bib` passes every audit *except* the opt-in
 `--files` audit: `Dead2020` links a missing file, and `Case2020`
 links `case2020.pdf` while the on-disk file (committed alongside) is
 `Case2020.pdf`, differing only in case. `keyformat.bib` passes every
 audit *except* the opt-in `--key-format` audit (against
 `%p1%c{journal}0%Y%u0`): `Deviation2015` deviates from the format, as
-does `Handpicked`, an article with no `journal` whose key was chosen
+does `Handpicked`, an entry with no `journal` whose key was chosen
 by hand instead of being the shortened `Venueless2015` that the format
 generates for it. `ConformingPRA2015`, the colliding pair
 `CollidingPRA2015`/`CollidingPRA2015a`, the preprint
-`Preprint2205.15044`, and `Shortened2015` (an article with no
+`Preprint2205.15044`, and `Shortened2015` (an entry with no
 `journal`, keyed exactly as the format renders it without the venue)
-conform. Since `check` is read-only, the files can also be used
+conform; the two journal-less entries are `@misc`, the one type with
+no required fields, so that the required-field audit leaves them
+alone. Since `check` is read-only, the files can also be used
 directly to get a feel for how the command behaves:
 
 ~~~console
