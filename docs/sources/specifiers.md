@@ -409,10 +409,16 @@ before it enters the key:
    configuration table: `"tex"` (the default) removes commands like
    `\emph{...}` and all braces, `"braces"` removes only braces, and
    `"none"` disables this step.
-2. Accents and ligatures are decomposed to plain ASCII letters
-   (`ü` → `u`, `ø` → `o`, `æ` → `ae`, `ß` → `ss`, ...).
+2. Latin letters are folded to plain ASCII. Accents are dropped
+   (`ü` → `u`), ligatures and digraphs are spelled out (`æ` → `ae`,
+   `ß` → `ss`, `ǆ` → `dz`), and a letter whose modification is baked
+   into the glyph rather than written as a separate accent becomes its
+   base letter (`ø` → `o`, `ł` → `l`, `ı` → `i`).
 3. Whitespace becomes `-`, and any remaining character outside
-   `a-z A-Z 0-9 - . / : ;` is dropped.
+   `a-z A-Z 0-9 - . / : ;` is dropped. Text in a non-Latin script
+   (Greek, Cyrillic, CJK) has no ASCII rendering and disappears here,
+   so an entry whose author names are not spelled in the Latin
+   alphabet needs a hand-written key.
 
 ```python
 >>> bib["Mueller"] = Entry(
@@ -428,14 +434,29 @@ before it enters the key:
 >>> bib.eval_format_spec("Mueller", "%a1%c{journal}0%Y:%t")
 'MullerNJP2020:Its-a-Schrodinger-World'
 
+>>> bib["Kilic"] = Entry(
+...     "article",
+...     "Kilic",
+...     {
+...         "author": "Kılıç, Ayşe and Masłowski, Tomasz",
+...         "journal": "New J. Phys.",
+...         "year": "2024",
+...     },
+... )
+>>> bib.eval_format_spec("Kilic", "%a%c{journal}0%Y")
+'KilicMaslowskiNJP2024'
+
 ```
 
-Note that BibDesk simply strips accented characters of their accent
-(`Müller` → `Muller`); it does not apply German transliteration
-(`Mueller`). If you want `Mueller`, hard-code the intended key with a
-two-argument `rekey`. Literal text in the format itself is sanitized
-similarly (whitespace becomes `-`; characters invalid in a hand-typed
-key are dropped, which notably includes `(`, `)`, and `@`).
+The fold is a spelling approximation, not a transliteration: BibDesk
+strips accented characters of their accent (`Müller` → `Muller`) and
+does not apply German conventions (`Mueller`). If you want `Mueller`,
+hard-code the intended key with a two-argument `rekey`. Literal text
+in the format itself is sanitized similarly (whitespace becomes `-`;
+characters invalid in a hand-typed key are dropped, which notably
+includes `(`, `)`, and `@`), except that it is not ASCII-folded, so a
+non-ASCII character written into a format is dropped rather than
+folded.
 
 The `lowercase` option of the `[auto_key]` table lowercases the whole
 generated key; a `%U` specifier then adds lowercase characters, like

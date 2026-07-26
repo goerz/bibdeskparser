@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Fixed: citation-key generation now folds a non-ASCII Latin letter to its ASCII base letter instead of deleting it. Only letters that Unicode decomposes into a base letter plus a combining mark (`ü`, `ğ`, `ř`) were handled before, along with a hand-written table of ligatures and stroked letters (`æ`, `ß`, `ø`, `đ`); every other letter was silently dropped, so `Kılıç` keyed as `Klc`, `Masłowski` as `Masowski`, and `Əliyev` as `liyev`. The base letter is now read off the Unicode character name, which covers the whole class rather than the codepoints someone thought to list: dotless `ı`, `ł` (whose uppercase `Ł` was in the table), `ĸ`, `ŋ`, `ə`, and 100+ more. Ligatures and digraphs are spelled out (`ǆ` → `dz`), matching BibDesk, which transliterates before falling back to a lossy conversion. Existing keys are unaffected unless they contain such a letter, in which case single-argument `rekey` (and the `check --key-format` audit) will now propose the corrected key. Text in a script with no Latin rendering (Greek, Cyrillic, CJK) is still dropped. [[#52], [#57]]
+
 ## [v0.5.0] - 2026-07-23
 
 * Changed: the `import` command now reads its source file from a `--file FILE` option instead of a positional `FILE` argument, so a positional argument ending in `.bib` always names the library, like every other command. This removes the collision where, with a `default_bib_file` configured, `bibdeskparser import from_paper.bib` silently claimed the snippet as the library and then failed for lack of a source. Migration: `bibdeskparser import library.bib entries.bib` becomes `bibdeskparser import library.bib --file entries.bib`, and `bibdeskparser import from_paper.bib` (into the default library) becomes `bibdeskparser import --file from_paper.bib`. `Library.import_bibtex`, which takes the BibTeX text directly, is unaffected. [[#46], [#51]]
@@ -173,3 +175,5 @@ Initial release.
 [#49]: https://github.com/goerz/bibdeskparser/pull/49
 [#50]: https://github.com/goerz/bibdeskparser/pull/50
 [#51]: https://github.com/goerz/bibdeskparser/pull/51
+[#52]: https://github.com/goerz/bibdeskparser/issues/52
+[#57]: https://github.com/goerz/bibdeskparser/pull/57

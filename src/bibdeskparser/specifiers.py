@@ -149,6 +149,30 @@ _COMPOSED_MAP = {
     0x00FE: "th",
 }
 
+# The base letter of a Latin letter, read off its Unicode name: a lone
+# letter, optionally preceded by qualifiers and followed by a `WITH ...`
+# tail.
+#
+#   "LATIN SMALL LETTER L WITH STROKE"   -> l   (l with stroke)
+#   "LATIN SMALL LETTER DOTLESS I"       -> i   (dotless i)
+#
+# This generalizes what _COMPOSED_MAP does by hand, so that letters
+# whose modification is baked into the glyph (rather than being a
+# combining mark that NFD splits off) fold instead of being deleted.
+_BASE_LETTER_RX = re.compile(
+    r"^LATIN (SMALL|CAPITAL) LETTER (?:[A-Z]+ )*?([A-Z])(?: WITH .*)?$"
+)
+
+# Latin letters whose Unicode name carries no base letter at all, so
+# _BASE_LETTER_RX cannot fold them.
+_NAMED_LETTERS = {
+    "ĸ": "k",  # kra (Greenlandic)
+    "Ŋ": "NG",  # eng (Northern Sami)
+    "ŋ": "ng",
+    "Ə": "E",  # schwa (Azerbaijani)
+    "ə": "e",
+}
+
 # A TeX command that "wraps" text, e.g. `\emph` in `\emph{word}`: a
 # backslash followed by letters (or a single non-letter character),
 # immediately followed by `{` and a non-`}` character. Matches
@@ -520,6 +544,39 @@ def _replace_composed(string):
     return stripped.translate(_COMPOSED_MAP)
 
 
+def _fold_char(char):
+    """The ASCII rendering of a single character (`""` if there is
+    none)."""
+    if char.isascii():
+        return char
+    match = _BASE_LETTER_RX.match(unicodedata.name(char, ""))
+    if match is not None:
+        base = match.group(2)
+        return base if match.group(1) == "CAPITAL" else base.lower()
+    return _NAMED_LETTERS.get(char, "")
+
+
+def _lossy_ascii(string):
+    """Fold `string` to ASCII, rendering a Latin letter as its base
+    letter rather than deleting it (BibDesk's `lossyASCIIString`).
+
+    Letters that NFD splits into a base letter and a combining mark
+    (`ü`, `ğ`) are handled by `_replace_composed` before this, but
+    letters carrying their modification in the glyph itself (`ł`, `ı`,
+    `ǆ`) reach here intact: `Kılıç` -> `Kilic`. A script with no such
+    rendering (Greek, Cyrillic, CJK) is dropped."""
+    if string.isascii():
+        return string
+    # A compatibility decomposition covers ligatures and digraphs
+    # (ǆ -> dz), which have no base letter in their Unicode name.
+    string = unicodedata.normalize("NFKD", string)
+    string = "".join(
+        char for char in string if not unicodedata.combining(char)
+    )
+    string = string.translate(_COMPOSED_MAP)
+    return "".join(_fold_char(char) for char in string)
+
+
 def _remove_braces(string):
     """Remove unescaped curly braces and unescape `\\{`/`\\}`
     (BibDesk's `stringByRemovingCurlyBraces`)."""
@@ -577,7 +634,7 @@ def _strict_sanitize(string, clean="tex", context="key"):
         return string.replace(":", "")
     string = _replace_composed(string)
     string = re.sub(r"\s", "-", string)
-    string = string.encode("ascii", "ignore").decode("ascii")
+    string = _lossy_ascii(string)
     return "".join(char for char in string if char in _STRICT_VALID_KEY_CHARS)
 
 
