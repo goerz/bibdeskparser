@@ -79,6 +79,12 @@ verify_fields = true
   value is stored regardless). Set it to `false` to suppress those
   warnings entirely.
 
+Both flags govern what happens at *write* time, in Python. Neither
+affects [`check`](cli-check), whose entry-type and required-field
+audits always run: turning off a write-time complaint is not a reason
+for an explicitly requested gate to stay quiet about what is in the
+file.
+
 The active configuration is exposed as the `config` class attribute
 of {class}`~bibdeskparser.Library` (equally readable from any library
 instance, as `bib.config`), so every setting can also be changed from
@@ -467,13 +473,18 @@ listed words even in title-case titles, where the heuristic does not
 apply. Words that are already braced are left alone. The list is
 exposed as `Library.config.protected_words`.
 
+(config-types)=
+
 ## Custom and extended entry types
 
 A `[types.NAME]` table defines the mandatory (`required`) and optional
 (`optional`) fields of an entry type, exactly like BibDesk's
 per-type field templates. This both makes `NAME` a recognized entry
 type and, when `verify_fields` is on, determines which fields are
-considered appropriate for it.
+considered appropriate for it. The `required` list is also what
+[`check`](cli-check) audits every entry of that type against, so
+declaring a type here is how an entry of an otherwise unknown type
+passes the gate.
 
 For an entry type that is **not** already built in, the table simply
 defines it:

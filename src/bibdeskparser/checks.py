@@ -30,11 +30,11 @@ __private__ = ["Problem", "collect_problems"]
 
 
 #: One audit finding. `check` names the audit (`"parse"`,
-#: `"duplicate_keys"`, `"doi"`, `"empty_fields"`, `"known_missing"`,
-#: `"journal"`, `"names"`, `"unused_strings"`, `"files"`, or
-#: `"key_format"`), `key` is the citation key the problem is tied to
-#: (`None` for a problem that concerns the file as a whole), and
-#: `message` describes the problem.
+#: `"duplicate_keys"`, `"entry_type"`, `"required_fields"`, `"doi"`,
+#: `"empty_fields"`, `"known_missing"`, `"journal"`, `"names"`,
+#: `"unused_strings"`, `"files"`, or `"key_format"`), `key` is the
+#: citation key the problem is tied to (`None` for a problem that
+#: concerns the file as a whole), and `message` describes the problem.
 Problem = namedtuple("Problem", ["check", "key", "message"])
 
 
@@ -46,9 +46,10 @@ def collect_problems(
 
     Without `keys`, all audits run over the entire library. With
     `keys` (an iterable of citation keys, all of which must exist in
-    `library`), the doi, journal, and names audits cover only those
-    entries, the duplicate-keys audit reports only those keys, and
-    the unused-macros audit is skipped; problems parsing the file
+    `library`), the per-entry audits (entry type, required fields,
+    doi, empty fields, known-missing, journal, and names) cover only
+    those entries, the duplicate-keys audit reports only those keys,
+    and the unused-macros audit is skipped; problems parsing the file
     itself are always included.
 
     With `audit_files`, an additional per-entry audit checks that each
@@ -123,9 +124,9 @@ def _parse_problems(library):
 
 
 def _entry_problems(entry, library):
-    """The doi, empty-field, known-missing, journal, and names
-    problems of a single `entry`."""
-    problems = []
+    """The entry-type, required-field, doi, empty-field,
+    known-missing, journal, and names problems of a single `entry`."""
+    problems = _type_problems(entry)
     archives = active.preprint_archives
     known_missing = active.known_missing
     is_preprint = _entry_preprint(entry, archives) is not None
@@ -186,6 +187,48 @@ def _entry_problems(entry, library):
                             )
                         )
     return problems
+
+
+def _type_problems(entry):
+    """The problems with `entry`'s type: a type outside the recognized
+    entry types, or a required field of its type that the entry does
+    not have.
+
+    An entry with an unrecognized type is reported once and not
+    audited for required fields; a recognized type BibDesk does not
+    template (an extended data-model type like `dataset`) has no
+    required fields on record and is skipped. Either is declared with
+    a `[types.NAME]` table in `bibdeskparser.toml`, which also gives
+    the type a field template.
+
+    Both audits are unconditional: the `verify_types`/`verify_fields`
+    settings govern what happens when a type or field is *assigned* in
+    Python, whereas an entry read from a `.bib` file is never
+    validated (loading a library is non-destructive), so `check` is
+    the only place an inherited type problem surfaces.
+    """
+    entry_type = entry.entry_type.lower()
+    if entry_type not in active.recognized_entry_types:
+        return [
+            Problem(
+                "entry_type",
+                entry.key,
+                f"unrecognized entry type {entry_type!r}",
+            )
+        ]
+    spec = active.documented_types.get(entry_type)
+    if spec is None:
+        return []
+    return [
+        Problem(
+            "required_fields",
+            entry.key,
+            f"missing required field {field!r} for entry type "
+            f"{entry_type!r}",
+        )
+        for field in spec["required"]
+        if not _has_field(entry, field)
+    ]
 
 
 def _journal_problems(entry, library, archives):

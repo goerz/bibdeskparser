@@ -231,12 +231,16 @@ EmptyDoi2026: empty field 'doi' (BibDesk deletes empty fields on save)
 LiteralJournal2026: journal is the literal string 'Some Journal', not an @string macro reference
 UndefinedMacro2026: journal references undefined @string macro 'nosuchjournal'
 BadNames2026: author does not parse as names: Cannot split the following name `Doe, John, Jr, X, Y` into parts: Too many commas
+MissingRequired2026: missing required field 'year' for entry type 'article'
+UnknownType2026: unrecognized entry type 'bogustype'
 unused @string macro 'unusedjrnl'
-FAIL (8 problems, 7 entries checked)
+FAIL (10 problems, 9 entries checked)
 ```
 
 The audits: the file parses cleanly (no skipped blocks); no citation
-key occurs more than once; every `article` that is not a
+key occurs more than once; every entry has a recognized
+[entry type](bib-entry-types) and every field that type requires;
+every `article` that is not a
 [preprint](preprints) has a `doi`; no entry has a defined-but-empty
 field (BibDesk deletes empty fields when it saves, so the field would
 silently disappear -- see [Empty fields](bibdesk-empty-fields)); no
@@ -252,12 +256,28 @@ hyphen that detaches an initial, as in `Meyer, H -D` or `Meyer, H- D`
 -- would otherwise corrupt [`render`](cli-render)'s initials); and
 every `@string` macro defined in the file is referenced by some entry.
 
+The entry-type and required-field audits are the only place a type
+problem inherited from a file surfaces: loading a `.bib` file never
+validates, so an entry BibDesk (or a hand edit) left with an unknown
+type or without, say, the `year` an `article` requires round-trips
+unnoticed. A type outside the recognized ones is reported once and
+not audited for its fields; a recognized type that BibDesk does not
+template (an extended biblatex type like `dataset`) has no required
+fields on record and is skipped. Declaring such a type in a
+[`[types.NAME]` table](config-types) of `bibdeskparser.toml` passes
+the first audit and gives the type a field template for the second. A
+defined-but-empty field counts as missing, so `year = {}` on an
+`article` is reported by both this audit and the empty-field one.
+
 An `article` verified to have no `doi` passes the doi audit if it is
 a member of the known-missing group configured for `doi` in the
 `[known_missing]` table of `bibdeskparser.toml`; the known-missing
 audits do nothing without that configuration. The
 [`add_doi`](cli-add-doi) command fills in missing DOIs and maintains
-that group.
+that group. A known-missing group is no exemption from the
+required-field audit, which is unconditional: an `article` with no
+`year` is not an article, and the fix is `misc` (which requires
+nothing), not a group membership.
 
 With `KEY...`, only the given entries are audited: the per-entry
 audits cover just those entries, the duplicate-key audit reports only
@@ -305,8 +325,8 @@ implies `--key-format` and cannot be combined with `--no-key-format`.
 A key already matching the format evaluates to itself, so a
 disambiguated sibling like `CollidingPRA2015a` still conforms; an
 entry lacking a field the format references is audited against the
-shorter key the format generates for it (`Handpicked` below is an
-article with no `journal`). If no usable format is available (no
+shorter key the format generates for it (`Handpicked` below has no
+`journal`). If no usable format is available (no
 `--format-spec` and no configured `[auto_key]` format, or a
 `--format-spec` that does not compile), a single message is reported
 rather than one failure per entry.
@@ -320,10 +340,11 @@ FAIL (2 problems, 7 entries checked)
 
 With `--json`: an object `{"passed": ..., "entries_checked": ...,
 "problems": [...]}`, where each problem is an object with `check`
-(the audit that failed: `parse`, `duplicate_keys`, `doi`,
-`empty_fields`, `known_missing`, `journal`, `names`,
-`unused_strings`, `files`, or `key_format`), `key` (the citation key,
-or `null` for a problem not tied to an entry), and `message`.
+(the audit that failed: `parse`, `duplicate_keys`, `entry_type`,
+`required_fields`, `doi`, `empty_fields`, `known_missing`, `journal`,
+`names`, `unused_strings`, `files`, or `key_format`), `key` (the
+citation key, or `null` for a problem not tied to an entry), and
+`message`.
 
 (cli-show)=
 

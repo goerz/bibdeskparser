@@ -1387,7 +1387,13 @@ def check(
     e.g. after a batch of edits.
 
     The audits: the file parses cleanly (no skipped blocks); no
-    citation key occurs more than once; every article that is not a
+    citation key occurs more than once; every entry has a recognized
+    entry type and every field that type requires (a type outside the
+    recognized ones is reported once and not audited for its fields;
+    a recognized type with no field template on record, such as the
+    extended biblatex type 'dataset', is skipped -- declare either
+    with a [types.NAME] table in bibdeskparser.toml); every article
+    that is not a
     preprint has a doi (membership in the known-missing group
     configured for 'doi' in the [known_missing] table of
     bibdeskparser.toml marks an entry verified to have none, and
@@ -1437,9 +1443,10 @@ def check(
     'FAIL (N problems, M entries checked)' summary line. With --json:
     {"passed": ..., "entries_checked": ..., "problems": [{"check":
     ..., "key": ..., "message": ...}]}, where "check" names the audit
-    ("parse", "duplicate_keys", "doi", "empty_fields",
-    "known_missing", "journal", "names", "unused_strings", "files", or
-    "key_format") and "key" is null for a problem not tied to an entry.
+    ("parse", "duplicate_keys", "entry_type", "required_fields",
+    "doi", "empty_fields", "known_missing", "journal", "names",
+    "unused_strings", "files", or "key_format") and "key" is null for
+    a problem not tied to an entry.
     """
     if format_spec is not None and audit_key_format is False:
         raise click.UsageError(
