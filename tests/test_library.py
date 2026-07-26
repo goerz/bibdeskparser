@@ -1308,6 +1308,18 @@ def test_eval_format_spec_missing_key_raises(bib):
         bib.eval_format_spec("NoSuchKey", "%a1%Y%u0")
 
 
+def test_eval_format_spec_ignores_crossref_guard(bib):
+    """Evaluation is pure and never refuses a result: a generated key
+    equal to the entry's own crossref, which `rekey` declines to
+    apply, is still returned."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        bib["GoerzPRA2014"]["crossref"] = "Goerz2014"
+    assert bib.eval_format_spec("GoerzPRA2014", "%a1%Y") == "Goerz2014"
+    with pytest.raises(ValueError, match="crossref"):
+        bib.rekey("GoerzPRA2014", format_spec="%a1%Y")
+
+
 def test_eval_format_spec_missing_fields_shortens_key(bib):
     """A missing field renders as empty, like in `rekey`."""
     assert (

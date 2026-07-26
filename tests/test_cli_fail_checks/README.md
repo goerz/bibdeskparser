@@ -5,7 +5,10 @@ command in `tests/test_cli.py`. In `problems.bib`, one entry per
 audit fails, named after its problem (`MissingDoi2026`,
 `LiteralJournal2026`, `UndefinedMacro2026`, `BadNames2026`,
 `MissingRequired2026` (an `@article` with no `year`),
-`UnknownType2026` (a `@bogustype` entry), `Duplicate2026`), the
+`UnknownType2026` (a `@bogustype` entry), `BadYear2026` (a `year` of
+`August, 2026`), `LiteralMonth2026` (`month = {June}` written out
+instead of the macro), `BadMonthMacro2026` (`month = sept`, not one
+of the twelve), `Duplicate2026`), the
 `@string` macro `unusedjrnl` is never referenced, and `EmptyDoi2026`
 and `Preprint2026` demonstrate the passing exemptions;
 `broken_block.bib` contains a block that fails

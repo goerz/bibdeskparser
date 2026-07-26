@@ -5,6 +5,7 @@ import pytest
 from bibdeskparser.macros import (
     _MACRO_NAME_CHARS,
     STANDARD_MACROS,
+    STANDARD_MONTH_MACROS,
     is_valid_macro_name,
     normalize_macro_name,
 )
@@ -99,10 +100,12 @@ def test_standard_macros():
     """The standard macros are exactly the twelve BibTeX month macros
     (as in BibDesk's `BDSKMacroResolver`), with valid normalized names
     and full English month names as values."""
-    assert len(STANDARD_MACROS) == 12
-    assert STANDARD_MACROS["jan"] == "January"
-    assert STANDARD_MACROS["dec"] == "December"
-    for name, value in STANDARD_MACROS.items():
+    assert len(STANDARD_MONTH_MACROS) == 12
+    assert STANDARD_MONTH_MACROS["jan"] == "January"
+    assert STANDARD_MONTH_MACROS["dec"] == "December"
+    for name, value in STANDARD_MONTH_MACROS.items():
         assert is_valid_macro_name(name)
         assert value.capitalize() == value
         assert value.lower().startswith(name)
+    # BibDesk's built-in macro table holds the months and nothing else
+    assert STANDARD_MACROS == STANDARD_MONTH_MACROS

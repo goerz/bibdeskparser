@@ -10,6 +10,7 @@ pass/fail exit code.
 
 import os
 import posixpath
+import re
 from collections import namedtuple
 
 from bibtexparser.model import DuplicateBlockKeyBlock
@@ -18,7 +19,7 @@ from .config import active
 from .identifiers import _entry_preprint, _preprint_journal
 from .importing import _PREPRINT_KEY_SPEC
 from .library import _bare_macro_fields, _has_field
-from .macros import MacroString
+from .macros import STANDARD_MONTH_MACROS, MacroString
 from .render import _can_initialize
 from .specifiers import compile_format
 
@@ -31,10 +32,11 @@ __private__ = ["Problem", "collect_problems"]
 
 #: One audit finding. `check` names the audit (`"parse"`,
 #: `"duplicate_keys"`, `"entry_type"`, `"required_fields"`, `"doi"`,
-#: `"empty_fields"`, `"known_missing"`, `"journal"`, `"names"`,
-#: `"unused_strings"`, `"files"`, or `"key_format"`), `key` is the
-#: citation key the problem is tied to (`None` for a problem that
-#: concerns the file as a whole), and `message` describes the problem.
+#: `"empty_fields"`, `"known_missing"`, `"journal"`, `"year"`,
+#: `"month"`, `"names"`, `"unused_strings"`, `"files"`, or
+#: `"key_format"`), `key` is the citation key the problem is tied to
+#: (`None` for a problem that concerns the file as a whole), and
+#: `message` describes the problem.
 Problem = namedtuple("Problem", ["check", "key", "message"])
 
 
@@ -47,10 +49,10 @@ def collect_problems(
     Without `keys`, all audits run over the entire library. With
     `keys` (an iterable of citation keys, all of which must exist in
     `library`), the per-entry audits (entry type, required fields,
-    doi, empty fields, known-missing, journal, and names) cover only
-    those entries, the duplicate-keys audit reports only those keys,
-    and the unused-macros audit is skipped; problems parsing the file
-    itself are always included.
+    doi, empty fields, known-missing, journal, year, month, and names)
+    cover only those entries, the duplicate-keys audit reports only
+    those keys, and the unused-macros audit is skipped; problems
+    parsing the file itself are always included.
 
     With `audit_files`, an additional per-entry audit checks that each
     linked attachment (`bdsk-file-N` field) resolves to a real path on
@@ -125,7 +127,8 @@ def _parse_problems(library):
 
 def _entry_problems(entry, library):
     """The entry-type, required-field, doi, empty-field,
-    known-missing, journal, and names problems of a single `entry`."""
+    known-missing, journal, year, month, and names problems of a
+    single `entry`."""
     problems = _type_problems(entry)
     archives = active.preprint_archives
     known_missing = active.known_missing
@@ -160,6 +163,10 @@ def _entry_problems(entry, library):
             )
     if "journal" in entry:
         problems += _journal_problems(entry, library, archives)
+    if _has_field(entry, "year"):
+        problems += _year_problems(entry, library)
+    if _has_field(entry, "month"):
+        problems += _month_problems(entry)
     for field in ("author", "editor"):
         if field in entry:
             try:
@@ -259,6 +266,65 @@ def _journal_problems(entry, library, archives):
             )
         ]
     return []
+
+
+def _year_problems(entry, library):
+    """The problems with `entry`'s `year` field: a value from which no
+    four-digit year can be read.
+
+    The rule is stated through the `%Y` specifier, which is how the
+    year is read everywhere else (citation keys, file names): a value
+    passes iff `%Y` yields exactly four digits. That accepts the
+    values BibDesk itself reads correctly, including a two-digit
+    `08` (mapped into 1950--2049) and a trailing-junk `2008a`, and
+    rejects the ones where `%Y` falls back to its `0` sentinel."""
+    rendered = library.eval_format_spec(entry.key, "%Y")
+    if re.fullmatch(r"\d{4}", rendered):
+        return []
+    # for a macro-valued year this is the macro name, not its
+    # expansion; the message also shows the resolved reading via %Y
+    text = str(entry["year"]).strip()
+    return [
+        Problem(
+            "year",
+            entry.key,
+            f"year {text!r} does not read as a four-digit year "
+            f"(%Y gives {rendered!r})",
+        )
+    ]
+
+
+def _month_problems(entry):
+    """The problems with `entry`'s `month` field: anything other than
+    a bare reference to one of the twelve standard month macros.
+
+    Unlike `year`, this inspects the stored value rather than what
+    `%m` renders: `%m` falls back to `01` for every unparseable month,
+    which is indistinguishable from a genuine January. A literal value
+    is reported even when it renders correctly (`06`, `June`), for the
+    same reason a literal `journal` is: the macro is what lets the
+    bibliography style abbreviate and localize the month."""
+    value = entry["month"]
+    standard = "one of the twelve standard month macros (jan ... dec)"
+    if isinstance(value, MacroString):
+        name = str(value)
+        if name in STANDARD_MONTH_MACROS:
+            return []
+        return [
+            Problem(
+                "month",
+                entry.key,
+                f"month references the macro {name!r}, not {standard}",
+            )
+        ]
+    return [
+        Problem(
+            "month",
+            entry.key,
+            f"month is the literal string {str(value).strip()!r}, not "
+            f"{standard}",
+        )
+    ]
 
 
 def _key_format_unavailable(format_spec):

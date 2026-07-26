@@ -1455,6 +1455,15 @@ class Library(MutableMapping):
             raise KeyError(old_key)
         if new_key is None:
             new_key = self._generate_key(old_key, format_spec)
+            # a generated key is never applied when it equals the
+            # entry's own crossref parent (BibDesk skips such entries
+            # when generating cite keys, `BibDocument_Actions.m`)
+            entry = self._entries[old_key]
+            if new_key == str(entry.get("crossref", "") or ""):
+                raise ValueError(
+                    f"the generated key {new_key!r} for {old_key!r} "
+                    "would equal the entry's own crossref"
+                )
         elif format_spec is not None:
             raise ValueError("give either new_key or format_spec, not both")
         if new_key == old_key:
@@ -1509,9 +1518,10 @@ class Library(MutableMapping):
         exactly those where the result differs from the current path.
 
         Raises `KeyError` if `key` is not present, and `ValueError`
-        if no format is available for the entry's type, or (in the key
-        context) if the resulting key would equal the entry's own
-        `crossref` value.
+        if no format is available for the entry's type. Evaluation
+        never refuses a result: a generated key that {meth}`rekey`
+        would decline to apply (one equal to the entry's own
+        `crossref` value) is still returned.
         """
         if key not in self._entries:
             raise KeyError(key)
@@ -1593,13 +1603,18 @@ class Library(MutableMapping):
         """Generate a citation key for the entry at `key`, from
         `format_spec` or (if that is `None`) the configured
         `config.auto_key.format_spec`; backs {meth}`rekey` and
-        {meth}`eval_format_spec`."""
+        {meth}`eval_format_spec`.
+
+        Pure evaluation (like BibDesk's `suggestedCiteKey`): any rule
+        about whether the generated key may be *applied* -- like the
+        crossref guard -- belongs to the caller that applies it
+        ({meth}`rekey`)."""
         entry = self._entries[key]
         format_string = self._resolve_format_spec(
             format_spec, entry.entry_type
         )
         fmt = specifiers.compile_format(format_string)
-        new_key = specifiers.render_format(
+        return specifiers.render_format(
             fmt,
             entry,
             strings=self._all_strings(),
@@ -1612,14 +1627,6 @@ class Library(MutableMapping):
                 Path(self._path).stem if self._path is not None else None
             ),
         )
-        # a key must never equal the entry's own crossref parent
-        # (BibDesk skips generation for such entries)
-        if new_key == str(entry.get("crossref", "") or ""):
-            raise ValueError(
-                f"the generated key {new_key!r} for {key!r} would "
-                "equal the entry's own crossref"
-            )
-        return new_key
 
     def _compile_file_format(self, key, format_spec):
         """Resolve and compile a file-name `format_spec` (or, if it is

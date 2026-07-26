@@ -233,8 +233,11 @@ UndefinedMacro2026: journal references undefined @string macro 'nosuchjournal'
 BadNames2026: author does not parse as names: Cannot split the following name `Doe, John, Jr, X, Y` into parts: Too many commas
 MissingRequired2026: missing required field 'year' for entry type 'article'
 UnknownType2026: unrecognized entry type 'bogustype'
+BadYear2026: year 'August, 2026' does not read as a four-digit year (%Y gives '0')
+LiteralMonth2026: month is the literal string 'June', not one of the twelve standard month macros (jan ... dec)
+BadMonthMacro2026: month references the macro 'sept', not one of the twelve standard month macros (jan ... dec)
 unused @string macro 'unusedjrnl'
-FAIL (10 problems, 9 entries checked)
+FAIL (13 problems, 12 entries checked)
 ```
 
 The audits: the file parses cleanly (no skipped blocks); no citation
@@ -248,9 +251,11 @@ entry sits in a [known-missing group](config-known-missing) for a
 field it actually has; every `journal` field references a defined
 `@string` macro (a literal journal value is a problem, unless it is a
 recognized preprint pseudo-journal like `arXiv:2205.15044`); every
-`author` and `editor` field parses as names, each first name having
-only parts that can be initialized (a hyphen-separated segment that
-does not begin with a letter after TeX-to-unicode conversion -- a
+`year` reads as a four-digit year and every `month` is a bare
+reference to one of the twelve standard month macros `jan` ... `dec`;
+every `author` and `editor` field parses as names, each first name
+having only parts that can be initialized (a hyphen-separated segment
+that does not begin with a letter after TeX-to-unicode conversion -- a
 nickname like `` `Eunice' `` copied into the author list, or a stray
 hyphen that detaches an initial, as in `Meyer, H -D` or `Meyer, H- D`
 -- would otherwise corrupt [`render`](cli-render)'s initials); and
@@ -268,6 +273,22 @@ fields on record and is skipped. Declaring such a type in a
 the first audit and gives the type a field template for the second. A
 defined-but-empty field counts as missing, so `year = {}` on an
 `article` is reported by both this audit and the empty-field one.
+
+The date audits catch the values that
+[`%Y` and `%m`](specifiers-dates) mis-read in silence. A `year` passes
+if `%Y` yields four digits, which admits the values BibDesk reads
+correctly without being bare four-digit strings (`08` maps into
+1950--2049, `2008a` keeps its trailing junk out of the way) and
+reports the ones that reduce to the `0` sentinel: `August, 2008`,
+`(about 1984)`, `in press`. A `month` is checked by its stored form
+rather than by what `%m` renders, since `%m` answers `01` for every
+value it cannot parse, indistinguishable from a genuine January.
+Anything but a bare reference to one of the twelve standard month
+macros is reported, including a literal `06` or `June`, which do
+render correctly: a `.bst` style is free to typeset `jun` as `June`,
+`Jun.`, `Juni`, or `6`, and writing the month out freezes one of
+those choices into the database, exactly as a literal `journal` value
+does.
 
 An `article` verified to have no `doi` passes the doi audit if it is
 a member of the known-missing group configured for `doi` in the
@@ -342,9 +363,9 @@ With `--json`: an object `{"passed": ..., "entries_checked": ...,
 "problems": [...]}`, where each problem is an object with `check`
 (the audit that failed: `parse`, `duplicate_keys`, `entry_type`,
 `required_fields`, `doi`, `empty_fields`, `known_missing`, `journal`,
-`names`, `unused_strings`, `files`, or `key_format`), `key` (the
-citation key, or `null` for a problem not tied to an entry), and
-`message`.
+`year`, `month`, `names`, `unused_strings`, `files`, or
+`key_format`), `key` (the citation key, or `null` for a problem not
+tied to an entry), and `message`.
 
 (cli-show)=
 
