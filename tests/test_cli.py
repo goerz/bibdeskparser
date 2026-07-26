@@ -65,10 +65,15 @@ def fixture_checkfile(tmp_path):
     named after it (`MissingDoi2026`, `EmptyDoi2026` -- failing both
     the doi audit and the empty-fields audit, since its `doi = {}`
     would be deleted by BibDesk on save -- `LiteralJournal2026`,
-    `UndefinedMacro2026`, `BadNames2026`, `MissingRequired2026`,
-    `UnknownType2026`, `Duplicate2026`), plus an unused `@string`
-    macro (`unusedjrnl`) and the *passing* entry `Preprint2026` (a
-    preprint-only entry, exempt from the doi and journal audits)."""
+    `UndefinedMacro2026` (an undefined `journal` macro),
+    `UndefinedField2026` (an undefined macro in `publisher`, a field
+    with no audit of its own), `BadNames2026`, `MissingRequired2026`,
+    `UnknownType2026`, `BadMonthMacro2026` -- failing both the month
+    audit and the undefined-macro audit, since `sept` is neither a
+    month macro nor defined -- `Duplicate2026`), plus an unused
+    `@string` macro (`unusedjrnl`) and the *passing* entry
+    `Preprint2026` (a preprint-only entry, exempt from the doi and
+    journal audits)."""
     return Path(shutil.copy(FAIL_CHECKS_DIR / "problems.bib", tmp_path))
 
 
@@ -1033,30 +1038,37 @@ def test_check_problems(runner, checkfile):
         "UndefinedMacro2026: journal references undefined @string "
         "macro 'nosuchjournal'"
     )
-    assert lines[6].startswith(
+    assert lines[6] == (
+        "UndefinedField2026: publisher references undefined @string "
+        "macro 'elsevir'"
+    )
+    assert lines[7].startswith(
         "BadNames2026: author does not parse as names: "
     )
-    assert "Too many commas" in lines[6]
-    assert lines[7] == (
+    assert "Too many commas" in lines[7]
+    assert lines[8] == (
         "MissingRequired2026: missing required field 'year' for entry "
         "type 'article'"
     )
-    assert lines[8] == "UnknownType2026: unrecognized entry type 'bogustype'"
-    assert lines[9] == (
+    assert lines[9] == "UnknownType2026: unrecognized entry type 'bogustype'"
+    assert lines[10] == (
         "BadYear2026: year 'August, 2026' does not read as a "
         "four-digit year (%Y gives '0')"
     )
-    assert lines[10] == (
+    assert lines[11] == (
         "LiteralMonth2026: month is the literal string 'June', not "
         "one of the twelve standard month macros (jan ... dec)"
     )
-    assert lines[11] == (
+    assert lines[12] == (
         "BadMonthMacro2026: month references the macro 'sept', not "
         "one of the twelve standard month macros (jan ... dec)"
     )
-    assert lines[12] == "unused @string macro 'unusedjrnl'"
-    assert lines[13] == "FAIL (13 problems, 12 entries checked)"
-    assert len(lines) == 14
+    assert lines[13] == (
+        "BadMonthMacro2026: month references undefined @string macro 'sept'"
+    )
+    assert lines[14] == "unused @string macro 'unusedjrnl'"
+    assert lines[15] == "FAIL (15 problems, 13 entries checked)"
+    assert len(lines) == 16
 
 
 def test_check_problems_json(runner, checkfile):
@@ -1064,20 +1076,22 @@ def test_check_problems_json(runner, checkfile):
     assert result.exit_code == 1
     data = json.loads(result.output)
     assert data["passed"] is False
-    assert data["entries_checked"] == 12
+    assert data["entries_checked"] == 13
     assert [(p["check"], p["key"]) for p in data["problems"]] == [
         ("duplicate_keys", "Duplicate2026"),
         ("doi", "MissingDoi2026"),
         ("doi", "EmptyDoi2026"),
         ("empty_fields", "EmptyDoi2026"),
         ("journal", "LiteralJournal2026"),
-        ("journal", "UndefinedMacro2026"),
+        ("undefined_macro", "UndefinedMacro2026"),
+        ("undefined_macro", "UndefinedField2026"),
         ("names", "BadNames2026"),
         ("required_fields", "MissingRequired2026"),
         ("entry_type", "UnknownType2026"),
         ("year", "BadYear2026"),
         ("month", "LiteralMonth2026"),
         ("month", "BadMonthMacro2026"),
+        ("undefined_macro", "BadMonthMacro2026"),
         ("unused_strings", None),
     ]
     assert all("message" in p for p in data["problems"])
@@ -1278,15 +1292,19 @@ def test_check_month_concatenated(runner, tmp_path):
 def test_check_month_nonstandard_macro(runner, tmp_path):
     """A bare macro reference outside the twelve is reported, whether
     or not the file defines it -- `%m` would silently render it as
-    January."""
+    January. An *undefined* one like `sept` additionally fails the
+    undefined-macro audit, since it also blocks a save."""
     assert _check_month(runner, tmp_path, "sept") == [
         "Entry: month references the macro 'sept', not one of the "
-        "twelve standard month macros (jan ... dec)"
+        "twelve standard month macros (jan ... dec)",
+        "Entry: month references undefined @string macro 'sept'",
     ]
 
 
 def test_check_month_defined_nonstandard_macro(runner, tmp_path):
-    """Defining the macro does not make it a month."""
+    """Defining the macro does not make it a month, but it does
+    satisfy the undefined-macro audit: only the month problem is
+    reported, not a second, undefined-macro one."""
     bibfile = _write_bib(
         tmp_path,
         "@string{prl = {Phys. Rev. Lett.}}\n\n"
@@ -1306,6 +1324,56 @@ def test_check_month_defined_nonstandard_macro(runner, tmp_path):
         "twelve standard month macros (jan ... dec)",
         "FAIL (1 problem, 1 entry checked)",
     ]
+
+
+def test_check_undefined_macro_any_field(runner, tmp_path):
+    """The undefined-macro audit is not limited to `journal`: a bare
+    reference to an undefined macro in any field (here `publisher`,
+    which has no audit of its own) is reported, so a passing `check`
+    implies a writable file. A defined macro (`prl`) and a bare
+    non-macro value (`volume = 90`, not a valid macro name) pass."""
+    bibfile = _write_bib(
+        tmp_path,
+        "@string{prl = {Phys. Rev. Lett.}}\n\n"
+        "@article{Entry,\n"
+        "    author = {Doe, John},\n"
+        "    doi = {10.1000/publisher},\n"
+        "    journal = prl,\n"
+        "    publisher = elsevir,\n"
+        "    title = {An Article with an Undefined Publisher Macro},\n"
+        "    volume = 90,\n"
+        "    year = {2014}}\n",
+    )
+    result = runner.invoke(main, ["check", str(bibfile)])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "Entry: publisher references undefined @string macro 'elsevir'",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+    # A passing check must imply a writable file: what check reports is
+    # exactly what save refuses to write.
+    lib = _load(bibfile)
+    with pytest.raises(ValueError, match=r"undefined macro.*elsevir"):
+        lib.save()
+
+
+def test_check_undefined_macro_exempts_keywords(runner, tmp_path):
+    """`keywords` is always literal text, never a macro reference, so
+    a bare macro-shaped `keywords` value is not flagged (matching what
+    `save` scans); the entry passes."""
+    bibfile = _write_bib(
+        tmp_path,
+        "@string{prl = {Phys. Rev. Lett.}}\n\n"
+        "@article{Entry,\n"
+        "    author = {Doe, John},\n"
+        "    doi = {10.1000/keywords},\n"
+        "    journal = prl,\n"
+        "    keywords = nosuchmacro,\n"
+        "    title = {An Article with a Bare Keywords Value},\n"
+        "    year = {2014}}\n",
+    )
+    result = _run(runner, "check", bibfile)
+    assert result.output == "PASS (1 entry checked)\n"
 
 
 def test_check_year_and_month_only_when_present(runner, tmp_path):
