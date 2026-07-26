@@ -304,17 +304,18 @@ to audit against that pattern instead of the configured one; it
 implies `--key-format` and cannot be combined with `--no-key-format`.
 A key already matching the format evaluates to itself, so a
 disambiguated sibling like `CollidingPRA2015a` still conforms; an
-entry lacking a field the format requires cannot be evaluated and is
-reported as such. If no usable format is available (no `--format-spec`
-and no configured `[auto_key]` format, or a `--format-spec` that does
-not compile), a single message is reported rather than one failure per
-entry.
+entry lacking a field the format references is audited against the
+shorter key the format generates for it (`Handpicked` below is an
+article with no `journal`). If no usable format is available (no
+`--format-spec` and no configured `[auto_key]` format, or a
+`--format-spec` that does not compile), a single message is reported
+rather than one failure per entry.
 
 ```console
 $ bibdeskparser check tests/test_cli_fail_checks/keyformat.bib --format-spec "%p1%c{journal}0%Y%u0"
 Deviation2015: does not match the citation-key format (would be 'DeviationPRA2015')
-Unevaluable2015: cannot evaluate citation-key format: the format '%p1%c{journal}0%Y%u0' requires the missing field(s) journal
-FAIL (2 problems, 6 entries checked)
+Handpicked: does not match the citation-key format (would be 'Venueless2015')
+FAIL (2 problems, 7 entries checked)
 ```
 
 With `--json`: an object `{"passed": ..., "entries_checked": ...,

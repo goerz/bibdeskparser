@@ -86,10 +86,11 @@ def fixture_keyformatfile(tmp_path):
     """A copy of `test_cli_fail_checks/keyformat.bib` in `tmp_path`: a
     library that passes every audit except the opt-in `--key-format`
     audit. Against `%p1%c{journal}0%Y%u0`, `ConformingPRA2015`, the
-    colliding pair `CollidingPRA2015`/`CollidingPRA2015a`, and the
-    preprint `Preprint2205.15044` conform, while `Deviation2015`
-    deviates and `Unevaluable2015` (an article with no `journal`)
-    cannot be evaluated."""
+    colliding pair `CollidingPRA2015`/`CollidingPRA2015a`, the
+    preprint `Preprint2205.15044`, and `Shortened2015` (an article
+    with no `journal`, keyed as the format renders without the venue)
+    conform, while `Deviation2015` and `Handpicked` (an article with
+    no `journal` and a hand-picked key) deviate."""
     return Path(shutil.copy(FAIL_CHECKS_DIR / "keyformat.bib", tmp_path))
 
 
@@ -1954,7 +1955,8 @@ _KEY_SPEC = "%p1%c{journal}0%Y%u0"
 
 
 def test_check_key_format_pass(runner, keyformatfile):
-    # conforming key, disambiguated sibling, and preprint all conform
+    # conforming key, disambiguated sibling, preprint, and the entry
+    # whose missing journal shortens its key all conform
     result = _run(
         runner,
         "check",
@@ -1965,8 +1967,9 @@ def test_check_key_format_pass(runner, keyformatfile):
         "CollidingPRA2015",
         "CollidingPRA2015a",
         "Preprint2205.15044",
+        "Shortened2015",
     )
-    assert result.output == "PASS (4 entries checked)\n"
+    assert result.output == "PASS (5 entries checked)\n"
 
 
 def test_check_key_format_deviation(runner, keyformatfile):
@@ -1977,17 +1980,16 @@ def test_check_key_format_deviation(runner, keyformatfile):
     assert result.output.splitlines() == [
         "Deviation2015: does not match the citation-key format "
         "(would be 'DeviationPRA2015')",
-        "Unevaluable2015: cannot evaluate citation-key format: the "
-        "format '%p1%c{journal}0%Y%u0' requires the missing field(s) "
-        "journal",
-        "FAIL (2 problems, 6 entries checked)",
+        "Handpicked: does not match the citation-key format "
+        "(would be 'Venueless2015')",
+        "FAIL (2 problems, 7 entries checked)",
     ]
 
 
 def test_check_key_format_off_by_default(runner, keyformatfile):
     # the two nonconforming keys are ignored without the flag
     result = _run(runner, "check", keyformatfile)
-    assert result.output == "PASS (6 entries checked)\n"
+    assert result.output == "PASS (7 entries checked)\n"
 
 
 def test_check_key_format_colliding_pair_passes(runner, keyformatfile):
@@ -2016,7 +2018,9 @@ def test_check_key_format_preprint_passes(runner, keyformatfile):
     assert result.output == "PASS (1 entry checked)\n"
 
 
-def test_check_key_format_unevaluable(runner, keyformatfile):
+def test_check_key_format_missing_field(runner, keyformatfile):
+    """An entry lacking a field the format references is audited
+    against the shorter key the format generates for it."""
     result = runner.invoke(
         main,
         [
@@ -2024,14 +2028,33 @@ def test_check_key_format_unevaluable(runner, keyformatfile):
             str(keyformatfile),
             "--format-spec",
             _KEY_SPEC,
-            "Unevaluable2015",
+            "Handpicked",
         ],
     )
     assert result.exit_code == 1
     assert result.output.splitlines() == [
-        "Unevaluable2015: cannot evaluate citation-key format: the "
-        "format '%p1%c{journal}0%Y%u0' requires the missing field(s) "
-        "journal",
+        "Handpicked: does not match the citation-key format "
+        "(would be 'Venueless2015')",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
+def test_check_key_format_unevaluable(runner, keyformatfile):
+    """A format that cannot be evaluated at all (here: a per-type
+    format with no entry for `article` and no `""` fallback) is
+    reported as such."""
+    (keyformatfile.parent / "bibdeskparser.toml").write_text(
+        '[auto_key.format_spec]\nbook = "%a1%Y%u0"\n', encoding="utf-8"
+    )
+    result = runner.invoke(
+        main,
+        ["check", str(keyformatfile), "--key-format", "Handpicked"],
+    )
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "Handpicked: cannot evaluate citation-key format: the "
+        "auto-key format_spec has no entry for type 'article' and "
+        "no '' fallback",
         "FAIL (1 problem, 1 entry checked)",
     ]
 
@@ -2045,7 +2068,7 @@ def test_check_key_format_configured(runner, keyformatfile):
     result = runner.invoke(main, ["check", str(keyformatfile), "--key-format"])
     assert result.exit_code == 1
     assert result.output.splitlines()[-1] == (
-        "FAIL (2 problems, 6 entries checked)"
+        "FAIL (2 problems, 7 entries checked)"
     )
     assert "Deviation2015: does not match" in result.output
 
@@ -2058,7 +2081,7 @@ def test_check_key_format_no_format(runner, keyformatfile):
     assert result.output.splitlines() == [
         "no citation-key format available; configure an [auto_key] "
         "format_spec or pass a format pattern",
-        "FAIL (1 problem, 6 entries checked)",
+        "FAIL (1 problem, 7 entries checked)",
     ]
 
 
@@ -2071,7 +2094,7 @@ def test_check_key_format_invalid_pattern(runner, keyformatfile):
     assert result.output.splitlines() == [
         "invalid citation-key format pattern: invalid specifier %q "
         "in format",
-        "FAIL (1 problem, 6 entries checked)",
+        "FAIL (1 problem, 7 entries checked)",
     ]
 
 
@@ -2086,7 +2109,7 @@ def test_check_key_format_unimplemented_pattern(runner, keyformatfile):
     assert result.output.splitlines() == [
         "invalid citation-key format pattern: the %i specifier "
         "(BibDesk document info) is not implemented",
-        "FAIL (1 problem, 6 entries checked)",
+        "FAIL (1 problem, 7 entries checked)",
     ]
 
 
@@ -2097,7 +2120,7 @@ def test_check_key_format_spec_implies_flag(runner, keyformatfile):
         main, ["check", str(keyformatfile), "--format-spec", _KEY_SPEC]
     )
     assert result.exit_code == 1
-    assert "FAIL (2 problems, 6 entries checked)" in result.output
+    assert "FAIL (2 problems, 7 entries checked)" in result.output
 
 
 def test_check_key_format_conflict(runner, keyformatfile):
@@ -2124,10 +2147,10 @@ def test_check_key_format_json(runner, keyformatfile):
     assert result.exit_code == 1
     data = json.loads(result.output)
     assert data["passed"] is False
-    assert data["entries_checked"] == 6
+    assert data["entries_checked"] == 7
     assert [(p["check"], p["key"]) for p in data["problems"]] == [
         ("key_format", "Deviation2015"),
-        ("key_format", "Unevaluable2015"),
+        ("key_format", "Handpicked"),
     ]
 
 

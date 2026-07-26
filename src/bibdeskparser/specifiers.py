@@ -39,8 +39,6 @@ __all__ = []
 __private__ = [
     "compile_format",
     "render_format",
-    "required_fields",
-    "missing_required_fields",
 ]
 
 
@@ -367,12 +365,12 @@ def compile_format(format_string, *, context="key"):
     (`%u`/`%U`/`%n`), and sanitizes text for file names instead of
     for TeX-safe keys.
 
-    Returns an opaque compiled form for {func}`render_format` /
-    {func}`required_fields`. Raises {exc}`ValueError` for a malformed
-    format (unknown or misused specifiers, missing `{Field}` argument,
-    a second unique specifier, specifiers or requirements that do not
-    fit the context), and {exc}`NotImplementedError` for the `%i`
-    (document info) specifier."""
+    Returns an opaque compiled form for {func}`render_format`. Raises
+    {exc}`ValueError` for a malformed format (unknown or misused
+    specifiers, missing `{Field}` argument, a second unique specifier,
+    specifiers or requirements that do not fit the context), and
+    {exc}`NotImplementedError` for the `%i` (document info)
+    specifier."""
     if context not in ("key", "file"):
         raise ValueError(f"invalid format context: {context!r}")
     scanner = _Scanner(format_string)
@@ -450,61 +448,6 @@ def compile_format(format_string, *, context="key"):
             "(%u, %U, or %n)"
         )
     return _Format(text=format_string, tokens=tokens, context=context)
-
-
-def required_fields(fmt):
-    """The fields a format needs, as a `list` of requirement names.
-
-    Mirrors BibDesk's `requiredFieldsForFormat:`: `"author"` for
-    `%a`/`%A`, `"author/editor"` for `%p`/`%P` (either field
-    satisfies it), `"title"`, `"year"`, `"month"`, `"keywords"`, and
-    the `{Field}` argument of `%f`/`%w`/`%c`. The always-available
-    pseudo-fields (`cite key`, `bibtex type`) are not included; the
-    virtual `container` field *is* (its per-type requirement is
-    resolved by {func}`missing_required_fields`)."""
-    fields = []
-    for token in fmt.tokens:
-        if not isinstance(token, _Spec):
-            continue
-        if token.char in "aA":
-            fields.append("author")
-        elif token.char in "pP":
-            fields.append("author/editor")
-        elif token.char in "tT":
-            fields.append("title")
-        elif token.char in "yY":
-            fields.append("year")
-        elif token.char == "m":
-            fields.append("month")
-        elif token.char == "k":
-            fields.append("keywords")
-        elif token.char in "fwc":
-            if token.field not in ("cite key", "bibtex type"):
-                fields.append(token.field)
-    # Dedupe while preserving first-seen order: a format may reference
-    # the same requirement more than once (e.g. `%a%a`).
-    return list(dict.fromkeys(fields))
-
-
-def missing_required_fields(fmt, entry):
-    """The subset of {func}`required_fields` that `entry` does not
-    provide (a `list`, empty if the format can be fully rendered)."""
-    missing = []
-    for field in required_fields(fmt):
-        if field == "author/editor":
-            if not (entry.get("author") or entry.get("editor")):
-                missing.append(field)
-        elif field == "container":
-            # `container` resolves to a per-type field (journal for an
-            # article, booktitle for inproceedings, ...); it is required
-            # only when the entry type *has* a container field, so a
-            # single format stays usable across all entry types.
-            concrete = _container_field(entry)
-            if concrete is not None and not entry.get(concrete):
-                missing.append(field)
-        elif not entry.get(field):
-            missing.append(field)
-    return missing
 
 
 # -- sanitization ------------------------------------------------------ #
@@ -1188,7 +1131,13 @@ def render_format(
       A name that already matches the pattern is returned unchanged,
       exactly like `current_key` in the key context.
 
-    Returns the generated key or relative file name as a `str`.
+    Returns the generated key or relative file name as a `str`. A
+    field the entry does not have renders as empty (as in BibDesk), so
+    a format may reference a field that only some entries carry; those
+    entries simply get a shorter result. Should everything render
+    empty, the unique specifier's characters carry the result on their
+    own (`a`, `b`, ...), or, for a format without one, a plain number.
+    A file name is never left without a stem (`.pdf`).
     """
     renderer = _Renderer(
         entry,
@@ -1247,6 +1196,15 @@ def render_format(
 
     def is_valid(candidate):
         if not candidate:
+            return False
+        if fmt.context == "file" and candidate.rpartition("/")[2].startswith(
+            "."
+        ):
+            # A name with no stem (an entry that renders every
+            # specifier of e.g. `%a1%Y%u0%e` empty, leaving `.pdf`)
+            # would be a hidden file. Rejecting it here makes the
+            # unique specifier grow characters instead, the same way
+            # the empty-key fallback above keeps a key non-empty.
             return False
         return is_free is None or is_free(candidate)
 

@@ -1361,8 +1361,8 @@ def duplicate_keys(bibfile, as_json):
         "expected auto-key format: a preprint-only entry against the "
         "arXiv preprint format, every other entry against the "
         "configured [auto_key] format (or --format-spec). Off by "
-        "default. A key that cannot be regenerated (the entry lacks a "
-        "field the format requires) is reported as unevaluable."
+        "default. An entry lacking a field the format references is "
+        "audited against the shorter key the format generates for it."
     ),
 )
 @click.option(
@@ -1419,10 +1419,12 @@ def check(
     configured [auto_key] format; --format-spec PATTERN audits against
     that pattern instead and implies --key-format. A disambiguated
     sibling key (e.g. 'SmithPRA2015a') still matches. An entry lacking
-    a field the format requires cannot be evaluated and is reported as
-    such. If no usable format is available (neither --format-spec nor
-    a configured [auto_key] format, or a --format-spec that does not
-    compile), a single message is reported.
+    a field the format references is audited against the shorter key
+    the format generates for it (an article with no 'journal' under
+    '%p1%c{journal}0%Y%u0' against 'Smith2015'). If no usable format
+    is available (neither --format-spec nor a configured [auto_key]
+    format, or a --format-spec that does not compile), a single
+    message is reported.
 
     With KEY..., only the given entries are audited (an unknown key
     is an error): the per-entry audits cover just those entries, the
@@ -1891,7 +1893,9 @@ def rekey(bibfile, old_key, new_key, format_spec):
     bibdeskparser.toml (which may map a different format to each entry
     type). A generated key is printed to stdout. A key that already
     matches the format is kept unchanged, and a %u/%U/%n specifier in
-    the format resolves collisions with other entries.
+    the format resolves collisions with other entries. A field the
+    entry does not have renders as empty, so an entry lacking a field
+    the format references just gets a shorter key.
     """
     lib = Library(bibfile)
     _check_keys(lib, [old_key])

@@ -7,12 +7,7 @@ import pytest
 
 from bibdeskparser import specifiers
 from bibdeskparser.entry import Entry
-from bibdeskparser.specifiers import (
-    compile_format,
-    missing_required_fields,
-    render_format,
-    required_fields,
-)
+from bibdeskparser.specifiers import compile_format, render_format
 
 
 def _entry(**fields):
@@ -439,32 +434,19 @@ def test_container_initials_by_concrete_field():
     assert _gen(inproc, "%c{container}0", initials=initials) == "SPIE"
 
 
-def test_container_required_field_by_type():
-    """`container` is required only when the entry type has a container
-    field; it never blocks a type that has none."""
-    fmt = compile_format("%a1%c{container}0%Y%u0")
+def test_container_empty_for_missing_field():
+    """An entry whose container field is missing renders `container`
+    as empty, exactly like a type that has no container at all."""
     article = _typed_entry("article", author="Doe, J", title="T", year="2020")
-    # the article has no journal, so its container requirement is unmet
-    assert missing_required_fields(fmt, article) == ["container"]
-    complete = _typed_entry(
+    assert _gen(article, "%a1%c{container}0%Y%u0") == "Doe2020"
+    inproc = _typed_entry(
         "inproceedings",
         author="Doe, J",
         title="T",
         booktitle="Proc.",
         year="2020",
     )
-    assert missing_required_fields(fmt, complete) == []
-    misc = _typed_entry("misc", author="Doe, J", title="T", year="2020")
-    assert missing_required_fields(fmt, misc) == []
-
-
-def test_required_fields_deduplicated():
-    """A requirement referenced multiple times appears only once, in
-    first-seen order."""
-    fmt = compile_format("%a%a%Y%c{journal}0%c{journal}0")
-    assert required_fields(fmt) == ["author", "year", "journal"]
-    incomplete = _typed_entry("article", year="2020")
-    assert missing_required_fields(fmt, incomplete) == ["author", "journal"]
+    assert _gen(inproc, "%a1%c{container}0%Y%u0") == "DoeP2020"
 
 
 # -- random specifiers ---------------------------------------------------- #
@@ -601,38 +583,28 @@ def test_current_key_not_matching_is_replaced(entry):
     assert key == "GoerzPRA2014"
 
 
-# -- required fields -------------------------------------------------------- #
+# -- missing fields --------------------------------------------------------- #
 
 
-def test_required_fields():
-    fmt = compile_format("%a1%c{journal}0%Y%m%t%k%u0")
-    assert required_fields(fmt) == [
-        "author",
-        "journal",
-        "year",
-        "month",
-        "title",
-        "keywords",
-    ]
-    fmt = compile_format("%p1%f{Cite Key}%f{BibTeX Type}")
-    assert required_fields(fmt) == ["author/editor"]
-    fmt = compile_format("%a1%c{container}0%Y")
-    assert required_fields(fmt) == ["author", "container", "year"]
+def test_missing_fields_render_empty(entry):
+    """A field the entry does not have renders as empty, so the key
+    degrades gracefully instead of the format failing."""
+    fmt = "%a1%c{journal}0%Y%u0"
+    assert _gen(entry, fmt) == "GoerzPRA2014"
+    no_journal = _entry(author="Smith, John", title="T", year="2020")
+    assert _gen(no_journal, fmt) == "Smith2020"
+    no_year = _entry(author="Smith, John", title="T", journal="Phys. Rev. A")
+    assert _gen(no_year, fmt) == "SmithPRA"
+    author_only = _entry(author="Smith, John")
+    assert _gen(author_only, fmt) == "Smith"
 
 
-def test_missing_required_fields(entry):
-    fmt = compile_format("%a1%c{journal}0%Y%u0")
-    assert missing_required_fields(fmt, entry) == []
-    incomplete = _entry(author="Smith, John", title="T")
-    assert missing_required_fields(fmt, incomplete) == [
-        "journal",
-        "year",
-    ]
-    editor_only = _entry(editor="Smith, John", title="T")
-    fmt = compile_format("%p1%t")
-    assert missing_required_fields(fmt, editor_only) == []
-    fmt = compile_format("%a1%t")
-    assert missing_required_fields(fmt, editor_only) == ["author"]
+def test_missing_author_renders_empty():
+    """`%a` renders empty without an `author`, where `%p` falls back to
+    the `editor`."""
+    editor_only = _entry(editor="Smith, John", year="2020")
+    assert _gen(editor_only, "%p1%Y") == "Smith2020"
+    assert _gen(editor_only, "%a1%Y") == "2020"
 
 
 # -- file-name formats (the AutoFile context) ------------------------------ #
@@ -782,6 +754,15 @@ def test_file_unique_from_filesystem_callback(entry):
         )
         == "Goerz2014a.pdf"
     )
+
+
+def test_file_name_is_never_left_without_a_stem():
+    """A format whose every specifier renders empty would leave the
+    bare extension as the name; the unique specifier fills the stem,
+    in a subfolder as well."""
+    bare = _entry(title="T")
+    assert _gen_file(bare, "%a1%Y%u0%e", filename="Doc.pdf") == "a.pdf"
+    assert _gen_file(bare, "sub/%a1%Y%u0%e", filename="Doc.pdf") == "sub/a.pdf"
 
 
 def test_file_current_name_matching_pattern_is_kept(entry):

@@ -1438,14 +1438,15 @@ class Library(MutableMapping):
         own type selects the format. A key that already matches the
         format is kept as is, so regenerating is idempotent; a
         `%u`/`%U`/`%n` specifier in the format resolves collisions
-        with the other entries in the library.
+        with the other entries in the library. A field the entry does
+        not have renders as empty, so an entry lacking a field the
+        format references just gets a shorter key.
 
         Raises `KeyError` if `old_key` is not present, and
         `ValueError` if `new_key` is already used by a different
         entry, if both `new_key` and `format_spec` are given, if no
-        auto-key format is available for the entry's type or the entry
-        lacks a field the format requires, or if the generated key
-        would equal the entry's own `crossref` value.
+        auto-key format is available for the entry's type, or if the
+        generated key would equal the entry's own `crossref` value.
 
         To preview the key a format would generate, without renaming
         anything, use {meth}`eval_format_spec`.
@@ -1508,9 +1509,9 @@ class Library(MutableMapping):
         exactly those where the result differs from the current path.
 
         Raises `KeyError` if `key` is not present, and `ValueError`
-        if no format is available for the entry's type, if the entry
-        lacks a field the format requires, or (in the key context) if
-        the resulting key would equal the entry's own `crossref` value.
+        if no format is available for the entry's type, or (in the key
+        context) if the resulting key would equal the entry's own
+        `crossref` value.
         """
         if key not in self._entries:
             raise KeyError(key)
@@ -1598,13 +1599,6 @@ class Library(MutableMapping):
             format_spec, entry.entry_type
         )
         fmt = specifiers.compile_format(format_string)
-        missing = specifiers.missing_required_fields(fmt, entry)
-        if missing:
-            raise ValueError(
-                f"cannot generate a citation key for {key!r}: the "
-                f"format {format_string!r} requires the missing "
-                f"field(s) {', '.join(sorted(missing))}"
-            )
         new_key = specifiers.render_format(
             fmt,
             entry,
@@ -1630,21 +1624,13 @@ class Library(MutableMapping):
     def _compile_file_format(self, key, format_spec):
         """Resolve and compile a file-name `format_spec` (or, if it is
         `None`, the configured `config.auto_file.format_spec`) for entry
-        `key`, checking that the entry has every field the format
-        requires. Returns the `(entry, fmt)` pair; backs
+        `key`. Returns the `(entry, fmt)` pair; backs
         {meth}`_generate_filename` and {meth}`eval_format_spec`."""
         entry = self._entries[key]
         format_string = self._resolve_format_spec(
             format_spec, entry.entry_type, context="file"
         )
         fmt = specifiers.compile_format(format_string, context="file")
-        missing = specifiers.missing_required_fields(fmt, entry)
-        if missing:
-            raise ValueError(
-                f"cannot generate a file name for {key!r}: the "
-                f"format {format_string!r} requires the missing "
-                f"field(s) {', '.join(sorted(missing))}"
-            )
         return entry, fmt
 
     def _auto_file_location_dir(self, location):
@@ -1876,9 +1862,9 @@ class Library(MutableMapping):
 
         Raises `ValueError` if the file is already attached to the
         entry, if auto-filing cannot generate a name (no format
-        configured, or a required field is missing), or if this
-        library has no file path yet (a from-scratch library must be
-        saved first, so that relative paths are well-defined).
+        configured), or if this library has no file path yet (a
+        from-scratch library must be saved first, so that relative
+        paths are well-defined).
         """
         entry = self._entries[key]
         base_dir = self._files_base_dir()

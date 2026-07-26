@@ -94,6 +94,17 @@ A bare `@string` macro reference as a field value (e.g.
 `journal = pra`) is expanded using the library's macro definitions
 before any specifier is applied.
 
+A field the entry does not have renders as empty, so a format may
+reference a field that only some entries carry; those entries get a
+correspondingly shorter result. Under `%a1%c{booktitle}%Y`, a
+conference paper keys as `GoerzPECC2019`, an article as:
+
+```python
+>>> bib.eval_format_spec("GoerzPRA2014", "%a1%c{booktitle}%Y")
+'Goerz2014'
+
+```
+
 The subsections below are the complete reference for each group of
 specifiers. The examples evaluate a format against the
 `GoerzPRA2014` entry defined above (an `@article` by Goerz and Koch).
@@ -478,6 +489,9 @@ name is interpreted relative to the configured auto-file *location*.
   generated names can never collide. Uniqueness is checked against
   the *files on disk* at the target location, not against the
   library: a candidate name is taken if a file already exists there.
+  It also fills in for an entry that renders every other specifier
+  empty, which would otherwise leave the bare extension (`.pdf`) as
+  the name: such a file is filed as `a.pdf`, not as a hidden file.
 * A literal `/` in the format is a **directory separator**: the file
   is filed into (newly created, as needed) subfolders of the
   location. A `/` inside a *field value* becomes `-` instead, so
@@ -581,3 +595,7 @@ renders identically for PDFs and stays correct for everything else.
   to each entry type — a `bibdeskparser` extension.
 - The `[initials]` exception mapping for `%c` is a `bibdeskparser`
   extension; BibDesk always uses the plain acronym.
+- BibDesk guarantees a non-empty result but not a non-empty *stem*, so
+  an entry rendering every specifier of a file-name format empty is
+  filed under the bare extension (`.pdf`, a hidden file). Here the
+  unique specifier fills the stem instead (`a.pdf`).
