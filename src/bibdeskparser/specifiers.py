@@ -29,6 +29,7 @@ import urllib.parse
 import zlib
 from pathlib import PurePath
 
+from .asciifold import fold_to_ascii
 from .macros import MacroString
 
 __all__ = []
@@ -577,7 +578,9 @@ def _strict_sanitize(string, clean="tex", context="key"):
         return string.replace(":", "")
     string = _replace_composed(string)
     string = re.sub(r"\s", "-", string)
-    string = string.encode("ascii", "ignore").decode("ascii")
+    # BibDesk's `lossyASCIIString`: transliterate first, and only then
+    # let the character filter drop what has no ASCII rendering.
+    string = fold_to_ascii(string)
     return "".join(char for char in string if char in _STRICT_VALID_KEY_CHARS)
 
 

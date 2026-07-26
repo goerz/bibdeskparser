@@ -2371,7 +2371,9 @@ class Library(MutableMapping):
           substring of a raw or decoded value.
         * `"folded"`: additionally ignores accents, including their
           transliterations: `"Schrodinger"` and `"Schroedinger"` both
-          find `"Schrödinger"`.
+          find `"Schrödinger"`. Any letter is matched by its plain
+          ASCII spelling, so `"Molmer"` finds `"Mølmer"` and
+          `"Kilic"` finds `"Kılıç"`.
         * `"words"` (the default): additionally matches when most of
           the query's words occur in a value, in any order (e.g. a
           title search from a partially remembered phrase).

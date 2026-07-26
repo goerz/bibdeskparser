@@ -22,8 +22,8 @@ This module intentionally does not import `bibdeskparser.library`
 
 import difflib
 import re
-import unicodedata
 
+from .asciifold import fold_to_ascii
 from .entry import _is_normal_key
 from .macros import MacroString
 from .texmap import detexify
@@ -70,23 +70,14 @@ _FUZZY_RATIO = 0.8
 
 _GERMAN_TRANSLIT = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"})
 
-_SS_TRANSLIT = str.maketrans({"ß": "ss"})
-
 _WORD_RE = re.compile(r"\w+")
-
-
-def _strip_accents(text):
-    """`text` with accents dropped (NFKD decomposition, combining marks
-    removed) and `ß` mapped to `ss` (which NFKD does not decompose)."""
-    decomposed = unicodedata.normalize("NFKD", text.translate(_SS_TRANSLIT))
-    return "".join(c for c in decomposed if not unicodedata.combining(c))
 
 
 def _fold_variants(text):
     """The folded forms of `text` for accent-insensitive matching.
 
-    Lowercases and then applies both plain accent-stripping
-    (`ö` -> `o`) and German-style transliteration (`ö` -> `oe`),
+    Lowercases and then applies both the plain ASCII fold (`ö` -> `o`,
+    `ø` -> `o`) and German-style transliteration (`ö` -> `oe`),
     returning the deduplicated results:
 
     ```python
@@ -103,7 +94,7 @@ def _fold_variants(text):
     # left to the "fuzzy" level (difflib ratio ~0.96).
     low = text.lower()
     return tuple(
-        {_strip_accents(low), _strip_accents(low.translate(_GERMAN_TRANSLIT))}
+        {fold_to_ascii(low), fold_to_ascii(low.translate(_GERMAN_TRANSLIT))}
     )
 
 

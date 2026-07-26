@@ -359,6 +359,10 @@ transliterated spellings alike:
 
 ```
 
+Any letter is matched by its plain ASCII spelling, so `Molmer` finds
+`Mølmer` and `Kilic` finds `Kılıç`. Text in a script that has no ASCII
+spelling (Greek, Cyrillic, CJK) is found by itself.
+
 A bare `@string` macro reference is found both by the macro's name and
 by its expansion (and `fields` limits the search, with the pseudo-field
 `"key"` selecting the citation key):

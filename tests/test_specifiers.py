@@ -195,6 +195,33 @@ def test_author_names_sanitized():
     assert _gen(entry, "%a") == "MullerGross"
 
 
+@pytest.mark.parametrize(
+    ("author", "expected"),
+    [
+        ("Müller, Jörg", "Muller"),  # accent, split off by NFD
+        ("Kılıç, Ayşe", "Kilic"),  # modification part of the glyph
+        ("Masłowski, Tomasz", "Maslowski"),
+        ("Əliyev, Rəşid", "Eliyev"),  # no base letter in the name
+        ("Grøß, Peter", "Gross"),  # ligature
+        ("Þórsson, Jón", "THorsson"),  # BibDesk's table wins
+    ],
+)
+def test_author_names_folded_to_ascii(author, expected):
+    """A non-ASCII letter in a name reaches the key as its ASCII base
+    letter instead of being deleted (`tests/test_asciifold.py` covers
+    the fold itself)."""
+    entry = _entry(author=author, title="T")
+    assert _gen(entry, "%a1") == expected
+
+
+def test_unrenderable_script_dropped():
+    """A name in a script with no ASCII rendering disappears from a
+    key. The fold leaves it alone; the valid-character filter is what
+    drops it."""
+    entry = _entry(author="Иванов, Иван", title="T")
+    assert _gen(entry, "%a1x") == "x"
+
+
 # -- title specifiers --------------------------------------------------- #
 
 

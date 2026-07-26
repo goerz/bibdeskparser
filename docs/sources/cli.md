@@ -540,7 +540,8 @@ previous level and are case-insensitive; `regex` follows standard
 
 - `exact`: the query occurs verbatim as a substring.
 - `folded`: additionally ignores accents (`Schrodinger` and
-  `Schroedinger` both find `Schrödinger`).
+  `Schroedinger` both find `Schrödinger`) and matches any letter by its
+  plain ASCII spelling (`Molmer` finds `Mølmer`).
 - `words` (the default): additionally matches when most of the query's
   words occur in a field, in any order.
 - `fuzzy`: additionally tolerates small typos in individual words.
