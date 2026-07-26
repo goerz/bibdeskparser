@@ -1134,7 +1134,9 @@ def search(bibfile, query, field_names, match_, as_json):
     \b
     - exact:  the query occurs verbatim (up to case) as a substring.
     - folded: additionally ignores accents ("Schrodinger" and
-              "Schroedinger" both match "Schrödinger").
+              "Schroedinger" both match "Schrödinger") and matches any
+              letter by its plain ASCII spelling ("Molmer" matches
+              "Mølmer", "Kilic" matches "Kılıç").
     - words:  (the default) additionally matches when most of the
               query's words occur in a field, in any order -- good for
               a half-remembered title.

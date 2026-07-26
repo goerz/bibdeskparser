@@ -140,12 +140,15 @@ def test_parse_year(raw, expected):
     assert preprints._parse_year(raw) == expected
 
 
-def test_deaccent_atomic_letters():
-    # U+00F8 etc. have no NFKD decomposition; strip-combining-marks
-    # alone leaves them in place.
-    assert preprints._deaccent("Mølmer-Sørensen") == "Molmer-Sorensen"
-    assert preprints._deaccent("Łukasz") == "Lukasz"
-    assert preprints._deaccent("Weißkopf") == "Weisskopf"
+def test_norm_title_folds_non_decomposing_letters():
+    # A letter left unfolded would be replaced by a space here (the
+    # comparison path is ASCII-only), splitting the word in two.
+    assert preprints._norm_title("Mølmer-Sørensen gates") == (
+        "molmer sorensen gates"
+    )
+    assert preprints._norm_title("Əliyev on Weißkopf") == (
+        "eliyev on weisskopf"
+    )
 
 
 # -- query building --------------------------------------------------------- #
@@ -330,10 +333,38 @@ def test_author_matches_roundtrip_stroked():
     assert preprints._author_matches(lastname, result)
 
 
-def test_author_matches_cross_encoding():
+@pytest.mark.parametrize(
+    "unicode_name, ascii_lastname",
+    [
+        ("Klaus Mølmer", "molmer"),
+        ("Anna Guðmundsdóttir", "gudmundsdottir"),
+        ("Rəşid Əliyev", "eliyev"),
+    ],
+)
+def test_author_matches_cross_encoding(unicode_name, ascii_lastname):
     # Entry spells the name ASCII-folded, arXiv has the unicode form.
-    result = SimpleNamespace(authors=[SimpleNamespace(name="Klaus Mølmer")])
-    assert preprints._author_matches("molmer", result)
+    result = SimpleNamespace(authors=[SimpleNamespace(name=unicode_name)])
+    assert preprints._author_matches(ascii_lastname, result)
+
+
+@pytest.mark.parametrize(
+    "author",
+    [
+        "Əliyev, Rəşid",
+        "Coŀlell, Pere",
+        "Aĸigssiaĸ, Peter",
+        "Sigurðsson, Jón",
+    ],
+)
+def test_author_matches_roundtrip_rare_letters(author):
+    """Both sides of the comparison fold the same way, whatever the
+    letter. The entry side splits on whitespace and the arXiv side on
+    non-alphanumerics, so a letter that folds on only one side can
+    never compare equal."""
+    lastname = preprints._first_author_lastname(author)
+    last, first = (part.strip() for part in author.split(","))
+    result = SimpleNamespace(authors=[SimpleNamespace(name=f"{first} {last}")])
+    assert preprints._author_matches(lastname, result)
 
 
 # -- find_preprint ---------------------------------------------------------- #

@@ -30,6 +30,7 @@ from difflib import SequenceMatcher
 
 import arxiv
 
+from .asciifold import fold_to_ascii
 from .identifiers import _RX_ARXIV_ID, _normalize_doi
 from .texmap import detexify
 
@@ -73,38 +74,6 @@ _NONALNUM = re.compile(r"[^a-z0-9]+")
 #: token instead of shattering into `s`/`rensen`.
 _NONWORD = re.compile(r"[^\w]+")
 
-#: Latin letters that Unicode treats as atomic rather than as
-#: base-plus-combining-accent, so they have no NFKD decomposition and
-#: survive `unicodedata.normalize("NFKD", ...)` unchanged. Folded to
-#: ASCII explicitly on the comparison path (see `_deaccent`).
-_ATOMIC = str.maketrans(
-    {
-        "ø": "o",
-        "Ø": "O",
-        "ł": "l",
-        "Ł": "L",
-        "đ": "d",
-        "Đ": "D",
-        "ħ": "h",
-        "Ħ": "H",
-        "ß": "ss",
-        "ẞ": "SS",
-        "æ": "ae",
-        "Æ": "AE",
-        "œ": "oe",
-        "Œ": "OE",
-        "ð": "d",
-        "Ð": "D",
-        "þ": "th",
-        "Þ": "Th",
-        "ŧ": "t",
-        "Ŧ": "T",
-        "ı": "i",
-        "ŋ": "ng",
-        "Ŋ": "Ng",
-    }
-)
-
 
 # --------------------------------------------------------------------- #
 # Identifier handling
@@ -134,30 +103,14 @@ def _short_id(result):
 # --------------------------------------------------------------------- #
 
 
-def _deaccent(s):
-    """Fold accented and atomic Latin letters to ASCII: 'Körner' ->
-    'Korner', 'Mølmer' -> 'Molmer', 'Weiß' -> 'Weiss'. Decomposable
-    letters lose their combining marks; atomic letters (ø, ł, ß, æ, …,
-    which have no NFKD decomposition) are folded via an explicit table.
-    Applied on the comparison path so a match is insensitive to how an
-    accent is spelled; queries preserve the original letters."""
-    s = "".join(
-        c
-        for c in unicodedata.normalize("NFKD", s)
-        if not unicodedata.combining(c)
-    )
-    return s.translate(_ATOMIC)
-
-
 def _clean_text(raw, *, deaccent=True):
     """Strip TeX/braces/math markup from a field value, for building
     queries and comparing titles. Field values are already TeX-decoded
     unicode, but titles may retain brace protection, math (`$...$`),
     and the occasional TeX command, so any `{\\...}` is decoded first.
-    With `deaccent` (the default, for comparison) accented and atomic
-    letters are folded to ASCII; query construction passes
-    `deaccent=False` to preserve the letters, which arXiv's index
-    stores literally."""
+    With `deaccent` (the default, for comparison) Latin letters are
+    folded to ASCII; query construction passes `deaccent=False` to
+    preserve the letters, which arXiv's index stores literally."""
     if raw is None:
         return ""
     s = detexify(str(raw))
@@ -167,7 +120,7 @@ def _clean_text(raw, *, deaccent=True):
     s = s.replace("{", "").replace("}", "").replace("$", "")
     s = s.replace("~", " ").replace("--", "-")
     if deaccent:
-        s = _deaccent(s)
+        s = fold_to_ascii(s)
     return re.sub(r"\s+", " ", s).strip()
 
 
@@ -234,7 +187,7 @@ def _author_matches(lastname, result):
     if not lastname:
         return False
     for author in result.authors:
-        toks = _NONALNUM.sub(" ", _deaccent(author.name).lower()).split()
+        toks = _NONALNUM.sub(" ", fold_to_ascii(author.name).lower()).split()
         if lastname in toks:
             return True
     return False

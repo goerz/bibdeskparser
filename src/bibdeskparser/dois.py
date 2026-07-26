@@ -28,6 +28,7 @@ from collections import namedtuple
 import arxiv
 from habanero import Crossref
 
+from .asciifold import fold_to_ascii
 from .identifiers import _RX_ARXIV_ID, _normalize_doi, _strip_eprint_version
 from .preprints import (
     _NONALNUM,
@@ -35,7 +36,6 @@ from .preprints import (
     _RATIO_FLOOR,
     _clean_text,
     _client,
-    _deaccent,
     _first_author_lastname,
     _norm_title,
     _parse_year,
@@ -177,7 +177,7 @@ def _author_matches(lastname, item):
         return False
     for author in item.get("author") or []:
         family = author.get("family") or ""
-        toks = _NONALNUM.sub(" ", _deaccent(family).lower()).split()
+        toks = _NONALNUM.sub(" ", fold_to_ascii(family).lower()).split()
         if lastname in toks:
             return True
     return False

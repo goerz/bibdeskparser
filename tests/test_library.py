@@ -2279,6 +2279,47 @@ def test_search_accented_all_variants(bib):
         ]
 
 
+def test_search_folds_non_decomposing_letters():
+    """A letter that carries its modification in the glyph folds at
+    the `"folded"` level, like an accented one. Before, only letters
+    that decompose folded, so `Mølmer` was reachable by `Molmer` only
+    at the `"fuzzy"` level and `Kılıç` at no level at all."""
+    bib = Library()
+    names = {
+        "Molmer": "Mølmer, Klaus",
+        "Maslowski": "Masłowski, Tomasz",
+        "Kilic": "Kılıç, Ayşe",
+        "Collell": "Coŀlell, Pere",
+        "Muller": "Müller, Jörg",
+    }
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for key, author in names.items():
+            bib[key] = Entry("article", key, {"author": author, "title": "T"})
+    for key, author in names.items():
+        assert _keys(bib.search(key, fields=["author"], match="folded")) == [
+            key
+        ]
+        # the unicode spelling still finds itself, at every level
+        assert _keys(bib.search(author, fields=["author"], match="exact")) == [
+            key
+        ]
+
+
+def test_search_keeps_unrenderable_script():
+    """A value in a script with no ASCII rendering survives the fold,
+    so it is still found by itself."""
+    bib = Library()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        bib["Ivanov"] = Entry(
+            "article", "Ivanov", {"author": "Иванов, Иван", "title": "T"}
+        )
+    assert _keys(bib.search("Иванов", fields=["author"], match="folded")) == [
+        "Ivanov"
+    ]
+
+
 def test_search_tex_query(bib):
     """A query containing TeX markup is decoded before matching."""
     result = _keys(bib.search('Universit{\\"a}t', match="exact"))

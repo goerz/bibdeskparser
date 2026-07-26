@@ -198,43 +198,26 @@ def test_author_names_sanitized():
 @pytest.mark.parametrize(
     ("author", "expected"),
     [
-        # accented letters (base letter + combining mark under NFD)
-        ("Müller, Jörg", "Muller"),
-        ("Ağanoğlu, Ruhi", "Aganoglu"),
-        ("Řezáč, Jan", "Rezac"),
-        # letters carrying their modification in the glyph
-        ("Kılıç, Ayşe", "Kilic"),
-        ("Işık, Mehmet", "Isik"),
+        ("Müller, Jörg", "Muller"),  # accent, split off by NFD
+        ("Kılıç, Ayşe", "Kilic"),  # modification part of the glyph
         ("Masłowski, Tomasz", "Maslowski"),
-        ("Coŀlell, Pere", "Collell"),
-        ("Mølmer, Klaus", "Molmer"),
-        ("Đurić, Ana", "Duric"),
-        ("Þórsson, Jón", "THorsson"),
-        # letters whose Unicode name carries no base letter
-        ("Sáraŋ, Nils", "Sarang"),
-        ("Əliyev, Rəşid", "Eliyev"),
-        ("Aĸigssiaĸ, Peter", "Akigssiak"),
-        # ligatures
-        ("Grøß, Peter", "Gross"),
-        ("Æbelholt, Ida", "AEbelholt"),
+        ("Əliyev, Rəşid", "Eliyev"),  # no base letter in the name
+        ("Grøß, Peter", "Gross"),  # ligature
+        ("Þórsson, Jón", "THorsson"),  # BibDesk's table wins
     ],
 )
 def test_author_names_folded_to_ascii(author, expected):
-    """Non-ASCII letters in a name fold to their ASCII base letters
-    instead of being deleted."""
+    """A non-ASCII letter in a name reaches the key as its ASCII base
+    letter instead of being deleted (`tests/test_asciifold.py` covers
+    the fold itself)."""
     entry = _entry(author=author, title="T")
     assert _gen(entry, "%a1") == expected
 
 
-def test_digraphs_spelled_out():
-    """A digraph ligature, whose Unicode name spells out no base
-    letter, folds via its compatibility decomposition."""
-    entry = _entry(author="Smith, John", title="Ǆungla and ǉubav")
-    assert _gen(entry, "%t") == "DZungla-and-ljubav"
-
-
 def test_unrenderable_script_dropped():
-    """A name in a script with no ASCII rendering still disappears."""
+    """A name in a script with no ASCII rendering disappears from a
+    key. The fold leaves it alone; the valid-character filter is what
+    drops it."""
     entry = _entry(author="Иванов, Иван", title="T")
     assert _gen(entry, "%a1x") == "x"
 

@@ -409,16 +409,13 @@ before it enters the key:
    configuration table: `"tex"` (the default) removes commands like
    `\emph{...}` and all braces, `"braces"` removes only braces, and
    `"none"` disables this step.
-2. Latin letters are folded to plain ASCII. Accents are dropped
-   (`ü` → `u`), ligatures and digraphs are spelled out (`æ` → `ae`,
-   `ß` → `ss`, `ǆ` → `dz`), and a letter whose modification is baked
-   into the glyph rather than written as a separate accent becomes its
-   base letter (`ø` → `o`, `ł` → `l`, `ı` → `i`).
+2. Every letter is reduced to its plain-ASCII spelling: `ü` → `u`,
+   `ø` → `o`, `ł` → `l`, `ı` → `i`, `æ` → `ae`, `ß` → `ss`.
 3. Whitespace becomes `-`, and any remaining character outside
-   `a-z A-Z 0-9 - . / : ;` is dropped. Text in a non-Latin script
-   (Greek, Cyrillic, CJK) has no ASCII rendering and disappears here,
-   so an entry whose author names are not spelled in the Latin
-   alphabet needs a hand-written key.
+   `a-z A-Z 0-9 - . / : ;` is dropped. Text in a script that has no
+   ASCII spelling (Greek, Cyrillic, CJK) disappears here, so an entry
+   whose author names are not written in the Latin alphabet needs a
+   hand-written key.
 
 ```python
 >>> bib["Mueller"] = Entry(
@@ -448,7 +445,7 @@ before it enters the key:
 
 ```
 
-The fold is a spelling approximation, not a transliteration: BibDesk
+The result is a spelling approximation, not a transliteration: BibDesk
 strips accented characters of their accent (`Müller` → `Muller`) and
 does not apply German conventions (`Mueller`). If you want `Mueller`,
 hard-code the intended key with a two-argument `rekey`. Literal text
