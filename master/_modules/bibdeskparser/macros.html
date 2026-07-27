@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.macros &mdash; BibDeskParser 0.6.0 documentation</title>
+  <title>bibdeskparser.macros &mdash; BibDeskParser 0.7.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=8fa8b3e9"></script>
+      <script src="../../_static/documentation_options.js?v=fe7df9b0"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.6.0
+    v0.7.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -317,14 +317,14 @@
 <span class="sd">    &gt;&gt;&gt; entry[&quot;journal&quot;]</span>
 <span class="sd">    &#39;prl&#39;</span>
 <span class="sd">    &gt;&gt;&gt; bib[&quot;Key2024&quot;] = entry</span>
-<span class="sd">    &gt;&gt;&gt; print(bib.export(&quot;Key2024&quot;, unicode=False), end=&quot;&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; print(bib.export(&quot;Key2024&quot;, unicode=False, marker=False), end=&quot;&quot;)</span>
 <span class="sd">    @article{Key2024,</span>
 <span class="sd">        Journal = {prl},</span>
 <span class="sd">    }</span>
 <span class="sd">    &gt;&gt;&gt; entry[&quot;journal&quot;] = &quot;prl&quot;  # bare str: treated as a macro ref</span>
 <span class="sd">    &gt;&gt;&gt; entry[&quot;journal&quot;]</span>
 <span class="sd">    &#39;prl&#39;</span>
-<span class="sd">    &gt;&gt;&gt; print(bib.export(&quot;Key2024&quot;, unicode=False), end=&quot;&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; print(bib.export(&quot;Key2024&quot;, unicode=False, marker=False), end=&quot;&quot;)</span>
 <span class="sd">    @article{Key2024,</span>
 <span class="sd">        Journal = prl,</span>
 <span class="sd">    }</span>
@@ -371,7 +371,7 @@
 <span class="sd">    &gt;&gt;&gt; entry[&quot;journal&quot;]</span>
 <span class="sd">    &#39;prl&#39;</span>
 <span class="sd">    &gt;&gt;&gt; bib[&quot;Key2024&quot;] = entry</span>
-<span class="sd">    &gt;&gt;&gt; print(bib.export(&quot;Key2024&quot;, unicode=False), end=&quot;&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; print(bib.export(&quot;Key2024&quot;, unicode=False, marker=False), end=&quot;&quot;)</span>
 <span class="sd">    @article{Key2024,</span>
 <span class="sd">        Journal = prl,</span>
 <span class="sd">    }</span>
@@ -391,7 +391,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 27, 2026.
+      <span class="lastupdated">Last updated on Jul 29, 2026.
       </span></p>
   </div>
 

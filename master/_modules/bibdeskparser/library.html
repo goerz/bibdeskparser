@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.library &mdash; BibDeskParser 0.6.0 documentation</title>
+  <title>bibdeskparser.library &mdash; BibDeskParser 0.7.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=8fa8b3e9"></script>
+      <script src="../../_static/documentation_options.js?v=fe7df9b0"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.6.0
+    v0.7.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -134,17 +134,16 @@
            <div itemprop="articleBody">
              
   <h1>Source code for bibdeskparser.library</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;The `Library` class and the `StaleFileError` it may raise.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;The `Library` class and its `StaleFileError` and</span>
+<span class="sd">`FormatConversionWarning`.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">getpass</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">MutableMapping</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">bibtexparser</span>
@@ -177,12 +176,14 @@
     <span class="n">is_valid_macro_name</span><span class="p">,</span>
     <span class="n">normalize_macro_name</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_stack</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_stack</span><span class="p">,</span> <span class="n">quiet_block_type_logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.plain</span><span class="w"> </span><span class="kn">import</span> <span class="n">database_content</span><span class="p">,</span> <span class="n">leading_marker</span><span class="p">,</span> <span class="n">resolve_plain_options</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.render</span><span class="w"> </span><span class="kn">import</span> <span class="n">render_entries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.search</span><span class="w"> </span><span class="kn">import</span> <span class="n">search_entries</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.writer</span><span class="w"> </span><span class="kn">import</span> <span class="n">bibdesk_field_order</span><span class="p">,</span> <span class="n">render_library</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.updating</span><span class="w"> </span><span class="kn">import</span> <span class="n">update_exported_file</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.writer</span><span class="w"> </span><span class="kn">import</span> <span class="n">bibdesk_field_order</span><span class="p">,</span> <span class="n">render_library</span><span class="p">,</span> <span class="n">render_plain_library</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Library&quot;</span><span class="p">,</span> <span class="s2">&quot;StaleFileError&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Library&quot;</span><span class="p">,</span> <span class="s2">&quot;StaleFileError&quot;</span><span class="p">,</span> <span class="s2">&quot;FormatConversionWarning&quot;</span><span class="p">]</span>
 
 <span class="c1"># All members whose name does not start with an underscore must be listed</span>
 <span class="c1"># either in __all__ or in __private__</span>
@@ -208,6 +209,24 @@
 
 
 
+<div class="viewcode-block" id="FormatConversionWarning">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.FormatConversionWarning">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FormatConversionWarning</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Warns that a plain BibTeX file is being converted to the</span>
+<span class="sd">    BibDesk database format.</span>
+
+<span class="sd">    A `.bib` file loaded from a plain BibTeX file (e.g. one written by</span>
+<span class="sd">    {meth}`Library.export`, with no BibDesk header, groups, or</span>
+<span class="sd">    `bdsk-*` fields) is saved back in that plain format. A mutation</span>
+<span class="sd">    that introduces database-only state -- creating or assigning a</span>
+<span class="sd">    static group, attaching a file, or adding a URL -- converts the</span>
+<span class="sd">    library to the database format instead, with this warning naming</span>
+<span class="sd">    the trigger. The conversion is irreversible within the instance;</span>
+<span class="sd">    the canonical inverse is a fresh {meth}`Library.export`.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
 <span class="c1"># -- module-private helpers ------------------------------------------- #</span>
 
 
@@ -218,29 +237,6 @@
 <span class="sd">    that the command-line interface can aggregate these warnings</span>
 <span class="sd">    without matching on the message text.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
-
-<span class="nd">@contextmanager</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">_quiet_bibtexparser_block_type_logging</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Silence bibtexparser&#39;s per-middleware &quot;Unknown block type&quot;</span>
-<span class="sd">    logging.</span>
-
-<span class="sd">    Every middleware in `parse_stack` calls into</span>
-<span class="sd">    `bibtexparser`&#39;s `BlockMiddleware.transform_block`, which logs</span>
-<span class="sd">    this at `WARNING` for any `ParsingFailedBlock` (e.g., a duplicate</span>
-<span class="sd">    key or duplicate field) since it only special-cases `Entry`,</span>
-<span class="sd">    `String`, `Preamble`, and comment blocks -- so a single failed</span>
-<span class="sd">    block produces one log message per middleware. `Library.__init__`</span>
-<span class="sd">    inspects `library._library.failed_blocks` itself and raises its</span>
-<span class="sd">    own, single `UserWarning` per condition instead.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;bibtexparser.middlewares.middleware&quot;</span><span class="p">)</span>
-    <span class="n">previous_level</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">level</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="k">yield</span>
-    <span class="k">finally</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">previous_level</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_check_unparseable_blocks</span><span class="p">(</span><span class="n">failed_blocks</span><span class="p">):</span>
@@ -761,7 +757,13 @@
 <span class="sd">      raising) about linked files (see {attr}`Entry.files`) that no</span>
 <span class="sd">      longer exist on disk. {exc}`StaleFileError` is raised if the</span>
 <span class="sd">      target file was modified on disk (e.g. resaved by BibDesk) since</span>
-<span class="sd">      this library was loaded, unless `force=True`.</span>
+<span class="sd">      this library was loaded, unless `force=True`. A library loaded</span>
+<span class="sd">      from a *plain* BibTeX file (one written by {meth}`export`, with</span>
+<span class="sd">      no BibDesk header, groups, or `bdsk-*` fields) is saved back in</span>
+<span class="sd">      that plain format; a mutation that introduces database-only</span>
+<span class="sd">      state converts it to the database format, with a</span>
+<span class="sd">      {class}`FormatConversionWarning` (see the</span>
+<span class="sd">      [](bibdesk-plain-format) documentation).</span>
 <span class="sd">    - {meth}`add_file`, {meth}`replace_file`, {meth}`unlink_file`,</span>
 <span class="sd">      {meth}`rename_file`: manage an entry&#39;s linked files</span>
 <span class="sd">      ({attr}`Entry.files`, itself read-only). Linked files are stored</span>
@@ -897,9 +899,10 @@
         <span class="n">bib_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span> <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">active</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">bib_dir</span><span class="o">=</span><span class="n">bib_dir</span><span class="p">)</span>
 
+        <span class="n">text</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">text</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">_quiet_bibtexparser_block_type_logging</span><span class="p">():</span>
+            <span class="k">with</span> <span class="n">quiet_block_type_logging</span><span class="p">():</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_library</span> <span class="o">=</span> <span class="n">bibtexparser</span><span class="o">.</span><span class="n">parse_string</span><span class="p">(</span>
                     <span class="n">text</span><span class="p">,</span> <span class="n">parse_stack</span><span class="o">=</span><span class="n">parse_stack</span><span class="p">()</span>
                 <span class="p">)</span>
@@ -935,6 +938,34 @@
                 <span class="n">index</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="p">())</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">entry</span><span class="o">.</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
+
+        <span class="c1"># Format detection: a loaded file with no database-only content</span>
+        <span class="c1"># (BibDesk header, group @comment blocks, bdsk-* fields) is in</span>
+        <span class="c1"># the plain format; save() then preserves that format. A</span>
+        <span class="c1"># from-scratch library is always in the database format.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plain</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plain_options</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="n">database_content</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_plain</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_plain_options</span> <span class="o">=</span> <span class="n">resolve_plain_options</span><span class="p">(</span>
+                    <span class="n">text</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">leading_marker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;file leads with a BibDeskParser plain-format &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;marker but contains </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">found</span><span class="p">)</span><span class="si">}</span><span class="s2">; treating &quot;</span>
+                    <span class="s2">&quot;it as a BibDesk database&quot;</span><span class="p">,</span>
+                    <span class="ne">UserWarning</span><span class="p">,</span>
+                    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plain</span><span class="p">:</span>
+            <span class="c1"># Date stamping is opt-in per entry (`Entry._touch` never</span>
+            <span class="c1"># creates date fields without it), enabled exactly for</span>
+            <span class="c1"># entries of a database-format library.</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">_stamp_dates</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># pylint: disable=protected-access</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_strings_view</span> <span class="o">=</span> <span class="n">_StringsView</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_groups_view</span> <span class="o">=</span> <span class="n">_GroupsView</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -1117,6 +1148,30 @@
             <span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">keys</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_data</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span>
         <span class="p">)</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_to_database</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert a plain-format library to the database format, with</span>
+<span class="sd">        a {class}`FormatConversionWarning` naming the `trigger`; a</span>
+<span class="sd">        no-op for a library already in the database format.</span>
+
+<span class="sd">        Called by every mutation that introduces database-only state</span>
+<span class="sd">        (creating or assigning a static group, attaching a file,</span>
+<span class="sd">        adding a URL), and by {meth}`save` when entries carry `bdsk-*`</span>
+<span class="sd">        fields (e.g. imported ones). Re-enables date stamping for all</span>
+<span class="sd">        entries; irreversible within the instance (the canonical</span>
+<span class="sd">        inverse is a fresh {meth}`export`).&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plain</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plain</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plain_options</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">entry</span><span class="o">.</span><span class="n">_stamp_dates</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># pylint: disable=protected-access</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;converting plain BibTeX file to BibDesk database format &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">trigger</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
+            <span class="n">FormatConversionWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_set_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create/replace (`keys` a tuple) or delete (`keys` is</span>
 <span class="sd">        `None`) the group `name`.</span>
@@ -1124,6 +1179,8 @@
 <span class="sd">        The single choke point through which every group mutation</span>
 <span class="sd">        goes, so the `groups` property of each affected entry is</span>
 <span class="sd">        refreshed in exactly one place.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_database</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;static group </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> added&quot;</span><span class="p">)</span>
         <span class="n">old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">old</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1532,6 +1589,10 @@
                 <span class="c1"># never be identical to one already in self._entries.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="n">existing_key</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
                 <span class="k">return</span>
+        <span class="c1"># The library&#39;s format mode carries over to the new entry:</span>
+        <span class="c1"># `Entry._touch` creates date fields only in database mode.</span>
+        <span class="c1"># pylint: disable-next=protected-access</span>
+        <span class="n">entry</span><span class="o">.</span><span class="n">_stamp_dates</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plain</span>
         <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">key</span> <span class="o">!=</span> <span class="n">key</span><span class="p">:</span>
             <span class="c1"># A brand new entry (or one from elsewhere) adopts the key</span>
             <span class="c1"># it is being added under. `Entry.key` itself is read-only,</span>
@@ -1549,6 +1610,10 @@
                     <span class="n">fail_on_duplicate_key</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">old</span><span class="o">.</span><span class="n">_groups</span> <span class="o">=</span> <span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
+                <span class="c1"># A replacement is an addition from the entry&#39;s point</span>
+                <span class="c1"># of view: it gets its dates stamped (database mode)</span>
+                <span class="c1"># like the brand-new entry in the else branch below.</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">_touch</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="n">entry</span><span class="o">.</span><span class="n">_entry</span><span class="p">],</span> <span class="n">fail_on_duplicate_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">_hoist_last_block_above_groups</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="p">)</span>
@@ -2076,6 +2141,7 @@
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bdsk_file</span><span class="o">.</span><span class="n">relative_path</span><span class="si">!r}</span><span class="s2"> is already attached to &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;entry </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_database</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;file attached to entry </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="c1"># pylint: disable=protected-access</span>
         <span class="n">entry</span><span class="o">.</span><span class="n">_set_files</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">_file_objects</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">bdsk_file</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">new_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -2293,14 +2359,16 @@
 <span class="sd">          the library).</span>
 <span class="sd">        * `url`: the URL to attach; must include both a scheme and a</span>
 <span class="sd">          host (e.g. `https://example.com/paper.pdf`), or `ValueError`</span>
-<span class="sd">          is raised. Raises `ValueError` if `url` is already linked</span>
-<span class="sd">          from the entry.</span>
+<span class="sd">          is raised, and is percent-encoded before storing. Raises</span>
+<span class="sd">          `ValueError` if `url` is already linked from the entry.</span>
 
 <span class="sd">        Unlike file attachments, URLs are self-contained (there is no</span>
 <span class="sd">        path resolution and no on-disk file to remove), so this simply</span>
 <span class="sd">        delegates to {meth}`Entry.add_url`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">add_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span></div>
+        <span class="n">entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">entry</span><span class="o">.</span><span class="n">add_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_database</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;URL linked to entry </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Library.replace_url">
@@ -2311,11 +2379,12 @@
 
 <span class="sd">        * `key`: citation key of the entry (raises `KeyError` if not in</span>
 <span class="sd">          the library).</span>
-<span class="sd">        * `old_url`: the linked URL to replace (raises `ValueError` if</span>
-<span class="sd">          it is not linked from the entry).</span>
-<span class="sd">        * `new_url`: the URL to link in its place (raises `ValueError`</span>
-<span class="sd">          if it is not a valid URL, or is already linked from the</span>
-<span class="sd">          entry).</span>
+<span class="sd">        * `old_url`: the linked URL to replace, matched literally</span>
+<span class="sd">          against the entry&#39;s stored URLs (raises `ValueError` if it is</span>
+<span class="sd">          not linked from the entry).</span>
+<span class="sd">        * `new_url`: the URL to link in its place, percent-encoded</span>
+<span class="sd">          before storing as in {meth}`add_url` (raises `ValueError` if</span>
+<span class="sd">          it is not a valid URL, or is already linked from the entry).</span>
 
 <span class="sd">        Delegates to {meth}`Entry.replace_url`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -2417,6 +2486,21 @@
 <span class="sd">        no baseline timestamp for the {exc}`StaleFileError` check;</span>
 <span class="sd">        instead, raises {exc}`FileExistsError` if `path` already</span>
 <span class="sd">        exists, unless `force=True`.</span>
+
+<span class="sd">        A library loaded from a *plain* BibTeX file (one with no</span>
+<span class="sd">        BibDesk header, groups, or `bdsk-*` fields, e.g. written by</span>
+<span class="sd">        {meth}`export`) is saved back in that plain format: no header</span>
+<span class="sd">        or groups block is synthesized, no date fields are created,</span>
+<span class="sd">        comments and `@string` definitions are preserved in place, and</span>
+<span class="sd">        every stored field of every entry is written (unmodified</span>
+<span class="sd">        entries in their stored field order, so a file created by</span>
+<span class="sd">        {meth}`export` round-trips byte-identically). Values are</span>
+<span class="sd">        written in the encoding detected at load time (see the</span>
+<span class="sd">        [](bibdesk-plain-format) documentation). The</span>
+<span class="sd">        {exc}`StaleFileError` check is skipped: a plain file has no</span>
+<span class="sd">        timestamp to compare. A mutation that introduced</span>
+<span class="sd">        database-only state has by then converted the library to the</span>
+<span class="sd">        database format, with a {class}`FormatConversionWarning`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">from_scratch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="ow">is</span> <span class="kc">None</span>
         <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span>
@@ -2425,6 +2509,46 @@
                 <span class="s2">&quot;no path given and this library was not loaded from a file&quot;</span>
             <span class="p">)</span>
         <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plain</span><span class="p">:</span>
+            <span class="c1"># Entries can gain bdsk-* fields without passing through</span>
+            <span class="c1"># add_file/add_url (an import, or an edit): such state</span>
+            <span class="c1"># cannot be represented in the plain format, so it</span>
+            <span class="c1"># converts the library like any other trigger.</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="c1"># pylint: disable=protected-access</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+                    <span class="n">field</span><span class="o">.</span><span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;bdsk-&quot;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span>
+                <span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_database</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;entry </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> has file attachments or &quot;</span>
+                        <span class="s2">&quot;linked URLs&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">break</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_plain</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_for_save</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="c1"># pylint: disable=protected-access</span>
+                <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">_dirty</span><span class="p">:</span>
+                    <span class="n">entry</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span> <span class="o">=</span> <span class="n">bibdesk_field_order</span><span class="p">(</span>
+                        <span class="n">entry</span><span class="o">.</span><span class="n">_entry</span><span class="o">.</span><span class="n">fields</span>
+                    <span class="p">)</span>
+            <span class="n">path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span>
+                <span class="n">render_plain_library</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_library</span><span class="p">,</span>
+                    <span class="n">unicode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_plain_options</span><span class="o">.</span><span class="n">unicode</span><span class="p">,</span>
+                    <span class="n">expand_strings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_plain_options</span><span class="o">.</span><span class="n">expand_strings</span><span class="p">,</span>
+                    <span class="n">strings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_all_strings</span><span class="p">(),</span>
+                <span class="p">),</span>
+                <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="o">=</span> <span class="n">path</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_modified</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="n">entry</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># pylint: disable=protected-access</span>
+            <span class="k">return</span>
 
         <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">from_scratch</span><span class="p">:</span>
@@ -2643,22 +2767,26 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="n">keys</span><span class="p">,</span>
-        <span class="n">unicode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">expand_strings</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">fields</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">,</span>
+        <span class="n">unicode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">expand_strings</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">fields</span><span class="o">=</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span>
         <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">preprint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">update</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">marker</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Export the entries with the given citation `keys` (at</span>
-<span class="sd">        least one required) as bibtex text.</span>
+<span class="sd">        least one required, unless `update` is given) as bibtex text.</span>
 
 <span class="sd">        Three independent parameters control the output:</span>
 
-<span class="sd">        * `unicode`: with `True` (default), field values are the</span>
+<span class="sd">        * `unicode`: with `True` (the default), field values are the</span>
 <span class="sd">          Unicode text also returned by the `Entry` dict interface;</span>
 <span class="sd">          with `False`, they are TeX-encoded, exactly as they would</span>
-<span class="sd">          be written to the `.bib` file on disk.</span>
-<span class="sd">        * `expand_strings`: with `False` (default), a field value</span>
+<span class="sd">          be written to the `.bib` file on disk. (With `update`, the</span>
+<span class="sd">          `None` default resolves to the target file&#39;s own encoding</span>
+<span class="sd">          instead; likewise for `expand_strings` and `preprint`.)</span>
+<span class="sd">        * `expand_strings`: with `False` (the default), a field value</span>
 <span class="sd">          referencing an `@string` macro stays a bare reference, and</span>
 <span class="sd">          the `@string` definitions needed by the selected entries</span>
 <span class="sd">          are included, so the export is self-contained; with `True`,</span>
@@ -2666,12 +2794,12 @@
 <span class="sd">          standard BibTeX month macros `jan` ... `dec` also resolve),</span>
 <span class="sd">          and no `@string` definitions are emitted. An undefined</span>
 <span class="sd">          macro stays a bare reference, with a `UserWarning`.</span>
-<span class="sd">        * `fields`: `&quot;full&quot;` (default: every field except the</span>
+<span class="sd">        * `fields`: `&quot;minimal&quot;` (default: only the fields needed to</span>
+<span class="sd">          typeset a bibliography), `&quot;full&quot;` (every field except the</span>
 <span class="sd">          `date-added`/`date-modified` bookkeeping fields, with</span>
-<span class="sd">          file attachments and URLs as plain paths/URLs),</span>
-<span class="sd">          `&quot;minimal&quot;` (only the fields needed to typeset a</span>
-<span class="sd">          bibliography), or a list of field names (in the given</span>
-<span class="sd">          order; names not defined on an entry are omitted).</span>
+<span class="sd">          file attachments and URLs as plain paths/URLs), or a list</span>
+<span class="sd">          of field names (in the given order; names not defined on</span>
+<span class="sd">          an entry are omitted).</span>
 
 <span class="sd">        A *preprint-only* entry -- a `misc` or `unpublished`</span>
 <span class="sd">        entry with an `eprint` from a recognized preprint archive,</span>
@@ -2719,17 +2847,68 @@
 <span class="sd">        slice of the file (`bdsk-file-N` values are plain paths, not</span>
 <span class="sd">        the stored binary plist data).</span>
 
+<span class="sd">        With `marker` (the default), the output begins with a marker</span>
+<span class="sd">        line recording the export options, e.g. `%% Created by</span>
+<span class="sd">        BibDeskParser (unicode, preprints as unpublished).`, which</span>
+<span class="sd">        pins those options for later `update` runs (see the</span>
+<span class="sd">        [](bibdesk-plain-format) documentation). An export whose</span>
+<span class="sd">        output includes `bdsk-*` fields (a full export of entries</span>
+<span class="sd">        with attachments or linked URLs) omits the marker: such</span>
+<span class="sd">        output is in the database format, where the marker has no</span>
+<span class="sd">        meaning.</span>
+
 <span class="sd">        With `outfile`, the text is written (UTF-8) to that path or</span>
 <span class="sd">        open file object instead of being returned.</span>
+
+<span class="sd">        With `update`, the plain BibTeX file at that path (an earlier</span>
+<span class="sd">        export) is refreshed from this library instead: this library</span>
+<span class="sd">        is only read, and the target file is rewritten in place.</span>
+<span class="sd">        Every key in the target that exists in this library -- or, if</span>
+<span class="sd">        `keys` are given, exactly those keys -- is replaced by a</span>
+<span class="sd">        fresh export of that entry; keys not yet in the target are</span>
+<span class="sd">        appended, and nothing is ever removed. Entries the library</span>
+<span class="sd">        does not know, `@string` definitions (refreshed to this</span>
+<span class="sd">        library&#39;s values where it defines the macro, kept otherwise),</span>
+<span class="sd">        and comments are all preserved. Entries written by an update</span>
+<span class="sd">        never include `bdsk-*` fields, which a plain target cannot</span>
+<span class="sd">        represent. The `unicode`/`expand_strings`/`preprint` options</span>
+<span class="sd">        default to the target file&#39;s own options (from its marker</span>
+<span class="sd">        line, or detected from its content); an explicit argument</span>
+<span class="sd">        overrides them and, with `marker`, is recorded in the</span>
+<span class="sd">        rewritten marker, so it is sticky for subsequent updates</span>
+<span class="sd">        (with `marker=False`, the file&#39;s marker state is left</span>
+<span class="sd">        untouched). The target must exist and be in the plain format</span>
+<span class="sd">        (a BibDesk database is refused); it is rewritten</span>
+<span class="sd">        unconditionally, with no staleness check. Mutually exclusive</span>
+<span class="sd">        with `outfile`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">update</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">outfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;give either outfile or update, not both&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">update_exported_file</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="n">update</span><span class="p">,</span>
+                <span class="n">keys</span><span class="p">,</span>
+                <span class="n">unicode</span><span class="o">=</span><span class="n">unicode</span><span class="p">,</span>
+                <span class="n">expand_strings</span><span class="o">=</span><span class="n">expand_strings</span><span class="p">,</span>
+                <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">,</span>
+                <span class="n">preprint</span><span class="o">=</span><span class="n">preprint</span><span class="p">,</span>
+                <span class="n">marker</span><span class="o">=</span><span class="n">marker</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;at least one citation key is required (unless update &quot;</span>
+                <span class="s2">&quot;is given)&quot;</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">export_entries</span><span class="p">(</span>
             <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">],</span>
             <span class="n">strings</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strings</span><span class="p">),</span>
-            <span class="n">unicode</span><span class="o">=</span><span class="n">unicode</span><span class="p">,</span>
-            <span class="n">expand_strings</span><span class="o">=</span><span class="n">expand_strings</span><span class="p">,</span>
+            <span class="n">unicode</span><span class="o">=</span><span class="kc">True</span> <span class="k">if</span> <span class="n">unicode</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">unicode</span><span class="p">,</span>
+            <span class="n">expand_strings</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="n">expand_strings</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">expand_strings</span><span class="p">,</span>
             <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">,</span>
             <span class="n">outfile</span><span class="o">=</span><span class="n">outfile</span><span class="p">,</span>
             <span class="n">preprint</span><span class="o">=</span><span class="n">preprint</span><span class="p">,</span>
+            <span class="n">marker</span><span class="o">=</span><span class="n">marker</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -3368,7 +3547,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 27, 2026.
+      <span class="lastupdated">Last updated on Jul 29, 2026.
       </span></p>
   </div>
 

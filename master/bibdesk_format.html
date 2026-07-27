@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BibDesk’s .bib Format &mdash; BibDeskParser 0.6.0 documentation</title>
+  <title>BibDesk’s .bib Format &mdash; BibDeskParser 0.7.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8fa8b3e9"></script>
+      <script src="_static/documentation_options.js?v=fe7df9b0"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.6.0
+    v0.7.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -78,6 +78,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#unicode-and-tex-escaped-characters">Unicode and TeX-escaped characters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#duplicate-citation-keys">Duplicate citation keys</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#byte-exact-round-tripping">Byte-exact round-tripping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-plain-format-of-exported-files">The plain format of exported files</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
@@ -218,7 +219,12 @@ exposed as read-only <code class="docutils literal notranslate"><span class="pre
 
 </pre></div>
 </div>
-<p>Any mutation of an <code class="docutils literal notranslate"><span class="pre">Entry</span></code> – setting or deleting a field, changing
+<p>A newly constructed <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a> carries neither
+field; both are stamped the moment the entry is added to a <code class="docutils literal notranslate"><span class="pre">Library</span></code>,
+mirroring BibDesk’s stamp-on-creation behavior. (For a library in the
+<a class="reference internal" href="#bibdesk-plain-format"><span class="std std-ref">plain format</span></a>, which does no date bookkeeping,
+they are never created at all.)
+Any mutation of an <code class="docutils literal notranslate"><span class="pre">Entry</span></code> – setting or deleting a field, changing
 <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.entry_type" title="bibdeskparser.Entry.entry_type"><code class="xref py py-attr docutils literal notranslate"><span class="pre">entry_type</span></code></a>, adding or removing a URL with
 <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_url" title="bibdeskparser.Entry.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a> and friends, or a file-attachment
 change made through the owning <code class="docutils literal notranslate"><span class="pre">Library</span></code> – updates
@@ -280,6 +286,14 @@ lookup, so it does not change if the file is moved outside of
 the stored paths against what is actually on disk, use
 <a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span> <span class="pre">--files</span></code></span></a>, which reports links that no longer
 resolve or whose spelling differs only in case from the file on disk.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> value need not be a base64 binary plist. A file
+written by <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.library.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a> with
+<code class="docutils literal notranslate"><span class="pre">full=True</span></code> records each attachment as its plain relative path
+(<code class="docutils literal notranslate"><span class="pre">Bdsk-File-1</span> <span class="pre">=</span> <span class="pre">{GrondPRA2009a.pdf}</span></code>) instead. <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> reads
+such a value as a path-only attachment: it appears in <code class="docutils literal notranslate"><span class="pre">entry.files</span></code>
+like any other, and round-trips back to the same plain path. Renaming
+or replacing it through the <code class="docutils literal notranslate"><span class="pre">Library</span></code> methods above upgrades it to a
+full base64 attachment with a fresh bookmark.</p>
 </section>
 <section id="linked-urls-bdsk-url-n-fields">
 <h2>Linked URLs (<code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code> fields)<a class="headerlink" href="#linked-urls-bdsk-url-n-fields" title="Link to this heading"></a></h2>
@@ -680,6 +694,69 @@ library actually changed. This is what lets <code class="docutils literal notran
 alongside BibDesk itself, editing the same file, without producing
 noisy diffs or clobbering data BibDesk would have preserved.</p>
 </section>
+<section id="the-plain-format-of-exported-files">
+<span id="bibdesk-plain-format"></span><h2>The plain format of exported files<a class="headerlink" href="#the-plain-format-of-exported-files" title="Link to this heading"></a></h2>
+<p>Everything on this page so far describes the <em>database format</em>: the
+layout BibDesk itself writes, with the header, the group <code class="docutils literal notranslate"><span class="pre">&#64;comment</span></code>
+blocks, the <code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields, and the date bookkeeping. The files
+written by <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a> are different:
+plain BibTeX for citing from LaTeX, with none of those features. Such
+an exported file is a working file that evolves with a paper, and
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> maintains it <em>as</em> plain BibTeX.</p>
+<p>A loaded <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file is classified as being in the database format
+exactly if it contains any database-only content:</p>
+<ul class="simple">
+<li><p>a BibDesk header comment,</p></li>
+<li><p>any BibDesk group <code class="docutils literal notranslate"><span class="pre">&#64;comment</span></code> block, or</p></li>
+<li><p>any <code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> field (<code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> attachments, <code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code> URLs).</p></li>
+</ul>
+<p>A file with none of these is <em>plain</em>. (The <code class="docutils literal notranslate"><span class="pre">date-added</span></code>/
+<code class="docutils literal notranslate"><span class="pre">date-modified</span></code> fields are not markers: a plain file can legitimately
+contain them, e.g. in an entry pasted from a database.) A library
+created from scratch is always in the database format, so <code class="docutils literal notranslate"><span class="pre">create</span></code>
+keeps producing proper database files.</p>
+<p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a> preserves the format it
+loaded: for a plain file, no header is synthesized, no groups block
+is written, no date fields are created, comments and <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code>
+definitions are preserved in place, and every stored field of every
+entry is written – unmodified entries in their stored field order,
+so a file created by <code class="docutils literal notranslate"><span class="pre">export</span></code> round-trips byte-identically. All
+commands that modify the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file thus work on exported files
+without converting them. A mutation that requires a database-only
+feature – creating a static group, attaching a file, or linking a
+URL – converts the library to the database format instead, with a
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.FormatConversionWarning" title="bibdeskparser.FormatConversionWarning"><code class="xref py py-class docutils literal notranslate"><span class="pre">FormatConversionWarning</span></code></a> naming the
+trigger; the conversion is irreversible within the loaded instance,
+and the way back to a plain file is a fresh <code class="docutils literal notranslate"><span class="pre">export</span></code>.</p>
+<p>Three options govern how a plain file is serialized: the value
+encoding (Unicode, or TeX-encoded), whether <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> references are
+expanded, and the <a class="reference internal" href="preprints.html"><span class="doc std std-doc">form preprints are exported in</span></a>. Every
+export records them in a marker line written as the file’s very
+first block:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span> <span class="n">Created</span> <span class="n">by</span> <span class="n">BibDeskParser</span> <span class="p">(</span><span class="n">unicode</span><span class="p">,</span> <span class="n">preprints</span> <span class="k">as</span> <span class="n">unpublished</span><span class="p">)</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>The parenthesized list is a fixed vocabulary, parsed
+case-insensitively: <code class="docutils literal notranslate"><span class="pre">unicode</span></code> or <code class="docutils literal notranslate"><span class="pre">TeX-encoded</span></code>; <code class="docutils literal notranslate"><span class="pre">strings</span> <span class="pre">expanded</span></code>
+(present only for expand-strings exports); and <code class="docutils literal notranslate"><span class="pre">preprints</span> <span class="pre">as</span> <span class="pre">unpublished</span></code>/<code class="docutils literal notranslate"><span class="pre">misc</span></code>/<code class="docutils literal notranslate"><span class="pre">article</span></code>/<code class="docutils literal notranslate"><span class="pre">stored</span></code>. For a file without a marker
+(hand-written, or from another tool), each option is instead detected
+from the file’s content, choosing the behavior consistent with its
+observable state: the encoding is Unicode if any TeX-encodable value
+contains non-ASCII text (an all-ASCII file counts as TeX-encoded, the
+safe choice); strings count as expanded only if the file shows no
+macro usage at all (no <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions and no bare references,
+including bare month references like <code class="docutils literal notranslate"><span class="pre">month</span> <span class="pre">=</span> <span class="pre">jan</span></code>); and the preprint
+form is the stored entry type of the file’s preprint-only entries,
+when they are consistent. The options are resolved once, when the
+file is loaded; <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">--update</span></code> (see
+<a class="reference internal" href="howto.html#howto-manage-export"><span class="std std-ref">How to manage an exported .bib file</span></a>) reuses them for the entries it rewrites, and
+writes a marker recording them, so a marker-less file gains one on
+its first update. An export whose output includes <code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields (a
+full export of entries with attachments or linked URLs) is in the
+database format by the rules above, and therefore never gets a
+marker; if a file somehow contains both a marker and database-only
+content, the database content wins, with a warning.</p>
+</section>
 </section>
 
 
@@ -694,7 +771,7 @@ noisy diffs or clobbering data BibDesk would have preserved.</p>
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 27, 2026.
+      <span class="lastupdated">Last updated on Jul 29, 2026.
       </span></p>
   </div>
 

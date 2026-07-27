@@ -178,6 +178,17 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 `````
 
+````{py:exception} FormatConversionWarning()
+:canonical: bibdeskparser.library.FormatConversionWarning
+
+Bases: {py:obj}`UserWarning`
+
+```{autodoc2-docstring} bibdeskparser.library.FormatConversionWarning
+:parser: myst
+```
+
+````
+
 `````{py:class} Library(path=None, creator=None)
 :canonical: bibdeskparser.library.Library
 
@@ -313,7 +324,7 @@ Bases: {py:obj}`collections.abc.MutableMapping`
 
 ````
 
-````{py:method} export(*keys, unicode=True, expand_strings=False, fields='full', outfile=None, preprint=None)
+````{py:method} export(*keys, unicode=None, expand_strings=None, fields='minimal', outfile=None, preprint=None, update=None, marker=True)
 :canonical: bibdeskparser.library.Library.export
 
 ```{autodoc2-docstring} bibdeskparser.library.Library.export

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Command Line Interface &mdash; BibDeskParser 0.6.0 documentation</title>
+  <title>Command Line Interface &mdash; BibDeskParser 0.7.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8fa8b3e9"></script>
+      <script src="_static/documentation_options.js?v=fe7df9b0"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.6.0
+    v0.7.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -101,7 +101,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#rendering-and-exporting">Rendering and exporting</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#render-key"><code class="docutils literal notranslate"><span class="pre">render</span> <span class="pre">KEY...</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#export-key"><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">KEY...</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#export-key"><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">[KEY...]</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#entries">Entries</a><ul>
@@ -284,7 +284,10 @@ entry’s derived data (<code class="docutils literal notranslate"><span class="
 assigns <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.entry_type" title="bibdeskparser.Entry.entry_type"><code class="xref py py-attr docutils literal notranslate"><span class="pre">entry_type</span></code></a>. The one command
 with no API counterpart is <a class="reference internal" href="#cli-config-path"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">config_path</span></code></span></a>, which
 reports the discovered configuration file.</p>
-<p>Read-only commands print their result to stdout. Mutating commands
+<p>Read-only commands print their result to stdout; so does <code class="docutils literal notranslate"><span class="pre">export</span></code>,
+which only writes a file when asked to, with <code class="docutils literal notranslate"><span class="pre">--outfile</span></code> or
+<code class="docutils literal notranslate"><span class="pre">--update</span></code> (the latter rewrites a previously exported file, never the
+library itself). Mutating commands
 load the library, apply the change, save the file in place, and print
 nothing on success. The exceptions that do print:
 <a class="reference internal" href="#cli-rekey"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">rekey</span></code></span></a> without <code class="docutils literal notranslate"><span class="pre">NEW_KEY</span></code> and
@@ -430,8 +433,9 @@ library, e.g. after a batch of edits.</p>
 <span class="go">LiteralMonth2026: month is the literal string &#39;June&#39;, not one of the twelve standard month macros (jan ... dec)</span>
 <span class="go">BadMonthMacro2026: month references the macro &#39;sept&#39;, not one of the twelve standard month macros (jan ... dec)</span>
 <span class="go">BadMonthMacro2026: month references undefined @string macro &#39;sept&#39;</span>
+<span class="go">UnencodedURL2026: url contains non-ASCII characters: &#39;https://example.com/münchen&#39; (use &#39;https://example.com/m%C3%BCnchen&#39;)</span>
 <span class="go">unused @string macro &#39;unusedjrnl&#39;</span>
-<span class="go">FAIL (15 problems, 13 entries checked)</span>
+<span class="go">FAIL (16 problems, 14 entries checked)</span>
 </pre></div>
 </div>
 <p>The audits:</p>
@@ -452,6 +456,8 @@ preprint pseudo-journal like <code class="docutils literal notranslate"><span cl
 <li><p>every <code class="docutils literal notranslate"><span class="pre">month</span></code> is a bare reference to a standard month macro (<code class="docutils literal notranslate"><span class="pre">jan</span></code>
 … <code class="docutils literal notranslate"><span class="pre">dec</span></code>);</p></li>
 <li><p>every <code class="docutils literal notranslate"><span class="pre">author</span></code> and <code class="docutils literal notranslate"><span class="pre">editor</span></code> parses as names;</p></li>
+<li><p>no URL-type value (a <code class="docutils literal notranslate"><span class="pre">url</span></code>-named field, or a <code class="docutils literal notranslate"><span class="pre">bdsk-url</span></code> link) holds
+raw non-ASCII characters;</p></li>
 <li><p>every <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro is referenced by some entry.</p></li>
 </ul>
 <p><strong>Options</strong></p>
@@ -468,8 +474,8 @@ configured format. Implies <code class="docutils literal notranslate"><span clas
 each problem has <code class="docutils literal notranslate"><span class="pre">check</span></code> (the failing audit: <code class="docutils literal notranslate"><span class="pre">parse</span></code>,
 <code class="docutils literal notranslate"><span class="pre">duplicate_keys</span></code>, <code class="docutils literal notranslate"><span class="pre">entry_type</span></code>, <code class="docutils literal notranslate"><span class="pre">required_fields</span></code>, <code class="docutils literal notranslate"><span class="pre">doi</span></code>,
 <code class="docutils literal notranslate"><span class="pre">empty_fields</span></code>, <code class="docutils literal notranslate"><span class="pre">known_missing</span></code>, <code class="docutils literal notranslate"><span class="pre">journal</span></code>, <code class="docutils literal notranslate"><span class="pre">undefined_macro</span></code>,
-<code class="docutils literal notranslate"><span class="pre">year</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">names</span></code>, <code class="docutils literal notranslate"><span class="pre">unused_strings</span></code>, <code class="docutils literal notranslate"><span class="pre">files</span></code>, or
-<code class="docutils literal notranslate"><span class="pre">key_format</span></code>), <code class="docutils literal notranslate"><span class="pre">key</span></code> (or <code class="docutils literal notranslate"><span class="pre">null</span></code>), and <code class="docutils literal notranslate"><span class="pre">message</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">year</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">names</span></code>, <code class="docutils literal notranslate"><span class="pre">url_encoding</span></code>, <code class="docutils literal notranslate"><span class="pre">unused_strings</span></code>, <code class="docutils literal notranslate"><span class="pre">files</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">key_format</span></code>), <code class="docutils literal notranslate"><span class="pre">key</span></code> (or <code class="docutils literal notranslate"><span class="pre">null</span></code>), and <code class="docutils literal notranslate"><span class="pre">message</span></code>.</p></li>
 </ul>
 <p>With <code class="docutils literal notranslate"><span class="pre">KEY...</span></code>, only the given entries are audited and the unused-macro
 audit is skipped; an unknown key is an error.</p>
@@ -912,13 +918,15 @@ separate link after the journal reference.</p>
 </div>
 </section>
 <section id="export-key">
-<span id="cli-export"></span><h3><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">KEY...</span></code><a class="headerlink" href="#export-key" title="Link to this heading"></a></h3>
+<span id="cli-export"></span><h3><code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">[KEY...]</span></code><a class="headerlink" href="#export-key" title="Link to this heading"></a></h3>
 <p>Export one or more entries as self-contained BibTeX text (including
 the definitions of any <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macros they reference), via
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a>. By default every field is
-exported (attachments and URLs as plain paths/URLs, without the
-date-added/date-modified bookkeeping fields), as Unicode text, with
-<code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> references left bare.</p>
+<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a>. Each entry is reduced to
+the fields needed to typeset a bibliography, written as Unicode text,
+with <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> references left bare. The output begins with a marker
+line recording the export options (see <a class="reference internal" href="bibdesk_format.html#bibdesk-plain-format"><span class="std std-ref">The plain format of exported files</span></a>).
+Without <code class="docutils literal notranslate"><span class="pre">--update</span></code>, the command is read-only; with <code class="docutils literal notranslate"><span class="pre">--update</span> <span class="pre">FILE</span></code>,
+it rewrites the exported FILE in place.</p>
 <p><strong>Options</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">--no-unicode</span></code> – export field values TeX-encoded, as written to the
@@ -926,11 +934,12 @@ date-added/date-modified bookkeeping fields), as Unicode text, with
 <li><p><code class="docutils literal notranslate"><span class="pre">--expand-strings</span></code> – replace <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> references by the macro’s
 value and emit no <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions (by default they are
 prepended).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--minimal</span></code> – export only the fields needed to typeset a
-bibliography.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--full</span></code> – export every field except the date bookkeeping fields,
+with attachments and URLs as plain paths/URLs, instead of the
+minimal selection (<code class="docutils literal notranslate"><span class="pre">--minimal</span></code>, the default).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--field</span> <span class="pre">FIELD</span></code> – export only the named fields (repeatable and
-comma-separated). Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">--minimal</span></code>, and always
-exports the stored fields.</p></li>
+comma-separated). Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">--minimal</span></code>/<code class="docutils literal notranslate"><span class="pre">--full</span></code>, and
+always exports the stored fields.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--preprint</span> <span class="pre">FORM</span></code> – the form a <a class="reference internal" href="preprints.html"><span class="doc std std-doc">preprint-only entry</span></a> is
 exported as, whatever its stored form: <code class="docutils literal notranslate"><span class="pre">unpublished</span></code> (structured
 <code class="docutils literal notranslate"><span class="pre">eprint</span></code> fields, with the required <code class="docutils literal notranslate"><span class="pre">note</span></code> guaranteed in minimal
@@ -938,10 +947,22 @@ exports; the default, via the
 <a class="reference internal" href="config.html#config-preprint-export"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">preprint_export</span></code> setting</span></a>), <code class="docutils literal notranslate"><span class="pre">misc</span></code> (the
 same structured form), <code class="docutils literal notranslate"><span class="pre">article</span></code> (the pseudo-journal form,
 hyperlinked via <code class="docutils literal notranslate"><span class="pre">url</span></code>), or <code class="docutils literal notranslate"><span class="pre">stored</span></code> (no transformation).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--outfile</span> <span class="pre">PATH</span></code> – write to a file instead of stdout.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--outfile</span> <span class="pre">PATH</span></code> – write to a file instead of stdout. Mutually
+exclusive with <code class="docutils literal notranslate"><span class="pre">--update</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--update</span> <span class="pre">FILE</span></code> – rewrite the exported FILE (which must exist and
+be plain BibTeX, not a BibDesk database), refreshing it from the
+library: the given KEYs (without KEYs: every key in FILE that the
+library knows) are freshly exported in place, KEYs not yet in FILE
+are appended, and everything else – unknown entries, comments,
+<code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions – is kept; nothing is ever removed. The
+<code class="docutils literal notranslate"><span class="pre">--unicode</span></code>/<code class="docutils literal notranslate"><span class="pre">--expand-strings</span></code>/<code class="docutils literal notranslate"><span class="pre">--preprint</span></code> options default to the
+FILE’s own recorded or detected options.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--no-marker</span></code> – do not begin the output with the marker line; with
+<code class="docutils literal notranslate"><span class="pre">--update</span></code>, leave the FILE’s marker state untouched.</p></li>
 </ul>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GoerzA2023<span class="w"> </span>--minimal<span class="w"> </span><span class="se">\</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GoerzA2023<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--expand-strings<span class="w"> </span>--outfile<span class="w"> </span>out.bib
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--update<span class="w"> </span>out.bib<span class="w"> </span>GoerzQ2022
 </pre></div>
 </div>
 </section>
@@ -1566,7 +1587,7 @@ instead of opening an editor (mutually exclusive with <code class="docutils lite
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 27, 2026.
+      <span class="lastupdated">Last updated on Jul 29, 2026.
       </span></p>
   </div>
 

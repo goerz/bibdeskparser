@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How-to Guides &mdash; BibDeskParser 0.6.0 documentation</title>
+  <title>How-to Guides &mdash; BibDeskParser 0.7.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8fa8b3e9"></script>
+      <script src="_static/documentation_options.js?v=fe7df9b0"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.6.0
+    v0.7.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -78,6 +78,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#how-to-render-a-bibliography-in-a-specific-citation-format">How to render a bibliography in a specific citation format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-give-an-ai-coding-agent-access-to-your-library">How to give an AI coding agent access to your library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-to-export-a-minimal-bibtex-file-for-latex">How to export a minimal BibTeX file for LaTeX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-manage-an-exported-bib-file">How to manage an exported <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file</a></li>
 </ul>
 </li>
 </ul>
@@ -931,7 +932,9 @@ structured <code class="docutils literal notranslate"><span class="pre">unpublis
 render the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> field (REVTeX, <code class="docutils literal notranslate"><span class="pre">elsarticle</span></code>, biblatex), or the
 <code class="docutils literal notranslate"><span class="pre">article</span></code> form for classic styles (<code class="docutils literal notranslate"><span class="pre">plain</span></code>, <code class="docutils literal notranslate"><span class="pre">unsrt</span></code>, <code class="docutils literal notranslate"><span class="pre">IEEEtran</span></code>,
 …) that would drop it:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Wilhelm2003.10132<span class="w"> </span>--minimal
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Wilhelm2003.10132
+<span class="gp">%</span>%<span class="w"> </span>Created<span class="w"> </span>by<span class="w"> </span>BibDeskParser<span class="w"> </span><span class="o">(</span>unicode,<span class="w"> </span>preprints<span class="w"> </span>as<span class="w"> </span>unpublished<span class="o">)</span>.
+
 <span class="go">@unpublished{Wilhelm2003.10132,</span>
 <span class="go">    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},</span>
 <span class="go">    Title = {An introduction into optimal control for quantum technologies},</span>
@@ -942,8 +945,10 @@ render the <code class="docutils literal notranslate"><span class="pre">eprint</
 <span class="go">    Note = {preprint only},</span>
 <span class="go">    Year = {2020},</span>
 <span class="go">}</span>
-<span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Wilhelm2003.10132<span class="w"> </span>--minimal<span class="w"> </span><span class="se">\</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Wilhelm2003.10132<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--preprint<span class="w"> </span>article
+<span class="gp">%</span>%<span class="w"> </span>Created<span class="w"> </span>by<span class="w"> </span>BibDeskParser<span class="w"> </span><span class="o">(</span>unicode,<span class="w"> </span>preprints<span class="w"> </span>as<span class="w"> </span>article<span class="o">)</span>.
+
 <span class="go">@article{Wilhelm2003.10132,</span>
 <span class="go">    Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},</span>
 <span class="go">    Title = {An introduction into optimal control for quantum technologies},</span>
@@ -954,6 +959,9 @@ render the <code class="docutils literal notranslate"><span class="pre">eprint</
 <span class="go">}</span>
 </pre></div>
 </div>
+<p>The leading marker line records the export options; it matters for
+files that are kept up to date with <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">--update</span></code> (see
+<a class="reference internal" href="#howto-manage-export"><span class="std std-ref">How to manage an exported .bib file</span></a>).</p>
 <p>For a preprint on a non-arXiv archive, the structured forms also
 emit the <code class="docutils literal notranslate"><span class="pre">archive</span></code> field, so that REVTeX’s eprint link points at the
 right server (see <a class="reference internal" href="preprints.html#preprints-archive-field"><span class="std std-ref">the <code class="docutils literal notranslate"><span class="pre">archive</span></code> field</span></a>).
@@ -996,7 +1004,10 @@ adds the entries:</p>
 </div>
 <p>Since <a class="reference internal" href="cli.html#cli-export"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">export</span></code></span></a> writes exactly the kind of snippet that
 <code class="docutils literal notranslate"><span class="pre">import</span></code> accepts (including the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions), this also
-moves entries between libraries:</p>
+moves entries between libraries. By default, <code class="docutils literal notranslate"><span class="pre">export</span></code> reduces each
+entry to a minimal, citation-oriented field selection; pass <code class="docutils literal notranslate"><span class="pre">--full</span></code>
+to move complete records (file attachments transfer only when the
+linked files also exist relative to the target library):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>create<span class="w"> </span>other.bib
 <span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Tannor2007<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>import<span class="w"> </span>other.bib<span class="w"> </span>--stdin
@@ -1077,7 +1088,8 @@ Run <span class="sb">`bibdeskparser --help`</span> for the command list and
 <span class="sb">`bibdeskparser COMMAND --help`</span> for a command&#39;s arguments. Use <span class="sb">`--json`</span>
 on read-only commands (<span class="sb">`show`</span>, <span class="sb">`search`</span>, <span class="sb">`keys`</span>, ...) for reliable
 parsing. To find entries, prefer <span class="sb">`bibdeskparser search`</span>. For free-form
-edits, pipe modified <span class="sb">`export`</span> output back through <span class="sb">`edit --stdin`</span>.
+edits, pipe modified <span class="sb">`export --full --preprint stored`</span> output back
+through <span class="sb">`edit --stdin`</span>.
 </pre></div>
 </div>
 <p><strong>4. Reduce permission prompts (optional).</strong> Agents that gate shell
@@ -1103,11 +1115,12 @@ hanging on <code class="docutils literal notranslate"><span class="pre">$EDITOR<
 </ul>
 <p>For edits beyond the dedicated mutating commands (changing a title,
 fixing an author list, adding an arbitrary field), the agent round-trips
-an entry through <code class="docutils literal notranslate"><span class="pre">export</span></code> and <code class="docutils literal notranslate"><span class="pre">edit</span> <span class="pre">--stdin</span></code>: <code class="docutils literal notranslate"><span class="pre">export</span></code> prints exactly
-the text that <code class="docutils literal notranslate"><span class="pre">edit</span></code> would show in an editor, so transforming that text
-and piping it back applies the change, and piping it back unchanged is
-a no-op.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>GoerzQ2022<span class="w"> </span><span class="se">\</span>
+an entry through <code class="docutils literal notranslate"><span class="pre">export</span></code> and <code class="docutils literal notranslate"><span class="pre">edit</span> <span class="pre">--stdin</span></code>: with <code class="docutils literal notranslate"><span class="pre">--full</span> <span class="pre">--preprint</span> <span class="pre">stored</span></code>, <code class="docutils literal notranslate"><span class="pre">export</span></code> prints the entry exactly as <code class="docutils literal notranslate"><span class="pre">edit</span></code> would show it in
+an editor, so transforming that text and piping it back applies the
+change, and piping it back unchanged is a no-op. (A field missing from
+the piped text is deleted, so the default minimal export must not be
+used here.)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>GoerzQ2022<span class="w"> </span>--full<span class="w"> </span>--preprint<span class="w"> </span>stored<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/Semi-Automatic/Semiautomatic/&#39;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>edit<span class="w"> </span>GoerzQ2022<span class="w"> </span>--stdin
 </pre></div>
@@ -1120,22 +1133,24 @@ and the list of problems on stderr, leaving the <code class="docutils literal no
 <section id="how-to-export-a-minimal-bibtex-file-for-latex">
 <h2>How to export a minimal BibTeX file for LaTeX<a class="headerlink" href="#how-to-export-a-minimal-bibtex-file-for-latex" title="Link to this heading"></a></h2>
 <p><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.export" title="bibdeskparser.library.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.export</span></code></a> writes
-selected entries as plain bibtex text, stripped of BibDesk-only fields; use
-<code class="docutils literal notranslate"><span class="pre">fields=&quot;minimal&quot;</span></code> to further restrict each entry to a small,
-per-entry-type whitelist of citation-relevant fields (dropping things
-like <code class="docutils literal notranslate"><span class="pre">abstract</span></code> and <code class="docutils literal notranslate"><span class="pre">annote</span></code>), and <code class="docutils literal notranslate"><span class="pre">outfile=</span></code> to write straight to a
-file. The <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions referenced by the exported entries
-are included, so the file is self-contained (pass
+selected entries as plain bibtex text, stripped of BibDesk-only fields.
+By default, each entry is reduced to a small, per-entry-type whitelist
+of citation-relevant fields (dropping things like <code class="docutils literal notranslate"><span class="pre">abstract</span></code> and
+<code class="docutils literal notranslate"><span class="pre">annote</span></code>); pass <code class="docutils literal notranslate"><span class="pre">fields=&quot;full&quot;</span></code> for complete records, and <code class="docutils literal notranslate"><span class="pre">outfile=</span></code>
+to write straight to a file. The <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions referenced by
+the exported entries are included, so the file is self-contained (pass
 <code class="docutils literal notranslate"><span class="pre">expand_strings=True</span></code> to instead replace each reference by the
-macro’s value and omit the definitions).</p>
+macro’s value and omit the definitions). The output begins with a
+marker line recording the export options, for later updates (see
+<a class="reference internal" href="#howto-manage-export"><span class="std std-ref">the next section</span></a>).</p>
 <p>Note how the entries’ <code class="docutils literal notranslate"><span class="pre">abstract</span></code> and <code class="docutils literal notranslate"><span class="pre">keywords</span></code>, and the <code class="docutils literal notranslate"><span class="pre">article</span></code>
 entry’s linked file, are all dropped (the <code class="docutils literal notranslate"><span class="pre">eprint</span></code> fields are kept:
 they render as a “published, with preprint” link under styles like
 REVTeX, and are ignored by classic styles; see <a class="reference internal" href="preprints.html"><span class="doc std std-doc">Preprints</span></a>):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;GrondPRA2009a&quot;</span><span class="p">,</span> <span class="s2">&quot;Evans1983&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="s2">&quot;paper.bib&quot;</span>
-<span class="gp">... </span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;GrondPRA2009a&quot;</span><span class="p">,</span> <span class="s2">&quot;Evans1983&quot;</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="s2">&quot;paper.bib&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;paper.bib&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
+<span class="go">%% Created by BibDeskParser (unicode, preprints as unpublished).</span>
+
 <span class="go">@string{pra = {Phys. Rev. A}}</span>
 
 <span class="go">@article{GrondPRA2009a,</span>
@@ -1160,6 +1175,51 @@ REVTeX, and are ignored by classic styles; see <a class="reference internal" hre
 </pre></div>
 </div>
 </section>
+<section id="how-to-manage-an-exported-bib-file">
+<span id="howto-manage-export"></span><h2>How to manage an exported <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file<a class="headerlink" href="#how-to-manage-an-exported-bib-file" title="Link to this heading"></a></h2>
+<p>Files created by <code class="docutils literal notranslate"><span class="pre">export</span></code> are plain BibTeX: no BibDesk header, no
+groups, no attachments, no date bookkeeping. Treat such a file as a
+snapshot of your library, taken for one paper: corrections belong in
+the library, and the file is refreshed from it.</p>
+<p>Create the file by exporting the entries the paper cites:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GrondPRA2009a<span class="w"> </span>Evans1983<span class="w"> </span>--outfile<span class="w"> </span>paper.bib
+</pre></div>
+</div>
+<p>The file begins with a marker line, <code class="docutils literal notranslate"><span class="pre">%%</span> <span class="pre">Created</span> <span class="pre">by</span> <span class="pre">BibDeskParser</span> <span class="pre">(unicode,</span> <span class="pre">preprints</span> <span class="pre">as</span> <span class="pre">unpublished).</span></code>, recording the export options
+for later updates. Each entry is reduced to the fields needed to
+typeset a bibliography (pass <code class="docutils literal notranslate"><span class="pre">--full</span></code> for complete records), and the
+<code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions the entries reference are included.</p>
+<p>To cite one more reference, update the file with the new key:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--update<span class="w"> </span>paper.bib<span class="w"> </span>GoerzQ2022
+</pre></div>
+</div>
+<p>To pick up corrections made in the library, update without naming
+keys; every entry the library knows is re-exported in place:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--update<span class="w"> </span>paper.bib
+</pre></div>
+</div>
+<p>An update never removes anything: entries the library does not know
+(e.g. pasted in by hand from a colleague’s file) are kept unchanged,
+as are <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions that are no longer referenced.</p>
+<p>All other commands work directly on the exported file and preserve
+its plain format:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>check<span class="w"> </span>paper.bib
+<span class="go">Evans1983: missing required field &#39;note&#39; for entry type &#39;unpublished&#39;</span>
+<span class="go">FAIL (1 problem, 3 entries checked)</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_field<span class="w"> </span>paper.bib<span class="w"> </span>Evans1983<span class="w"> </span>note<span class="w"> </span><span class="s2">&quot;Lecture notes&quot;</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>delete<span class="w"> </span>paper.bib<span class="w"> </span>GrondPRA2009a
+</pre></div>
+</div>
+<p>Mind that a local edit like the <code class="docutils literal notranslate"><span class="pre">set_field</span></code> above is overwritten by
+the next <code class="docutils literal notranslate"><span class="pre">--update</span></code> if the library knows the entry; make persistent
+corrections in the library instead. To remove an entry, use <code class="docutils literal notranslate"><span class="pre">delete</span></code>
+(or a text editor); <code class="docutils literal notranslate"><span class="pre">--update</span></code> will not re-add it unless you name its
+key again.</p>
+<p>Groups, file attachments, and linked URLs exist only in a BibDesk
+database. Using one of those commands (<code class="docutils literal notranslate"><span class="pre">set_group</span></code>, <code class="docutils literal notranslate"><span class="pre">add_file</span></code>,
+<code class="docutils literal notranslate"><span class="pre">add_url</span></code>, …) on a plain file converts it to the database format on
+save, with a warning; the way back to a plain file is a fresh export.</p>
+</section>
 </section>
 
 
@@ -1174,7 +1234,7 @@ REVTeX, and are ignored by classic styles; see <a class="reference internal" hre
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 27, 2026.
+      <span class="lastupdated">Last updated on Jul 29, 2026.
       </span></p>
   </div>
 

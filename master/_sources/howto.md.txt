@@ -844,7 +844,9 @@ render the `eprint` field (REVTeX, `elsarticle`, biblatex), or the
 ...) that would drop it:
 
 ```console
-$ bibdeskparser export tests/Refs/refs.bib Wilhelm2003.10132 --minimal
+$ bibdeskparser export tests/Refs/refs.bib Wilhelm2003.10132
+%% Created by BibDeskParser (unicode, preprints as unpublished).
+
 @unpublished{Wilhelm2003.10132,
     Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},
     Title = {An introduction into optimal control for quantum technologies},
@@ -855,8 +857,10 @@ $ bibdeskparser export tests/Refs/refs.bib Wilhelm2003.10132 --minimal
     Note = {preprint only},
     Year = {2020},
 }
-$ bibdeskparser export tests/Refs/refs.bib Wilhelm2003.10132 --minimal \
+$ bibdeskparser export tests/Refs/refs.bib Wilhelm2003.10132 \
     --preprint article
+%% Created by BibDeskParser (unicode, preprints as article).
+
 @article{Wilhelm2003.10132,
     Author = {Wilhelm, Frank K. and Kirchhoff, Susanna and Machnes, Shai and Wittler, Nicolas and Sugny, Dominique},
     Title = {An introduction into optimal control for quantum technologies},
@@ -866,6 +870,10 @@ $ bibdeskparser export tests/Refs/refs.bib Wilhelm2003.10132 --minimal \
     Year = {2020},
 }
 ```
+
+The leading marker line records the export options; it matters for
+files that are kept up to date with `export --update` (see
+[](howto-manage-export)).
 
 For a preprint on a non-arXiv archive, the structured forms also
 emit the `archive` field, so that REVTeX's eprint link points at the
@@ -917,7 +925,10 @@ $ bibdeskparser import tests/Refs/refs.bib --url https://example.com/refs.bib
 
 Since [`export`](cli-export) writes exactly the kind of snippet that
 `import` accepts (including the `@string` definitions), this also
-moves entries between libraries:
+moves entries between libraries. By default, `export` reduces each
+entry to a minimal, citation-oriented field selection; pass `--full`
+to move complete records (file attachments transfer only when the
+linked files also exist relative to the target library):
 
 ```console
 $ bibdeskparser create other.bib
@@ -1012,7 +1023,8 @@ Run `bibdeskparser --help` for the command list and
 `bibdeskparser COMMAND --help` for a command's arguments. Use `--json`
 on read-only commands (`show`, `search`, `keys`, ...) for reliable
 parsing. To find entries, prefer `bibdeskparser search`. For free-form
-edits, pipe modified `export` output back through `edit --stdin`.
+edits, pipe modified `export --full --preprint stored` output back
+through `edit --stdin`.
 ```
 
 **4. Reduce permission prompts (optional).** Agents that gate shell
@@ -1039,13 +1051,15 @@ A few properties make the CLI safe to hand to an agent:
 
 For edits beyond the dedicated mutating commands (changing a title,
 fixing an author list, adding an arbitrary field), the agent round-trips
-an entry through `export` and `edit --stdin`: `export` prints exactly
-the text that `edit` would show in an editor, so transforming that text
-and piping it back applies the change, and piping it back unchanged is
-a no-op.
+an entry through `export` and `edit --stdin`: with `--full --preprint
+stored`, `export` prints the entry exactly as `edit` would show it in
+an editor, so transforming that text and piping it back applies the
+change, and piping it back unchanged is a no-op. (A field missing from
+the piped text is deleted, so the default minimal export must not be
+used here.)
 
 ```console
-$ bibdeskparser export GoerzQ2022 \
+$ bibdeskparser export GoerzQ2022 --full --preprint stored \
     | sed 's/Semi-Automatic/Semiautomatic/' \
     | bibdeskparser edit GoerzQ2022 --stdin
 ```
@@ -1058,14 +1072,16 @@ and the list of problems on stderr, leaving the `.bib` file untouched.
 ## How to export a minimal BibTeX file for LaTeX
 
 {py:meth}`Library.export <bibdeskparser.library.Library.export>` writes
-selected entries as plain bibtex text, stripped of BibDesk-only fields; use
-`fields="minimal"` to further restrict each entry to a small,
-per-entry-type whitelist of citation-relevant fields (dropping things
-like `abstract` and `annote`), and `outfile=` to write straight to a
-file. The `@string` definitions referenced by the exported entries
-are included, so the file is self-contained (pass
+selected entries as plain bibtex text, stripped of BibDesk-only fields.
+By default, each entry is reduced to a small, per-entry-type whitelist
+of citation-relevant fields (dropping things like `abstract` and
+`annote`); pass `fields="full"` for complete records, and `outfile=`
+to write straight to a file. The `@string` definitions referenced by
+the exported entries are included, so the file is self-contained (pass
 `expand_strings=True` to instead replace each reference by the
-macro's value and omit the definitions).
+macro's value and omit the definitions). The output begins with a
+marker line recording the export options, for later updates (see
+[the next section](howto-manage-export)).
 
 Note how the entries' `abstract` and `keywords`, and the `article`
 entry's linked file, are all dropped (the `eprint` fields are kept:
@@ -1073,10 +1089,10 @@ they render as a "published, with preprint" link under styles like
 REVTeX, and are ignored by classic styles; see [](preprints)):
 
 ```python
->>> bib.export(
-...     "GrondPRA2009a", "Evans1983", fields="minimal", outfile="paper.bib"
-... )
+>>> bib.export("GrondPRA2009a", "Evans1983", outfile="paper.bib")
 >>> print(Path("paper.bib").read_text())
+%% Created by BibDeskParser (unicode, preprints as unpublished).
+<BLANKLINE>
 @string{pra = {Phys. Rev. A}}
 <BLANKLINE>
 @article{GrondPRA2009a,
@@ -1099,3 +1115,63 @@ REVTeX, and are ignored by classic styles; see [](preprints)):
 <BLANKLINE>
 
 ```
+
+(howto-manage-export)=
+
+## How to manage an exported `.bib` file
+
+Files created by `export` are plain BibTeX: no BibDesk header, no
+groups, no attachments, no date bookkeeping. Treat such a file as a
+snapshot of your library, taken for one paper: corrections belong in
+the library, and the file is refreshed from it.
+
+Create the file by exporting the entries the paper cites:
+
+```console
+$ bibdeskparser export tests/Refs/refs.bib GrondPRA2009a Evans1983 --outfile paper.bib
+```
+
+The file begins with a marker line, `%% Created by BibDeskParser
+(unicode, preprints as unpublished).`, recording the export options
+for later updates. Each entry is reduced to the fields needed to
+typeset a bibliography (pass `--full` for complete records), and the
+`@string` definitions the entries reference are included.
+
+To cite one more reference, update the file with the new key:
+
+```console
+$ bibdeskparser export tests/Refs/refs.bib --update paper.bib GoerzQ2022
+```
+
+To pick up corrections made in the library, update without naming
+keys; every entry the library knows is re-exported in place:
+
+```console
+$ bibdeskparser export tests/Refs/refs.bib --update paper.bib
+```
+
+An update never removes anything: entries the library does not know
+(e.g. pasted in by hand from a colleague's file) are kept unchanged,
+as are `@string` definitions that are no longer referenced.
+
+All other commands work directly on the exported file and preserve
+its plain format:
+
+```console
+$ bibdeskparser check paper.bib
+Evans1983: missing required field 'note' for entry type 'unpublished'
+FAIL (1 problem, 3 entries checked)
+$ bibdeskparser set_field paper.bib Evans1983 note "Lecture notes"
+$ bibdeskparser delete paper.bib GrondPRA2009a
+```
+
+Mind that a local edit like the `set_field` above is overwritten by
+the next `--update` if the library knows the entry; make persistent
+corrections in the library instead. To remove an entry, use `delete`
+(or a text editor); `--update` will not re-add it unless you name its
+key again.
+
+Groups, file attachments, and linked URLs exist only in a BibDesk
+database. Using one of those commands (`set_group`, `add_file`,
+`add_url`, ...) on a plain file converts it to the database format on
+save, with a warning; the way back to a plain file is a fresh export.

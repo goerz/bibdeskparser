@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.entry &mdash; BibDeskParser 0.6.0 documentation</title>
+  <title>bibdeskparser.entry &mdash; BibDeskParser 0.7.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=8fa8b3e9"></script>
+      <script src="../../_static/documentation_options.js?v=fe7df9b0"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.6.0
+    v0.7.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -201,6 +201,27 @@
     <span class="k">return</span> <span class="n">value</span>
 
 
+<span class="c1"># BibDesk&#39;s `stringByAddingMinimalPercentEscapes`</span>
+<span class="c1"># (`NSString_BDSKExtensions.m`) leaves unescaped the characters in</span>
+<span class="c1"># `URLQueryAllowedCharacterSet` plus `#%[]`. `urllib.parse.quote` always</span>
+<span class="c1"># leaves the RFC 3986 unreserved set (`A-Za-z0-9-._~`) alone, so</span>
+<span class="c1"># `_URL_SAFE` adds only the remaining allowed characters. Keeping `%`</span>
+<span class="c1"># safe means an already-encoded `%XX` passes through unchanged (no double</span>
+<span class="c1"># encoding).</span>
+<span class="n">_URL_SAFE</span> <span class="o">=</span> <span class="s2">&quot;!$&amp;&#39;()*+,;=:@/?#%[]&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_percent_encode_url</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Percent-encode `url` the way BibDesk does when it serializes a</span>
+<span class="sd">    linked URL: every character outside the URL-allowed set is UTF-8</span>
+<span class="sd">    percent-encoded, so the result is ASCII and existing `%XX` escapes</span>
+<span class="sd">    are preserved.</span>
+
+<span class="sd">    Idempotent (encoding an already-encoded URL is a no-op), so an</span>
+<span class="sd">    all-ASCII URL is returned unchanged.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">urllib</span><span class="o">.</span><span class="n">parse</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">safe</span><span class="o">=</span><span class="n">_URL_SAFE</span><span class="p">)</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_parse_date</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a `date-added`/`date-modified` field value.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -295,6 +316,7 @@
         <span class="n">entry_type</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">normalize_entry_type</span><span class="p">(</span><span class="n">entry_type</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Entry</span><span class="p">(</span><span class="n">entry_type</span><span class="o">=</span><span class="n">entry_type</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_groups</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stamp_dates</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">for</span> <span class="n">field_key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="n">fields</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="bp">self</span><span class="p">[</span><span class="n">field_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
@@ -312,6 +334,7 @@
         <span class="bp">self</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span> <span class="o">=</span> <span class="n">model_entry</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_groups</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stamp_dates</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="bp">self</span>
 
@@ -363,12 +386,22 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_touch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set `date-modified` (and `date-added`, if unset) to now, and</span>
-<span class="sd">        mark the entry modified (`_dirty`).&quot;&quot;&quot;</span>
+<span class="sd">        mark the entry modified (`_dirty`).</span>
+
+<span class="sd">        Date fields are only *created* with `_stamp_dates`, which the</span>
+<span class="sd">        owning `Library` pushes onto each entry of a database-format</span>
+<span class="sd">        library (like `entry._groups`). Without it -- a detached entry,</span>
+<span class="sd">        or one belonging to a plain-format file, which does no date</span>
+<span class="sd">        bookkeeping -- a `date-modified` the entry already stores is</span>
+<span class="sd">        updated, but neither field is ever created.&quot;&quot;&quot;</span>
         <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">astimezone</span><span class="p">()</span>
         <span class="n">rendered</span> <span class="o">=</span> <span class="s2">&quot;{&quot;</span> <span class="o">+</span> <span class="n">now</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">_DATE_FORMAT</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;}&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_set_raw_field</span><span class="p">(</span><span class="s2">&quot;date-modified&quot;</span><span class="p">,</span> <span class="n">rendered</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="s2">&quot;date-added&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_set_raw_field</span><span class="p">(</span><span class="s2">&quot;date-added&quot;</span><span class="p">,</span> <span class="n">rendered</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamp_dates</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_raw_field</span><span class="p">(</span><span class="s2">&quot;date-modified&quot;</span><span class="p">,</span> <span class="n">rendered</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="s2">&quot;date-added&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_set_raw_field</span><span class="p">(</span><span class="s2">&quot;date-added&quot;</span><span class="p">,</span> <span class="n">rendered</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="s2">&quot;date-modified&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_raw_field</span><span class="p">(</span><span class="s2">&quot;date-modified&quot;</span><span class="p">,</span> <span class="n">rendered</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
@@ -469,10 +502,14 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">date_added</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Timestamp of when the entry was constructed (read-only).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Timestamp of when the entry was added to a library</span>
+<span class="sd">        (read-only).</span>
 
 <span class="sd">        This is a {class}`datetime.datetime` representation of the raw</span>
-<span class="sd">        `date-added` field.</span>
+<span class="sd">        `date-added` field. The field is stamped when the entry is</span>
+<span class="sd">        added to a {class}`Library` in the BibDesk database format</span>
+<span class="sd">        (a plain BibTeX file does no date bookkeeping); `None` for a</span>
+<span class="sd">        detached entry that has never been added to one.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field</span><span class="p">(</span><span class="s2">&quot;date-added&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_parse_date</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
@@ -686,10 +723,15 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach `url` to the entry, appending a `bdsk-url-N` field.</span>
 
 <span class="sd">        `url` must include both a scheme and a host (e.g.</span>
-<span class="sd">        `https://example.com/paper.pdf`), or `ValueError` is raised.</span>
-<span class="sd">        Raises `ValueError` if `url` is already linked from the entry.</span>
+<span class="sd">        `https://example.com/paper.pdf`), or `ValueError` is raised, and</span>
+<span class="sd">        is percent-encoded before storing. Raises `ValueError` if `url`</span>
+<span class="sd">        is already linked from the entry.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="c1"># Percent-encode as BibDesk does (`_percent_encode_url`), so a</span>
+        <span class="c1"># stored `bdsk-url-N` is ASCII and the duplicate check below</span>
+        <span class="c1"># compares like against like.</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">_percent_encode_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">url</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">url</span><span class="si">!r}</span><span class="s2"> is already linked from this entry&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_set_urls</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">urls</span> <span class="o">+</span> <span class="p">(</span><span class="n">url</span><span class="p">,))</span></div>
@@ -701,14 +743,17 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace the linked `old_url` with `new_url`, keeping its</span>
 <span class="sd">        position in {attr}`urls`.</span>
 
-<span class="sd">        Raises `ValueError` if `old_url` is not linked from the entry,</span>
-<span class="sd">        if `new_url` is not a valid URL, or if `new_url` is already</span>
-<span class="sd">        linked from the entry (and differs from `old_url`).</span>
+<span class="sd">        `new_url` is percent-encoded before storing (as in</span>
+<span class="sd">        {meth}`add_url`); `old_url` is matched literally against the</span>
+<span class="sd">        stored URLs. Raises `ValueError` if `old_url` is not linked from</span>
+<span class="sd">        the entry, if `new_url` is not a valid URL, or if `new_url` is</span>
+<span class="sd">        already linked from the entry (and differs from `old_url`).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">urls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">urls</span>
         <span class="k">if</span> <span class="n">old_url</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">old_url</span><span class="si">!r}</span><span class="s2"> is not linked from this entry&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_url</span><span class="p">(</span><span class="n">new_url</span><span class="p">)</span>
+        <span class="n">new_url</span> <span class="o">=</span> <span class="n">_percent_encode_url</span><span class="p">(</span><span class="n">new_url</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new_url</span> <span class="o">!=</span> <span class="n">old_url</span> <span class="ow">and</span> <span class="n">new_url</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">new_url</span><span class="si">!r}</span><span class="s2"> is already linked from this entry&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_set_urls</span><span class="p">(</span><span class="n">new_url</span> <span class="k">if</span> <span class="n">u</span> <span class="o">==</span> <span class="n">old_url</span> <span class="k">else</span> <span class="n">u</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">)</span></div>
@@ -960,7 +1005,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 27, 2026.
+      <span class="lastupdated">Last updated on Jul 29, 2026.
       </span></p>
   </div>
 

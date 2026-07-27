@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Package API &mdash; BibDeskParser 0.6.0 documentation</title>
+  <title>Package API &mdash; BibDeskParser 0.7.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=8fa8b3e9"></script>
+      <script src="../../_static/documentation_options.js?v=fe7df9b0"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.6.0
+    v0.7.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -76,6 +76,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#classes">Classes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#api">API</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#bibdeskparser.Entry"><code class="docutils literal notranslate"><span class="pre">Entry</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bibdeskparser.FormatConversionWarning"><code class="docutils literal notranslate"><span class="pre">FormatConversionWarning</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#bibdeskparser.Library"><code class="docutils literal notranslate"><span class="pre">Library</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#bibdeskparser.MacroString"><code class="docutils literal notranslate"><span class="pre">MacroString</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#bibdeskparser.StaleFileError"><code class="docutils literal notranslate"><span class="pre">StaleFileError</span></code></a></li>
@@ -257,8 +258,9 @@ snapshot of its current fields, but not a member of any <code class="docutils li
 <span class="sig-name descname"><span class="pre">add_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/entry.html#Entry.add_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Entry.add_url" title="Link to this definition"></a></dt>
 <dd><p>Attach <code class="docutils literal notranslate"><span class="pre">url</span></code> to the entry, appending a <code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code> field.</p>
 <p><code class="docutils literal notranslate"><span class="pre">url</span></code> must include both a scheme and a host (e.g.
-<code class="docutils literal notranslate"><span class="pre">https://example.com/paper.pdf</span></code>), or <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> is raised.
-Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if <code class="docutils literal notranslate"><span class="pre">url</span></code> is already linked from the entry.</p>
+<code class="docutils literal notranslate"><span class="pre">https://example.com/paper.pdf</span></code>), or <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> is raised, and
+is percent-encoded before storing. Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if <code class="docutils literal notranslate"><span class="pre">url</span></code>
+is already linked from the entry.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -286,9 +288,13 @@ entry.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="bibdeskparser.Entry.date_added">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">date_added</span></span><a class="headerlink" href="#bibdeskparser.Entry.date_added" title="Link to this definition"></a></dt>
-<dd><p>Timestamp of when the entry was constructed (read-only).</p>
+<dd><p>Timestamp of when the entry was added to a library
+(read-only).</p>
 <p>This is a <a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime.datetime</span></code></a> representation of the raw
-<code class="docutils literal notranslate"><span class="pre">date-added</span></code> field.</p>
+<code class="docutils literal notranslate"><span class="pre">date-added</span></code> field. The field is stamped when the entry is
+added to a <a class="reference internal" href="#bibdeskparser.Library" title="bibdeskparser.Library"><code class="xref py py-class docutils literal notranslate"><span class="pre">Library</span></code></a> in the BibDesk database format
+(a plain BibTeX file does no date bookkeeping); <code class="docutils literal notranslate"><span class="pre">None</span></code> for a
+detached entry that has never been added to one.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -382,9 +388,11 @@ readable on a detached entry.</p>
 <span class="sig-name descname"><span class="pre">replace_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_url</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/entry.html#Entry.replace_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Entry.replace_url" title="Link to this definition"></a></dt>
 <dd><p>Replace the linked <code class="docutils literal notranslate"><span class="pre">old_url</span></code> with <code class="docutils literal notranslate"><span class="pre">new_url</span></code>, keeping its
 position in <a class="reference internal" href="#bibdeskparser.Entry.urls" title="bibdeskparser.Entry.urls"><code class="xref py py-attr docutils literal notranslate"><span class="pre">urls</span></code></a>.</p>
-<p>Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if <code class="docutils literal notranslate"><span class="pre">old_url</span></code> is not linked from the entry,
-if <code class="docutils literal notranslate"><span class="pre">new_url</span></code> is not a valid URL, or if <code class="docutils literal notranslate"><span class="pre">new_url</span></code> is already
-linked from the entry (and differs from <code class="docutils literal notranslate"><span class="pre">old_url</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">new_url</span></code> is percent-encoded before storing (as in
+<a class="reference internal" href="#bibdeskparser.Entry.add_url" title="bibdeskparser.Entry.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a>); <code class="docutils literal notranslate"><span class="pre">old_url</span></code> is matched literally against the
+stored URLs. Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if <code class="docutils literal notranslate"><span class="pre">old_url</span></code> is not linked from
+the entry, if <code class="docutils literal notranslate"><span class="pre">new_url</span></code> is not a valid URL, or if <code class="docutils literal notranslate"><span class="pre">new_url</span></code> is
+already linked from the entry (and differs from <code class="docutils literal notranslate"><span class="pre">old_url</span></code>).</p>
 </dd></dl>
 
 <dl class="py property">
@@ -401,6 +409,22 @@ self-contained, so these are <code class="docutils literal notranslate"><span cl
 resolution relative to the library file is needed).</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="bibdeskparser.FormatConversionWarning">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">bibdeskparser.</span></span><span class="sig-name descname"><span class="pre">FormatConversionWarning</span></span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#FormatConversionWarning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.FormatConversionWarning" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#UserWarning" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UserWarning</span></code></a></p>
+<p>Warns that a plain BibTeX file is being converted to the
+BibDesk database format.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file loaded from a plain BibTeX file (e.g. one written by
+<a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.export()</span></code></a>, with no BibDesk header, groups, or
+<code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields) is saved back in that plain format. A mutation
+that introduces database-only state – creating or assigning a
+static group, attaching a file, or adding a URL – converts the
+library to the database format instead, with this warning naming
+the trigger. The conversion is irreversible within the instance;
+the canonical inverse is a fresh <a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.export()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -476,7 +500,13 @@ that reference an undefined <code class="docutils literal notranslate"><span cla
 raising) about linked files (see <a class="reference internal" href="#bibdeskparser.Entry.files" title="bibdeskparser.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Entry.files</span></code></a>) that no
 longer exist on disk. <a class="reference internal" href="#bibdeskparser.StaleFileError" title="bibdeskparser.StaleFileError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">StaleFileError</span></code></a> is raised if the
 target file was modified on disk (e.g. resaved by BibDesk) since
-this library was loaded, unless <code class="docutils literal notranslate"><span class="pre">force=True</span></code>.</p></li>
+this library was loaded, unless <code class="docutils literal notranslate"><span class="pre">force=True</span></code>. A library loaded
+from a <em>plain</em> BibTeX file (one written by <a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a>, with
+no BibDesk header, groups, or <code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields) is saved back in
+that plain format; a mutation that introduces database-only
+state converts it to the database format, with a
+<a class="reference internal" href="#bibdeskparser.FormatConversionWarning" title="bibdeskparser.FormatConversionWarning"><code class="xref py py-class docutils literal notranslate"><span class="pre">FormatConversionWarning</span></code></a> (see the
+<a class="reference internal" href="../../bibdesk_format.html#bibdesk-plain-format"><span class="std std-ref">The plain format of exported files</span></a> documentation).</p></li>
 <li><p><a class="reference internal" href="#bibdeskparser.Library.add_file" title="bibdeskparser.Library.add_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_file()</span></code></a>, <a class="reference internal" href="#bibdeskparser.Library.replace_file" title="bibdeskparser.Library.replace_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_file()</span></code></a>, <a class="reference internal" href="#bibdeskparser.Library.unlink_file" title="bibdeskparser.Library.unlink_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unlink_file()</span></code></a>,
 <a class="reference internal" href="#bibdeskparser.Library.rename_file" title="bibdeskparser.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a>: manage an entry’s linked files
 (<a class="reference internal" href="#bibdeskparser.Entry.files" title="bibdeskparser.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Entry.files</span></code></a>, itself read-only). Linked files are stored
@@ -985,8 +1015,8 @@ invalid keyword (empty, or containing a comma).</p>
 the library).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">url</span></code>: the URL to attach; must include both a scheme and a
 host (e.g. <code class="docutils literal notranslate"><span class="pre">https://example.com/paper.pdf</span></code>), or <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>
-is raised. Raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if <code class="docutils literal notranslate"><span class="pre">url</span></code> is already linked
-from the entry.</p></li>
+is raised, and is percent-encoded before storing. Raises
+<code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if <code class="docutils literal notranslate"><span class="pre">url</span></code> is already linked from the entry.</p></li>
 </ul>
 <p>Unlike file attachments, URLs are self-contained (there is no
 path resolution and no on-disk file to remove), so this simply
@@ -1086,16 +1116,18 @@ would decline to apply (one equal to the entry’s own
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Library.export">
-<span class="sig-name descname"><span class="pre">export</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unicode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expand_strings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'full'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.export" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">export</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unicode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expand_strings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'minimal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">marker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.export" title="Link to this definition"></a></dt>
 <dd><p>Export the entries with the given citation <code class="docutils literal notranslate"><span class="pre">keys</span></code> (at
-least one required) as bibtex text.</p>
+least one required, unless <code class="docutils literal notranslate"><span class="pre">update</span></code> is given) as bibtex text.</p>
 <p>Three independent parameters control the output:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">unicode</span></code>: with <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), field values are the
+<li><p><code class="docutils literal notranslate"><span class="pre">unicode</span></code>: with <code class="docutils literal notranslate"><span class="pre">True</span></code> (the default), field values are the
 Unicode text also returned by the <code class="docutils literal notranslate"><span class="pre">Entry</span></code> dict interface;
 with <code class="docutils literal notranslate"><span class="pre">False</span></code>, they are TeX-encoded, exactly as they would
-be written to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file on disk.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">expand_strings</span></code>: with <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), a field value
+be written to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file on disk. (With <code class="docutils literal notranslate"><span class="pre">update</span></code>, the
+<code class="docutils literal notranslate"><span class="pre">None</span></code> default resolves to the target file’s own encoding
+instead; likewise for <code class="docutils literal notranslate"><span class="pre">expand_strings</span></code> and <code class="docutils literal notranslate"><span class="pre">preprint</span></code>.)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">expand_strings</span></code>: with <code class="docutils literal notranslate"><span class="pre">False</span></code> (the default), a field value
 referencing an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro stays a bare reference, and
 the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions needed by the selected entries
 are included, so the export is self-contained; with <code class="docutils literal notranslate"><span class="pre">True</span></code>,
@@ -1103,12 +1135,12 @@ each reference is replaced by the macro’s value (the
 standard BibTeX month macros <code class="docutils literal notranslate"><span class="pre">jan</span></code> … <code class="docutils literal notranslate"><span class="pre">dec</span></code> also resolve),
 and no <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions are emitted. An undefined
 macro stays a bare reference, with a <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">fields</span></code>: <code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code> (default: every field except the
+<li><p><code class="docutils literal notranslate"><span class="pre">fields</span></code>: <code class="docutils literal notranslate"><span class="pre">&quot;minimal&quot;</span></code> (default: only the fields needed to
+typeset a bibliography), <code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code> (every field except the
 <code class="docutils literal notranslate"><span class="pre">date-added</span></code>/<code class="docutils literal notranslate"><span class="pre">date-modified</span></code> bookkeeping fields, with
-file attachments and URLs as plain paths/URLs),
-<code class="docutils literal notranslate"><span class="pre">&quot;minimal&quot;</span></code> (only the fields needed to typeset a
-bibliography), or a list of field names (in the given
-order; names not defined on an entry are omitted).</p></li>
+file attachments and URLs as plain paths/URLs), or a list
+of field names (in the given order; names not defined on
+an entry are omitted).</p></li>
 </ul>
 <p>A <em>preprint-only</em> entry – a <code class="docutils literal notranslate"><span class="pre">misc</span></code> or <code class="docutils literal notranslate"><span class="pre">unpublished</span></code>
 entry with an <code class="docutils literal notranslate"><span class="pre">eprint</span></code> from a recognized preprint archive,
@@ -1153,8 +1185,37 @@ capitalized field names, a comma after every field); it is
 even with <code class="docutils literal notranslate"><span class="pre">unicode=False</span></code> the export is not a byte-faithful
 slice of the file (<code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> values are plain paths, not
 the stored binary plist data).</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">marker</span></code> (the default), the output begins with a marker
+line recording the export options, e.g. <code class="docutils literal notranslate"><span class="pre">%%</span> <span class="pre">Created</span> <span class="pre">by</span> <span class="pre">BibDeskParser</span> <span class="pre">(unicode,</span> <span class="pre">preprints</span> <span class="pre">as</span> <span class="pre">unpublished).</span></code>, which
+pins those options for later <code class="docutils literal notranslate"><span class="pre">update</span></code> runs (see the
+<a class="reference internal" href="../../bibdesk_format.html#bibdesk-plain-format"><span class="std std-ref">The plain format of exported files</span></a> documentation). An export whose
+output includes <code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields (a full export of entries
+with attachments or linked URLs) omits the marker: such
+output is in the database format, where the marker has no
+meaning.</p>
 <p>With <code class="docutils literal notranslate"><span class="pre">outfile</span></code>, the text is written (UTF-8) to that path or
 open file object instead of being returned.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">update</span></code>, the plain BibTeX file at that path (an earlier
+export) is refreshed from this library instead: this library
+is only read, and the target file is rewritten in place.
+Every key in the target that exists in this library – or, if
+<code class="docutils literal notranslate"><span class="pre">keys</span></code> are given, exactly those keys – is replaced by a
+fresh export of that entry; keys not yet in the target are
+appended, and nothing is ever removed. Entries the library
+does not know, <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions (refreshed to this
+library’s values where it defines the macro, kept otherwise),
+and comments are all preserved. Entries written by an update
+never include <code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields, which a plain target cannot
+represent. The <code class="docutils literal notranslate"><span class="pre">unicode</span></code>/<code class="docutils literal notranslate"><span class="pre">expand_strings</span></code>/<code class="docutils literal notranslate"><span class="pre">preprint</span></code> options
+default to the target file’s own options (from its marker
+line, or detected from its content); an explicit argument
+overrides them and, with <code class="docutils literal notranslate"><span class="pre">marker</span></code>, is recorded in the
+rewritten marker, so it is sticky for subsequent updates
+(with <code class="docutils literal notranslate"><span class="pre">marker=False</span></code>, the file’s marker state is left
+untouched). The target must exist and be in the plain format
+(a BibDesk database is refused); it is rewritten
+unconditionally, with no staleness check. Mutually exclusive
+with <code class="docutils literal notranslate"><span class="pre">outfile</span></code>.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1604,11 +1665,12 @@ keeping its position in <a class="reference internal" href="#bibdeskparser.Entry
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">key</span></code>: citation key of the entry (raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> if not in
 the library).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">old_url</span></code>: the linked URL to replace (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if
-it is not linked from the entry).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">new_url</span></code>: the URL to link in its place (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>
-if it is not a valid URL, or is already linked from the
-entry).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">old_url</span></code>: the linked URL to replace, matched literally
+against the entry’s stored URLs (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if it is
+not linked from the entry).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">new_url</span></code>: the URL to link in its place, percent-encoded
+before storing as in <a class="reference internal" href="#bibdeskparser.Library.add_url" title="bibdeskparser.Library.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a> (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if
+it is not a valid URL, or is already linked from the entry).</p></li>
 </ul>
 <p>Delegates to <a class="reference internal" href="#bibdeskparser.Entry.replace_url" title="bibdeskparser.Entry.replace_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Entry.replace_url()</span></code></a>.</p>
 </dd></dl>
@@ -1658,6 +1720,20 @@ library was loaded or last saved), unless <code class="docutils literal notransl
 no baseline timestamp for the <a class="reference internal" href="#bibdeskparser.StaleFileError" title="bibdeskparser.StaleFileError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">StaleFileError</span></code></a> check;
 instead, raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileExistsError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileExistsError</span></code></a> if <code class="docutils literal notranslate"><span class="pre">path</span></code> already
 exists, unless <code class="docutils literal notranslate"><span class="pre">force=True</span></code>.</p>
+<p>A library loaded from a <em>plain</em> BibTeX file (one with no
+BibDesk header, groups, or <code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields, e.g. written by
+<a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a>) is saved back in that plain format: no header
+or groups block is synthesized, no date fields are created,
+comments and <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions are preserved in place, and
+every stored field of every entry is written (unmodified
+entries in their stored field order, so a file created by
+<a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a> round-trips byte-identically). Values are
+written in the encoding detected at load time (see the
+<a class="reference internal" href="../../bibdesk_format.html#bibdesk-plain-format"><span class="std std-ref">The plain format of exported files</span></a> documentation). The
+<a class="reference internal" href="#bibdeskparser.StaleFileError" title="bibdeskparser.StaleFileError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">StaleFileError</span></code></a> check is skipped: a plain file has no
+timestamp to compare. A mutation that introduced
+database-only state has by then converted the library to the
+database format, with a <a class="reference internal" href="#bibdeskparser.FormatConversionWarning" title="bibdeskparser.FormatConversionWarning"><code class="xref py py-class docutils literal notranslate"><span class="pre">FormatConversionWarning</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1819,7 +1895,7 @@ braced string), visible in an export of the stored values
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
 <span class="go">&#39;prl&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2024&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 <span class="go">@article{Key2024,</span>
 <span class="go">    Journal = prl,</span>
 <span class="go">}</span>
@@ -1867,14 +1943,14 @@ of the stored values (<code class="docutils literal notranslate"><span class="pr
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
 <span class="go">&#39;prl&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2024&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 <span class="go">@article{Key2024,</span>
 <span class="go">    Journal = {prl},</span>
 <span class="go">}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;prl&quot;</span>  <span class="c1"># bare str: treated as a macro ref</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
 <span class="go">&#39;prl&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 <span class="go">@article{Key2024,</span>
 <span class="go">    Journal = prl,</span>
 <span class="go">}</span>
@@ -1899,7 +1975,7 @@ of the stored values (<code class="docutils literal notranslate"><span class="pr
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 27, 2026.
+      <span class="lastupdated">Last updated on Jul 29, 2026.
       </span></p>
   </div>
 
