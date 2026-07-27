@@ -405,37 +405,26 @@ def _print_short_usage(ctx, _param, value):
 def main(ctx):
     """Command-line interface for BibDesk `.bib` databases.
 
-    Every command takes the `.bib` file to operate on as its first
-    argument (any argument ending in `.bib`). If omitted, the file
-    named by the `default_bib_file` key of a discovered
-    `bibdeskparser.toml` is used instead.
+    Every command takes the `.bib` file as its first argument (any
+    argument ending in `.bib`); if omitted, the `default_bib_file`
+    from a discovered `bibdeskparser.toml` is used. The file must
+    already exist, except for `create`, which requires that it does
+    not.
 
-    Read-only commands (`author`, `check`, `config`, `config_path`,
-    `duplicate_keys`, `editor`, `eval_format_spec`, `fields`, `files`,
-    `get_field`, `groups`, `keys`, `keywords`, `path`, `search`,
-    `show`, `strings`, `timestamp`, `urls`) print to stdout and accept
-    `--json` for machine-readable output; `render` and `export` are
-    read-only as well. The other commands modify the
-    `.bib` file in place and print nothing on success (except `rekey`
-    without NEW_KEY and `rename_file` without NEW, which print the
-    generated key or file path, as does `add_file` when it auto-files;
-    `import` and `add` print the citation keys of the added entries,
-    and `add --dry-run` only prints the fetched entry, without
-    modifying the file; `add_abstract`, `add_preprint`, and `add_doi`
-    print a per-key report of the fetched abstracts/arXiv
-    identifiers/DOIs, with `--dry-run` without modifying the file,
-    and with a configured [known_missing] table they also update the
-    corresponding static group memberships).
-    Every command requires the `.bib` file to exist, except `create`,
-    which starts a new, empty library and requires that the file does
-    *not* exist yet.
-    On any error they print `Error: <message>` to stderr and exit
-    non-zero (2 for bad usage, 1 for a library error such as an unknown
-    key or a `.bib` file changed on disk since it was read). The
-    `check` command additionally exits 1, after printing its report,
-    when any audit finds a problem. Run
-    `bibdeskparser COMMAND --help` for a command's arguments, or
-    `bibdeskparser --usage` for just the usage line and command names.
+    The read-only commands (`author`, `check`, `config`,
+    `config_path`, `duplicate_keys`, `editor`, `eval_format_spec`,
+    `export`, `fields`, `files`, `get_field`, `groups`, `keys`,
+    `keywords`, `path`, `render`, `search`, `show`, `strings`,
+    `timestamp`, `urls`) print to stdout; every other command modifies
+    the `.bib` file in place and prints nothing on success, except for
+    the generated key/path or per-key report noted in its own help.
+    Data-printing commands accept `--json`.
+
+    On error, commands print `Error: <message>` to stderr and exit 2
+    (bad usage) or 1 (a library error, e.g. an unknown key or a file
+    changed on disk); `check` also exits 1 when an audit fails. Run
+    `bibdeskparser COMMAND --help` for one command, or
+    `bibdeskparser --usage` for just the command names.
     """
     if ctx.invoked_subcommand is None:
         # Run without a command: print the short usage (not the full
@@ -538,16 +527,13 @@ def keys(
 ):
     """List citation keys, one per line.
 
-    Without options, list every entry in the library. The options
-    narrow the list; an entry is listed if it matches one of the
-    --type values (if any are given) and satisfies every --has,
-    --missing, --group, --not-group, and --with-files/--without-files
-    filter. For any FIELD, exactly one of --has and --missing holds; a
-    field that is defined with an empty value counts as missing
-    (BibDesk deletes empty fields on save). --with-files keeps entries
-    with a file attachment, --without-files those with none (see the
-    `files` command). Field names are case-insensitive, group names
-    case-sensitive.
+    Without options, list every entry. Otherwise, an entry is listed
+    if it matches one of the --type values (if any) and satisfies
+    every --has, --missing, --group, --not-group, and
+    --with-files/--without-files filter. For any FIELD, exactly one of
+    --has and --missing holds (an empty field counts as missing, since
+    BibDesk deletes empty fields on save). Field names are
+    case-insensitive, group names case-sensitive.
     """
     lib = Library(bibfile)
     for name in (*group_names, *not_group_names):
@@ -1019,22 +1005,18 @@ def _emit_index(mapping, as_json):
 # click passes all parameters by keyword
 # pylint: disable-next=too-many-positional-arguments
 def files(bibfile, citekeys, absolute, flat, as_json):
-    """List file attachments (the `bdsk-file-N` fields), in numeric
-    order within each entry. By default, each attachment is printed as
-    an absolute path; with --relative, as stored in the `.bib` file
-    (relative to its directory).
+    """List file attachments (the bdsk-file-N fields), in numeric
+    order within each entry, as absolute paths (--relative for the
+    paths as stored, relative to the .bib directory).
 
-    The output is a map from each citation key to its list of
-    attachments: with KEY arguments, exactly those entries (an entry
-    with none maps to an empty list); with no KEY, every entry in the
-    library that has at least one attachment, in library order. With
-    --flat, the attachment paths are instead printed as a bare list,
-    one per line, combined across the selected entries with duplicates
-    removed -- so `files --flat` is every file the library references,
-    the reverse index for reconciling against a folder of PDFs (find
-    the entries lacking one with `keys --without-files`). An unknown
-    key is an error. Attachments are modified with `add_file`,
-    `replace_file`, `unlink_file`, and `rename_file`."""
+    The output maps each citation key to its attachments: the given
+    KEYs (an entry with none maps to an empty list), or every entry
+    that has at least one attachment when no KEY is given. --flat
+    instead prints the paths as one de-duplicated list, so `files
+    --flat` is every file the library references (find the entries
+    lacking one with `keys --without-files`). An unknown key is an
+    error. Modify attachments with add_file, replace_file,
+    unlink_file, and rename_file."""
     lib = Library(bibfile)
     base = lib._files_base_dir() if absolute else None
 
@@ -1069,17 +1051,14 @@ def files(bibfile, citekeys, absolute, flat, as_json):
 @_json_option
 @click.pass_obj
 def urls(bibfile, citekeys, flat, as_json):
-    """List the URLs linked to entries (the `bdsk-url-N` fields), in
+    """List the URLs linked to entries (the bdsk-url-N fields), in
     numeric order within each entry.
 
-    The output is a map from each citation key to its list of URLs:
-    with KEY arguments, exactly those entries (an entry with none maps
-    to an empty list); with no KEY, every entry in the library that has
-    at least one linked URL, in library order. With --flat, the URLs
-    are instead printed as a bare list, one per line, combined across
-    the selected entries with duplicates removed. An unknown key is an
-    error. Linked URLs are modified with `add_url`, `replace_url`, and
-    `remove_url`."""
+    The output maps each citation key to its URLs: the given KEYs (an
+    entry with none maps to an empty list), or every entry with at
+    least one linked URL when no KEY is given. --flat instead prints
+    the URLs as one de-duplicated list. An unknown key is an error.
+    Modify linked URLs with add_url, replace_url, and remove_url."""
     lib = Library(bibfile)
 
     def values_for(key):
@@ -1188,20 +1167,16 @@ def search(bibfile, query, field_names, match_, as_json):
 # click passes all parameters by keyword
 # pylint: disable-next=too-many-positional-arguments
 def groups(bibfile, citekeys, flat, index, as_json):
-    """List the static groups (see BibDesk static groups) that entries
-    belong to.
+    """List the static groups that entries belong to.
 
-    The default output is a map from each citation key to its list of
-    group names: with KEY arguments, exactly those entries (an entry in
-    no group maps to an empty list); with no KEY, every entry that is in
-    at least one group, in library order. With --flat, the group names
-    are instead printed as a bare list, combined across the selected
-    entries with duplicates removed. With --index, the inverse is
-    printed: a map from each static group name to the citation keys it
-    contains (every group, including empty ones); --index takes no KEY
-    arguments and is not combinable with --flat. An unknown key is an
-    error. Group membership is modified with `add_to_group`,
-    `remove_from_group`, `set_group`, and `delete_group`."""
+    The output maps each citation key to its group names: the given
+    KEYs (an entry in no group maps to an empty list), or every entry
+    in at least one group when no KEY is given. --flat instead prints
+    the names as one de-duplicated list. --index prints the inverse
+    map, from each static group to the keys it contains (every group,
+    including empty ones); it takes no KEY and is not combinable with
+    --flat. An unknown key is an error. Modify membership with
+    add_to_group, remove_from_group, set_group, and delete_group."""
     lib = Library(bibfile)
     if index:
         if citekeys or flat:
@@ -1252,16 +1227,13 @@ def groups(bibfile, citekeys, flat, index, as_json):
 def keywords(bibfile, citekeys, flat, index, as_json):
     """List the keywords that entries are tagged with.
 
-    The default output is a map from each citation key to its list of
-    keywords: with KEY arguments, exactly those entries (an untagged
-    entry maps to an empty list); with no KEY, every entry that has at
-    least one keyword, in library order. With --flat, the keywords are
-    instead printed as a bare list, combined across the selected entries
-    with duplicates removed. With --index, the inverse is printed: a map
-    from each keyword to the citation keys tagged with it; --index takes
-    no KEY arguments and is not combinable with --flat. An unknown key
-    is an error. Keywords are modified with `add_to_keyword` and
-    `remove_from_keyword`."""
+    The output maps each citation key to its keywords: the given KEYs
+    (an untagged entry maps to an empty list), or every tagged entry
+    when no KEY is given. --flat instead prints the keywords as one
+    de-duplicated list. --index prints the inverse map, from each
+    keyword to the keys tagged with it; it takes no KEY and is not
+    combinable with --flat. An unknown key is an error. Modify
+    keywords with add_to_keyword and remove_from_keyword."""
     lib = Library(bibfile)
     if index:
         if citekeys or flat:
@@ -1345,11 +1317,10 @@ def duplicate_keys(bibfile, as_json):
     default=False,
     show_default=True,
     help=(
-        "Also audit that each entry's linked file attachments "
-        "(bdsk-file paths) resolve on disk, matching case exactly. "
-        "Off by default: attachments may legitimately live only on "
-        "another machine, and a fresh clone of a library whose PDFs "
-        "are not under version control would fail wholesale."
+        "Also check that each linked attachment (bdsk-file path) "
+        "resolves on disk, matching case exactly (so a case-only "
+        "mismatch is caught too). Off by default, since attachments "
+        "may live only on another machine."
     ),
 )
 @click.option(
@@ -1357,12 +1328,10 @@ def duplicate_keys(bibfile, as_json):
     "audit_key_format",
     default=None,
     help=(
-        "Also audit that each entry's citation key matches its "
-        "expected auto-key format: a preprint-only entry against the "
-        "arXiv preprint format, every other entry against the "
-        "configured [auto_key] format (or --format-spec). Off by "
-        "default. An entry lacking a field the format references is "
-        "audited against the shorter key the format generates for it."
+        "Also check that each citation key matches its expected "
+        "auto-key format: the arXiv format for a preprint-only entry, "
+        "the configured [auto_key] format (or --format-spec) "
+        "otherwise. Off by default."
     ),
 )
 @click.option(
@@ -1382,80 +1351,36 @@ def duplicate_keys(bibfile, as_json):
 def check(
     bibfile, citekeys, audit_files, audit_key_format, format_spec, as_json
 ):
-    """Run the standing audits and report every problem found, then
-    exit 0 if all pass and 1 otherwise: a read-only pass/fail gate,
-    e.g. after a batch of edits.
+    """Run the standing audits and exit 0 (all pass) or 1 (any fail):
+    a read-only pass/fail gate, e.g. after a batch of edits.
 
-    The audits: the file parses cleanly (no skipped blocks); no
-    citation key occurs more than once; every entry has a recognized
-    entry type and every field that type requires (a type outside the
-    recognized ones is reported once and not audited for its fields;
-    a recognized type with no field template on record, such as the
-    extended biblatex type 'dataset', is skipped -- declare either
-    with a [types.NAME] table in bibdeskparser.toml); every article
-    that is not a
-    preprint has a doi (membership in the known-missing group
-    configured for 'doi' in the [known_missing] table of
-    bibdeskparser.toml marks an entry verified to have none, and
-    passes); no entry has a defined-but-empty field (BibDesk deletes
-    empty fields on save, so the field would silently disappear); no
-    entry sits in a configured known-missing group for a field it
-    actually has a non-empty value for; no bare (unbraced) field value
-    references an undefined @string macro (in any field, not just
-    'journal': a name that is defined nowhere renders as itself, and
-    'save' refuses to write it, so 'check' reports it too); every
-    journal field references an @string macro rather than a literal
-    value (a literal journal value is a problem, unless it is a
-    recognized preprint pseudo-journal like 'arXiv:2205.15044'); every
-    year reads as a four-digit year (so
-    'August, 2008' and 'in press' are problems, while '08' and
-    '2008a' are not); every month is a bare reference to one of the
-    twelve standard month macros jan ... dec (a literal '06' or
-    'June' is a problem, as is a non-standard macro like 'sept');
-    every author and editor field parses as names; and every @string
-    macro defined in the file is referenced by some entry.
+    \b
+    The audits:
+    - the file parses cleanly (no skipped blocks);
+    - no citation key occurs more than once;
+    - every entry has a recognized type and the fields it requires;
+    - no field is defined but empty;
+    - every non-preprint article has a doi (or is in the 'doi'
+      known-missing group);
+    - no entry is in a known-missing group for a field it has;
+    - every journal references an @string macro, not a literal;
+    - no field references an undefined @string macro;
+    - every year reads as a four-digit year;
+    - every month is a bare standard month macro (jan ... dec);
+    - every author and editor parses as names;
+    - every @string macro is referenced by some entry.
 
-    With --files, an additional per-entry audit reports every linked
-    attachment (bdsk-file path) that does not resolve to a real path
-    on disk, relative to the .bib directory. It is stricter than the
-    warning printed at save time (which uses a plain existence check):
-    it walks each path component matching case exactly, so it also
-    reports a link whose stored spelling differs only in case from the
-    file on disk (invisible on a case-insensitive filesystem but
-    broken on a case-sensitive one). It can therefore FAIL a library
-    that saves without warnings.
+    With KEY..., only the given entries are audited and the
+    unused-macro audit is skipped; an unknown key is an error. --files
+    and --key-format add the further per-entry audits described below.
 
-    With --key-format, an additional per-entry audit reports every
-    citation key that does not match its expected auto-key format,
-    i.e. every key that 'rekey' (or 'eval_format_spec') would
-    regenerate differently. A preprint-only entry is audited against
-    the arXiv preprint format, every other entry against the
-    configured [auto_key] format; --format-spec PATTERN audits against
-    that pattern instead and implies --key-format. A disambiguated
-    sibling key (e.g. 'SmithPRA2015a') still matches. An entry lacking
-    a field the format references is audited against the shorter key
-    the format generates for it (an article with no 'journal' under
-    '%p1%c{journal}0%Y%u0' against 'Smith2015'). If no usable format
-    is available (neither --format-spec nor a configured [auto_key]
-    format, or a --format-spec that does not compile), a single
-    message is reported.
-
-    With KEY..., only the given entries are audited (an unknown key
-    is an error): the per-entry audits cover just those entries, the
-    duplicate-key audit reports only the given keys, and the
-    unused-macros audit is skipped; problems parsing the file itself
-    are always reported.
-
-    Each problem prints as one line, 'KEY: <problem>' for a problem
-    tied to an entry, followed by a 'PASS (N entries checked)' or
-    'FAIL (N problems, M entries checked)' summary line. With --json:
-    {"passed": ..., "entries_checked": ..., "problems": [{"check":
-    ..., "key": ..., "message": ...}]}, where "check" names the audit
-    ("parse", "duplicate_keys", "entry_type", "required_fields",
-    "doi", "empty_fields", "known_missing", "journal",
-    "undefined_macro", "year", "month", "names", "unused_strings",
-    "files", or "key_format") and
-    "key" is null for a problem not tied to an entry.
+    Each problem prints as 'KEY: <problem>' (or '<problem>' when not
+    tied to an entry), then a PASS/FAIL summary. With --json:
+    {"passed", "entries_checked", "problems": [{"check", "key",
+    "message"}]}; "check" is one of parse, duplicate_keys, entry_type,
+    required_fields, doi, empty_fields, known_missing, journal,
+    undefined_macro, year, month, names, unused_strings, files,
+    key_format, and "key" is null when not tied to an entry.
     """
     if format_spec is not None and audit_key_format is False:
         raise click.UsageError(
@@ -1608,22 +1533,17 @@ def config_path(bibfile, as_json):
 @click.pass_obj
 def dump_config(bibfile, include_types, as_json):
     """Print the resolved configuration: the built-in defaults merged
-    with whatever a discovered `bibdeskparser.toml` sets.
+    with whatever a discovered bibdeskparser.toml sets.
 
-    Unlike `config_path`, which reports only the file in effect, this
+    Unlike config_path (which reports only the file in effect), this
     shows the effective value of every setting, including the ones the
-    file omits (and everything, when no configuration file is found at
-    all). The default text output is TOML-shaped, mirroring what a
-    `bibdeskparser.toml` would contain to reproduce the resolved
-    tunable state; with --json, the complete state as an object (unset
-    values as `null`).
+    file omits. The default output is TOML-shaped (--no-types omits
+    the data model); with --json, the full state as an object, unset
+    values as null.
 
-    A BIBFILE fixes the config-discovery directory, checked before
-    `$BIBDESKPARSER_CONFIG` and the XDG location
-    (`~/.config/bibdeskparser/bibdeskparser.toml`); without one,
-    discovery starts in the current directory. This command needs no
-    `.bib` file and never fails for a missing configuration file.
-    Read-only."""
+    A BIBFILE only fixes the config-discovery directory (else the
+    current directory); this command needs no .bib file and never
+    fails for a missing configuration file. Read-only."""
     bib_dir = None if bibfile is None else Path(bibfile).resolve().parent
     config.active.load(bib_dir=bib_dir)
     if as_json:
@@ -1765,22 +1685,18 @@ def export(
     outfile,
     preprint,
 ):
-    """Export the entries with the given keys as bibtex text.
+    """Export the entries with the given keys as self-contained bibtex
+    text (with the needed @string definitions prepended).
 
-    By default, the export contains every field (with file
-    attachments and URLs as plain paths/URLs, and without the
-    date-added/date-modified bookkeeping fields), field values are
-    Unicode text, and @string macro references stay bare, with the
-    needed @string definitions prepended, so the output is
-    self-contained. --no-unicode exports the TeX-encoded values as
-    stored in the .bib file; --expand-strings replaces macro
-    references by their values (no @string definitions then);
-    --minimal or --field restrict which fields are exported. A
-    preprint-only entry (a `misc` or `unpublished` entry with an
-    eprint, or any entry with a pseudo-journal like
-    `arXiv:2205.15044`) is exported in
-    the form selected by --preprint, whatever its stored form; an
-    explicit --field list always exports the stored fields."""
+    By default every field is exported (attachments and URLs as plain
+    paths/URLs, without the date bookkeeping fields), as Unicode text,
+    with @string references left bare. --no-unicode writes the stored
+    TeX-encoded values; --expand-strings inlines macro values (no
+    @string definitions then); --minimal or --field restrict the
+    fields. A preprint-only entry is exported in the form set by
+    --preprint, whatever its stored form; an explicit --field list
+    always exports the stored fields.
+    """
     if minimal and field_args:
         raise click.UsageError("--minimal and --field are mutually exclusive")
     fields = (
@@ -1830,17 +1746,14 @@ def export(
 # pylint: disable-next=too-many-positional-arguments
 def eval_format_spec(bibfile, citekey, format_spec, filename, as_json):
     """Print the citation key (or, with --filename, the file name)
-    that a format yields for the entry with the given KEY. Read-only:
-    nothing is renamed or moved.
+    that a format yields for the entry KEY. Read-only: nothing is
+    renamed or moved.
 
-    FORMAT is a pattern in BibDesk's format-specifier language (e.g.
-    "%a1%c{journal}0%Y%u0"; with --filename e.g. "%f{Cite Key}%u0%e");
-    if omitted, the 'format_spec' key of the [auto_key] table in
-    bibdeskparser.toml is used ([auto_file], with --filename), which
-    may map a different format to each entry type. If FILE is an
-    attachment's current path and already matches the format, it
-    evaluates to itself, so printing anything else means it does not
-    follow the format.
+    FORMAT is a format-specifier pattern (e.g. "%a1%c{journal}0%Y%u0";
+    with --filename e.g. "%f{Cite Key}%u0%e"); if omitted, the
+    configured [auto_key] format is used ([auto_file] with
+    --filename). A value already matching the format evaluates to
+    itself, so any other output flags a nonconforming key or name.
     """
     lib = Library(bibfile)
     _check_keys(lib, [citekey])
@@ -1903,15 +1816,11 @@ def create(bibfile):
 def rekey(bibfile, old_key, new_key, format_spec):
     """Change the citation key of an entry from OLD_KEY to NEW_KEY.
 
-    If NEW_KEY is omitted, generate it from an auto-key format in
-    BibDesk's format-specifier language: the --format-spec PATTERN if
-    given, or else the 'format_spec' key of the [auto_key] table in
-    bibdeskparser.toml (which may map a different format to each entry
-    type). A generated key is printed to stdout. A key that already
-    matches the format is kept unchanged, and a %u/%U/%n specifier in
-    the format resolves collisions with other entries. A field the
-    entry does not have renders as empty, so an entry lacking a field
-    the format references just gets a shorter key.
+    Without NEW_KEY, generate it from the configured auto-key format
+    (--format-spec overrides it) and print it. A key already matching
+    the format is kept; a %u/%U/%n specifier resolves collisions with
+    other entries; a field the entry lacks renders as empty, giving a
+    shorter key.
     """
     lib = Library(bibfile)
     _check_keys(lib, [old_key])
@@ -1990,23 +1899,18 @@ def set_type(bibfile, citekey, entry_type):
 # click passes all parameters by keyword
 # pylint: disable-next=too-many-positional-arguments
 def set_field(bibfile, citekey, fieldname, value, literal, macro):
-    """Set the field FIELDNAME (case-insensitive) of the entry with
-    the given KEY to VALUE, adding the field if it does not exist.
+    """Set the field FIELDNAME (case-insensitive) of the entry KEY to
+    VALUE, adding the field if it does not exist.
 
-    Like BibDesk, a VALUE that is a valid `@string` macro name is
-    stored as a bare macro reference rather than as literal text,
-    unless --literal is given; --macro forces a macro reference. The
-    'keywords', date, and 'bdsk-*' fields cannot be set this way (use
-    add_to_keyword, add_file, add_url, etc.); an 'author'/'editor'
-    VALUE must be parseable as names. A warning is printed on stderr
-    for a field that is not appropriate for the entry type.
+    Like BibDesk, a VALUE that is a valid @string macro name is stored
+    as a bare macro reference (--literal forces literal text, --macro
+    forces a reference). The 'keywords', date, and 'bdsk-*' fields
+    cannot be set this way (use add_to_keyword, add_file, add_url); an
+    'author'/'editor' VALUE must parse as names.
 
-    An empty VALUE is an error: BibDesk deletes empty fields when it
-    saves the .bib file, so an empty value cannot carry information.
-    Use delete_field to remove FIELDNAME; to record that an entry is
-    verified not to have the information, add it to a known-missing
-    group instead (see the [known_missing] configuration and
-    add_to_group).
+    An empty VALUE is an error, since BibDesk deletes empty fields on
+    save: use delete_field to remove a field, or add the entry to a
+    known-missing group to record a verified absence.
     """
     if literal and macro:
         raise click.UsageError("--literal and --macro are mutually exclusive")
@@ -2286,13 +2190,12 @@ def add_file(
 ):
     """Attach the file FILENAME to the entry KEY.
 
-    When auto-filing is in effect -- --auto-file, --location, or
-    --format-spec given, or 'file_automatically = true' in the
-    [auto_file] table of bibdeskparser.toml -- the file is not
-    attached under its original name: it is *moved* into the
-    auto-file location, renamed according to the file-name format,
-    and the stored path (relative to the .bib file) is printed to
-    stdout. A plain attach prints nothing.
+    When auto-filing is in effect (--auto-file, --location, or
+    --format-spec given, or file_automatically = true in the
+    [auto_file] config), the file is moved into the auto-file
+    location, renamed by the file-name format, and its stored path
+    (relative to the .bib file) is printed. A plain attach prints
+    nothing.
     """
     if auto_file is False and (
         format_spec is not None or location is not None
@@ -2434,15 +2337,12 @@ def rename_file(
     """Rename (or move) entry KEY's attached file OLD to NEW on the
     filesystem, updating every entry that links it.
 
-    If NEW is omitted, the target is generated by **auto-filing**: the
-    file is moved into the auto-file location and renamed according to
-    a file-name format in BibDesk's format-specifier language -- the
-    --format-spec/--location options if given, or else the
-    'format_spec' and 'location' keys of the [auto_file] table in
-    bibdeskparser.toml -- and the new path (relative to the .bib file)
-    is printed to stdout. A file whose name already matches the format
-    is left in place, and a %u/%U/%n specifier in the format resolves
-    collisions with existing files.
+    Without NEW, the target is generated by auto-filing: the file is
+    moved into the auto-file location and renamed by the configured
+    file-name format (--format-spec/--location override it), and the
+    new path (relative to the .bib file) is printed. A file already
+    matching the format is left in place; a %u/%U/%n specifier
+    resolves collisions with existing files.
     """
     lib = Library(bibfile)
     _check_keys(lib, [key])
@@ -2575,15 +2475,12 @@ def _resolve_editor(editor_cmd, use_stdin, allow_empty=False):
 @_stdin_option
 @click.pass_obj
 def edit(bibfile, citekeys, editor_cmd, use_stdin):
-    """Edit the entries with the given keys and merge the changes back
-    into the library (modifies the `.bib` file in place). From a
-    terminal, this opens the entries as BibTeX text in `$EDITOR` (or
-    `--editor`). Non-interactive callers pass `--stdin` and pipe in
-    the full edited text instead: obtain the current text with
-    `export KEY...`, modify it, and pipe it back (`export KEY... |
-    edit KEY... --stdin` is a no-op). Without a terminal, `--stdin`,
-    or `--editor`, the command fails immediately instead of
-    blocking."""
+    """Edit the entries with the given keys as BibTeX text and merge
+    the changes back into the library. From a terminal, this opens
+    $EDITOR (or --editor). Non-interactive callers pass --stdin and
+    pipe in the full edited text (`export KEY... | edit KEY... --stdin`
+    is a no-op). Without a terminal, --stdin, or --editor, the command
+    fails immediately instead of blocking."""
     lib = Library(bibfile)
     _check_keys(lib, citekeys)
     editor_cmd = _resolve_editor(editor_cmd, use_stdin)
@@ -2611,13 +2508,11 @@ def edit(bibfile, citekeys, editor_cmd, use_stdin):
 @click.pass_obj
 def edit_strings(bibfile, editor_cmd, use_stdin):
     """Edit the @string macro definitions and merge the changes back
-    into the library (modifies the `.bib` file in place). From a
-    terminal, this opens the definitions in `$EDITOR` (or `--editor`).
-    Non-interactive callers pass `--stdin` and pipe in the full edited
-    definitions instead: obtain the current definitions with `strings
-    --bib`, modify them, and pipe them back. Without a terminal,
-    `--stdin`, or `--editor`, the command fails immediately instead of
-    blocking."""
+    into the library. From a terminal, this opens $EDITOR (or
+    --editor). Non-interactive callers pass --stdin and pipe in the
+    full edited definitions (the baseline is `strings --bib`). Without
+    a terminal, --stdin, or --editor, the command fails immediately
+    instead of blocking."""
     lib = Library(bibfile)
     # Empty stdin is a valid no-op exactly when there are no macros
     # (so an empty `strings --bib` round-trips); with macros present
@@ -2693,39 +2588,27 @@ def _fix_uppercase_option(help_suffix, default=False):
 def import_bibtex(
     bibfile, source, use_stdin, url, keep_keys, keep_journals, fix_uppercase
 ):
-    """Import the entries of a BibTeX snippet -- read from a file
-    (--file), from standard input (--stdin), or from a URL (--url);
-    exactly one of the three -- into the library, and print their
-    citation keys (modifies the `.bib` file in place).
+    """Import the entries of a BibTeX snippet into the library and
+    print their citation keys. Read the snippet from a file (--file),
+    standard input (--stdin), or a URL (--url); give exactly one.
 
-    Every entry is sanitized: the journal becomes an `@string` macro
-    reference (an existing macro matched by value, one configured in
-    `[journal_macros]`, or a newly created one -- with a warning on
-    stderr -- named by the journal's lowercased initials; disable
-    with --keep-journals), proper nouns in a sentence-case title
-    (and all configured `protected_words`) are brace-protected, the
-    DOI is normalized to its bare lowercase form, and, for articles,
-    a page range collapses to its first page and non-essential fields
-    (`month`, `publisher`, `numpages`, `issn`, a `url` shadowed by
-    the DOI, ...) are dropped. A preprint-only entry -- one with a
-    pseudo-journal like `arXiv:2205.15044` (also `bioRxiv:`, `HAL:`,
-    ..., per the `[preprint_archives]` configuration), or a
-    `misc`/`unpublished` entry with an eprint, like arXiv's own
-    BibTeX export -- is normalized to an `@unpublished` entry
-    carrying the pseudo-journal (in canonical spelling) plus derived
-    `eprint`/`archiveprefix`/`doi` fields (a publication-status
-    `note` is never synthesized: fill it in by hand); an
-    unrecognized archive prefix is an error unless --keep-journals
-    is given. Citation keys are regenerated (see --keep-keys) from
-    the
-    configured `[auto_key]` format, else as e.g. `GoerzPRA2014`
-    (articles) or `Goerz2205.15044` (preprints). An entry whose DOI
-    or eprint is already in the library is rejected. If anything
-    about the snippet is not acceptable, all problems are reported
-    and nothing is imported.
+    Every entry is sanitized on the way in: the journal becomes an
+    @string macro reference (--keep-journals preserves it), title
+    proper nouns are brace-protected, the DOI is normalized, and, for
+    articles, a page range collapses to its first page and
+    non-essential fields are dropped. A preprint-only entry (a
+    pseudo-journal like arXiv:2205.15044, or a misc/unpublished entry
+    with an eprint) is normalized to an @unpublished entry with the
+    canonical pseudo-journal and derived eprint/archiveprefix/doi
+    fields; an unrecognized archive prefix is an error unless
+    --keep-journals is given. Citation keys are regenerated
+    (--keep-keys keeps the incoming ones). An entry whose DOI or
+    eprint already exists is rejected, and any problem rejects the
+    whole import, reporting everything at once and leaving the file
+    untouched.
 
-    A positional argument ending in `.bib` always names the library,
-    like every other command; give the import source with `--file`.
+    A positional argument ending in `.bib` always names the library;
+    give the import source with --file.
     """
     if (source is not None) + use_stdin + (url is not None) != 1:
         raise click.UsageError("give exactly one of --file, --stdin, or --url")
@@ -2809,18 +2692,17 @@ def import_bibtex(
 # pylint: disable-next=redefined-outer-name,too-many-positional-arguments
 def add(bibfile, query, dry_run, fix_uppercase, add_abstract, add_preprint):
     """Fetch bibliographic data for QUERY from the appropriate online
-    source, add it to the library as a new, sanitized entry (exactly
-    as with `import`), and print its citation key (modifies the
-    `.bib` file in place; with --dry-run, prints the entry and
-    modifies nothing).
+    source, add it as a new, sanitized entry (as with `import`), and
+    print its citation key. With --dry-run, print the entry and modify
+    nothing. Requires network access.
 
-    All QUERY arguments are joined into a single query: an arXiv
-    identifier (or a string containing one, e.g. an arxiv.org URL) is
-    fetched from the arXiv API and added as a preprint; a DOI (or a
-    URL containing one, e.g. most publisher article pages) is fetched
-    from Crossref; anything else (i.e., free text with spaces) is a
-    Crossref bibliographic search, adding the best match -- verify
-    the result! Requires network access.
+    \b
+    All QUERY arguments join into one query:
+    - an arXiv identifier (or a string containing one, e.g. an
+      arxiv.org URL) is fetched from arXiv and added as a preprint;
+    - a DOI (or a URL containing one) is fetched from Crossref;
+    - anything else is a Crossref search; the best match is added, so
+      verify the result.
     """
     lib = Library(bibfile)
     if add_preprint is None:
@@ -2899,40 +2781,25 @@ def add_abstract(
 ):
     """Fetch and store missing abstracts for the entries KEY...
 
-    For each KEY, gather candidate abstracts from Crossref (via the
-    entry's doi field), from the text of the entry's attached PDF
-    (requires the poppler 'pdftotext' tool on PATH), from the arXiv
-    API (via the eprint field), and from Semantic Scholar; clean each
-    candidate to plain-unicode prose; and store the best one in the
-    entry's abstract field if its confidence -- high (identified by
-    doi/eprint, or confirmed by two sources), medium (a single
-    unconfirmed source), or low (sources disagree) -- reaches
-    --min-confidence. Entries that already have a non-empty abstract
-    are skipped (see --overwrite).
+    For each KEY, gather candidate abstracts from Crossref (via doi),
+    the attached PDF's text (needs poppler's 'pdftotext' on PATH), the
+    arXiv API (via eprint), and Semantic Scholar; clean each to
+    plain-unicode prose; and store the best if its confidence reaches
+    --min-confidence (high: identified by doi/eprint or confirmed by
+    two sources; medium: a single source; low: sources disagree). An
+    entry that already has an abstract is skipped (see --overwrite).
 
-    With a known-missing group configured for 'abstract' (the
-    [known_missing] table of bibdeskparser.toml), the command has two
-    modes. By default, entries in the group are skipped as verified
-    to have no findable abstract, without any search; a search that
-    runs cleanly against every source and finds nothing adds the
-    entry to the group (creating it on first use); and storing an
-    abstract removes the entry from the group -- so routine fill-in
-    runs never re-search entries already audited. With --overwrite,
-    the membership is ignored and the search re-runs: an explicit
-    re-audit, for when an abstract may have become available since
-    the last check, typically over exactly the group members:
-    `add_abstract --overwrite $(bibdeskparser keys --group "No
-    Abstract")`. An entry that still yields nothing stays in the
-    group. A search during which any source failed never marks the
-    entry. Without the configuration, none of this bookkeeping
-    happens.
+    With a known-missing group configured for 'abstract' (see the
+    [known_missing] table), a clean search that finds nothing adds the
+    entry to the group and later runs skip it, while storing an
+    abstract removes it; --overwrite ignores the membership and
+    re-searches. A search in which any source failed never marks the
+    entry.
 
-    Prints a per-key report; candidates that were *not* stored are
-    reported in full, so that they can be reviewed and applied
-    manually with `set_field KEY abstract "..."`. With --json, the
-    report maps each KEY to {abstract, source, confidence, note,
-    applied}. Modifies the .bib file in place (unless --dry-run is
-    given); requires network access.
+    Prints a per-key report; a candidate that was not stored is shown
+    in full, to review and apply with `set_field KEY abstract "..."`.
+    With --json, maps each KEY to {abstract, source, confidence, note,
+    applied}. Requires network access; --dry-run modifies nothing.
     """
     lib = Library(bibfile)
     _check_keys(lib, citekeys)
@@ -3040,43 +2907,27 @@ def add_preprint(bibfile, citekeys, eprint, overwrite, dry_run, as_json):
     """Find and store the matching arXiv preprint for the entries
     KEY...
 
-    For each KEY, search the arXiv API for a preprint matching the
-    entry (by title and first author, precise queries first) and, on
-    a confident match -- the result's DOI equals the entry's doi
-    field, a near-exact title match, or a good title match
-    corroborated by the first author's last name -- store its
-    identifier in the entry's eprint field, along with
-    archiveprefix = arXiv and the preprint's primary category (e.g.
-    quant-ph) as primaryclass. A title-based match that postdates the
-    entry's year is rejected unless the result's journal reference
-    corroborates the year; such a 'postdated-unverified' candidate is
-    reported for review and can be applied explicitly with --eprint.
-    Entries that already have a non-empty eprint are skipped (see
-    --overwrite).
+    For each KEY, search arXiv for a preprint matching the entry (by
+    title and first author) and, on a confident match (the result's
+    DOI equals the entry's doi, a near-exact title match, or a good
+    title match corroborated by the first author's last name), store
+    its identifier in the eprint field, along with archiveprefix and
+    the primary category as primaryclass. A title match postdating the
+    entry's year is only reported unless a journal reference
+    corroborates the year; apply such a candidate with --eprint. An
+    entry that already has an eprint is skipped (see --overwrite).
 
-    With a known-missing group configured for 'eprint' (the
-    [known_missing] table of bibdeskparser.toml), the command has two
-    modes. By default, entries in the group are skipped as verified
-    to have no preprint, without contacting arXiv; a search that runs
-    cleanly and finds no preprint adds the entry to the group
-    (creating it on first use); and storing an identifier removes the
-    entry from the group -- so routine fill-in runs (e.g. over `keys
-    --missing eprint`) never re-query arXiv for entries already
-    searched. With --overwrite, the membership is ignored and the
-    search re-runs: an explicit re-audit, for when the earlier match
-    may have failed or a preprint may have been posted since the last
-    check, typically over exactly the group members:
-    `add_preprint --overwrite $(bibdeskparser keys --group "No
-    Eprint")`. An entry with another clean no-match stays in the
-    group. A failed search never marks the entry. Without the
-    configuration, none of this bookkeeping happens.
+    With a known-missing group configured for 'eprint' (see the
+    [known_missing] table), a clean search that finds nothing adds the
+    entry to the group and later runs skip it, while storing an
+    identifier removes it; --overwrite ignores the membership and
+    re-searches. A failed search never marks the entry.
 
-    Prints a per-key report; with --json, the report maps each KEY to
-    {eprint, match, ratio, note, applied, primaryclass}. Modifies the
-    .bib file in place (unless --dry-run is given); requires network
-    access (except with --eprint) and respects the arXiv API's rate
-    limit of one request every three seconds, so large runs take
-    time.
+    Prints a per-key report; with --json, maps each KEY to {eprint,
+    match, ratio, note, applied, primaryclass}. Requires network
+    access (except with --eprint) and respects arXiv's rate limit of
+    one request every three seconds, so large runs take time.
+    --dry-run modifies nothing.
     """
     if eprint is not None and len(citekeys) > 1:
         raise click.UsageError("--eprint requires a single KEY")
@@ -3186,48 +3037,30 @@ def _echo_preprint_result(key, result, err=False, dry_run=False):
 def add_doi(bibfile, citekeys, doi, overwrite, dry_run, as_json):
     """Find and store the DOI for the entries KEY...
 
-    For each KEY, look up the entry's DOI online: if the entry has an
-    arXiv eprint, the arXiv API is consulted first (the DOI recorded
-    there names the published version of exactly this paper);
-    otherwise Crossref is searched for the entry (by title and first
-    author) and, on a confident match -- a near-exact title match, or
-    a good title match corroborated by the first author's last name
-    -- the found DOI is stored in the entry's doi field (in its bare
-    lowercase form). A title-based match whose publication year
-    differs from the entry's year by more than one is rejected as a
-    likely title collision; such a 'year-mismatch' candidate is
-    reported for review and can be applied explicitly with --doi.
-    Errata, corrigenda, retractions, comments, and replies never
-    match an entry that is not itself such an amendment. Entries that
-    already have a non-empty doi are skipped (see --overwrite), and
-    preprint-only entries are skipped without any lookup (the search
-    would find the DOI of the published version, which does not
-    belong on a preprint reference; store it deliberately with --doi,
-    or replace the entry with the published version via the add
-    command).
+    For each KEY, look the DOI up online: via the arXiv API if the
+    entry has an eprint (the recorded DOI names the published version
+    of this paper), else via a Crossref search (by title and first
+    author), storing the DOI on a confident match (a near-exact title
+    match, or a good title match corroborated by the first author's
+    last name) in bare lowercase form. A match whose year differs from
+    the entry's by more than one is only reported; apply it with
+    --doi. An amendment (erratum, corrigendum, retraction, comment,
+    reply) never matches a non-amendment entry. An entry that already
+    has a doi is skipped (see --overwrite), as is a preprint-only
+    entry (its published version's DOI does not belong on a preprint
+    reference; store it with --doi).
 
-    With a known-missing group configured for 'doi' (the
-    [known_missing] table of bibdeskparser.toml), the command has two
-    modes. By default, entries in the group are skipped as verified
-    to have no DOI, without any lookup; a lookup that runs cleanly
-    and finds nothing adds the entry to the group (creating it on
-    first use); and storing a DOI removes the entry from the group --
-    so routine fill-in runs (e.g. over `keys --missing doi`) never
-    re-query the sources for entries already searched. With
-    --overwrite, the membership is ignored and the lookup re-runs: an
-    explicit re-audit, for when a DOI may have been registered since
-    the last check, typically over exactly the group members:
-    `add_doi --overwrite $(bibdeskparser keys --group "No DOI")`. An
-    entry with another clean no-match stays in the group. A failed
-    lookup never marks the entry. Group membership also makes the
-    check command accept an article without a doi. Without the
-    configuration, none of this bookkeeping happens.
+    With a known-missing group configured for 'doi' (see the
+    [known_missing] table), a clean lookup that finds nothing adds the
+    entry to the group and later runs skip it, while storing a DOI
+    removes it; --overwrite ignores the membership and re-looks-up. A
+    failed lookup never marks the entry. Membership also lets `check`
+    accept an article without a doi.
 
-    Prints a per-key report; with --json, the report maps each KEY to
-    {doi, match, ratio, note, applied}. Modifies the .bib file in
-    place (unless --dry-run is given); requires network access
-    (except with --doi), and an eprint lookup respects the arXiv
-    API's rate limit of one request every three seconds.
+    Prints a per-key report; with --json, maps each KEY to {doi,
+    match, ratio, note, applied}. Requires network access (except with
+    --doi); an eprint lookup respects arXiv's rate limit of one
+    request every three seconds. --dry-run modifies nothing.
     """
     if doi is not None and len(citekeys) > 1:
         raise click.UsageError("--doi requires a single KEY")

@@ -75,9 +75,14 @@ git branch -D 1-title-of-issue
 Commit Messages
 ---------------
 
-Write a short imperative subject line (50 chars or less) that completes the sentence "If applied, this commit will …", followed by a blank line and an optional body wrapped at 72 characters. Reference issues as e.g. `#1`, and close them with a `Closes #1` line (see [closing issues using keywords](https://help.github.com/articles/closing-issues-using-keywords/)).
+Write a short imperative subject line (50 chars or less) that completes the sentence "If applied, this commit will …", followed by a blank line and an optional body wrapped at 72 characters. A commit message describes *what* the change does, self-contained; it does not reference the issue it addresses (that belongs in the pull request description).
 
 Use markdown syntax (GitHub Flavored Markdown) in the commit message. In particular, use inline code (backticks) for any snippet of text that refers to code.
+
+Pull Request Description
+------------------------
+
+Where the commit message says *what* the change does, the pull request description adds *why*: the motivation, the alternatives considered and rejected, and the issues it relates to. If the pull request is intended to resolve an issue, its last line *must* be `Closes #N` (see [closing issues using keywords](https://help.github.com/articles/closing-issues-using-keywords/)).
 
 Testing
 -------
