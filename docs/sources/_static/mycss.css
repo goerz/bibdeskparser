@@ -25,19 +25,6 @@ span.eqno {
      margin-left: 5px;
 }
 
-.headerlink {
-    display: none;
-    visibility: hidden;
-}
-.headerlink::after{
-    visibility: visible;
-    display: inline-block;
-}
-.headerlink::hover{
-    display: inline-block;
-    visibility: visible;
-}
-
 /* version text under the project title in the sidebar */
 
 .wy-side-nav-search div.version {
