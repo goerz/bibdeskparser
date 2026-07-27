@@ -3,6 +3,8 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [v0.6.0] - 2026-07-27
 
 * Fixed: the `check` command now audits *every* bare (unbraced) field value for a reference to an undefined `@string` macro, not just `journal`. Such a reference renders as the macro name itself (`month = sept` becomes literal `sept`, `publisher = elsevir` becomes `elsevir`) and is refused by `Library.save`, so a file could previously pass `check` and then be impossible to write (a subsequent `bibdeskparser set_field ...` failing with an `undefined macro(s) referenced by one or more entries` error naming those bare values); a passing `check` now implies a writable file. Only a value that is a valid macro name is considered, so a bare non-macro value like `volume = 90` is not flagged, and `keywords` (always literal text) is exempt, matching what `save` scans. The audit name in the `--json` output is `undefined_macro`; an undefined macro that is also not a month (`month = sept`) is reported by both the `month` and the `undefined_macro` audit. [[#56], [#61]]
