@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.6.0] - 2026-07-27
 
 * Fixed: the `check` command now audits *every* bare (unbraced) field value for a reference to an undefined `@string` macro, not just `journal`. Such a reference renders as the macro name itself (`month = sept` becomes literal `sept`, `publisher = elsevir` becomes `elsevir`) and is refused by `Library.save`, so a file could previously pass `check` and then be impossible to write (a subsequent `bibdeskparser set_field ...` failing with an `undefined macro(s) referenced by one or more entries` error naming those bare values); a passing `check` now implies a writable file. Only a value that is a valid macro name is considered, so a bare non-macro value like `volume = 90` is not flagged, and `keywords` (always literal text) is exempt, matching what `save` scans. The audit name in the `--json` output is `undefined_macro`; an undefined macro that is also not a month (`month = sept`) is reported by both the `month` and the `undefined_macro` audit. [[#56], [#61]]
 * Added: two new `check` audits over the date fields, reporting values that the citation-key specifiers `%Y` and `%m` mis-read in silence. `year` reports an entry whose `year` does not read as a four-digit year (`Monroe2008: year 'August, 2008' does not read as a four-digit year (%Y gives '0')`), which is what `%Y` reduces `(about 1984)`, `in press`, and `n.d.` to as well. A value BibDesk reads correctly without being a bare four-digit string still passes: `08` maps into 1950--2049, and trailing text after the digits (`2008a`, `2001--`) is ignored. `month` reports an entry whose `month` is anything but a bare reference to one of the twelve standard month macros `jan` ... `dec`, either a literal value (`Monroe2008: month is the literal string 'June', not one of the twelve standard month macros (jan ... dec)`) or a macro outside the twelve, defined or not (`month = sept`). A literal `06` or `June` is reported although it renders correctly, for the same reason a literal `journal` value is: a `.bst` style typesets `jun` as `June`, `Jun.`, `Juni`, or `6`, and writing the month out freezes one of those choices into the database. Unlike the `year` audit, the `month` audit inspects the stored value rather than what `%m` renders, since `%m` answers `01` for every value it cannot parse, indistinguishable from a genuine January. Both audits look only at a field the entry defines with a non-empty value; an absent or empty one is reported by the `required_fields` and `empty_fields` audits instead. The audit names `year` and `month` also appear in the `--json` output. [[#55], [#60]]
@@ -131,7 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial release.
 
-[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.5.0..HEAD
+[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.6.0..HEAD
+[v0.6.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.6.0
 [v0.5.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.5.0
 [v0.4.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.4.0
 [v0.3.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.3.0
