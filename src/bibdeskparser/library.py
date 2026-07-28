@@ -2177,8 +2177,8 @@ class Library(MutableMapping):
           the library).
         * `url`: the URL to attach; must include both a scheme and a
           host (e.g. `https://example.com/paper.pdf`), or `ValueError`
-          is raised. Raises `ValueError` if `url` is already linked
-          from the entry.
+          is raised, and is percent-encoded before storing. Raises
+          `ValueError` if `url` is already linked from the entry.
 
         Unlike file attachments, URLs are self-contained (there is no
         path resolution and no on-disk file to remove), so this simply
@@ -2194,11 +2194,12 @@ class Library(MutableMapping):
 
         * `key`: citation key of the entry (raises `KeyError` if not in
           the library).
-        * `old_url`: the linked URL to replace (raises `ValueError` if
-          it is not linked from the entry).
-        * `new_url`: the URL to link in its place (raises `ValueError`
-          if it is not a valid URL, or is already linked from the
-          entry).
+        * `old_url`: the linked URL to replace, matched literally
+          against the entry's stored URLs (raises `ValueError` if it is
+          not linked from the entry).
+        * `new_url`: the URL to link in its place, percent-encoded
+          before storing as in {meth}`add_url` (raises `ValueError` if
+          it is not a valid URL, or is already linked from the entry).
 
         Delegates to {meth}`Entry.replace_url`.
         """

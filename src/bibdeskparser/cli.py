@@ -1381,6 +1381,8 @@ def check(
     - every year reads as a four-digit year;
     - every month is a bare standard month macro (jan ... dec);
     - every author and editor parses as names;
+    - no URL-type value (a url-named field, or a bdsk-url link) holds
+      raw non-ASCII characters;
     - every @string macro is referenced by some entry.
 
     With KEY..., only the given entries are audited and the
@@ -1392,8 +1394,8 @@ def check(
     {"passed", "entries_checked", "problems": [{"check", "key",
     "message"}]}; "check" is one of parse, duplicate_keys, entry_type,
     required_fields, doi, empty_fields, known_missing, journal,
-    undefined_macro, year, month, names, unused_strings, files,
-    key_format, and "key" is null when not tied to an entry.
+    undefined_macro, year, month, names, url_encoding, unused_strings,
+    files, key_format, and "key" is null when not tied to an entry.
     """
     if format_spec is not None and audit_key_format is False:
         raise click.UsageError(
@@ -2437,7 +2439,7 @@ def rename_file(
 @click.argument("url")
 @click.pass_obj
 def add_url(bibfile, key, url):
-    """Add URL to the entry KEY."""
+    """Add URL to the entry KEY (percent-encoded before storing)."""
     lib = Library(bibfile)
     _check_keys(lib, [key])
     lib.add_url(key, url)
@@ -2456,7 +2458,8 @@ def add_url(bibfile, key, url):
 @click.argument("new_url", metavar="NEW")
 @click.pass_obj
 def replace_url(bibfile, key, old_url, new_url):
-    """Replace entry KEY's URL OLD with NEW."""
+    """Replace entry KEY's URL OLD with NEW (NEW percent-encoded, OLD
+    matched literally against the stored URLs)."""
     lib = Library(bibfile)
     _check_keys(lib, [key])
     lib.replace_url(key, old_url, new_url)

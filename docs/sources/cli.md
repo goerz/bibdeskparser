@@ -230,8 +230,9 @@ BadYear2026: year 'August, 2026' does not read as a four-digit year (%Y gives '0
 LiteralMonth2026: month is the literal string 'June', not one of the twelve standard month macros (jan ... dec)
 BadMonthMacro2026: month references the macro 'sept', not one of the twelve standard month macros (jan ... dec)
 BadMonthMacro2026: month references undefined @string macro 'sept'
+UnencodedURL2026: url contains non-ASCII characters: 'https://example.com/münchen' (use 'https://example.com/m%C3%BCnchen')
 unused @string macro 'unusedjrnl'
-FAIL (15 problems, 13 entries checked)
+FAIL (16 problems, 14 entries checked)
 ```
 
 The audits:
@@ -252,6 +253,8 @@ The audits:
 - every `month` is a bare reference to a standard month macro (`jan`
   ... `dec`);
 - every `author` and `editor` parses as names;
+- no URL-type value (a `url`-named field, or a `bdsk-url` link) holds
+  raw non-ASCII characters;
 - every `@string` macro is referenced by some entry.
 
 **Options**
@@ -268,8 +271,8 @@ The audits:
   each problem has `check` (the failing audit: `parse`,
   `duplicate_keys`, `entry_type`, `required_fields`, `doi`,
   `empty_fields`, `known_missing`, `journal`, `undefined_macro`,
-  `year`, `month`, `names`, `unused_strings`, `files`, or
-  `key_format`), `key` (or `null`), and `message`.
+  `year`, `month`, `names`, `url_encoding`, `unused_strings`, `files`,
+  or `key_format`), `key` (or `null`), and `message`.
 
 With `KEY...`, only the given entries are audited and the unused-macro
 audit is skipped; an unknown key is an error.

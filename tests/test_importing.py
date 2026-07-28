@@ -1001,6 +1001,18 @@ def test_bdsk_urls_preserved():
     assert bib[key].urls == ("https://example.com/paper",)
 
 
+def test_bdsk_url_non_ascii_percent_encoded_on_import():
+    """A `bdsk-url-N` value with raw non-ASCII characters is
+    percent-encoded on import, the way `add_url` normalizes it."""
+    bib = _library_with_pra()
+    text = ARTICLE.replace(
+        "Volume = {89},",
+        "Volume = {89},\n    Bdsk-Url-1 = {https://example.com/münchen},",
+    )
+    (key,) = bib.import_bibtex(text)
+    assert bib[key].urls == ("https://example.com/m%C3%BCnchen",)
+
+
 def test_date_added_preserved():
     bib = _library_with_pra()
     text = ARTICLE.replace(

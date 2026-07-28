@@ -575,6 +575,36 @@ def test_add_url_rejects_duplicate():
         entry.add_url("http://example.org/a")
 
 
+def test_add_url_percent_encodes_non_ascii():
+    """`add_url` stores non-ASCII input percent-encoded (UTF-8), the
+    way BibDesk does, so the stored value is ASCII."""
+    entry = _pristine_entry()
+    entry.add_url("https://example.com/münchen")
+    assert entry.urls == ("https://example.com/m%C3%BCnchen",)
+    assert entry.urls[0].isascii()
+
+
+def test_add_url_leaves_encoded_url_unchanged():
+    """An already-encoded URL passes through `add_url` unchanged (no
+    double encoding), so re-adding the raw form is a duplicate."""
+    entry = _pristine_entry()
+    entry.add_url("https://example.com/m%C3%BCnchen")
+    assert entry.urls == ("https://example.com/m%C3%BCnchen",)
+    with pytest.raises(ValueError, match="already linked"):
+        entry.add_url("https://example.com/münchen")
+
+
+def test_replace_url_percent_encodes_new_url():
+    """`replace_url` percent-encodes `new_url`; `old_url` is matched
+    literally against the stored (encoded) URLs."""
+    entry = _pristine_entry()
+    entry.add_url("https://example.com/münchen")
+    entry.replace_url(
+        "https://example.com/m%C3%BCnchen", "https://example.com/köln"
+    )
+    assert entry.urls == ("https://example.com/k%C3%B6ln",)
+
+
 def test_replace_url_keeps_position():
     """`replace_url` swaps a URL in place, keeping its position."""
     entry = _pristine_entry()

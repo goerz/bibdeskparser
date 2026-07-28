@@ -65,6 +65,27 @@ def _strip_enclosing(value):
     return value
 
 
+# BibDesk's `stringByAddingMinimalPercentEscapes`
+# (`NSString_BDSKExtensions.m`) leaves unescaped the characters in
+# `URLQueryAllowedCharacterSet` plus `#%[]`. `urllib.parse.quote` always
+# leaves the RFC 3986 unreserved set (`A-Za-z0-9-._~`) alone, so
+# `_URL_SAFE` adds only the remaining allowed characters. Keeping `%`
+# safe means an already-encoded `%XX` passes through unchanged (no double
+# encoding).
+_URL_SAFE = "!$&'()*+,;=:@/?#%[]"
+
+
+def _percent_encode_url(url):
+    """Percent-encode `url` the way BibDesk does when it serializes a
+    linked URL: every character outside the URL-allowed set is UTF-8
+    percent-encoded, so the result is ASCII and existing `%XX` escapes
+    are preserved.
+
+    Idempotent (encoding an already-encoded URL is a no-op), so an
+    all-ASCII URL is returned unchanged."""
+    return urllib.parse.quote(url, safe=_URL_SAFE)
+
+
 def _parse_date(value):
     """Parse a `date-added`/`date-modified` field value."""
     if not isinstance(value, str):
@@ -562,10 +583,15 @@ class Entry(MutableMapping):
         """Attach `url` to the entry, appending a `bdsk-url-N` field.
 
         `url` must include both a scheme and a host (e.g.
-        `https://example.com/paper.pdf`), or `ValueError` is raised.
-        Raises `ValueError` if `url` is already linked from the entry.
+        `https://example.com/paper.pdf`), or `ValueError` is raised, and
+        is percent-encoded before storing. Raises `ValueError` if `url`
+        is already linked from the entry.
         """
         self._validate_url(url)
+        # Percent-encode as BibDesk does (`_percent_encode_url`), so a
+        # stored `bdsk-url-N` is ASCII and the duplicate check below
+        # compares like against like.
+        url = _percent_encode_url(url)
         if url in self.urls:
             raise ValueError(f"{url!r} is already linked from this entry")
         self._set_urls(self.urls + (url,))
@@ -574,14 +600,17 @@ class Entry(MutableMapping):
         """Replace the linked `old_url` with `new_url`, keeping its
         position in {attr}`urls`.
 
-        Raises `ValueError` if `old_url` is not linked from the entry,
-        if `new_url` is not a valid URL, or if `new_url` is already
-        linked from the entry (and differs from `old_url`).
+        `new_url` is percent-encoded before storing (as in
+        {meth}`add_url`); `old_url` is matched literally against the
+        stored URLs. Raises `ValueError` if `old_url` is not linked from
+        the entry, if `new_url` is not a valid URL, or if `new_url` is
+        already linked from the entry (and differs from `old_url`).
         """
         urls = self.urls
         if old_url not in urls:
             raise ValueError(f"{old_url!r} is not linked from this entry")
         self._validate_url(new_url)
+        new_url = _percent_encode_url(new_url)
         if new_url != old_url and new_url in urls:
             raise ValueError(f"{new_url!r} is already linked from this entry")
         self._set_urls(new_url if u == old_url else u for u in urls)

@@ -25,6 +25,7 @@ from .entry import (
     _BDSK_URL_RE,
     _DATE_FORMAT,
     Entry,
+    _percent_encode_url,
     _split_keywords,
     _strip_enclosing,
 )
@@ -627,7 +628,9 @@ def _stage_entry(
         if keywords:
             entry._set_keywords(keywords)
         if url_items:
-            entry._set_urls(url for _, url in sorted(url_items))
+            entry._set_urls(
+                _percent_encode_url(url) for _, url in sorted(url_items)
+            )
         if file_items:
             bdsk_files, file_problems = _resolve_files(
                 file_items, library, label

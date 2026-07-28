@@ -16,6 +16,7 @@ from collections import namedtuple
 from bibtexparser.model import DuplicateBlockKeyBlock
 
 from .config import active
+from .entry import _percent_encode_url, _strip_enclosing
 from .identifiers import _entry_preprint, _preprint_journal
 from .importing import _PREPRINT_KEY_SPEC
 from .library import _bare_macro_fields, _has_field
@@ -34,8 +35,8 @@ __private__ = ["Problem", "collect_problems"]
 #: `"duplicate_keys"`, `"entry_type"`, `"required_fields"`, `"doi"`,
 #: `"empty_fields"`, `"known_missing"`, `"journal"`,
 #: `"undefined_macro"`, `"year"`, `"month"`, `"names"`,
-#: `"unused_strings"`, `"files"`, or `"key_format"`), `key` is the
-#: citation key the problem is tied to
+#: `"url_encoding"`, `"unused_strings"`, `"files"`, or `"key_format"`),
+#: `key` is the citation key the problem is tied to
 #: (`None` for a problem that concerns the file as a whole), and
 #: `message` describes the problem.
 Problem = namedtuple("Problem", ["check", "key", "message"])
@@ -51,9 +52,10 @@ def collect_problems(
     `keys` (an iterable of citation keys, all of which must exist in
     `library`), the per-entry audits (entry type, required fields,
     doi, empty fields, known-missing, journal, undefined macros, year,
-    month, and names) cover only those entries, the duplicate-keys
-    audit reports only those keys, and the unused-macros audit is
-    skipped; problems parsing the file itself are always included.
+    month, names, and url encoding) cover only those entries, the
+    duplicate-keys audit reports only those keys, and the unused-macros
+    audit is skipped; problems parsing the file itself are always
+    included.
 
     With `audit_files`, an additional per-entry audit checks that each
     linked attachment (`bdsk-file-N` field) resolves to a real path on
@@ -132,8 +134,8 @@ def _parse_problems(library):
 
 def _entry_problems(entry, library, strings):
     """The entry-type, required-field, doi, empty-field,
-    known-missing, journal, undefined-macro, year, month, and names
-    problems of a single `entry`.
+    known-missing, journal, undefined-macro, year, month, names, and
+    url-encoding problems of a single `entry`.
 
     `strings` is the library's merged macro mapping
     (`Library._all_strings()`), passed in so it is built once per audit
@@ -203,7 +205,44 @@ def _entry_problems(entry, library, strings):
                             )
                         )
     problems += _undefined_macro_problems(entry, strings)
+    problems += _url_encoding_problems(entry)
     return problems
+
+
+def _url_encoding_problems(entry):
+    r"""The problems with `entry`'s URL-type values that hold raw
+    non-ASCII characters: every field whose name contains `url` (the
+    same class that is exempt from TeX encoding), plus the `bdsk-url-N`
+    values. The message shows the percent-encoded form (what `add_url`
+    stores) so the fix is copy-pasteable.
+
+    Raw non-ASCII breaks a `\url{...}` in a LaTeX export (verbatim
+    catcodes bypass `inputenc`) and is dropped by BibDesk on reload.
+    Stored `url` field values are never rewritten automatically, so
+    this audit is the only place they surface."""
+    problems = []
+    for name in entry:
+        if "url" in name.lower():
+            value = str(entry[name])
+            if not value.isascii():
+                problems.append(_url_encoding_problem(entry.key, name, value))
+    # pylint: disable-next=protected-access
+    for _, field in entry._bdsk_url_fields():
+        value = _strip_enclosing(field.value)
+        if not value.isascii():
+            problems.append(_url_encoding_problem(entry.key, field.key, value))
+    return problems
+
+
+def _url_encoding_problem(key, field_name, value):
+    """A single `url_encoding` {class}`Problem` for `field_name` holding
+    the raw non-ASCII `value`, showing its percent-encoded form."""
+    return Problem(
+        "url_encoding",
+        key,
+        f"{field_name} contains non-ASCII characters: {value!r} "
+        f"(use {_percent_encode_url(value)!r})",
+    )
 
 
 def _type_problems(entry):
