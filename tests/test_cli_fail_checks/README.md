@@ -11,7 +11,9 @@ macro in a field with no audit of its own), `BadNames2026`,
 `August, 2026`), `LiteralMonth2026` (`month = {June}` written out
 instead of the macro), `BadMonthMacro2026` (`month = sept`, which is
 neither one of the twelve month macros nor defined, so it fails both
-the month and the undefined-macro audit), `Duplicate2026`), the
+the month and the undefined-macro audit), `UnencodedURL2026` (a `url`
+field with raw non-ASCII characters, flagged by the url-encoding
+audit), `Duplicate2026`), the
 `@string` macro `unusedjrnl` is never referenced, and `EmptyDoi2026`
 and `Preprint2026` demonstrate the passing exemptions;
 `broken_block.bib` contains a block that fails

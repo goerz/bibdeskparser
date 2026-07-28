@@ -1067,9 +1067,14 @@ def test_check_problems(runner, checkfile):
     assert lines[13] == (
         "BadMonthMacro2026: month references undefined @string macro 'sept'"
     )
-    assert lines[14] == "unused @string macro 'unusedjrnl'"
-    assert lines[15] == "FAIL (15 problems, 13 entries checked)"
-    assert len(lines) == 16
+    assert lines[14] == (
+        "UnencodedURL2026: url contains non-ASCII characters: "
+        "'https://example.com/münchen' "
+        "(use 'https://example.com/m%C3%BCnchen')"
+    )
+    assert lines[15] == "unused @string macro 'unusedjrnl'"
+    assert lines[16] == "FAIL (16 problems, 14 entries checked)"
+    assert len(lines) == 17
 
 
 def test_check_problems_json(runner, checkfile):
@@ -1077,7 +1082,7 @@ def test_check_problems_json(runner, checkfile):
     assert result.exit_code == 1
     data = json.loads(result.output)
     assert data["passed"] is False
-    assert data["entries_checked"] == 13
+    assert data["entries_checked"] == 14
     assert [(p["check"], p["key"]) for p in data["problems"]] == [
         ("duplicate_keys", "Duplicate2026"),
         ("doi", "MissingDoi2026"),
@@ -1093,6 +1098,7 @@ def test_check_problems_json(runner, checkfile):
         ("month", "LiteralMonth2026"),
         ("month", "BadMonthMacro2026"),
         ("undefined_macro", "BadMonthMacro2026"),
+        ("url_encoding", "UnencodedURL2026"),
         ("unused_strings", None),
     ]
     assert all("message" in p for p in data["problems"])
@@ -1325,6 +1331,72 @@ def test_check_month_defined_nonstandard_macro(runner, tmp_path):
         "twelve standard month macros (jan ... dec)",
         "FAIL (1 problem, 1 entry checked)",
     ]
+
+
+def _check_url_fields(runner, tmp_path, fields):
+    """The problem lines `check` reports for a `@misc` entry carrying
+    the extra `fields` (a snippet of `.bib` field lines)."""
+    bibfile = _write_bib(
+        tmp_path,
+        "@misc{Entry,\n"
+        "    author = {Doe, John},\n"
+        "    title = {A Web Reference},\n"
+        f"{fields}"
+        "    year = {2014}}\n",
+    )
+    return _problem_lines(runner.invoke(main, ["check", str(bibfile)]))
+
+
+def test_check_url_field_non_ascii(runner, tmp_path):
+    """A `url` field with raw non-ASCII characters is flagged, and the
+    message shows the percent-encoded form so the fix is copy-pasteable."""
+    assert _check_url_fields(
+        runner, tmp_path, "    url = {https://example.com/münchen},\n"
+    ) == [
+        "Entry: url contains non-ASCII characters: "
+        "'https://example.com/münchen' "
+        "(use 'https://example.com/m%C3%BCnchen')"
+    ]
+
+
+def test_check_bdsk_url_non_ascii(runner, tmp_path):
+    """A `bdsk-url-N` value with raw non-ASCII characters is flagged
+    under its own field name."""
+    assert _check_url_fields(
+        runner,
+        tmp_path,
+        "    bdsk-url-1 = {https://example.com/köln},\n",
+    ) == [
+        "Entry: bdsk-url-1 contains non-ASCII characters: "
+        "'https://example.com/köln' "
+        "(use 'https://example.com/k%C3%B6ln')"
+    ]
+
+
+def test_check_url_encoding_passes_ascii(runner, tmp_path):
+    """An ASCII `url` field and an already percent-encoded one both
+    pass; only raw non-ASCII is flagged."""
+    assert (
+        _check_url_fields(
+            runner,
+            tmp_path,
+            "    url = {https://example.com/m%C3%BCnchen},\n"
+            "    bdsk-url-1 = {https://example.com/paper},\n",
+        )
+        == []
+    )
+
+
+def test_check_url_encoding_only_url_fields(runner, tmp_path):
+    """Non-ASCII text outside a URL-type field (here `note`) is not
+    the url-encoding audit's concern; only fields whose name contains
+    `url` are checked."""
+    assert (
+        _check_url_fields(
+            runner, tmp_path, "    note = {Written in München},\n"
+        )
+        == []
+    )
 
 
 def test_check_undefined_macro_any_field(runner, tmp_path):
