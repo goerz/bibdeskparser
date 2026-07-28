@@ -993,12 +993,13 @@ def test_strings_json(runner, bibfile):
 
 def test_duplicate_keys(runner, dupfile):
     result = _run(runner, "duplicate_keys", dupfile)
-    assert result.output.splitlines() == ["GoerzSPP2019"]
+    assert result.stdout.splitlines() == ["GoerzSPP2019"]
+    assert "duplicate citation keys found" in result.stderr
 
 
 def test_duplicate_keys_json(runner, dupfile):
     result = _run(runner, "duplicate_keys", dupfile, "--json")
-    assert json.loads(result.output) == ["GoerzSPP2019"]
+    assert json.loads(result.stdout) == ["GoerzSPP2019"]
 
 
 def test_duplicate_keys_none(runner, bibfile):
@@ -2238,6 +2239,7 @@ def test_export_preprint_modes(runner, bibfile):
         "export",
         bibfile,
         "Wilhelm2003.10132",
+        "--full",
         "--preprint",
         "stored",
     )
@@ -2246,7 +2248,97 @@ def test_export_preprint_modes(runner, bibfile):
     assert "Eprint = {2003.10132}," in result.output
 
 
+def test_export_marker_and_full(runner, bibfile):
+    """The output leads with the marker line (--no-marker drops it),
+    and --full selects every field."""
+    result = _run(runner, "export", bibfile, "GoerzJPB2011")
+    assert result.output.startswith("%% Created by BibDeskParser ")
+    assert "Abstract" not in result.output  # minimal is the default
+    result = _run(runner, "export", bibfile, "GoerzJPB2011", "--no-marker")
+    assert not result.output.startswith("%%")
+    result = _run(runner, "export", bibfile, "GoerzJPB2011", "--full")
+    assert "Abstract = {" in result.output
+    assert "Bdsk-File-1 = {" in result.output
+    # bdsk-* fields put the output in the database format: no marker
+    assert not result.output.startswith("%%")
+
+
+def test_export_requires_key_or_update(runner, bibfile):
+    result = runner.invoke(main, ["export", str(bibfile)])
+    assert result.exit_code == 2
+    assert "at least one KEY" in result.stderr
+
+
+def test_export_update(runner, bibfile, tmp_path):
+    """--update refreshes an exported file in place: named keys are
+    appended, library corrections propagate, and nothing is removed."""
+    paper = tmp_path / "paper.bib"
+    _run(runner, "export", bibfile, "GoerzJPB2011", "--outfile", paper)
+    result = _run(runner, "export", bibfile, "--update", paper, "GoerzNJP2014")
+    assert result.stdout == ""
+    text = paper.read_text(encoding="utf-8")
+    assert "@article{GoerzJPB2011,\n" in text
+    assert "@article{GoerzNJP2014,\n" in text
+    _run(runner, "set_string", bibfile, "jpb", "Journal of Physics B")
+    _run(runner, "export", bibfile, "--update", paper)
+    text = paper.read_text(encoding="utf-8")
+    assert "@string{jpb = {Journal of Physics B}}" in text
+
+
+def test_export_update_outfile_mutually_exclusive(runner, bibfile, tmp_path):
+    result = runner.invoke(
+        main,
+        [
+            "export",
+            str(bibfile),
+            "GoerzJPB2011",
+            "--update",
+            str(tmp_path / "a.bib"),
+            "--outfile",
+            str(tmp_path / "b.bib"),
+        ],
+    )
+    assert result.exit_code == 2
+    assert "mutually exclusive" in result.stderr
+
+
+def test_export_update_refuses_database(runner, bibfile, tmp_path):
+    """A database-format target is refused, naming the content found."""
+    result = runner.invoke(
+        main, ["export", str(bibfile), "--update", str(bibfile)]
+    )
+    assert result.exit_code == 1
+    assert "a BibDesk header" in result.stderr
+
+
+def test_export_update_requires_existing_file(runner, bibfile, tmp_path):
+    result = runner.invoke(
+        main,
+        ["export", str(bibfile), "--update", str(tmp_path / "missing.bib")],
+    )
+    assert result.exit_code == 1
+    assert "--outfile" in result.stderr
+
+
+def test_set_group_on_plain_file_warns(runner, bibfile, tmp_path):
+    """A group mutation on a plain file converts it to the database
+    format, with a warning on stderr."""
+    paper = tmp_path / "paper.bib"
+    _run(runner, "export", bibfile, "GoerzJPB2011", "--outfile", paper)
+    result = _run(runner, "set_group", paper, "Read", "GoerzJPB2011")
+    assert "Warning: converting plain BibTeX file" in result.stderr
+    text = paper.read_text(encoding="utf-8")
+    assert "BibDesk Static Groups" in text
+
+
 def test_export_minimal_field_mutually_exclusive(runner, bibfile):
+    for flag in ("--minimal", "--full"):
+        result = runner.invoke(
+            main,
+            ["export", str(bibfile), "GoerzJPB2011", flag, "--field", "doi"],
+        )
+        assert result.exit_code == 2
+        assert "mutually exclusive" in result.stderr
     result = runner.invoke(
         main,
         [
@@ -2318,7 +2410,7 @@ def test_eval_format_spec_filename(runner, bibfile):
         "--filename",
         "no-such-file.pdf",
     )
-    assert result.output.strip() == "GoerzJPB2011.pdf"
+    assert result.stdout.strip() == "GoerzJPB2011.pdf"
     assert bibfile.read_text(encoding="utf-8") == before
 
 
@@ -2973,7 +3065,7 @@ def test_add_file_auto_from_config(runner, bibfile, tmp_path):
     )
     (tmp_path / "extra.pdf").write_bytes(b"%PDF-1.4 fake")
     result = _run(runner, "add_file", bibfile, "GoerzDiploma2010", "extra.pdf")
-    assert result.output.strip() == "GoerzDiploma2010.pdf"
+    assert result.stdout.strip() == "GoerzDiploma2010.pdf"
     assert _load(bibfile)["GoerzDiploma2010"].files == ["GoerzDiploma2010.pdf"]
     assert (tmp_path / "GoerzDiploma2010.pdf").exists()
     assert not (tmp_path / "extra.pdf").exists()
@@ -2996,7 +3088,7 @@ def test_add_file_no_auto_file(runner, bibfile, tmp_path):
         "extra.pdf",
         "--no-auto-file",
     )
-    assert result.output == ""
+    assert result.stdout == ""
     assert _load(bibfile)["GoerzDiploma2010"].files == ["extra.pdf"]
     assert (tmp_path / "extra.pdf").exists()
 
@@ -3019,7 +3111,7 @@ def test_add_file_auto_file_forced(runner, bibfile, tmp_path):
         "extra.pdf",
         "--auto-file",
     )
-    assert result.output.strip() == "GoerzDiploma2010.pdf"
+    assert result.stdout.strip() == "GoerzDiploma2010.pdf"
     assert _load(bibfile)["GoerzDiploma2010"].files == ["GoerzDiploma2010.pdf"]
     assert (tmp_path / "GoerzDiploma2010.pdf").exists()
     assert not (tmp_path / "extra.pdf").exists()
@@ -3058,7 +3150,7 @@ def test_add_file_location_option(runner, bibfile, tmp_path):
         "--location",
         "Papers",
     )
-    assert result.output.strip() == "Papers/GoerzDiploma2010.pdf"
+    assert result.stdout.strip() == "Papers/GoerzDiploma2010.pdf"
     assert _load(bibfile)["GoerzDiploma2010"].files == [
         "Papers/GoerzDiploma2010.pdf"
     ]
@@ -3133,7 +3225,7 @@ def test_rename_file_auto_from_config(runner, bibfile, tmp_path):
     result = _run(
         runner, "rename_file", bibfile, "GoerzJPB2011", "misfiled.pdf"
     )
-    assert result.output.strip() == "GoerzJPB2011.pdf"
+    assert result.stdout.strip() == "GoerzJPB2011.pdf"
     assert _load(bibfile)["GoerzJPB2011"].files == ["GoerzJPB2011.pdf"]
     assert (tmp_path / "GoerzJPB2011.pdf").exists()
     assert not (tmp_path / "misfiled.pdf").exists()
@@ -3152,7 +3244,7 @@ def test_rename_file_options(runner, bibfile, tmp_path):
         "--location",
         "Papers",
     )
-    assert result.output.strip() == "Papers/GoerzJPB2011.pdf"
+    assert result.stdout.strip() == "Papers/GoerzJPB2011.pdf"
     assert _load(bibfile)["GoerzJPB2011"].files == ["Papers/GoerzJPB2011.pdf"]
     assert (tmp_path / "Papers" / "GoerzJPB2011.pdf").exists()
 
@@ -3224,9 +3316,18 @@ def test_edit_strings(runner, bibfile, tmp_path):
 
 
 def test_edit_stdin_noop_roundtrip(runner, bibfile):
-    """Piping `export` output back through `edit --stdin` is a no-op."""
+    """Piping `export --full --preprint stored` output back through
+    `edit --stdin` is a no-op (the marker line is ignored)."""
     before = dict(_load(bibfile)["GoerzJPB2011"])
-    exported = _run(runner, "export", bibfile, "GoerzJPB2011").output
+    exported = _run(
+        runner,
+        "export",
+        bibfile,
+        "GoerzJPB2011",
+        "--full",
+        "--preprint",
+        "stored",
+    ).stdout
     result = runner.invoke(
         main,
         ["edit", str(bibfile), "GoerzJPB2011", "--stdin"],
@@ -3238,7 +3339,15 @@ def test_edit_stdin_noop_roundtrip(runner, bibfile):
 
 def test_edit_stdin_changes_field(runner, bibfile):
     """A field change piped through `edit --stdin` lands in the file."""
-    exported = _run(runner, "export", bibfile, "GoerzJPB2011").output
+    exported = _run(
+        runner,
+        "export",
+        bibfile,
+        "GoerzJPB2011",
+        "--full",
+        "--preprint",
+        "stored",
+    ).stdout
     edited = exported.replace(
         "trapped neutral atoms", "confined neutral atoms"
     )

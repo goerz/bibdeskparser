@@ -34,12 +34,15 @@ from bibtexparser.model import (
     ExplicitComment,
     ImplicitComment,
     ParsingFailedBlock,
+    Preamble,
     String,
 )
 
 from .bdskfile import BibDeskFile
+from .entry import Entry as _Entry
 from .header import restore_trailing_space
 from .middleware import TeXifyMiddleware
+from .texmap import texify
 
 __all__ = []
 
@@ -47,9 +50,11 @@ __all__ = []
 # either in __all__ or in __private__
 __private__ = [
     "render_library",
+    "render_plain_library",
     "serialize_block",
     "bibdesk_field_order",
     "separator",
+    "join_plain_pieces",
 ]
 
 
@@ -80,6 +85,9 @@ def serialize_block(block):
       value. {class}`bibdeskparser.bdskfile.BibDeskFile` values are
       serialized via their
       {meth}`~bibdeskparser.bdskfile.BibDeskFile.to_field_value` method.
+    * `Preamble`: `@preamble{...}`, with the preamble body (TeX code)
+      written verbatim. BibDesk itself never writes `@preamble`
+      blocks, but it preserves them, and so does this writer.
     * `ParsingFailedBlock` (e.g., a `DuplicateBlockKeyBlock` for an
       entry with a duplicate key): the block's `raw` source slice,
       verbatim, so that files with duplicate keys still round-trip.
@@ -113,6 +121,8 @@ def serialize_block(block):
         return f"@string{{{block.key} = {block.value}}}"
     if isinstance(block, ExplicitComment):
         return f"@comment{{{block.comment}}}"
+    if isinstance(block, Preamble):
+        return f"@preamble{{{block.value}}}"
     if isinstance(block, Entry):
         if not block.fields:
             return f"@{block.entry_type}{{{block.key}}}"
@@ -192,6 +202,93 @@ def render_library(library):
         prev = block
     pieces.append("\n")
     return "".join(pieces)
+
+
+def join_plain_pieces(pieces):
+    """Join plain-format `(kind, text)` pieces with the blank-line
+    rules of exports.
+
+    ```python
+    join_plain_pieces(pieces)
+    ```
+
+    Each piece is a serialized block (without trailing newline) tagged
+    with its kind (`"string"` for an `@string` definition, anything
+    else for comments and entries). Consecutive `@string` definitions
+    are placed on adjacent lines; every other pair of blocks is
+    separated by one blank line. The result ends with a single
+    trailing newline.
+    """
+    out = []
+    prev_kind = None
+    for kind, text in pieces:
+        if prev_kind is not None:
+            joiner = "\n" if prev_kind == kind == "string" else "\n\n"
+            out.append(joiner)
+        out.append(text)
+        prev_kind = kind
+    out.append("\n")
+    return "".join(out)
+
+
+def render_plain_library(
+    library, *, unicode=True, expand_strings=False, strings=None
+):
+    """Serialize `library` (a `bibtexparser.Library`) in the plain
+    format.
+
+    ```python
+    render_plain_library(
+        library, unicode=True, expand_strings=False, strings=None
+    )
+    ```
+
+    Returns the full text of the plain-format `.bib` file: comments
+    (including any marker line) and `@preamble` blocks verbatim,
+    `@string` definitions in place, and every entry in the export
+    layout with all its stored fields in stored order (no header, no
+    groups block, no date stamping -- a save through this renderer is
+    never lossy). Blocks
+    are joined per `join_plain_pieces`. `unicode` and `expand_strings`
+    are the file's plain-format options: field and `@string` values
+    are written as Unicode text or TeX-encoded, and bare `@string`
+    references are kept or replaced by their values (resolved against
+    `strings`, a `dict` mapping macro name to Unicode value). A file
+    created by {meth}`bibdeskparser.Library.export` round-trips
+    byte-identically; any other plain file may be re-laid-out, but
+    never loses content.
+    """
+    # Imported here: `exporting` imports this module for
+    # `bibdesk_field_order`, so a top-level import would be circular.
+    # pylint: disable-next=import-outside-toplevel,cyclic-import
+    from .exporting import _render_entry_verbatim
+
+    pieces = []
+    for block in library.blocks:
+        if isinstance(block, ImplicitComment):
+            pieces.append(("comment", block.comment))
+        elif isinstance(block, String):
+            value = block.value if unicode else texify(block.value)
+            pieces.append(("string", f"@string{{{block.key} = {value}}}"))
+        elif isinstance(block, Entry):
+            text = _render_entry_verbatim(
+                _Entry._wrap(block),  # pylint: disable=protected-access
+                unicode,
+                expand_strings,
+                strings or {},
+            )
+            pieces.append(("entry", text.rstrip("\n")))
+        elif isinstance(block, ExplicitComment):
+            pieces.append(("comment", f"@comment{{{block.comment}}}"))
+        elif isinstance(block, Preamble):
+            # the body is TeX code by definition: verbatim, like
+            # comments, regardless of the file's value encoding
+            pieces.append(("comment", f"@preamble{{{block.value}}}"))
+        elif isinstance(block, ParsingFailedBlock):
+            pieces.append(("entry", block.raw))
+        else:
+            raise TypeError(f"Unhandled block type: {type(block).__name__}")
+    return join_plain_pieces(pieces)
 
 
 def bibdesk_field_order(fields):

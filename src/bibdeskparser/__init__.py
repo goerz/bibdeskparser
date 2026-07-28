@@ -9,7 +9,7 @@ from importlib.metadata import version
 
 from . import config as _config
 from .entry import Entry
-from .library import Library, StaleFileError
+from .library import FormatConversionWarning, Library, StaleFileError
 from .macros import MacroString, ValueString
 
 __version__ = version("bibdeskparser")
@@ -36,5 +36,6 @@ __all__ = [
     "ValueString",
     "MacroString",
     "StaleFileError",
+    "FormatConversionWarning",
 ]
 __private__ = []

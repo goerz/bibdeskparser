@@ -17,17 +17,17 @@ independent parameters control the output:
   plus the standard BibTeX month macros, and no `@string` definitions
   are emitted. An unresolvable reference stays bare, with a
   `UserWarning`.
-- `fields` (default `"full"`): which fields to include. `"full"`
-  includes every stored field except the BibDesk bookkeeping fields
-  (`date-added`/`date-modified`), in BibDesk's field order, plus the
-  entry's `bdsk-file-N`/`bdsk-url-N` fields rendered as plain relative
-  paths/URLs. `"minimal"` restricts each entry to a small,
-  LaTeX-bibliography-oriented whitelist of fields per entry type
-  (covering `article`, `inproceedings`, `incollection`,
-  `mastersthesis`, and `phdthesis`, with a best-effort
-  `author, title, year` fallback for every other entry type). An
-  explicit list of field names selects exactly those fields, in the
-  given order (a name not defined on an entry is silently omitted).
+- `fields` (default `"minimal"`): which fields to include. `"minimal"`
+  restricts each entry to a small, LaTeX-bibliography-oriented
+  whitelist of fields per entry type (covering `article`,
+  `inproceedings`, `incollection`, `mastersthesis`, and `phdthesis`,
+  with a best-effort `author, title, year` fallback for every other
+  entry type). `"full"` includes every stored field except the BibDesk
+  bookkeeping fields (`date-added`/`date-modified`), in BibDesk's
+  field order, plus the entry's `bdsk-file-N`/`bdsk-url-N` fields
+  rendered as plain relative paths/URLs. An explicit list of field
+  names selects exactly those fields, in the given order (a name not
+  defined on an entry is silently omitted).
 
 A *preprint-only* entry -- a `misc` (or `unpublished`) entry with an
 `eprint` from a recognized preprint archive, or any entry whose
@@ -121,6 +121,7 @@ from .identifiers import (
     _strip_eprint_version,
 )
 from .macros import STANDARD_MACROS, is_valid_macro_name, normalize_macro_name
+from .plain import PlainOptions, format_marker
 from .texmap import skip_texify, texify
 from .writer import bibdesk_field_order
 
@@ -508,15 +509,41 @@ def _published_archive_field(entry, selected):
     return Field(key="archive", value="{" + base + "}")
 
 
-def _render_entry(
-    entry, fields, unicode, expand_strings, strings, referenced, preprint
+def _render_fields(
+    entry, entry_type, selected, unicode, expand_strings, strings, referenced
 ):
-    """Render a single `entry` (with a trailing newline).
+    """Render `entry` as `entry_type` with the `selected` `Field`
+    objects, in the export layout (with a trailing newline)."""
+    lines = [f"@{entry_type}{{{entry.key},\n"]
+    for field in selected:
+        body = _field_body(
+            entry, field, unicode, expand_strings, strings, referenced
+        )
+        lines.append(f"    {body},\n")
+    lines.append("}\n")
+    return "".join(lines)
+
+
+def _render_entry(
+    entry,
+    fields,
+    unicode,
+    expand_strings,
+    strings,
+    referenced,
+    preprint,
+    skip_bdsk=False,
+):
+    """Render a single `entry`; returns `(text, has_bdsk)`: the
+    rendered text (with a trailing newline), and whether it includes
+    any `bdsk-*` field.
 
     `preprint` (`"misc"`, `"unpublished"`, `"article"`, or
     `"stored"`) selects the export form of a preprint-only entry;
     explicit field lists and `"stored"` always render the stored
-    entry as-is."""
+    entry as-is. With `skip_bdsk`, `bdsk-*` fields are dropped from
+    the selection, whatever `fields` says (for targets that cannot
+    represent them, i.e. plain-format files)."""
     entry_type = entry.entry_type
     selected = None
     if preprint != "stored" and fields in ("full", "minimal"):
@@ -536,14 +563,41 @@ def _render_entry(
                     ) + _bdsk_fields(entry)
                 else:
                     selected.append(extra)
-    lines = [f"@{entry_type}{{{entry.key},\n"]
-    for field in selected:
-        body = _field_body(
-            entry, field, unicode, expand_strings, strings, referenced
-        )
-        lines.append(f"    {body},\n")
-    lines.append("}\n")
-    return "".join(lines)
+    if skip_bdsk:
+        selected = [
+            field
+            for field in selected
+            if not field.key.lower().startswith("bdsk-")
+        ]
+    has_bdsk = any(field.key.lower().startswith("bdsk-") for field in selected)
+    text = _render_fields(
+        entry,
+        entry_type,
+        selected,
+        unicode,
+        expand_strings,
+        strings,
+        referenced,
+    )
+    return text, has_bdsk
+
+
+def _render_entry_verbatim(entry, unicode, expand_strings, strings):
+    """Render `entry` verbatim (with a trailing newline): every stored
+    field, in stored order, under the stored entry type -- no preprint
+    transformation and no field filtering. Backs the plain-format
+    serialization of `bibdeskparser.writer.render_plain_library`; only
+    the value encoding (`unicode`) and macro expansion
+    (`expand_strings`, resolved against `strings`) apply."""
+    return _render_fields(
+        entry,
+        entry.entry_type,
+        list(entry._entry.fields),  # pylint: disable=protected-access
+        unicode,
+        expand_strings,
+        strings,
+        set(),
+    )
 
 
 def _string_lines(referenced, strings, unicode):
@@ -591,9 +645,10 @@ def export_entries(
     strings=None,
     unicode=True,
     expand_strings=False,
-    fields="full",
+    fields="minimal",
     outfile=None,
     preprint=None,
+    marker=False,
 ):
     """Serialize `entries` (an iterable of `Entry`) to bibtex text.
 
@@ -603,9 +658,10 @@ def export_entries(
         strings=None,
         unicode=True,
         expand_strings=False,
-        fields="full",
+        fields="minimal",
         outfile=None,
         preprint=None,
+        marker=False,
     )
     ```
 
@@ -630,7 +686,7 @@ def export_entries(
     * `expand_strings`: whether bare `@string` macro references are
       kept (`False`, default) or replaced by their values (`True`);
       see the module docstring.
-    * `fields`: `"full"` (default), `"minimal"`, or a list of field
+    * `fields`: `"minimal"` (default), `"full"`, or a list of field
       names; see the module docstring. Raises {exc}`ValueError` for
       any other value.
     * `outfile`: if given, a path (`str`/`pathlib.Path`) or an
@@ -646,6 +702,13 @@ def export_entries(
       `preprint_export` [configuration](configuration) setting
       (`"unpublished"` unless configured). Explicit field lists are
       always exported as stored, whatever `preprint` says.
+    * `marker`: whether to begin the output with a marker line
+      recording the export options (see
+      {mod}`bibdeskparser.plain`), for plain-format files that are
+      later refreshed with `update`. `False` by default (ephemeral
+      snippets); an export whose output includes `bdsk-*` fields
+      omits the marker even with `marker=True`, since such output is
+      in the database format.
 
     Multiple entries are separated by a single blank line; the returned
     (or written) text always ends with exactly one trailing newline.
@@ -661,8 +724,10 @@ def export_entries(
     entries = list(entries)
     all_strings = {**STANDARD_MACROS, **(strings or {})}
     referenced = set()
-    rendered = [
-        _render_entry(
+    rendered = []
+    has_bdsk = False
+    for entry in entries:
+        text, entry_has_bdsk = _render_entry(
             entry,
             fields,
             unicode,
@@ -671,9 +736,13 @@ def export_entries(
             referenced,
             preprint,
         )
-        for entry in entries
-    ]
+        rendered.append(text)
+        has_bdsk = has_bdsk or entry_has_bdsk
     pieces = []
+    if marker and not has_bdsk:
+        options = PlainOptions(unicode, expand_strings, preprint)
+        pieces.append(format_marker(options) + "\n")
+        pieces.append("\n")
     if not expand_strings:
         string_lines = _string_lines(referenced, strings, unicode)
         if string_lines:

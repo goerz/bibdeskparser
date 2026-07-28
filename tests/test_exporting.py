@@ -64,14 +64,14 @@ def _body_lines(text):
 # -- default parameters -------------------------------------------------- #
 
 
-def test_default_field_order(jpb_entry):
-    """Normal fields come first (alphabetical), then bdsk-* fields,
-    all with capitalized names.
+def test_full_field_order(jpb_entry):
+    """`fields="full"`: normal fields come first (alphabetical), then
+    bdsk-* fields, all with capitalized names.
 
     The exported normal fields are exactly the entry's dict interface
     (which includes the readable-but-not-writable `keywords` field).
     """
-    text = export_entries([jpb_entry])
+    text = export_entries([jpb_entry], fields="full")
     names = [
         line.split(" = ", 1)[0].strip() for line in text.splitlines()[1:-1]
     ]
@@ -99,8 +99,8 @@ def test_keywords_exported(jpb_entry):
     as stored, and is readable (but not writable) through the `Entry`
     dict interface."""
     line = "    Keywords = {OCT, Quantum Gates, "
-    assert line in export_entries([jpb_entry])
-    assert line in export_entries([jpb_entry], unicode=False)
+    assert line in export_entries([jpb_entry], fields="full")
+    assert line in export_entries([jpb_entry], fields="full", unicode=False)
     assert jpb_entry["keywords"].startswith("OCT, Quantum Gates")
 
 
@@ -110,11 +110,16 @@ def test_one_word_keyword_never_a_macro():
     never expanded."""
     entry = Entry("article", "Key2026", fields={"title": "T"})
     entry._set_keywords(("alpha",))
-    text = export_entries([entry], strings={"alpha": "Some Value"})
+    text = export_entries(
+        [entry], strings={"alpha": "Some Value"}, fields="full"
+    )
     assert "    Keywords = {alpha},\n" in text
     assert "@string" not in text
     expanded = export_entries(
-        [entry], strings={"alpha": "Some Value"}, expand_strings=True
+        [entry],
+        strings={"alpha": "Some Value"},
+        fields="full",
+        expand_strings=True,
     )
     assert "    Keywords = {alpha},\n" in expanded
 
@@ -134,25 +139,26 @@ def test_default_unicode_no_stray_tex(jpb_entry):
 
 
 def test_default_excludes_dates(jpb_entry):
-    """`date-added`/`date-modified` are not part of `fields="full"`."""
-    text = export_entries([jpb_entry])
+    """`date-added`/`date-modified` are not part of `fields="full"`
+    (nor, a fortiori, of the minimal default)."""
+    text = export_entries([jpb_entry], fields="full")
     assert "date-added" not in text.lower()
     assert "date-modified" not in text.lower()
 
 
-def test_default_bdsk_file_plain_path(jpb_entry):
+def test_full_bdsk_file_plain_path(jpb_entry):
     """`bdsk-file-1` is rendered as a plain relative path, not base64."""
-    text = export_entries([jpb_entry])
+    text = export_entries([jpb_entry], fields="full")
     path = jpb_entry.files[0]
     assert path.endswith(".pdf")
     assert f"    Bdsk-File-1 = {{{path}}},\n" in text
     assert "YnBsaXN0" not in text
 
 
-def test_default_bdsk_url(jpb_entry):
+def test_full_bdsk_url(jpb_entry):
     """`bdsk-url-1` is rendered as the plain URL (last field, with a
     trailing comma, closing brace on its own line)."""
-    text = export_entries([jpb_entry])
+    text = export_entries([jpb_entry], fields="full")
     url = jpb_entry.urls[0]
     assert f"    Bdsk-Url-1 = {{{url}}},\n}}\n" in text
 
@@ -172,8 +178,8 @@ def test_value_string_literal_stays_braced():
 
 def test_no_unicode_field_order_matches_default(jpb_entry):
     """`unicode=False` uses the same field order as the default."""
-    default_text = export_entries([jpb_entry])
-    raw_text = export_entries([jpb_entry], unicode=False)
+    default_text = export_entries([jpb_entry], fields="full")
+    raw_text = export_entries([jpb_entry], fields="full", unicode=False)
 
     def names(text):
         return [
@@ -186,7 +192,7 @@ def test_no_unicode_field_order_matches_default(jpb_entry):
 def test_no_unicode_bdsk_file_plain_path(jpb_entry):
     """`unicode=False` also shows the plain relative path for
     `bdsk-file-N`."""
-    text = export_entries([jpb_entry], unicode=False)
+    text = export_entries([jpb_entry], fields="full", unicode=False)
     path = jpb_entry.files[0]
     assert f"    Bdsk-File-1 = {{{path}}},\n" in text
     assert "YnBsaXN0" not in text
@@ -231,7 +237,7 @@ def test_expand_strings_month_macro():
     """The standard month macros resolve without any `strings`."""
     entry = Entry("article", "Key2026", fields={"title": "T"})
     entry["month"] = "jan"
-    text = export_entries([entry], expand_strings=True)
+    text = export_entries([entry], fields="full", expand_strings=True)
     assert "    Month = {January},\n" in text
 
 
@@ -439,7 +445,7 @@ def test_month_macro_not_in_string_block():
     definition (BibTeX defines the months natively)."""
     entry = Entry("article", "Key2026", fields={"title": "T"})
     entry["month"] = "jan"
-    text = export_entries([entry], strings={"unrelated": "X"})
+    text = export_entries([entry], strings={"unrelated": "X"}, fields="full")
     assert "    Month = jan,\n" in text
     assert "@string" not in text
 
@@ -450,11 +456,11 @@ def test_custom_month_macro_in_string_block():
     over the built-in value in expansion."""
     entry = Entry("article", "Key2026", fields={"title": "T"})
     entry["month"] = "jan"
-    text = export_entries([entry], strings={"jan": "Januar"})
+    text = export_entries([entry], strings={"jan": "Januar"}, fields="full")
     assert "@string{jan = {Januar}}\n" in text
     assert "    Month = jan,\n" in text
     expanded = export_entries(
-        [entry], strings={"jan": "Januar"}, expand_strings=True
+        [entry], strings={"jan": "Januar"}, fields="full", expand_strings=True
     )
     assert "    Month = {Januar},\n" in expanded
     assert "@string" not in expanded
@@ -587,7 +593,7 @@ def test_unpublished_export_synthesizes_note():
     text = export_entries([entry], fields="minimal")
     assert text.startswith("@unpublished{k,\n")
     assert "Note = {preprint}" in text
-    text = export_entries([entry])
+    text = export_entries([entry], fields="full")
     assert text.startswith("@unpublished{k,\n")
     assert "Note" not in text
     assert "Journal = {arXiv:1234.5678}" in text  # full keeps stored
@@ -627,9 +633,9 @@ def test_minimal_article_export_stored_url(hal_entry):
 
 
 def test_full_unpublished_export(arxiv_entry):
-    """The default full export keeps all stored fields (including the
+    """A full export keeps all stored fields (including the
     pseudo-journal, which BibTeX ignores on `@unpublished`)."""
-    text = export_entries([arxiv_entry])
+    text = export_entries([arxiv_entry], fields="full")
     assert text.startswith("@unpublished{Wilhelm2003.10132,\n")
     assert "Journal = {arXiv:2003.10132}" in text
     assert "Eprint = {2003.10132}" in text
@@ -641,7 +647,7 @@ def test_full_unpublished_export(arxiv_entry):
 def test_full_export_emits_archive(hal_entry):
     """A full export of a non-arXiv preprint-only entry also ensures
     `eprint`/`archiveprefix` and the `archive` link base."""
-    text = export_entries([hal_entry])
+    text = export_entries([hal_entry], fields="full")
     assert text.startswith("@unpublished{TuriniciHAL00640217,\n")
     assert "Eprint = {hal-00640217}" in text
     assert "Archiveprefix = {HAL}" in text
@@ -662,7 +668,7 @@ def test_full_export_of_legacy_article():
             "year": "2024",
         },
     )
-    text = export_entries([entry])
+    text = export_entries([entry], fields="full")
     assert text.startswith("@unpublished{k,\n")
     assert "Journal = {arXiv:1234.5678v2}" in text
     assert "Eprint = {1234.5678}" in text  # version stripped
@@ -673,7 +679,7 @@ def test_full_article_export(arxiv_entry):
     """A full `preprint="article"` export drops the eprint/doi fields
     in favor of the pseudo-journal and the DOI-resolver `url`, and
     keeps all other stored fields."""
-    text = export_entries([arxiv_entry], preprint="article")
+    text = export_entries([arxiv_entry], fields="full", preprint="article")
     assert text.startswith("@article{Wilhelm2003.10132,\n")
     assert "Journal = {arXiv:2003.10132}" in text
     assert "Url = {https://doi.org/10.48550/arxiv.2003.10132}" in text
@@ -686,7 +692,7 @@ def test_full_article_export(arxiv_entry):
 def test_stored_export(arxiv_entry):
     """`preprint="stored"` exports the entry exactly as stored (used
     by `Library.edit` for its editor buffer)."""
-    text = export_entries([arxiv_entry], preprint="stored")
+    text = export_entries([arxiv_entry], fields="full", preprint="stored")
     assert text.startswith("@unpublished{Wilhelm2003.10132,\n")
     assert "Journal = {arXiv:2003.10132}" in text
     assert "Eprint = {2003.10132}" in text
@@ -740,7 +746,7 @@ def test_explicit_fields_export_stored(arxiv_entry):
 def test_full_export_published_keeps_eprint(jpb_entry):
     """A published article (journal macro) is not preprint-only: it
     keeps its type and its `eprint`/`archiveprefix` fields."""
-    text = export_entries([jpb_entry])
+    text = export_entries([jpb_entry], fields="full")
     assert text.startswith("@article{GoerzJPB2011,\n")
     assert "Eprint = {1103.6050}" in text
     assert "Archiveprefix = {arXiv}" in text
@@ -770,12 +776,14 @@ def test_export_published_hal_archive():
     assert text.startswith("@article{k,\n")
     assert "Eprint = {hal-02887773}" in text
     assert "Archive = {https://hal.science}" in text
-    full = export_entries([entry])
+    full = export_entries([entry], fields="full")
     assert "Archive = {https://hal.science}" in full
     assert full.index("Archive =") < full.index("Bdsk-Url-1 =")
     # not in "stored" mode (used by `Library.edit`, which must not
     # round-trip a synthetic field into the library)
-    assert "Archive =" not in export_entries([entry], preprint="stored")
+    assert "Archive =" not in export_entries(
+        [entry], fields="full", preprint="stored"
+    )
     assert "Archive =" not in export_entries(
         [entry], fields="minimal", preprint="stored"
     )
@@ -801,7 +809,7 @@ def test_thesis_with_eprint_not_transformed():
             "year": "2014",
         },
     )
-    text = export_entries([entry])
+    text = export_entries([entry], fields="full")
     assert text.startswith("@phdthesis{k,\n")
     assert "Eprint = {tel-00007910v2}" in text
     assert "Archive = {https://hal.science}" in text
@@ -826,3 +834,62 @@ def test_unpublished_export_keeps_stored_note():
     assert text.startswith("@unpublished{k,\n")
     assert "Note = {submitted to Phys. Rev. A}" in text
     assert "Note = {preprint}" not in text
+
+
+# -- default field selection / marker ------------------------------------- #
+
+
+def test_default_fields_minimal(jpb_entry):
+    """The default field selection is `"minimal"`."""
+    assert export_entries([jpb_entry]) == export_entries(
+        [jpb_entry], fields="minimal"
+    )
+
+
+def test_marker_line(jpb_entry):
+    """`marker=True` begins the output with the marker line, before
+    any `@string` definitions."""
+    text = export_entries(
+        [jpb_entry], strings={"jpb": "J. Phys. B"}, marker=True
+    )
+    assert text.startswith(
+        "%% Created by BibDeskParser "
+        "(unicode, preprints as unpublished).\n"
+        "\n"
+        "@string{jpb = {J. Phys. B}}\n"
+        "\n"
+        "@article{"
+    )
+
+
+def test_no_marker_by_default(jpb_entry):
+    """`export_entries` emits no marker unless asked (ephemeral
+    snippets, like the `Library.edit` buffer)."""
+    text = export_entries([jpb_entry])
+    assert not text.startswith("%%")
+
+
+def test_marker_records_options(jpb_entry):
+    """The marker names the non-default options."""
+    text = export_entries(
+        [jpb_entry],
+        strings={"jpb": "J. Phys. B"},
+        unicode=False,
+        expand_strings=True,
+        preprint="misc",
+        marker=True,
+    )
+    assert text.startswith(
+        "%% Created by BibDeskParser "
+        "(TeX-encoded, strings expanded, preprints as misc).\n\n"
+    )
+
+
+def test_marker_omitted_with_bdsk_fields(jpb_entry):
+    """An export whose output includes `bdsk-*` fields is in the
+    database format, so it never gets a marker."""
+    text = export_entries([jpb_entry], fields="full", marker=True)
+    assert "Bdsk-File-1" in text
+    assert not text.startswith("%%")
+    text = export_entries([jpb_entry], fields=["bdsk-url-1"], marker=True)
+    assert not text.startswith("%%")

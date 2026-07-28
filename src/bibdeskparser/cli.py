@@ -211,10 +211,20 @@ class _BibCommand(click.Command):
                 f"bibfile not found: {ctx.obj} (use 'bibdeskparser "
                 f"create {ctx.obj}' to start a new library)"
             )
+        # Any warning not already handled inside the command (e.g. a
+        # FormatConversionWarning from a group/file/url mutation on a
+        # plain BibTeX file) is reported as a clean `Warning:` line on
+        # stderr instead of Python's warning display.
+        caught = []
         try:
-            return super().invoke(ctx)
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                return super().invoke(ctx)
         except _API_ERRORS as exc:
             raise click.ClickException(_error_message(exc)) from exc
+        finally:
+            for warning in caught:
+                click.echo(f"Warning: {warning.message}", err=True)
 
 
 class _NewBibCommand(_BibCommand):
@@ -385,7 +395,8 @@ def _print_short_usage(ctx, _param, value):
         "bibdeskparser add_to_keyword NISQ Preskill2018",
         "bibdeskparser add_file Preskill2018 papers/nisq.pdf",
         "bibdeskparser export Preskill2018  # entry as BibTeX",
-        "bibdeskparser export Preskill2018 --minimal --expand-strings",
+        "bibdeskparser export Key1 Key2 --outfile paper.bib",
+        "bibdeskparser export --update paper.bib Key3",
         "bibdeskparser render Preskill2018  # formatted citation",
         "bibdeskparser check  # run the standing audits (exit 0/1)",
         "bibdeskparser add 10.1103/PhysRevA.89.032334  # by DOI",
@@ -418,7 +429,9 @@ def main(ctx):
     `timestamp`, `urls`) print to stdout; every other command modifies
     the `.bib` file in place and prints nothing on success, except for
     the generated key/path or per-key report noted in its own help.
-    Data-printing commands accept `--json`.
+    One exception: `export --update FILE` never modifies the `.bib`
+    file it reads from, but rewrites the exported FILE. Data-printing
+    commands accept `--json`.
 
     On error, commands print `Error: <message>` to stderr and exit 2
     (bad usage) or 1 (a library error, e.g. an unknown key or a file
@@ -1603,30 +1616,32 @@ def render(bibfile, citekeys, format_, style):
     short_help="Export the given entries as bibtex text.",
     epilog=_examples(
         "bibdeskparser export Preskill2018",
-        "bibdeskparser export Preskill2018 --minimal --expand-strings",
-        "bibdeskparser export Key1 Key2 --outfile out.bib",
+        "bibdeskparser export Preskill2018 --full --expand-strings",
+        "bibdeskparser export Key1 Key2 --outfile paper.bib",
+        "bibdeskparser export --update paper.bib Key3  # add an entry",
+        "bibdeskparser export --update paper.bib  # refresh all entries",
     ),
 )
-@click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
+@click.argument("citekeys", metavar="[KEY...]", nargs=-1)
 @click.option(
     "--unicode/--no-unicode",
     "unicode_",
-    default=True,
-    show_default=True,
+    default=None,
     help=(
-        "Export field values as Unicode text (default), or "
-        "TeX-encoded as stored in the .bib file (--no-unicode)."
+        "Export field values as Unicode text (the default), or "
+        "TeX-encoded as stored in the .bib file (--no-unicode). With "
+        "--update, the default is the target file's own encoding."
     ),
 )
 @click.option(
     "--expand-strings/--no-expand-strings",
     "expand_strings",
-    default=False,
-    show_default=True,
+    default=None,
     help=(
         "Replace @string macro references by the macro's value. By "
         "default, references are kept bare and the needed @string "
-        "definitions are prepended instead."
+        "definitions are prepended instead (with --update: whichever "
+        "the target file does)."
     ),
 )
 @click.option(
@@ -1636,25 +1651,57 @@ def render(bibfile, citekeys, format_, style):
     metavar="FIELD",
     help=(
         "Export only these fields (case-insensitive) instead of the "
-        "full record; repeatable and comma-separated (e.g. "
+        "minimal selection; repeatable and comma-separated (e.g. "
         "--field doi,title). A field not defined on an entry is "
         "silently omitted for that entry. Mutually exclusive with "
-        "--minimal."
+        "--minimal/--full."
     ),
 )
 @click.option(
-    "--minimal/--no-minimal",
-    default=False,
+    "--minimal/--full",
+    default=None,
     help=(
-        "Export only the fields needed to typeset a bibliography. "
-        "Mutually exclusive with --field."
+        "Export only the fields needed to typeset a bibliography "
+        "(--minimal, the default), or every field except the date "
+        "bookkeeping fields, with attachments and URLs as plain "
+        "paths/URLs (--full). Mutually exclusive with --field."
     ),
 )
 @click.option(
     "--outfile",
     type=click.Path(dir_okay=False, writable=True),
     default=None,
-    help="Write to this file instead of printing to stdout.",
+    help=(
+        "Write to this file instead of printing to stdout. Mutually "
+        "exclusive with --update."
+    ),
+)
+@click.option(
+    "--update",
+    "update",
+    type=click.Path(dir_okay=False, writable=True),
+    default=None,
+    metavar="FILE",
+    help=(
+        "Rewrite the exported FILE (which must exist and be plain "
+        "BibTeX, not a BibDesk database), refreshing its entries "
+        "from the library: the given KEYs (or, without KEYs, every "
+        "key in FILE that the library knows) are freshly exported in "
+        "place, KEYs not yet in FILE are appended, and everything "
+        "else (unknown entries, comments, @string definitions) is "
+        "kept. Nothing is ever removed."
+    ),
+)
+@click.option(
+    "--marker/--no-marker",
+    default=True,
+    help=(
+        "Begin the output with a marker line recording the export "
+        "options (default), so that later --update runs reuse them; "
+        "an output that includes bdsk-* fields never gets a marker. "
+        "With --update --no-marker, the FILE's marker state is left "
+        "untouched."
+    ),
 )
 @click.option(
     "--preprint",
@@ -1669,7 +1716,8 @@ def render(bibfile, citekeys, format_, style):
         "url; for classic styles that would drop an eprint), each "
         "with the appropriately derived fields; 'stored' exports "
         "the entry as stored. Defaults to the preprint_export "
-        "configuration setting ('unpublished' unless configured)."
+        "configuration setting ('unpublished' unless configured; "
+        "with --update, to the target file's own form)."
     ),
 )
 @click.pass_obj
@@ -1683,24 +1731,42 @@ def export(
     field_args,
     minimal,
     outfile,
+    update,
+    marker,
     preprint,
 ):
     """Export the entries with the given keys as self-contained bibtex
-    text (with the needed @string definitions prepended).
+    text (with the needed @string definitions prepended), for citing
+    from LaTeX.
 
-    By default every field is exported (attachments and URLs as plain
-    paths/URLs, without the date bookkeeping fields), as Unicode text,
-    with @string references left bare. --no-unicode writes the stored
-    TeX-encoded values; --expand-strings inlines macro values (no
-    @string definitions then); --minimal or --field restrict the
-    fields. A preprint-only entry is exported in the form set by
+    Each entry is reduced to the fields needed to typeset a
+    bibliography (--full or --field for more), written as Unicode
+    text (--no-unicode for the stored TeX-encoded values), with
+    @string references left bare (--expand-strings inlines the
+    values). A preprint-only entry is exported in the form set by
     --preprint, whatever its stored form; an explicit --field list
     always exports the stored fields.
+
+    Without --update, the command is read-only: it prints to stdout,
+    or writes the file given with --outfile. With --update FILE, it
+    instead rewrites that previously exported FILE in place,
+    refreshing it from the library (which is only read): the given
+    KEYs (without KEYs: every key in FILE that the library knows) are
+    re-exported in place or appended, and everything else in FILE is
+    kept.
     """
-    if minimal and field_args:
-        raise click.UsageError("--minimal and --field are mutually exclusive")
-    fields = (
-        "minimal" if minimal else (_split_field_names(field_args) or "full")
+    if minimal is not None and field_args:
+        raise click.UsageError(
+            "--minimal/--full and --field are mutually exclusive"
+        )
+    if update is not None and outfile is not None:
+        raise click.UsageError("--update and --outfile are mutually exclusive")
+    if not citekeys and update is None:
+        raise click.UsageError(
+            "at least one KEY is required (unless --update is given)"
+        )
+    fields = _split_field_names(field_args) or (
+        "full" if minimal is False else "minimal"
     )
     lib = Library(bibfile)
     _check_keys(lib, citekeys)
@@ -1711,6 +1777,8 @@ def export(
         fields=fields,
         outfile=outfile,
         preprint=preprint,
+        update=update,
+        marker=marker,
     )
     if text is not None:
         _echo_block(text)
@@ -2461,7 +2529,8 @@ def _resolve_editor(editor_cmd, use_stdin, allow_empty=False):
     short_help="Edit the given entries in $EDITOR.",
     epilog=_examples(
         "bibdeskparser edit Preskill2018",
-        "bibdeskparser export Key1 | sed s/2018/2019/ \\\n"
+        "bibdeskparser export Key1 --full --preprint stored \\\n"
+        "    | sed s/2018/2019/ \\\n"
         "    | bibdeskparser edit Key1 --stdin",
     ),
 )
@@ -2476,11 +2545,12 @@ def _resolve_editor(editor_cmd, use_stdin, allow_empty=False):
 @click.pass_obj
 def edit(bibfile, citekeys, editor_cmd, use_stdin):
     """Edit the entries with the given keys as BibTeX text and merge
-    the changes back into the library. From a terminal, this opens
-    $EDITOR (or --editor). Non-interactive callers pass --stdin and
-    pipe in the full edited text (`export KEY... | edit KEY... --stdin`
-    is a no-op). Without a terminal, --stdin, or --editor, the command
-    fails immediately instead of blocking."""
+    the changes back into the library; a field missing from the
+    edited text is deleted. From a terminal, this opens $EDITOR (or
+    --editor). Non-interactive callers pass --stdin and pipe in the
+    full edited text (`export KEY... --full --preprint stored |
+    edit KEY... --stdin` is a no-op). Without a terminal, --stdin, or
+    --editor, the command fails immediately instead of blocking."""
     lib = Library(bibfile)
     _check_keys(lib, citekeys)
     editor_cmd = _resolve_editor(editor_cmd, use_stdin)
@@ -2548,7 +2618,7 @@ def _fix_uppercase_option(help_suffix, default=False):
         "bibdeskparser import library.bib --file entries.bib",
         "pbpaste | bibdeskparser import --stdin",
         "bibdeskparser import --url " "https://example.com/refs.bib",
-        "bibdeskparser export Key1 \\\n"
+        "bibdeskparser export Key1 --full \\\n"
         "    | bibdeskparser import other.bib --stdin",
     ),
 )
@@ -2726,7 +2796,7 @@ def add(bibfile, query, dry_run, fix_uppercase, add_abstract, add_preprint):
             citekey, preprint_result, err=True, dry_run=dry_run
         )
     if dry_run:
-        _echo_block(lib.export(citekey))
+        _echo_block(lib.export(citekey, fields="full", marker=False))
     else:
         _save(lib)
         click.echo(citekey)

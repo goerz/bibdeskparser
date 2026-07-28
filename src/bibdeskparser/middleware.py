@@ -27,6 +27,9 @@ Use `parse_stack` to get the standard read stack:
 ```
 """
 
+import logging
+from contextlib import contextmanager
+
 from bibtexparser.middlewares.middleware import BlockMiddleware
 
 from .bdskfile import BibDeskFile
@@ -43,7 +46,30 @@ __private__ = [
     "TeXifyMiddleware",
     "BibDeskFileMiddleware",
     "parse_stack",
+    "quiet_block_type_logging",
 ]
+
+
+@contextmanager
+def quiet_block_type_logging():
+    """Silence bibtexparser's per-middleware "Unknown block type"
+    logging while parsing with `parse_stack`.
+
+    Every middleware in `parse_stack` calls into `bibtexparser`'s
+    `BlockMiddleware.transform_block`, which logs this at `WARNING`
+    for any `ParsingFailedBlock` (e.g., a duplicate key or duplicate
+    field) since it only special-cases `Entry`, `String`, `Preamble`,
+    and comment blocks -- so a single failed block produces one log
+    message per middleware. Callers inspect `failed_blocks` themselves
+    and raise their own, single `UserWarning` per condition instead.
+    """
+    logger = logging.getLogger("bibtexparser.middlewares.middleware")
+    previous_level = logger.level
+    logger.setLevel(logging.ERROR)
+    try:
+        yield
+    finally:
+        logger.setLevel(previous_level)
 
 
 class NormalizeMacroNamesMiddleware(BlockMiddleware):

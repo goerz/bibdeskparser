@@ -1206,7 +1206,7 @@ def test_refs_bib_full_round_trip(tmp_path):
     work = tmp_path / "Refs"
     shutil.copytree(refs_dir, work)
     src = Library(str(work / "refs.bib"))
-    exported = src.export(*src.keys())
+    exported = src.export(*src.keys(), fields="full")
     target_file = work / "roundtrip.bib"
     target_file.write_text("", encoding="utf-8")
     dst = Library(str(target_file))
