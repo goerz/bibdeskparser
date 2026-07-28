@@ -142,6 +142,15 @@ the stored paths against what is actually on disk, use
 [`check --files`](cli-check), which reports links that no longer
 resolve or whose spelling differs only in case from the file on disk.
 
+A `bdsk-file-N` value need not be a base64 binary plist. A file
+written by {py:meth}`~bibdeskparser.library.Library.export` with
+`full=True` records each attachment as its plain relative path
+(`Bdsk-File-1 = {GrondPRA2009a.pdf}`) instead. `bibdeskparser` reads
+such a value as a path-only attachment: it appears in `entry.files`
+like any other, and round-trips back to the same plain path. Renaming
+or replacing it through the `Library` methods above upgrades it to a
+full base64 attachment with a fresh bookmark.
+
 ## Linked URLs (`bdsk-url-N` fields)
 
 BibDesk also lets you link a URL to an entry, independently of the

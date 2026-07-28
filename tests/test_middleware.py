@@ -15,6 +15,7 @@ from bibdeskparser.middleware import (
     TeXifyMiddleware,
     parse_stack,
 )
+from bibdeskparser.writer import render_library
 
 #: A minimal `bdsk-file-1` value ({base64 of a binary plist}).
 BDSK_FILE_VALUE = (
@@ -119,6 +120,24 @@ def test_bdsk_file_field_decoded(bib):
     value = bib.entries[0].fields_dict["bdsk-file-1"].value
     assert isinstance(value, BibDeskFile)
     assert value.relative_path == "file.pdf"
+
+
+def test_bdsk_file_plain_path_read_and_render():
+    """A plain-path `bdsk-file-N` value (from `export --full`) reads
+    as a `BibDeskFile` without crashing and renders back verbatim."""
+    source = "\n".join(
+        [
+            "@article{key1,",
+            "\tbdsk-file-1 = {GrondPRA2009a.pdf}}",
+            "",
+        ]
+    )
+    bib = bibtexparser.parse_string(source, parse_stack=parse_stack())
+    value = bib.entries[0].fields_dict["bdsk-file-1"].value
+    assert isinstance(value, BibDeskFile)
+    assert value.relative_path == "GrondPRA2009a.pdf"
+    assert value.bookmark is None
+    assert "bdsk-file-1 = {GrondPRA2009a.pdf}" in render_library(bib)
 
 
 def test_static_groups_comment_stays_str(bib):

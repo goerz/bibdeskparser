@@ -1973,6 +1973,112 @@ def test_attachments_roundtrip_through_save(tmp_path):
     assert reloaded["K1"].files == ["a.pdf"]
 
 
+# -- file attachments: plain-path values (from `export --full`) ------------#
+
+
+def _plain_file_bib(tmp_path, files=("a.pdf",)):
+    """A `Library` loaded from `tmp_path / "lib.bib"`, holding entries
+    `K1`/`K2`, with each of `files` created in `tmp_path` and attached
+    to `K1` as a plain-path `bdsk-file-N` value (the form written by
+    `export` with `full=True`)."""
+    fields = "".join(
+        f",\n\tbdsk-file-{i} = {{{name}}}"
+        for i, name in enumerate(files, start=1)
+    )
+    (tmp_path / "lib.bib").write_text(
+        "@article{K1,\n\ttitle = {T1}" + fields + "}\n\n"
+        "@article{K2,\n\ttitle = {T2}}\n",
+        encoding="utf-8",
+    )
+    for name in files:
+        (tmp_path / name).write_bytes(b"%PDF-1.4 fake")
+    return Library(tmp_path / "lib.bib")
+
+
+def _stored_file_value(bib, key, field):
+    """The serialized `.bib` value of the `bdsk-file-N` field `field`
+    on entry `key`."""
+    return bib[key]._entry.fields_dict[field].value.to_field_value()
+
+
+def test_plain_path_attachment_files_and_save(tmp_path):
+    """A plain-path `bdsk-file-N` value appears in `.files` like any
+    other attachment and is saved back as the plain path."""
+    bib = _plain_file_bib(tmp_path, files=("a.pdf", "b.pdf"))
+    assert bib["K1"].files == ["a.pdf", "b.pdf"]
+    out = tmp_path / "out.bib"
+    bib.save(out)
+    text = out.read_text(encoding="utf-8")
+    assert "bdsk-file-1 = {a.pdf}" in text
+    assert "bdsk-file-2 = {b.pdf}" in text
+
+
+def test_plain_path_attachment_survives_add_file(tmp_path):
+    """`add_file` appends a new (base64) attachment; an existing
+    plain-path sibling stays plain through the renumbering."""
+    bib = _plain_file_bib(tmp_path, files=("a.pdf",))
+    (tmp_path / "b.pdf").write_bytes(b"%PDF-1.4 fake")
+    with _quiet_bookmarks():
+        bib.add_file("K1", "b.pdf")
+    assert bib["K1"].files == ["a.pdf", "b.pdf"]
+    assert _stored_file_value(bib, "K1", "bdsk-file-1") == "{a.pdf}"
+    value2 = _stored_file_value(bib, "K1", "bdsk-file-2")
+    assert value2.startswith("{YnBsaXN0")  # base64 of "bplist"
+
+
+def test_plain_path_attachment_add_file_duplicate_raises(tmp_path):
+    """Re-attaching a file that is linked as a plain path raises
+    `ValueError` (duplicate detection is by relative path)."""
+    bib = _plain_file_bib(tmp_path, files=("a.pdf",))
+    with pytest.raises(ValueError, match="already attached"):
+        bib.add_file("K1", "a.pdf")
+
+
+def test_plain_path_attachment_rename_upgrades(tmp_path):
+    """`rename_file` on a plain-path attachment moves the file on disk
+    and writes the replacement in the standard base64 form."""
+    bib = _plain_file_bib(tmp_path, files=("a.pdf",))
+    with _quiet_bookmarks():
+        bib.rename_file("K1", "a.pdf", "renamed.pdf")
+    assert bib["K1"].files == ["renamed.pdf"]
+    assert not (tmp_path / "a.pdf").exists()
+    assert (tmp_path / "renamed.pdf").exists()
+    value = _stored_file_value(bib, "K1", "bdsk-file-1")
+    assert value.startswith("{YnBsaXN0")
+
+
+def test_plain_path_attachment_replace_upgrades(tmp_path):
+    """`replace_file` on a plain-path attachment swaps in the new file
+    as a standard base64 attachment."""
+    bib = _plain_file_bib(tmp_path, files=("a.pdf",))
+    (tmp_path / "c.pdf").write_bytes(b"%PDF-1.4 fake")
+    with _quiet_bookmarks():
+        bib.replace_file("K1", "a.pdf", "c.pdf", remove=False)
+    assert bib["K1"].files == ["c.pdf"]
+    assert (tmp_path / "a.pdf").exists()
+    value = _stored_file_value(bib, "K1", "bdsk-file-1")
+    assert value.startswith("{YnBsaXN0")
+
+
+def test_plain_path_attachment_unlink(tmp_path):
+    """`unlink_file` removes a plain-path attachment; a remaining
+    plain sibling is renumbered and stays plain."""
+    bib = _plain_file_bib(tmp_path, files=("a.pdf", "b.pdf"))
+    bib.unlink_file("K1", "a.pdf", remove=False)
+    assert bib["K1"].files == ["b.pdf"]
+    assert _stored_file_value(bib, "K1", "bdsk-file-1") == "{b.pdf}"
+    assert (tmp_path / "a.pdf").exists()
+
+
+def test_plain_path_attachment_missing_warns_on_save(tmp_path):
+    """A plain-path attachment pointing to a missing file warns on
+    save like any other."""
+    bib = _plain_file_bib(tmp_path, files=("a.pdf",))
+    (tmp_path / "a.pdf").unlink()
+    with pytest.warns(UserWarning, match="linked file does not exist"):
+        bib.save(tmp_path / "out.bib")
+
+
 # -- auto-file (generated attachment file names) ---------------------------#
 
 
