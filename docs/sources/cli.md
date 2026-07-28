@@ -64,7 +64,10 @@ assigns {py:attr}`~bibdeskparser.Entry.entry_type`. The one command
 with no API counterpart is [`config_path`](cli-config-path), which
 reports the discovered configuration file.
 
-Read-only commands print their result to stdout. Mutating commands
+Read-only commands print their result to stdout; so does `export`,
+which only writes a file when asked to, with `--outfile` or
+`--update` (the latter rewrites a previously exported file, never the
+library itself). Mutating commands
 load the library, apply the change, save the file in place, and print
 nothing on success. The exceptions that do print:
 [`rekey`](cli-rekey) without `NEW_KEY` and
@@ -760,14 +763,16 @@ $ bibdeskparser render tests/Refs/refs.bib GoerzA2023 --format tex
 
 (cli-export)=
 
-### `export KEY...`
+### `export [KEY...]`
 
 Export one or more entries as self-contained BibTeX text (including
 the definitions of any `@string` macros they reference), via
-{py:meth}`~bibdeskparser.Library.export`. By default every field is
-exported (attachments and URLs as plain paths/URLs, without the
-date-added/date-modified bookkeeping fields), as Unicode text, with
-`@string` references left bare.
+{py:meth}`~bibdeskparser.Library.export`. Each entry is reduced to
+the fields needed to typeset a bibliography, written as Unicode text,
+with `@string` references left bare. The output begins with a marker
+line recording the export options (see [](bibdesk-plain-format)).
+Without `--update`, the command is read-only; with `--update FILE`,
+it rewrites the exported FILE in place.
 
 **Options**
 
@@ -776,8 +781,9 @@ date-added/date-modified bookkeeping fields), as Unicode text, with
 - `--expand-strings` -- replace `@string` references by the macro's
   value and emit no `@string` definitions (by default they are
   prepended).
-- `--minimal` -- export only the fields needed to typeset a
-  bibliography.
+- `--full` -- export every field except the date bookkeeping fields,
+  with attachments and URLs as plain paths/URLs, instead of the
+  minimal selection (`--minimal`, the default).
 - `--field FIELD` -- export only the named fields (repeatable and
   comma-separated). Mutually exclusive with `--minimal`, and always
   exports the stored fields.
@@ -788,11 +794,23 @@ date-added/date-modified bookkeeping fields), as Unicode text, with
   [`preprint_export` setting](config-preprint-export)), `misc` (the
   same structured form), `article` (the pseudo-journal form,
   hyperlinked via `url`), or `stored` (no transformation).
-- `--outfile PATH` -- write to a file instead of stdout.
+- `--outfile PATH` -- write to a file instead of stdout. Mutually
+  exclusive with `--update`.
+- `--update FILE` -- rewrite the exported FILE (which must exist and
+  be plain BibTeX, not a BibDesk database), refreshing it from the
+  library: the given KEYs (without KEYs: every key in FILE that the
+  library knows) are freshly exported in place, KEYs not yet in FILE
+  are appended, and everything else -- unknown entries, comments,
+  `@string` definitions -- is kept; nothing is ever removed. The
+  `--unicode`/`--expand-strings`/`--preprint` options default to the
+  FILE's own recorded or detected options.
+- `--no-marker` -- do not begin the output with the marker line; with
+  `--update`, leave the FILE's marker state untouched.
 
 ```console
-$ bibdeskparser export tests/Refs/refs.bib GoerzA2023 --minimal \
+$ bibdeskparser export tests/Refs/refs.bib GoerzA2023 \
     --expand-strings --outfile out.bib
+$ bibdeskparser export tests/Refs/refs.bib --update out.bib GoerzQ2022
 ```
 
 ## Entries

@@ -157,6 +157,7 @@ class Entry(MutableMapping):
         entry_type = active.normalize_entry_type(entry_type)
         self._entry = model.Entry(entry_type=entry_type, key=key, fields=[])
         self._groups = ()
+        self._plain = False
         self._dirty = False
         for field_key, value in (fields or {}).items():
             self[field_key] = value
@@ -174,6 +175,7 @@ class Entry(MutableMapping):
         self = object.__new__(cls)
         self._entry = model_entry
         self._groups = ()
+        self._plain = False
         self._dirty = False
         return self
 
@@ -225,12 +227,21 @@ class Entry(MutableMapping):
 
     def _touch(self):
         """Set `date-modified` (and `date-added`, if unset) to now, and
-        mark the entry modified (`_dirty`)."""
+        mark the entry modified (`_dirty`).
+
+        In plain mode (`_plain`, pushed by the owning `Library` for an
+        entry of a plain-format file), the date fields an entry already
+        stores are updated but never created: plain files do no date
+        bookkeeping."""
         now = datetime.datetime.now().astimezone()
         rendered = "{" + now.strftime(_DATE_FORMAT) + "}"
-        self._set_raw_field("date-modified", rendered)
-        if self._find_field("date-added") is None:
-            self._set_raw_field("date-added", rendered)
+        if self._plain:
+            if self._find_field("date-modified") is not None:
+                self._set_raw_field("date-modified", rendered)
+        else:
+            self._set_raw_field("date-modified", rendered)
+            if self._find_field("date-added") is None:
+                self._set_raw_field("date-added", rendered)
         self._dirty = True
 
     def _decode(self, key, value):

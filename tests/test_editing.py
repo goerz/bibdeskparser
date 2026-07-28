@@ -334,10 +334,12 @@ def test_edit_month_macro_is_not_undefined():
 
 
 def test_export_edit_roundtrip_invariant():
-    """The text presented to the editor is byte-for-byte the
-    default `export_entries` output for the same entries and strings
-    -- i.e., exactly what `Library.export` returns -- so piping an
-    export back into a no-op edit is guaranteed to be a no-op."""
+    """The text presented to the editor is byte-for-byte the full,
+    untransformed, marker-less `export_entries` output for the same
+    entries and strings -- i.e., exactly what `Library.export` returns
+    for `fields="full"`, `preprint="stored"`, `marker=False` -- so
+    piping such an export back into a no-op edit is guaranteed to be
+    a no-op."""
     bib = Library()
     bib.strings["jpb"] = "J. Phys. B"
     entry = Entry("article", "Key2026", fields={"title": "T"})
@@ -350,9 +352,17 @@ def test_export_edit_roundtrip_invariant():
         library=bib,
         editor=lambda p: captured.append(p.read_text(encoding="utf-8")),
     )
-    expected = export_entries([entry], strings=dict(bib.strings))
+    expected = export_entries(
+        [entry],
+        strings=dict(bib.strings),
+        fields="full",
+        preprint="stored",
+    )
     assert captured == [expected]
-    assert bib.export("Key2026") == expected
+    assert (
+        bib.export("Key2026", fields="full", preprint="stored", marker=False)
+        == expected
+    )
     assert entry["title"] == "T"  # the no-op edit changed nothing
     assert entry["journal"] == "jpb"
 

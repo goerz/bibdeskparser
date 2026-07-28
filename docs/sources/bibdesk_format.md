@@ -575,3 +575,74 @@ and it only advances the header timestamp when something in the
 library actually changed. This is what lets `bibdeskparser` sit
 alongside BibDesk itself, editing the same file, without producing
 noisy diffs or clobbering data BibDesk would have preserved.
+
+(bibdesk-plain-format)=
+
+## The plain format of exported files
+
+Everything on this page so far describes the *database format*: the
+layout BibDesk itself writes, with the header, the group `@comment`
+blocks, the `bdsk-*` fields, and the date bookkeeping. The files
+written by {py:meth}`~bibdeskparser.Library.export` are different:
+plain BibTeX for citing from LaTeX, with none of those features. Such
+an exported file is a working file that evolves with a paper, and
+`bibdeskparser` maintains it *as* plain BibTeX.
+
+A loaded `.bib` file is classified as being in the database format
+exactly if it contains any database-only content:
+
+- a BibDesk header comment,
+- any BibDesk group `@comment` block, or
+- any `bdsk-*` field (`bdsk-file-N` attachments, `bdsk-url-N` URLs).
+
+A file with none of these is *plain*. (The `date-added`/
+`date-modified` fields are not markers: a plain file can legitimately
+contain them, e.g. in an entry pasted from a database.) A library
+created from scratch is always in the database format, so `create`
+keeps producing proper database files.
+
+{py:meth}`~bibdeskparser.Library.save` preserves the format it
+loaded: for a plain file, no header is synthesized, no groups block
+is written, no date fields are created, comments and `@string`
+definitions are preserved in place, and every stored field of every
+entry is written -- unmodified entries in their stored field order,
+so a file created by `export` round-trips byte-identically. All
+commands that modify the `.bib` file thus work on exported files
+without converting them. A mutation that requires a database-only
+feature -- creating a static group, attaching a file, or linking a
+URL -- converts the library to the database format instead, with a
+{py:class}`~bibdeskparser.FormatConversionWarning` naming the
+trigger; the conversion is irreversible within the loaded instance,
+and the way back to a plain file is a fresh `export`.
+
+Three options govern how a plain file is serialized: the value
+encoding (Unicode, or TeX-encoded), whether `@string` references are
+expanded, and the [form preprints are exported in](preprints). Every
+export records them in a marker line written as the file's very
+first block:
+
+```
+%% Created by BibDeskParser (unicode, preprints as unpublished).
+```
+
+The parenthesized list is a fixed vocabulary, parsed
+case-insensitively: `unicode` or `TeX-encoded`; `strings expanded`
+(present only for expand-strings exports); and `preprints as
+unpublished`/`misc`/`article`/`stored`. For a file without a marker
+(hand-written, or from another tool), each option is instead detected
+from the file's content, choosing the behavior consistent with its
+observable state: the encoding is Unicode if any TeX-encodable value
+contains non-ASCII text (an all-ASCII file counts as TeX-encoded, the
+safe choice); strings count as expanded only if the file shows no
+macro usage at all (no `@string` definitions and no bare references,
+including bare month references like `month = jan`); and the preprint
+form is the stored entry type of the file's preprint-only entries,
+when they are consistent. The options are resolved once, when the
+file is loaded; `export --update` (see
+[](howto-manage-export)) reuses them for the entries it rewrites, and
+writes a marker recording them, so a marker-less file gains one on
+its first update. An export whose output includes `bdsk-*` fields (a
+full export of entries with attachments or linked URLs) is in the
+database format by the rules above, and therefore never gets a
+marker; if a file somehow contains both a marker and database-only
+content, the database content wins, with a warning.

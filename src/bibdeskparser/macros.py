@@ -179,14 +179,14 @@ class ValueString(str):
     >>> entry["journal"]
     'prl'
     >>> bib["Key2024"] = entry
-    >>> print(bib.export("Key2024", unicode=False), end="")
+    >>> print(bib.export("Key2024", unicode=False, marker=False), end="")
     @article{Key2024,
         Journal = {prl},
     }
     >>> entry["journal"] = "prl"  # bare str: treated as a macro ref
     >>> entry["journal"]
     'prl'
-    >>> print(bib.export("Key2024", unicode=False), end="")
+    >>> print(bib.export("Key2024", unicode=False, marker=False), end="")
     @article{Key2024,
         Journal = prl,
     }
@@ -230,7 +230,7 @@ class MacroString(str):
     >>> entry["journal"]
     'prl'
     >>> bib["Key2024"] = entry
-    >>> print(bib.export("Key2024", unicode=False), end="")
+    >>> print(bib.export("Key2024", unicode=False, marker=False), end="")
     @article{Key2024,
         Journal = prl,
     }

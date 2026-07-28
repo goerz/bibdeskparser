@@ -1,14 +1,13 @@
-"""The `Library` class and the `StaleFileError` it may raise."""
+"""The `Library` class and its `StaleFileError` and
+`FormatConversionWarning`."""
 
 import datetime
 import getpass
-import logging
 import os
 import shutil
 import sys
 import warnings
 from collections.abc import MutableMapping
-from contextlib import contextmanager
 from pathlib import Path
 
 import bibtexparser
@@ -41,12 +40,14 @@ from .macros import (
     is_valid_macro_name,
     normalize_macro_name,
 )
-from .middleware import parse_stack
+from .middleware import parse_stack, quiet_block_type_logging
+from .plain import database_content, leading_marker, resolve_plain_options
 from .render import render_entries
 from .search import search_entries
-from .writer import bibdesk_field_order, render_library
+from .updating import update_exported_file
+from .writer import bibdesk_field_order, render_library, render_plain_library
 
-__all__ = ["Library", "StaleFileError"]
+__all__ = ["Library", "StaleFileError", "FormatConversionWarning"]
 
 # All members whose name does not start with an underscore must be listed
 # either in __all__ or in __private__
@@ -69,6 +70,21 @@ class StaleFileError(RuntimeError):
     """
 
 
+class FormatConversionWarning(UserWarning):
+    """Warns that a plain BibTeX file is being converted to the
+    BibDesk database format.
+
+    A `.bib` file loaded from a plain BibTeX file (e.g. one written by
+    {meth}`Library.export`, with no BibDesk header, groups, or
+    `bdsk-*` fields) is saved back in that plain format. A mutation
+    that introduces database-only state -- creating or assigning a
+    static group, attaching a file, or adding a URL -- converts the
+    library to the database format instead, with this warning naming
+    the trigger. The conversion is irreversible within the instance;
+    the canonical inverse is a fresh {meth}`Library.export`.
+    """
+
+
 # -- module-private helpers ------------------------------------------- #
 
 
@@ -79,29 +95,6 @@ class _MissingFileWarning(UserWarning):
     that the command-line interface can aggregate these warnings
     without matching on the message text.
     """
-
-
-@contextmanager
-def _quiet_bibtexparser_block_type_logging():
-    """Silence bibtexparser's per-middleware "Unknown block type"
-    logging.
-
-    Every middleware in `parse_stack` calls into
-    `bibtexparser`'s `BlockMiddleware.transform_block`, which logs
-    this at `WARNING` for any `ParsingFailedBlock` (e.g., a duplicate
-    key or duplicate field) since it only special-cases `Entry`,
-    `String`, `Preamble`, and comment blocks -- so a single failed
-    block produces one log message per middleware. `Library.__init__`
-    inspects `library._library.failed_blocks` itself and raises its
-    own, single `UserWarning` per condition instead.
-    """
-    logger = logging.getLogger("bibtexparser.middlewares.middleware")
-    previous_level = logger.level
-    logger.setLevel(logging.ERROR)
-    try:
-        yield
-    finally:
-        logger.setLevel(previous_level)
 
 
 def _check_unparseable_blocks(failed_blocks):
@@ -620,7 +613,13 @@ class Library(MutableMapping):
       raising) about linked files (see {attr}`Entry.files`) that no
       longer exist on disk. {exc}`StaleFileError` is raised if the
       target file was modified on disk (e.g. resaved by BibDesk) since
-      this library was loaded, unless `force=True`.
+      this library was loaded, unless `force=True`. A library loaded
+      from a *plain* BibTeX file (one written by {meth}`export`, with
+      no BibDesk header, groups, or `bdsk-*` fields) is saved back in
+      that plain format; a mutation that introduces database-only
+      state converts it to the database format, with a
+      {class}`FormatConversionWarning` (see the
+      [](bibdesk-plain-format) documentation).
     - {meth}`add_file`, {meth}`replace_file`, {meth}`unlink_file`,
       {meth}`rename_file`: manage an entry's linked files
       ({attr}`Entry.files`, itself read-only). Linked files are stored
@@ -756,9 +755,10 @@ class Library(MutableMapping):
         bib_dir = Path(path).resolve().parent if path is not None else None
         active.load(bib_dir=bib_dir)
 
+        text = None
         if path is not None:
             text = Path(path).read_text(encoding="utf-8")
-            with _quiet_bibtexparser_block_type_logging():
+            with quiet_block_type_logging():
                 self._library = bibtexparser.parse_string(
                     text, parse_stack=parse_stack()
                 )
@@ -794,6 +794,30 @@ class Library(MutableMapping):
                 index.get(entry.key, ())
             )
             self._entries[entry.key] = entry
+
+        # Format detection: a loaded file with no database-only content
+        # (BibDesk header, group @comment blocks, bdsk-* fields) is in
+        # the plain format; save() then preserves that format. A
+        # from-scratch library is always in the database format.
+        self._plain = False
+        self._plain_options = None
+        if path is not None:
+            found = database_content(self._library)
+            if not found:
+                self._plain = True
+                self._plain_options = resolve_plain_options(
+                    text, self._library, self._entries.values()
+                )
+                for entry in self._entries.values():
+                    entry._plain = True  # pylint: disable=protected-access
+            elif leading_marker(self._library) is not None:
+                warnings.warn(
+                    "file leads with a BibDeskParser plain-format "
+                    f"marker but contains {', '.join(found)}; treating "
+                    "it as a BibDesk database",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
         self._strings_view = _StringsView(self)
         self._groups_view = _GroupsView(self)
@@ -973,6 +997,30 @@ class Library(MutableMapping):
             name for name, keys in self._group_data.items() if key in keys
         )
 
+    def _convert_to_database(self, trigger):
+        """Convert a plain-format library to the database format, with
+        a {class}`FormatConversionWarning` naming the `trigger`; a
+        no-op for a library already in the database format.
+
+        Called by every mutation that introduces database-only state
+        (creating or assigning a static group, attaching a file,
+        adding a URL), and by {meth}`save` when entries carry `bdsk-*`
+        fields (e.g. imported ones). Re-enables date stamping for all
+        entries; irreversible within the instance (the canonical
+        inverse is a fresh {meth}`export`)."""
+        if not self._plain:
+            return
+        self._plain = False
+        self._plain_options = None
+        for entry in self._entries.values():
+            entry._plain = False  # pylint: disable=protected-access
+        warnings.warn(
+            "converting plain BibTeX file to BibDesk database format "
+            f"({trigger})",
+            FormatConversionWarning,
+            stacklevel=3,
+        )
+
     def _set_group(self, name, keys):
         """Create/replace (`keys` a tuple) or delete (`keys` is
         `None`) the group `name`.
@@ -980,6 +1028,8 @@ class Library(MutableMapping):
         The single choke point through which every group mutation
         goes, so the `groups` property of each affected entry is
         refreshed in exactly one place."""
+        if keys is not None:
+            self._convert_to_database(f"static group {name!r} added")
         old = self._group_data.get(name)
         if keys is None:
             if old is None:
@@ -1373,6 +1423,9 @@ class Library(MutableMapping):
                 # never be identical to one already in self._entries.
                 self.rekey(existing_key, key)
                 return
+        # The library's format mode carries over to the new entry (in
+        # plain mode, `Entry._touch` never creates date fields).
+        entry._plain = self._plain  # pylint: disable=protected-access
         if entry.key != key:
             # A brand new entry (or one from elsewhere) adopts the key
             # it is being added under. `Entry.key` itself is read-only,
@@ -1909,6 +1962,7 @@ class Library(MutableMapping):
                 f"{bdsk_file.relative_path!r} is already attached to "
                 f"entry {key!r}"
             )
+        self._convert_to_database(f"file attached to entry {key!r}")
         # pylint: disable=protected-access
         entry._set_files(entry._file_objects() + [bdsk_file])
         if new_path is not None:
@@ -2121,7 +2175,9 @@ class Library(MutableMapping):
         path resolution and no on-disk file to remove), so this simply
         delegates to {meth}`Entry.add_url`.
         """
-        self._entries[key].add_url(url)
+        entry = self._entries[key]
+        entry.add_url(url)
+        self._convert_to_database(f"URL linked to entry {key!r}")
 
     def replace_url(self, key, old_url, new_url):
         """Replace entry `key`'s linked `old_url` with `new_url`,
@@ -2229,6 +2285,21 @@ class Library(MutableMapping):
         no baseline timestamp for the {exc}`StaleFileError` check;
         instead, raises {exc}`FileExistsError` if `path` already
         exists, unless `force=True`.
+
+        A library loaded from a *plain* BibTeX file (one with no
+        BibDesk header, groups, or `bdsk-*` fields, e.g. written by
+        {meth}`export`) is saved back in that plain format: no header
+        or groups block is synthesized, no date fields are created,
+        comments and `@string` definitions are preserved in place, and
+        every stored field of every entry is written (unmodified
+        entries in their stored field order, so a file created by
+        {meth}`export` round-trips byte-identically). Values are
+        written in the encoding detected at load time (see the
+        [](bibdesk-plain-format) documentation). The
+        {exc}`StaleFileError` check is skipped: a plain file has no
+        timestamp to compare. A mutation that introduced
+        database-only state has by then converted the library to the
+        database format, with a {class}`FormatConversionWarning`.
         """
         from_scratch = self._path is None
         path = path if path is not None else self._path
@@ -2237,6 +2308,46 @@ class Library(MutableMapping):
                 "no path given and this library was not loaded from a file"
             )
         path = Path(path)
+
+        if self._plain:
+            # Entries can gain bdsk-* fields without passing through
+            # add_file/add_url (an import, or an edit): such state
+            # cannot be represented in the plain format, so it
+            # converts the library like any other trigger.
+            for entry in self._entries.values():
+                # pylint: disable=protected-access
+                if any(
+                    field.key.lower().startswith("bdsk-")
+                    for field in entry._entry.fields
+                ):
+                    self._convert_to_database(
+                        f"entry {entry.key!r} has file attachments or "
+                        "linked URLs"
+                    )
+                    break
+
+        if self._plain:
+            self._validate_for_save(path)
+            for entry in self._entries.values():
+                # pylint: disable=protected-access
+                if entry._dirty:
+                    entry._entry.fields = bibdesk_field_order(
+                        entry._entry.fields
+                    )
+            path.write_text(
+                render_plain_library(
+                    self._library,
+                    unicode=self._plain_options.unicode,
+                    expand_strings=self._plain_options.expand_strings,
+                    strings=self._all_strings(),
+                ),
+                encoding="utf-8",
+            )
+            self._path = path
+            self._modified = False
+            for entry in self._entries.values():
+                entry._dirty = False  # pylint: disable=protected-access
+            return
 
         if path.exists():
             if from_scratch:
@@ -2446,22 +2557,26 @@ class Library(MutableMapping):
     def export(
         self,
         *keys,
-        unicode=True,
-        expand_strings=False,
-        fields="full",
+        unicode=None,
+        expand_strings=None,
+        fields="minimal",
         outfile=None,
         preprint=None,
+        update=None,
+        marker=True,
     ):
         """Export the entries with the given citation `keys` (at
-        least one required) as bibtex text.
+        least one required, unless `update` is given) as bibtex text.
 
         Three independent parameters control the output:
 
-        * `unicode`: with `True` (default), field values are the
+        * `unicode`: with `True` (the default), field values are the
           Unicode text also returned by the `Entry` dict interface;
           with `False`, they are TeX-encoded, exactly as they would
-          be written to the `.bib` file on disk.
-        * `expand_strings`: with `False` (default), a field value
+          be written to the `.bib` file on disk. (With `update`, the
+          `None` default resolves to the target file's own encoding
+          instead; likewise for `expand_strings` and `preprint`.)
+        * `expand_strings`: with `False` (the default), a field value
           referencing an `@string` macro stays a bare reference, and
           the `@string` definitions needed by the selected entries
           are included, so the export is self-contained; with `True`,
@@ -2469,12 +2584,12 @@ class Library(MutableMapping):
           standard BibTeX month macros `jan` ... `dec` also resolve),
           and no `@string` definitions are emitted. An undefined
           macro stays a bare reference, with a `UserWarning`.
-        * `fields`: `"full"` (default: every field except the
+        * `fields`: `"minimal"` (default: only the fields needed to
+          typeset a bibliography), `"full"` (every field except the
           `date-added`/`date-modified` bookkeeping fields, with
-          file attachments and URLs as plain paths/URLs),
-          `"minimal"` (only the fields needed to typeset a
-          bibliography), or a list of field names (in the given
-          order; names not defined on an entry are omitted).
+          file attachments and URLs as plain paths/URLs), or a list
+          of field names (in the given order; names not defined on
+          an entry are omitted).
 
         A *preprint-only* entry -- a `misc` or `unpublished`
         entry with an `eprint` from a recognized preprint archive,
@@ -2522,17 +2637,63 @@ class Library(MutableMapping):
         slice of the file (`bdsk-file-N` values are plain paths, not
         the stored binary plist data).
 
+        With `marker` (the default), the output begins with a marker
+        line recording the export options, e.g. `%% Created by
+        BibDeskParser (unicode, preprints as unpublished).`, which
+        pins those options for later `update` runs (see the
+        [](bibdesk-plain-format) documentation). An export whose
+        output includes `bdsk-*` fields (a full export of entries
+        with attachments or linked URLs) omits the marker: such
+        output is in the database format, where the marker has no
+        meaning.
+
         With `outfile`, the text is written (UTF-8) to that path or
         open file object instead of being returned.
+
+        With `update`, the plain BibTeX file at that path (an earlier
+        export) is refreshed from this library instead: this library
+        is only read, and the target file is rewritten in place.
+        Every key in the target that exists in this library -- or, if
+        `keys` are given, exactly those keys -- is replaced by a
+        fresh export of that entry; keys not yet in the target are
+        appended, and nothing is ever removed. Entries the library
+        does not know, `@string` definitions (refreshed to this
+        library's values where it defines the macro, kept otherwise),
+        and comments are all preserved. Entries written by an update
+        never include `bdsk-*` fields, which a plain target cannot
+        represent. The `unicode`/`expand_strings`/`preprint` options
+        default to the target file's own options (from its marker
+        line, or detected from its content); an explicit argument
+        overrides them and, with `marker`, is recorded in the
+        rewritten marker, so it is sticky for subsequent updates
+        (with `marker=False`, the file's marker state is left
+        untouched). The target must exist and be in the plain format
+        (a BibDesk database is refused); it is rewritten
+        unconditionally, with no staleness check. Mutually exclusive
+        with `outfile`.
         """
+        if update is not None:
+            if outfile is not None:
+                raise ValueError("give either outfile or update, not both")
+            return update_exported_file(
+                self,
+                update,
+                keys,
+                unicode=unicode,
+                expand_strings=expand_strings,
+                fields=fields,
+                preprint=preprint,
+                marker=marker,
+            )
         return export_entries(
             [self[key] for key in keys],
             strings=dict(self.strings),
-            unicode=unicode,
-            expand_strings=expand_strings,
+            unicode=True if unicode is None else unicode,
+            expand_strings=False if expand_strings is None else expand_strings,
             fields=fields,
             outfile=outfile,
             preprint=preprint,
+            marker=marker,
         )
 
     def edit(self, *keys, editor=None):

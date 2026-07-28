@@ -194,11 +194,11 @@ def test_value_string_and_macro_string_export():
     entry = Entry("article", "Key2024")
     entry["journal"] = ValueString("prl")
     bib["Key2024"] = entry
-    assert bib.export("Key2024", unicode=False) == (
+    assert bib.export("Key2024", unicode=False, marker=False) == (
         "@article{Key2024,\n    Journal = {prl},\n}\n"
     )
     entry["journal"] = MacroString("prl")
-    assert bib.export("Key2024", unicode=False) == (
+    assert bib.export("Key2024", unicode=False, marker=False) == (
         "@article{Key2024,\n    Journal = prl,\n}\n"
     )
 

@@ -368,7 +368,7 @@ def test_load_normalizes_macro_names(tmp_path):
     bib.save(out)
     output = out.read_text(encoding="utf-8")
     assert "@string{pra = {Physical Review A}}" in output
-    assert "journal = pra" in output
+    assert "Journal = pra" in output  # plain file: export layout
     assert "PRA" not in output
 
 
