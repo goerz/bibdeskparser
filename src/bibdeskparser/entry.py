@@ -157,7 +157,7 @@ class Entry(MutableMapping):
         entry_type = active.normalize_entry_type(entry_type)
         self._entry = model.Entry(entry_type=entry_type, key=key, fields=[])
         self._groups = ()
-        self._plain = False
+        self._stamp_dates = False
         self._dirty = False
         for field_key, value in (fields or {}).items():
             self[field_key] = value
@@ -175,7 +175,7 @@ class Entry(MutableMapping):
         self = object.__new__(cls)
         self._entry = model_entry
         self._groups = ()
-        self._plain = False
+        self._stamp_dates = False
         self._dirty = False
         return self
 
@@ -229,19 +229,20 @@ class Entry(MutableMapping):
         """Set `date-modified` (and `date-added`, if unset) to now, and
         mark the entry modified (`_dirty`).
 
-        In plain mode (`_plain`, pushed by the owning `Library` for an
-        entry of a plain-format file), the date fields an entry already
-        stores are updated but never created: plain files do no date
-        bookkeeping."""
+        Date fields are only *created* with `_stamp_dates`, which the
+        owning `Library` pushes onto each entry of a database-format
+        library (like `entry._groups`). Without it -- a detached entry,
+        or one belonging to a plain-format file, which does no date
+        bookkeeping -- a `date-modified` the entry already stores is
+        updated, but neither field is ever created."""
         now = datetime.datetime.now().astimezone()
         rendered = "{" + now.strftime(_DATE_FORMAT) + "}"
-        if self._plain:
-            if self._find_field("date-modified") is not None:
-                self._set_raw_field("date-modified", rendered)
-        else:
+        if self._stamp_dates:
             self._set_raw_field("date-modified", rendered)
             if self._find_field("date-added") is None:
                 self._set_raw_field("date-added", rendered)
+        elif self._find_field("date-modified") is not None:
+            self._set_raw_field("date-modified", rendered)
         self._dirty = True
 
     def _decode(self, key, value):
@@ -342,10 +343,14 @@ class Entry(MutableMapping):
 
     @property
     def date_added(self):
-        """Timestamp of when the entry was constructed (read-only).
+        """Timestamp of when the entry was added to a library
+        (read-only).
 
         This is a {class}`datetime.datetime` representation of the raw
-        `date-added` field.
+        `date-added` field. The field is stamped when the entry is
+        added to a {class}`Library` in the BibDesk database format
+        (a plain BibTeX file does no date bookkeeping); `None` for a
+        detached entry that has never been added to one.
         """
         field = self._find_field("date-added")
         return None if field is None else _parse_date(field.value)

@@ -1654,7 +1654,7 @@ def render(bibfile, citekeys, format_, style):
         "minimal selection; repeatable and comma-separated (e.g. "
         "--field doi,title). A field not defined on an entry is "
         "silently omitted for that entry. Mutually exclusive with "
-        "--minimal."
+        "--minimal/--full."
     ),
 )
 @click.option(
@@ -1755,8 +1755,10 @@ def export(
     re-exported in place or appended, and everything else in FILE is
     kept.
     """
-    if minimal and field_args:
-        raise click.UsageError("--minimal and --field are mutually exclusive")
+    if minimal is not None and field_args:
+        raise click.UsageError(
+            "--minimal/--full and --field are mutually exclusive"
+        )
     if update is not None and outfile is not None:
         raise click.UsageError("--update and --outfile are mutually exclusive")
     if not citekeys and update is None:

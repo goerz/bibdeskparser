@@ -808,8 +808,6 @@ class Library(MutableMapping):
                 self._plain_options = resolve_plain_options(
                     text, self._library, self._entries.values()
                 )
-                for entry in self._entries.values():
-                    entry._plain = True  # pylint: disable=protected-access
             elif leading_marker(self._library) is not None:
                 warnings.warn(
                     "file leads with a BibDeskParser plain-format "
@@ -818,6 +816,12 @@ class Library(MutableMapping):
                     UserWarning,
                     stacklevel=2,
                 )
+        if not self._plain:
+            # Date stamping is opt-in per entry (`Entry._touch` never
+            # creates date fields without it), enabled exactly for
+            # entries of a database-format library.
+            for entry in self._entries.values():
+                entry._stamp_dates = True  # pylint: disable=protected-access
 
         self._strings_view = _StringsView(self)
         self._groups_view = _GroupsView(self)
@@ -1013,7 +1017,7 @@ class Library(MutableMapping):
         self._plain = False
         self._plain_options = None
         for entry in self._entries.values():
-            entry._plain = False  # pylint: disable=protected-access
+            entry._stamp_dates = True  # pylint: disable=protected-access
         warnings.warn(
             "converting plain BibTeX file to BibDesk database format "
             f"({trigger})",
@@ -1423,9 +1427,10 @@ class Library(MutableMapping):
                 # never be identical to one already in self._entries.
                 self.rekey(existing_key, key)
                 return
-        # The library's format mode carries over to the new entry (in
-        # plain mode, `Entry._touch` never creates date fields).
-        entry._plain = self._plain  # pylint: disable=protected-access
+        # The library's format mode carries over to the new entry:
+        # `Entry._touch` creates date fields only in database mode.
+        # pylint: disable-next=protected-access
+        entry._stamp_dates = not self._plain
         if entry.key != key:
             # A brand new entry (or one from elsewhere) adopts the key
             # it is being added under. `Entry.key` itself is read-only,
@@ -1443,6 +1448,10 @@ class Library(MutableMapping):
                     fail_on_duplicate_key=True,
                 )
                 old._groups = ()  # pylint: disable=protected-access
+                # A replacement is an addition from the entry's point
+                # of view: it gets its dates stamped (database mode)
+                # like the brand-new entry in the else branch below.
+                entry._touch()  # pylint: disable=protected-access
         else:
             self._library.add([entry._entry], fail_on_duplicate_key=True)
             _hoist_last_block_above_groups(self._library)
@@ -2684,6 +2693,11 @@ class Library(MutableMapping):
                 fields=fields,
                 preprint=preprint,
                 marker=marker,
+            )
+        if not keys:
+            raise ValueError(
+                "at least one citation key is required (unless update "
+                "is given)"
             )
         return export_entries(
             [self[key] for key in keys],

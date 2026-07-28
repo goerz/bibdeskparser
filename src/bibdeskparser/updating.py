@@ -20,6 +20,7 @@ from bibtexparser.model import (
     ExplicitComment,
     ImplicitComment,
     ParsingFailedBlock,
+    Preamble,
     String,
 )
 
@@ -220,6 +221,8 @@ def update_exported_file(
             pieces.append(("comment", block.comment))
         elif isinstance(block, ExplicitComment):
             pieces.append(("comment", f"@comment{{{block.comment}}}"))
+        elif isinstance(block, Preamble):
+            pieces.append(("comment", f"@preamble{{{block.value}}}"))
         elif isinstance(block, ParsingFailedBlock):
             pieces.append(("entry", block.raw))
     if not strings_placed and string_pieces:

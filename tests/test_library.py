@@ -1023,7 +1023,7 @@ def test_keys_with_files_argument(bib):
 def test_add_new_entry(bib):
     """Adding a new entry sets `date-added` and wires up `.groups`."""
     entry = Entry("article", "NewKey2026", fields={"title": "T"})
-    assert entry.date_added is not None
+    assert entry.date_added is None  # stamped on addition, not before
     bib["NewKey2026"] = entry
     assert bib["NewKey2026"] is entry
     assert entry.groups == ()

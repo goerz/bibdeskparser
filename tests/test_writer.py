@@ -119,10 +119,22 @@ def test_serialize_failed_block(duplicate_block):
     )
 
 
+def test_serialize_preamble():
+    """A `Preamble` block serializes as `@preamble{...}`, verbatim."""
+    block = Preamble('"\\newcommand{\\noopsort}[1]{}"')
+    assert serialize_block(block) == (
+        '@preamble{"\\newcommand{\\noopsort}[1]{}"}'
+    )
+
+
 def test_serialize_unhandled_block():
     """Unhandled block types raise `TypeError`."""
+
+    class _UnknownBlock:
+        pass
+
     with pytest.raises(TypeError, match="Unhandled block type"):
-        serialize_block(Preamble("preamble"))
+        serialize_block(_UnknownBlock())
 
 
 def test_separator_matrix(duplicate_block):

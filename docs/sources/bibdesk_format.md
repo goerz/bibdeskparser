@@ -70,6 +70,11 @@ exposed as read-only `datetime.datetime` objects:
 
 ```
 
+A newly constructed {class}`~bibdeskparser.Entry` carries neither
+field; both are stamped the moment the entry is added to a `Library`,
+mirroring BibDesk's stamp-on-creation behavior. (For a library in the
+[plain format](bibdesk-plain-format), which does no date bookkeeping,
+they are never created at all.)
 Any mutation of an `Entry` -- setting or deleting a field, changing
 {attr}`~bibdeskparser.Entry.entry_type`, adding or removing a URL with
 {meth}`~bibdeskparser.Entry.add_url` and friends, or a file-attachment

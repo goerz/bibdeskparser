@@ -217,9 +217,12 @@ def test_texify_roundtrip():
 
 
 def test_fresh_entry_dates_and_dirty(monkeypatch):
-    """A freshly constructed entry gets `date-added`/`date-modified`
-    set to (approximately) now, and is `dirty` (a brand new entry has
-    never been saved)."""
+    """A freshly constructed (detached) entry carries no date fields;
+    they are stamped when the entry is added to a database-format
+    library. A brand new entry is `dirty` either way (it has never
+    been saved)."""
+    from bibdeskparser import Library
+
     fixed = datetime.datetime(
         2026, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc
     )
@@ -231,10 +234,14 @@ def test_fresh_entry_dates_and_dirty(monkeypatch):
 
     monkeypatch.setattr(entry_module.datetime, "datetime", _FakeDateTime)
     entry = Entry("article", "Key2026")
+    assert entry.date_added is None
+    assert entry.date_modified is None
+    assert entry._dirty is True
+    bib = Library()
+    bib["Key2026"] = entry
     assert entry.date_added == fixed
     assert entry.date_modified == fixed
     assert entry.date_added.tzinfo is not None
-    assert entry._dirty is True
 
 
 def test_date_modified_advances_on_mutation(monkeypatch):
@@ -249,7 +256,11 @@ def test_date_modified_advances_on_mutation(monkeypatch):
             return fixed
 
     monkeypatch.setattr(entry_module.datetime, "datetime", _FakeDateTime)
+    from bibdeskparser import Library
+
+    bib = Library()
     entry = Entry("article", "Key2026")
+    bib["Key2026"] = entry
     assert entry.date_added == fixed
     assert entry.date_modified == fixed
 

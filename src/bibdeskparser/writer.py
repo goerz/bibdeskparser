@@ -34,6 +34,7 @@ from bibtexparser.model import (
     ExplicitComment,
     ImplicitComment,
     ParsingFailedBlock,
+    Preamble,
     String,
 )
 
@@ -84,6 +85,9 @@ def serialize_block(block):
       value. {class}`bibdeskparser.bdskfile.BibDeskFile` values are
       serialized via their
       {meth}`~bibdeskparser.bdskfile.BibDeskFile.to_field_value` method.
+    * `Preamble`: `@preamble{...}`, with the preamble body (TeX code)
+      written verbatim. BibDesk itself never writes `@preamble`
+      blocks, but it preserves them, and so does this writer.
     * `ParsingFailedBlock` (e.g., a `DuplicateBlockKeyBlock` for an
       entry with a duplicate key): the block's `raw` source slice,
       verbatim, so that files with duplicate keys still round-trip.
@@ -117,6 +121,8 @@ def serialize_block(block):
         return f"@string{{{block.key} = {block.value}}}"
     if isinstance(block, ExplicitComment):
         return f"@comment{{{block.comment}}}"
+    if isinstance(block, Preamble):
+        return f"@preamble{{{block.value}}}"
     if isinstance(block, Entry):
         if not block.fields:
             return f"@{block.entry_type}{{{block.key}}}"
@@ -238,10 +244,11 @@ def render_plain_library(
     ```
 
     Returns the full text of the plain-format `.bib` file: comments
-    (including any marker line) verbatim, `@string` definitions in
-    place, and every entry in the export layout with all its stored
-    fields in stored order (no header, no groups block, no date
-    stamping -- a save through this renderer is never lossy). Blocks
+    (including any marker line) and `@preamble` blocks verbatim,
+    `@string` definitions in place, and every entry in the export
+    layout with all its stored fields in stored order (no header, no
+    groups block, no date stamping -- a save through this renderer is
+    never lossy). Blocks
     are joined per `join_plain_pieces`. `unicode` and `expand_strings`
     are the file's plain-format options: field and `@string` values
     are written as Unicode text or TeX-encoded, and bare `@string`
@@ -273,6 +280,10 @@ def render_plain_library(
             pieces.append(("entry", text.rstrip("\n")))
         elif isinstance(block, ExplicitComment):
             pieces.append(("comment", f"@comment{{{block.comment}}}"))
+        elif isinstance(block, Preamble):
+            # the body is TeX code by definition: verbatim, like
+            # comments, regardless of the file's value encoding
+            pieces.append(("comment", f"@preamble{{{block.value}}}"))
         elif isinstance(block, ParsingFailedBlock):
             pieces.append(("entry", block.raw))
         else:

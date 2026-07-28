@@ -441,7 +441,8 @@ def test_plain_save_expand_strings(tmp_path):
 
 
 def test_import_into_plain_file_stays_plain(paper, refs):
-    """`import_bibtex` into a plain file keeps it plain."""
+    """`import_bibtex` into a plain file keeps it plain, and the
+    imported entry gains no date fields."""
     lib = Library(paper)
     snippet = refs.export("Tannor2007", marker=False)
     with warnings.catch_warnings():
@@ -450,6 +451,9 @@ def test_import_into_plain_file_stays_plain(paper, refs):
     lib.save()
     assert keys == ["Tannor2007"]
     assert Library(paper)._plain
+    text = paper.read_text(encoding="utf-8")
+    assert "Date-Added" not in text
+    assert "Date-Modified" not in text
 
 
 # -- conversion to the database format -------------------------------------- #
@@ -678,16 +682,113 @@ def test_update_string_only_in_file_kept(paper, refs):
 
 
 def test_entry_added_to_plain_library_gets_no_new_dates(paper):
-    """`Entry._touch` in plain mode never creates date fields; an
-    entry constructed detached keeps the dates from construction."""
+    """A detached entry carries no date fields, and adding it to a
+    plain library never creates them."""
     lib = Library(paper)
     entry = Entry("article", "New2026", fields={"title": "T"})
-    # dates were stamped at construction (detached entries are not in
-    # plain mode); strip them to model a date-less entry
-    for field in list(entry._entry.fields):
-        if field.key.startswith("date-"):
-            entry._entry.fields.remove(field)
+    assert entry.date_added is None
+    assert entry.date_modified is None
     lib["New2026"] = entry
     entry["year"] = "2026"
     assert entry.date_added is None
     assert entry.date_modified is None
+    lib.save()
+    assert "Date-" not in paper.read_text(encoding="utf-8")
+
+
+# -- @preamble blocks -------------------------------------------------------
+
+
+PREAMBLE_BIB = (
+    '@preamble{"\\newcommand{\\noopsort}[1]{}"}\n'
+    "\n"
+    "@article{k1,\n"
+    "    Title = {T},\n"
+    "    Year = {2024},\n"
+    "}\n"
+)
+
+
+def test_plain_save_preserves_preamble(tmp_path):
+    """A `@preamble` block in a plain file survives a save (verbatim),
+    for a pristine and for a modified library."""
+    path = _write(tmp_path, PREAMBLE_BIB)
+    lib = Library(path)
+    assert lib._plain
+    lib.save()
+    assert path.read_text(encoding="utf-8") == PREAMBLE_BIB
+    lib["k1"]["note"] = "N"
+    lib.save()
+    text = path.read_text(encoding="utf-8")
+    assert text.startswith('@preamble{"\\newcommand{\\noopsort}[1]{}"}\n')
+    assert "Note = {N}," in text
+
+
+def test_update_preserves_preamble(tmp_path, refs):
+    """`export --update` keeps a `@preamble` block in the target."""
+    path = _write(tmp_path, PREAMBLE_BIB, "paper.bib")
+    refs.export("Evans1983", update=path)
+    text = path.read_text(encoding="utf-8")
+    assert '@preamble{"\\newcommand{\\noopsort}[1]{}"}' in text
+    assert "@unpublished{Evans1983,\n" in text
+
+
+def test_converted_save_preserves_preamble(tmp_path):
+    """Converting a plain file with a `@preamble` to the database
+    format keeps the block in the database-format output."""
+    path = _write(tmp_path, PREAMBLE_BIB)
+    lib = Library(path)
+    with pytest.warns(FormatConversionWarning):
+        lib.groups["G"] = ("k1",)
+    lib.save()
+    text = path.read_text(encoding="utf-8")
+    assert text.startswith(
+        "%% This BibTeX bibliography file was created using BibDesk"
+    )
+    assert '@preamble{"\\newcommand{\\noopsort}[1]{}"}' in text
+
+
+# -- review follow-ups ------------------------------------------------------
+
+
+def test_export_requires_keys(refs):
+    """`Library.export()` without keys and without `update` raises."""
+    with pytest.raises(ValueError, match="at least one citation key"):
+        refs.export()
+
+
+def test_update_with_field_list(paper, refs):
+    """An explicit field list applies to the entries an update
+    rewrites."""
+    refs.export("GoerzQ2022", update=paper, fields=["title", "year"])
+    text = paper.read_text(encoding="utf-8")
+    assert "@article{GoerzQ2022,\n" in text
+    assert "Title = {Quantum Optimal Control" in text
+    assert "Doi" not in text.split("GoerzQ2022")[1]
+
+
+def test_update_tex_encoded_stable(tmp_path, refs):
+    """Updating a TeX-encoded, marker-less target re-encodes values
+    as TeX, and repeated updates are byte-stable."""
+    path = _write(
+        tmp_path,
+        "@article{k1,\n"
+        '    Author = {Gr{\\"u}n, Anna},\n'
+        "    Title = {T},\n"
+        "    Year = {2024},\n"
+        "}\n",
+        "paper.bib",
+    )
+    refs.export("GoerzQ2022", update=path)
+    first = path.read_text(encoding="utf-8")
+    # a macro-free all-ASCII target detects as TeX-encoded with
+    # expanded strings; both are recorded in the marker
+    assert first.startswith(
+        "%% Created by BibDeskParser "
+        "(TeX-encoded, strings expanded, preprints as unpublished).\n"
+    )
+    assert "Sebasti{\\'a}n" in first  # written TeX-encoded
+    assert "Journal = {Quantum}," in first  # macro inlined
+    assert 'Gr{\\"u}n' in first  # kept entry re-encodes stably
+    refs.export(update=path)
+    assert path.read_text(encoding="utf-8") == first

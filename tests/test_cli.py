@@ -2332,6 +2332,13 @@ def test_set_group_on_plain_file_warns(runner, bibfile, tmp_path):
 
 
 def test_export_minimal_field_mutually_exclusive(runner, bibfile):
+    for flag in ("--minimal", "--full"):
+        result = runner.invoke(
+            main,
+            ["export", str(bibfile), "GoerzJPB2011", flag, "--field", "doi"],
+        )
+        assert result.exit_code == 2
+        assert "mutually exclusive" in result.stderr
     result = runner.invoke(
         main,
         [

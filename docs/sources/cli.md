@@ -785,8 +785,8 @@ it rewrites the exported FILE in place.
   with attachments and URLs as plain paths/URLs, instead of the
   minimal selection (`--minimal`, the default).
 - `--field FIELD` -- export only the named fields (repeatable and
-  comma-separated). Mutually exclusive with `--minimal`, and always
-  exports the stored fields.
+  comma-separated). Mutually exclusive with `--minimal`/`--full`, and
+  always exports the stored fields.
 - `--preprint FORM` -- the form a [preprint-only entry](preprints) is
   exported as, whatever its stored form: `unpublished` (structured
   `eprint` fields, with the required `note` guaranteed in minimal
