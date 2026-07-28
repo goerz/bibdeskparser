@@ -53,6 +53,40 @@ def test_path_only_roundtrip():
     assert BibDeskFile.from_field_value(reencoded) == bdsk_file
 
 
+@pytest.mark.parametrize(
+    "value, path",
+    [
+        ("{GrondPRA2009a.pdf}", "GrondPRA2009a.pdf"),
+        ("{Subdir/Smith2023.pdf}", "Subdir/Smith2023.pdf"),
+        ("{../GoodReader/Smith2023.pdf}", "../GoodReader/Smith2023.pdf"),
+        ("GrondPRA2009a.pdf", "GrondPRA2009a.pdf"),  # no braces
+    ],
+)
+def test_plain_path_roundtrip(value, path):
+    """A plain relative path (as written by `export --full`) is kept
+    as a path-only attachment and re-encoded verbatim."""
+    bdsk_file = BibDeskFile.from_field_value(value)
+    assert bdsk_file.relative_path == path
+    assert bdsk_file.bookmark is None
+    assert bdsk_file.alias_data is None
+    braced = value if value.startswith("{") else "{" + value + "}"
+    assert bdsk_file.to_field_value() == braced
+
+
+def test_plain_path_vs_encoded_path_only():
+    """A plain path and a base64 path-only plist for the same file
+    read as the same attachment but serialize in their own form."""
+    plain = BibDeskFile.from_field_value("{file.pdf}")
+    plist = plistlib.dumps(
+        {"relativePath": "file.pdf"}, fmt=plistlib.FMT_BINARY
+    )
+    encoded_value = "{" + base64.b64encode(plist).decode() + "}"
+    encoded = BibDeskFile.from_field_value(encoded_value)
+    assert plain == encoded  # same logical attachment
+    assert plain.to_field_value() == "{file.pdf}"
+    assert encoded.to_field_value() == encoded_value
+
+
 def test_constructor_existing_file(tmp_path):
     """Constructing from an existing file gives the right relative path.
 

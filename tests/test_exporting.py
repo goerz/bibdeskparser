@@ -4,6 +4,8 @@ from pathlib import Path
 
 import bibtexparser
 import pytest
+from bibtexparser.model import Entry as ModelEntry
+from bibtexparser.model import Field
 
 import bibdeskparser.config as config
 from bibdeskparser.entry import Entry
@@ -153,6 +155,25 @@ def test_full_bdsk_file_plain_path(jpb_entry):
     assert path.endswith(".pdf")
     assert f"    Bdsk-File-1 = {{{path}}},\n" in text
     assert "YnBsaXN0" not in text
+
+
+def test_full_bdsk_file_raw_plain_path_value():
+    """`_field_body` also handles a `bdsk-file-N` field whose value is
+    still a raw string rather than a decoded `BibDeskFile` -- the
+    state of an entry re-exporting a value read from a previous
+    `export --full`, e.g. via `Entry._wrap` on an unparsed block,
+    without going through `BibDeskFileMiddleware`."""
+    model_entry = ModelEntry(
+        entry_type="article",
+        key="Key2026",
+        fields=[
+            Field(key="title", value="{T}"),
+            Field(key="bdsk-file-1", value="{paper.pdf}"),
+        ],
+    )
+    entry = Entry._wrap(model_entry)  # pylint: disable=protected-access
+    text = export_entries([entry], fields="full")
+    assert "    Bdsk-File-1 = {paper.pdf},\n" in text
 
 
 def test_full_bdsk_url(jpb_entry):

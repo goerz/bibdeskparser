@@ -80,6 +80,20 @@ class BibDeskFile:
 
     ```
 
+    A value that is a plain relative path rather than a base64 binary
+    plist (as written by {meth}`bibdeskparser.Library.export` with
+    `full=True`) is kept as a path-only attachment and round-trips
+    verbatim:
+
+    ```python
+    >>> bdsk_file = BibDeskFile.from_field_value("{Smith2023.pdf}")
+    >>> bdsk_file.relative_path
+    'Smith2023.pdf'
+    >>> bdsk_file.to_field_value()
+    '{Smith2023.pdf}'
+
+    ```
+
     Attributes:
 
     * `relative_path`: Path of the file relative to the `.bib`
@@ -153,6 +167,7 @@ class BibDeskFile:
         self._relative_path = Path(os.path.relpath(abs_path, base)).as_posix()
         self._bookmark = bookmark
         self._alias_data = alias_data
+        self._plain = False
 
     @property
     def relative_path(self) -> str:
@@ -183,12 +198,22 @@ class BibDeskFile:
 
     @classmethod
     def from_field_value(cls, value: str) -> "BibDeskFile":
-        """Parse a `{base64...}` field value from a `.bib` entry."""
+        """Parse a `{base64...}` field value from a `.bib` entry.
+
+        A value that is not a base64 binary plist is treated as a plain
+        relative path (as written by {meth}`bibdeskparser.Library.export`
+        with `full=True`) and kept as a path-only attachment: it has no
+        bookmark or alias, and {meth}`to_field_value` writes it back as
+        the plain path, so it round-trips verbatim.
+        """
         if value.startswith("{") and value.endswith("}"):
             inner = value[1:-1]
         else:
             inner = value
-        plist = plistlib.loads(base64.b64decode(inner))
+        try:
+            plist = plistlib.loads(base64.b64decode(inner, validate=True))
+        except ValueError:  # includes plistlib.InvalidFileException
+            return cls._from_plain_path(inner)
         obj = object.__new__(cls)
         obj._relative_path = plist.get("relativePath") or ""
         obj._bookmark = None
@@ -197,10 +222,28 @@ class BibDeskFile:
         obj._alias_data = None
         if "aliasData" in plist:
             obj._alias_data = bytes(plist["aliasData"])
+        obj._plain = False
+        return obj
+
+    @classmethod
+    def _from_plain_path(cls, path: str) -> "BibDeskFile":
+        """Build a path-only attachment from a plain relative path."""
+        obj = object.__new__(cls)
+        obj._relative_path = path
+        obj._bookmark = None
+        obj._alias_data = None
+        obj._plain = True
         return obj
 
     def to_field_value(self) -> str:
-        """Encode to the `{base64...}` string for a `.bib` file."""
+        """Encode to the field value string for a `.bib` file.
+
+        A plain-path attachment (see {meth}`from_field_value`) is
+        written as `{path}`; every other attachment is written as the
+        `{base64...}` binary plist.
+        """
+        if self._plain:
+            return "{" + self._relative_path + "}"
         return "{" + base64.b64encode(self._to_plist_bytes()).decode() + "}"
 
     def _to_plist_bytes(self) -> bytes:

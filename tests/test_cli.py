@@ -1820,6 +1820,26 @@ def test_check_files_json(runner, bibfile):
     ]
 
 
+def test_check_files_plain_path(runner, tmp_path):
+    # a plain-path bdsk-file-1 value (the form written by
+    # `export --full`) is audited like any other attachment
+    bibfile = tmp_path / "library.bib"
+    bibfile.write_text(
+        "@misc{K1,\n\ttitle = {T1},\n\tbdsk-file-1 = {a.pdf}}\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "a.pdf").write_bytes(b"%PDF-1.4 fake")
+    result = _run(runner, "check", bibfile, "--files")
+    assert result.output == "PASS (1 entry checked)\n"
+    (tmp_path / "a.pdf").unlink()
+    result = runner.invoke(main, ["check", str(bibfile), "--files"])
+    assert result.exit_code == 1
+    assert result.output.splitlines() == [
+        "K1: linked file does not exist: 'a.pdf'",
+        "FAIL (1 problem, 1 entry checked)",
+    ]
+
+
 def test_check_files_case_mismatch(runner, bibfile):
     # stored link says KochJPCM2016.pdf; rename the file on disk so
     # only the case differs. The walk-based audit reports the same
