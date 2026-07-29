@@ -2,63 +2,34 @@
 
 # Configuration
 
-`bibdeskparser` can be configured with a
-[TOML](https://toml.io) file named `bibdeskparser.toml`. The file
-replicates some of the preferences that the BibDesk application itself
-offers -- most importantly, which entry types and fields are considered
-valid (see [Bib Entry Types](bib-entry-types)).
+`bibdeskparser` can be configured with a [TOML](https://toml.io) file named `bibdeskparser.toml`. The file replicates some of the preferences that the BibDesk application itself offers -- most importantly, which entry types and fields are considered valid (see [Bib Entry Types](bib-entry-types)).
 
 
 ## Where the file is found
 
-When `bibdeskparser` is imported, and again whenever a
-{class}`~bibdeskparser.Library` is constructed, it searches for a
-`bibdeskparser.toml` in the following locations, in order of
-precedence. **The first file found wins**; the others are ignored.
+When `bibdeskparser` is imported, and again whenever a {class}`~bibdeskparser.Library` is constructed, it searches for a `bibdeskparser.toml` in the following locations, in order of precedence. **The first file found wins**; the others are ignored.
 
-1. The path assigned to `Library.config.config_file` (see
-   {class}`~bibdeskparser.Library` and below), if any. An explicit
-   `config_file` that does not exist raises a {exc}`FileNotFoundError`.
-2. The directory containing the `.bib` file that is being loaded (or
-   the current working directory, for a library not loaded from a file
-   -- and at import time).
-3. The file named by the `$BIBDESKPARSER_CONFIG` environment variable,
-   if the variable is set. A file that does not exist raises a
-   {exc}`FileNotFoundError`. Setting the variable to an empty value
-   disables the user-level configuration (this step and the next)
-   entirely.
-4. The XDG configuration directory:
-   `$XDG_CONFIG_HOME/bibdeskparser/bibdeskparser.toml`, falling back to
-   `~/.config/bibdeskparser/bibdeskparser.toml` when `$XDG_CONFIG_HOME`
-   is unset. This location is only considered when
-   `$BIBDESKPARSER_CONFIG` is unset.
+1. The path assigned to `Library.config.config_file` (see {class}`~bibdeskparser.Library` and below), if any. An explicit `config_file` that does not exist raises a {exc}`FileNotFoundError`.
+2. The directory containing the `.bib` file that is being loaded (or the current working directory, for a library not loaded from a file -- and at import time).
+3. The file named by the `$BIBDESKPARSER_CONFIG` environment variable, if the variable is set. A file that does not exist raises a {exc}`FileNotFoundError`. Setting the variable to an empty value disables the user-level configuration (this step and the next) entirely.
+4. The XDG configuration directory: `$XDG_CONFIG_HOME/bibdeskparser/bibdeskparser.toml`, falling back to `~/.config/bibdeskparser/bibdeskparser.toml` when `$XDG_CONFIG_HOME` is unset. This location is only considered when `$BIBDESKPARSER_CONFIG` is unset.
 
-The configuration is applied **process-wide**: it affects every
-{class}`~bibdeskparser.Entry`, whether or not it belongs to a library.
+The configuration is applied **process-wide**: it affects every {class}`~bibdeskparser.Entry`, whether or not it belongs to a library.
 
-The [`config_path`](cli-config-path) command reports which file (if
-any) is in effect, and [`config`](cli-config) dumps the resolved
-configuration -- the defaults merged with that file -- so you can see
-the effective value of every setting described below.
+The [`config_path`](cli-config-path) command reports which file (if any) is in effect, and [`config`](cli-config) dumps the resolved configuration -- the defaults merged with that file -- so you can see the effective value of every setting described below.
 
 
 ## The `default_bib_file` option
 
-A string option, unset by default, naming the `.bib` file that the
-{ref}`command-line interface <cli>` operates on when no `BIBFILE`
-argument is given:
+A string option, unset by default, naming the `.bib` file that the {ref}`command-line interface <cli>` operates on when no `BIBFILE` argument is given:
 
 ```toml
 default_bib_file = "$HOME/Documents/library.bib"
 ```
 
-Environment variables (`$VAR`) and a leading `~` in the value are
-expanded. The option has no effect on the Python API.
+Environment variables (`$VAR`) and a leading `~` in the value are expanded. The option has no effect on the Python API.
 
-Setting `default_bib_file` is the recommended setup for command-line
-use: all examples in the CLI `--help` output (and most in this
-documentation) assume it, so that commands can be spelled without
-naming the `.bib` file each time.
+Setting `default_bib_file` is the recommended setup for command-line use: all examples in the CLI `--help` output (and most in this documentation) assume it, so that commands can be spelled without naming the `.bib` file each time.
 
 
 ## The `verify_types` and `verify_fields` flags
@@ -70,25 +41,12 @@ verify_types = true
 verify_fields = true
 ```
 
-* `verify_types`: when `true` (the default), constructing an entry with
-  an unrecognized type, or assigning such a type, raises a
-  {exc}`ValueError`. Set it to `false` to accept any entry type (still
-  lowercased).
-* `verify_fields`: when `true` (the default), assigning a field that is
-  not appropriate for an entry's type emits a {exc}`UserWarning` (the
-  value is stored regardless). Set it to `false` to suppress those
-  warnings entirely.
+* `verify_types`: when `true` (the default), constructing an entry with an unrecognized type, or assigning such a type, raises a {exc}`ValueError`. Set it to `false` to accept any entry type (still lowercased).
+* `verify_fields`: when `true` (the default), assigning a field that is not appropriate for an entry's type emits a {exc}`UserWarning` (the value is stored regardless). Set it to `false` to suppress those warnings entirely.
 
-Both flags govern what happens at *write* time, in Python. Neither
-affects [`check`](cli-check), whose entry-type and required-field
-audits always run: turning off a write-time complaint is not a reason
-for an explicitly requested gate to stay quiet about what is in the
-file.
+Both flags govern what happens at *write* time, in Python. Neither affects [`check`](cli-check), whose entry-type and required-field audits always run: turning off a write-time complaint is not a reason for an explicitly requested gate to stay quiet about what is in the file.
 
-The active configuration is exposed as the `config` class attribute
-of {class}`~bibdeskparser.Library` (equally readable from any library
-instance, as `bib.config`), so every setting can also be changed from
-Python, without a configuration file:
+The active configuration is exposed as the `config` class attribute of {class}`~bibdeskparser.Library` (equally readable from any library instance, as `bib.config`), so every setting can also be changed from Python, without a configuration file:
 
 ```python
 >>> from bibdeskparser import Library
@@ -101,22 +59,13 @@ True
 
 ```
 
-Assigning to a `Library.config` attribute overrides the value for the
-current process only; it never writes back to the
-`bibdeskparser.toml` file. Note that constructing a `Library`
-re-applies whichever configuration file is discovered, which replaces
-such overrides; set the attributes *after* constructing a library, or
-point `Library.config.config_file` (default `None`) at a file to force
-that file to be used, ahead of directory-based discovery.
+Assigning to a `Library.config` attribute overrides the value for the current process only; it never writes back to the `bibdeskparser.toml` file. Note that constructing a `Library` re-applies whichever configuration file is discovered, which replaces such overrides; set the attributes *after* constructing a library, or point `Library.config.config_file` (default `None`) at a file to force that file to be used, ahead of directory-based discovery.
 
 (config-auto-key)=
 
 ## The `[auto_key]` table: autogenerated citation keys
 
-The `[auto_key]` table configures the automatic generation of
-citation keys by single-argument
-{py:meth}`~bibdeskparser.Library.rekey` (and the
-{ref}`rekey CLI command <cli-rekey>` without a `NEW_KEY`):
+The `[auto_key]` table configures the automatic generation of citation keys by single-argument {py:meth}`~bibdeskparser.Library.rekey` (and the {ref}`rekey CLI command <cli-rekey>` without a `NEW_KEY`):
 
 ```toml
 [auto_key]
@@ -125,38 +74,19 @@ lowercase = false   # lowercase the whole generated key
 clean = "tex"       # TeX cleanup: "none", "braces", or "tex"
 ```
 
-* `format_spec` (required within the table): the key format, in
-  BibDesk's [format-specifier language](format-specifiers). Each
-  format is validated when the configuration is loaded. Without an
-  `[auto_key]` table, generating a key requires an explicit
-  `format_spec` pattern. It may also be a
-  [per-type mapping](config-auto-key-per-type).
-* `lowercase` (default `false`): lowercase the entire generated key,
-  like BibDesk's *Generate lowercase* option.
-* `clean` (default `"tex"`): how much TeX markup to strip from field
-  values, like BibDesk's *Remove TeX* options: `"tex"` removes TeX
-  commands and braces, `"braces"` only braces, `"none"` neither.
+* `format_spec` (required within the table): the key format, in BibDesk's [format-specifier language](format-specifiers). Each format is validated when the configuration is loaded. Without an `[auto_key]` table, generating a key requires an explicit `format_spec` pattern. It may also be a [per-type mapping](config-auto-key-per-type).
+* `lowercase` (default `false`): lowercase the entire generated key, like BibDesk's *Generate lowercase* option.
+* `clean` (default `"tex"`): how much TeX markup to strip from field values, like BibDesk's *Remove TeX* options: `"tex"` removes TeX commands and braces, `"braces"` only braces, `"none"` neither.
 
-The table is exposed as `Library.config.auto_key` (see
-{class}`~bibdeskparser.Library`), with `format_spec`, `lowercase`, and
-`clean` attributes; assigning `format_spec` validates every format
-string in it.
+The table is exposed as `Library.config.auto_key` (see {class}`~bibdeskparser.Library`), with `format_spec`, `lowercase`, and `clean` attributes; assigning `format_spec` validates every format string in it.
 
-The {ref}`check CLI command <cli-check>` audits an existing library
-against this format on request: `check --key-format` reports every
-stored citation key that does not match its `[auto_key]` format
-(preprint-only entries against the arXiv preprint format).
+The {ref}`check CLI command <cli-check>` audits an existing library against this format on request: `check --key-format` reports every stored citation key that does not match its `[auto_key]` format (preprint-only entries against the arXiv preprint format).
 
 (config-auto-key-per-type)=
 
 ### Per-type formats
 
-The venue of a publication lives in a different field per entry type —
-`journal` for an `@article`, `booktitle` for an `@inproceedings`,
-`series` for a `@book` — so a single format is rarely right for a
-mixed library. Instead of a plain string, `format_spec` may be a
-**table** mapping each entry type to its own format. The empty-string
-key `""` is the fallback for types not listed:
+The venue of a publication lives in a different field per entry type — `journal` for an `@article`, `booktitle` for an `@inproceedings`, `series` for a `@book` — so a single format is rarely right for a mixed library. Instead of a plain string, `format_spec` may be a **table** mapping each entry type to its own format. The empty-string key `""` is the fallback for types not listed:
 
 ```toml
 [auto_key.format_spec]
@@ -167,23 +97,13 @@ incollection = "%a1%c{booktitle}0%Y%u0"
 book = "%a1%c{series}0%Y%u0"
 ```
 
-The entry's own type selects the format; generating a key for a type
-that is neither listed nor covered by a `""` fallback is an error.
-(`lowercase` and `clean` still apply uniformly to every type.)
+The entry's own type selects the format; generating a key for a type that is neither listed nor covered by a `""` fallback is an error. (`lowercase` and `clean` still apply uniformly to every type.)
 
 (config-auto-file)=
 
 ## The `[auto_file]` table: autogenerated attachment file names
 
-The `[auto_file]` table configures the automatic filing of attached
-files (BibDesk's *AutoFile* feature): moving them into a designated
-location and renaming them according to a
-[file-name format](specifiers-files). It is used by
-{py:meth}`~bibdeskparser.Library.rename_file` without a
-`new_filename`, by {py:meth}`~bibdeskparser.Library.add_file` when
-auto-filing, and by the corresponding
-{ref}`CLI commands <cli>` (see the
-[how-to guide](howto-auto-file)):
+The `[auto_file]` table configures the automatic filing of attached files (BibDesk's *AutoFile* feature): moving them into a designated location and renaming them according to a [file-name format](specifiers-files). It is used by {py:meth}`~bibdeskparser.Library.rename_file` without a `new_filename`, by {py:meth}`~bibdeskparser.Library.add_file` when auto-filing, and by the corresponding {ref}`CLI commands <cli>` (see the [how-to guide](howto-auto-file)):
 
 ```toml
 [auto_file]
@@ -194,53 +114,39 @@ clean = "tex"              # TeX cleanup: "none", "braces", or "tex"
 file_automatically = false # auto-file on add_file by default
 ```
 
-* `format_spec` (required within the table): the file-name format, in
-  the [file-name dialect](specifiers-files) of BibDesk's
-  format-specifier language; it must contain a unique specifier
-  (`%u`/`%U`/`%n`). Each format is validated when the configuration
-  is loaded. Without an `[auto_file]` table, generating a file name
-  requires an explicit `format_spec` pattern. Like the `[auto_key]`
-  format, it may be a [per-type mapping](config-auto-key-per-type).
-  The recommended format is `%f{Cite Key}%u0%e`, which names each
-  attachment after its entry's citation key while preserving the
-  file's real extension.
-* `location` (default `"."`): the directory that auto-filed
-  attachments are moved into -- BibDesk's *Papers Folder*. A relative
-  path is interpreted against the directory containing the `.bib`
-  file (so the default files attachments next to the library, like
-  BibDesk with an empty Papers Folder preference); an absolute path
-  names a fixed folder. Environment variables (`$VAR`) and a leading
-  `~` are expanded. Missing directories are created as needed.
-* `lowercase` (default `false`): lowercase the entire generated file
-  name.
-* `clean` (default `"tex"`): how much TeX markup to strip from field
-  values: `"tex"` removes TeX commands and braces, `"braces"` only
-  braces, `"none"` neither.
-* `file_automatically` (default `false`): when `true`,
-  {py:meth}`~bibdeskparser.Library.add_file` auto-files every newly
-  attached file by default, the equivalent of BibDesk's *File papers
-  into the papers folder automatically* preference. Regardless of
-  this setting, on-demand filing -- `rename_file` without a new name,
-  `add_file` with an explicit `format_spec`/`auto_file_location`, and
-  previews via `eval_format_spec` -- is available whenever the table
-  is present.
+* `format_spec` (required within the table): the file-name format, in the [file-name dialect](specifiers-files) of BibDesk's format-specifier language; it must contain a unique specifier (`%u`/`%U`/`%n`). Each format is validated when the configuration is loaded. Without an `[auto_file]` table, generating a file name requires an explicit `format_spec` pattern. Like the `[auto_key]` format, it may be a [per-type mapping](config-auto-key-per-type). The recommended format is `%f{Cite Key}%u0%e`, which names each attachment after its entry's citation key while preserving the file's real extension.
+* `location` (default `"."`): the directory that auto-filed attachments are moved into -- BibDesk's *Papers Folder*. A relative path is interpreted against the directory containing the `.bib` file (so the default files attachments next to the library, like BibDesk with an empty Papers Folder preference); an absolute path names a fixed folder. Environment variables (`$VAR`) and a leading `~` are expanded. Missing directories are created as needed.
+* `lowercase` (default `false`): lowercase the entire generated file name.
+* `clean` (default `"tex"`): how much TeX markup to strip from field values: `"tex"` removes TeX commands and braces, `"braces"` only braces, `"none"` neither.
+* `file_automatically` (default `false`): when `true`, {py:meth}`~bibdeskparser.Library.add_file` auto-files every newly attached file by default, the equivalent of BibDesk's *File papers into the papers folder automatically* preference. Regardless of this setting, on-demand filing -- `rename_file` without a new name, `add_file` with an explicit `format_spec`/`auto_file_location`, and previews via `eval_format_spec` -- is available whenever the table is present.
 
-The table is exposed as `Library.config.auto_file` (see
-{class}`~bibdeskparser.Library`), with `format_spec`, `location`,
-`lowercase`, `clean`, and `file_automatically` attributes; assigning
-`format_spec` or `location` validates the value.
+The table is exposed as `Library.config.auto_file` (see {class}`~bibdeskparser.Library`), with `format_spec`, `location`, `lowercase`, `clean`, and `file_automatically` attributes; assigning `format_spec` or `location` validates the value.
+
+(config-assets)=
+
+## The `[assets]` table: companion asset files
+
+The `[assets]` table declares the library's [asset files](external-assets): companion files that live next to the `.bib` file without being attachments, like per-entry summaries or extracted full texts. It is an open map from a class name (any name; none carries special semantics) to a path pattern in the [format-specifier language](format-specifiers), relative to the `.bib` file's directory:
+
+```toml
+[assets]
+summary = "%f{Cite Key}_summary.md"
+fulltext = "%f{Cite Key}.ingest/fulltext.md"
+source = "%f{Cite Key}.ingest/source/"   # trailing slash: a directory
+topics = "%i{Topics-File}"               # a library asset
+```
+
+The map is empty by default; the layout above is an example, not a built-in. Each pattern is validated when the configuration is loaded; a pattern must resolve deterministically without consulting the filesystem, so the unique (`%u`/`%U`/`%n`), random (`%r`/`%R`/`%d`), and original-name (`%l`/`%L`/`%e`/`%E`) specifiers are rejected (see the [asset dialect](specifiers-assets)). A trailing slash marks a directory-valued asset; an empty pattern (`summary = ""`) declares the class as disabled.
+
+A pattern that references entry data (`%f{Cite Key}`, `%a1`, `%Y`) declares an **entry asset**; one built only from document info (`%i{Key}`) and literal text declares a **library asset**, which belongs to no entry. The `%i{Key}` specifier lets one user-level configuration serve every database: with `topics = "%i{Topics-File}"`, each database self-declares its own file (`bibdeskparser set_info "Topics-File" topics.md`), and a database whose [document info](cli-info) leaves the key unset or empty has no topics asset. The same works inside an entry asset's pattern, e.g. `summary = "%i{Assets-Dir}/%f{Cite Key}_summary.md"`.
+
+The table is exposed as `Library.config.assets`, a `dict` of the raw patterns. It is read by {py:meth}`~bibdeskparser.Library.asset` and {py:meth}`~bibdeskparser.Library.assets` (CLI: [`asset`](cli-asset), [`assets`](cli-assets)), by the `[rekey]`/`[delete]` file lifecycle (see [below](config-rekey-delete)), and by the asset audits of the [`check` command](cli-check).
 
 (config-add)=
 
 ## The `[add]` and `[add_abstract]` tables: fetching defaults
 
-These two tables configure the default behavior of the fetching
-methods {py:meth}`~bibdeskparser.Library.add` and
-{py:meth}`~bibdeskparser.Library.add_abstract` (and the like-named
-{ref}`CLI commands <cli-add>`). Each key is the default for the
-like-named keyword argument (or command-line option); passing an
-explicit value -- e.g. `--no-add-abstract` to override a configured
-`add_abstract = true` -- always wins:
+These two tables configure the default behavior of the fetching methods {py:meth}`~bibdeskparser.Library.add` and {py:meth}`~bibdeskparser.Library.add_abstract` (and the like-named {ref}`CLI commands <cli-add>`). Each key is the default for the like-named keyword argument (or command-line option); passing an explicit value -- e.g. `--no-add-abstract` to override a configured `add_abstract = true` -- always wins:
 
 ```toml
 [add]                     # defaults for `add`
@@ -252,19 +158,33 @@ add_preprint = false      # search arXiv for a matching preprint
 min_confidence = "high"   # lowest confidence stored: "high", "medium", "low"
 ```
 
-The tables are exposed as `Library.config.add` and
-`Library.config.add_abstract` (see
-{class}`~bibdeskparser.Library`).
+The tables are exposed as `Library.config.add` and `Library.config.add_abstract` (see {class}`~bibdeskparser.Library`).
+
+(config-rekey-delete)=
+
+## The `[rekey]` and `[delete]` tables: file lifecycle defaults
+
+These two tables configure what {py:meth}`~bibdeskparser.Library.rekey` and {py:meth}`~bibdeskparser.Library.delete` (and the like-named CLI commands) do with the files named after an entry's citation key: its [asset files](external-assets) (the `[assets]` patterns above) and its attachments (the `[auto_file]` format). Like `[add]`, each key is the default for the like-named keyword argument (or command-line option), and an explicit value always wins:
+
+```toml
+[rekey]                      # defaults for `rekey`; the generated key follows [auto_key]
+rename_assets = true         # move asset files with the entry ([assets] patterns)
+rename_attachments = true    # re-file attachments with the entry ([auto_file] format)
+
+[delete]                     # defaults for `delete`
+remove_assets = false        # also delete asset files from disk
+remove_attachments = false   # also delete attached files from disk
+```
+
+Renaming is on by default because a name that no longer matches its key is silently wrong, and the rename is reversible. Removal is off because it is not; with removal off, `delete` reports the files an entry leaves behind as warnings. See the methods' documentation for what exactly is moved or removed, and which files are skipped.
+
+The tables are exposed as `Library.config.rekey` and `Library.config.delete` (see {class}`~bibdeskparser.Library`).
 
 (config-known-missing)=
 
 ## The `[known_missing]` table: known-missing groups
 
-A field that is absent from an entry is ambiguous: the information may
-never have been looked for, or it may be verified not to exist. The
-`[known_missing]` table resolves the ambiguity by naming, per field, a
-[BibDesk static group](bibdesk-static-groups) that records the entries
-verified *not* to have that field:
+A field that is absent from an entry is ambiguous: the information may never have been looked for, or it may be verified not to exist. The `[known_missing]` table resolves the ambiguity by naming, per field, a [BibDesk static group](bibdesk-static-groups) that records the entries verified *not* to have that field:
 
 ```toml
 [known_missing]
@@ -273,51 +193,20 @@ eprint = "No Eprint"
 doi = "No DOI"
 ```
 
-Any field name may be declared, but what a declaration does depends
-on the field. One behavior applies to every declared field, and it is
-the only one for fields other than the three shown above: the `check`
-command reports an entry that sits in the field's group while
-actually having a non-empty value for that field (the `known_missing`
-audit), so a marker that has become stale -- e.g. after a manual edit
-in BibDesk -- cannot go unnoticed. On top of that:
+Any field name may be declared, but what a declaration does depends on the field. One behavior applies to every declared field, and it is the only one for fields other than the three shown above: the `check` command reports an entry that sits in the field's group while actually having a non-empty value for that field (the `known_missing` audit), so a marker that has become stale -- e.g. after a manual edit in BibDesk -- cannot go unnoticed. On top of that:
 
-* `abstract`: {py:meth}`~bibdeskparser.Library.add_abstract` (and the
-  like-named CLI command) skips entries that are members of the
-  group, adds an entry to the group when a search runs cleanly and
-  finds nothing (creating the group on first use), and removes the
-  entry from the group whenever an abstract is stored;
-  `overwrite`/`--overwrite` re-searches members (an explicit
-  re-audit).
-* `eprint`: {py:meth}`~bibdeskparser.Library.add_preprint` maintains
-  the group in the same way.
-* `doi`: {py:meth}`~bibdeskparser.Library.add_doi` maintains the
-  group in the same way. In addition, the `check` command accepts an
-  `article` without a `doi` if the entry is a member of the group.
-* Any other field (e.g. `author = "No Author"`): no command ever adds
-  or removes entries automatically; marking is entirely manual, and
-  the declaration provides the stale-marker audit above and names the
-  convention.
+* `abstract`: {py:meth}`~bibdeskparser.Library.add_abstract` (and the like-named CLI command) skips entries that are members of the group, adds an entry to the group when a search runs cleanly and finds nothing (creating the group on first use), and removes the entry from the group whenever an abstract is stored; `overwrite`/`--overwrite` re-searches members (an explicit re-audit).
+* `eprint`: {py:meth}`~bibdeskparser.Library.add_preprint` maintains the group in the same way.
+* `doi`: {py:meth}`~bibdeskparser.Library.add_doi` maintains the group in the same way. In addition, the `check` command accepts an `article` without a `doi` if the entry is a member of the group.
+* Any other field (e.g. `author = "No Author"`): no command ever adds or removes entries automatically; marking is entirely manual, and the declaration provides the stale-marker audit above and names the convention.
 
-Manual marking and unmarking always works, for declared and
-undeclared groups alike: with the `add_to_group`/`remove_from_group`
-CLI commands, or by drag and drop in BibDesk. Likewise,
-`keys --group NAME`/`--not-group NAME` select by membership in any
-static group; the `keys` filters do not consult this table. Without
-the table, none of the automatic bookkeeping above happens.
+Manual marking and unmarking always works, for declared and undeclared groups alike: with the `add_to_group`/`remove_from_group` CLI commands, or by drag and drop in BibDesk. Likewise, `keys --group NAME`/`--not-group NAME` select by membership in any static group; the `keys` filters do not consult this table. Without the table, none of the automatic bookkeeping above happens.
 
-Field names are lowercased; each field needs its own group, and group
-names must be non-empty (a shared group would make membership
-ambiguous between fields). The table is exposed as
-`Library.config.known_missing`, a `dict` mapping the field name to the
-group name. See [Empty fields](bibdesk-empty-fields) for why an empty
-field value cannot record this information.
+Field names are lowercased; each field needs its own group, and group names must be non-empty (a shared group would make membership ambiguous between fields). The table is exposed as `Library.config.known_missing`, a `dict` mapping the field name to the group name. See [Empty fields](bibdesk-empty-fields) for why an empty field value cannot record this information.
 
 ## The `[initials]` table: acronym exceptions
 
-The `[initials]` table defines, per field, exceptions to the acronym
-that the `%c` format specifier builds from a field value (see
-[Venue initials](specifiers-initials)). Keys are full field values
-or `@string` macro names:
+The `[initials]` table defines, per field, exceptions to the acronym that the `%c` format specifier builds from a field value (see [Venue initials](specifiers-initials)). Keys are full field values or `@string` macro names:
 
 ```toml
 [initials.journal]
@@ -328,29 +217,15 @@ or `@string` macro names:
 "Proc. SPIE 11700, Optical and Quantum Sensing" = "SPIE"
 ```
 
-With per-type formats, supply an `[initials.<field>]` table for each
-venue field your formats reference (`[initials.booktitle]`,
-`[initials.series]`, ...) alongside `[initials.journal]`.
+With per-type formats, supply an `[initials.<field>]` table for each venue field your formats reference (`[initials.booktitle]`, `[initials.series]`, ...) alongside `[initials.journal]`.
 
-The `[initials.journal]` exceptions are also used by
-{py:meth}`~bibdeskparser.Library.import_bibtex` (and
-{py:meth}`~bibdeskparser.Library.add`) when they have to invent an
-`@string` macro for a journal that is neither in the library nor in
-the `[journal_macros]` table: the new macro is named by the journal's
-lowercased initials.
+The `[initials.journal]` exceptions are also used by {py:meth}`~bibdeskparser.Library.import_bibtex` (and {py:meth}`~bibdeskparser.Library.add`) when they have to invent an `@string` macro for a journal that is neither in the library nor in the `[journal_macros]` table: the new macro is named by the journal's lowercased initials.
 
 (config-journal-macros)=
 
 ## The `[journal_macros]` table: journal-name-to-macro mappings
 
-When entries are imported ({py:meth}`~bibdeskparser.Library.import_bibtex`,
-{py:meth}`~bibdeskparser.Library.add`, and the corresponding
-{ref}`CLI commands <cli-import>`), every journal name is replaced by
-an `@string` macro reference ([preprint
-pseudo-journals](preprints) excepted). A journal that does not match
-the value of a macro already in the library is looked up in the
-`[journal_macros]` table, which maps a macro name to the journal name
-it stands for:
+When entries are imported ({py:meth}`~bibdeskparser.Library.import_bibtex`, {py:meth}`~bibdeskparser.Library.add`, and the corresponding {ref}`CLI commands <cli-import>`), every journal name is replaced by an `@string` macro reference ([preprint pseudo-journals](preprints) excepted). A journal that does not match the value of a macro already in the library is looked up in the `[journal_macros]` table, which maps a macro name to the journal name it stands for:
 
 ```toml
 [journal_macros]
@@ -358,49 +233,17 @@ prl = "Phys. Rev. Lett."
 jpb = ["J. Phys. B", "J. Phys. B: At. Mol. Opt. Phys."]
 ```
 
-A list value declares aliases: the first name is the canonical value
-of the macro (what the `@string` will define), and any of the names
-resolves to the macro on import -- use this to canonicalize the
-various spellings publishers use for the same journal. When an
-imported journal matches a `[journal_macros]` entry whose macro is
-not yet defined in the library, the `@string` definition is added
-automatically.
+A list value declares aliases: the first name is the canonical value of the macro (what the `@string` will define), and any of the names resolves to the macro on import -- use this to canonicalize the various spellings publishers use for the same journal. When an imported journal matches a `[journal_macros]` entry whose macro is not yet defined in the library, the `@string` definition is added automatically.
 
-A journal found in neither the library nor the table gets a *newly
-created* macro (named by its lowercased initials, honoring
-`[initials.journal]`), with a warning -- so a curated
-`[journal_macros]` table keeps macro names and journal abbreviations
-consistent across libraries. The table is exposed as
-`Library.config.journal_macros`, a `dict` mapping each macro name to
-a tuple of journal names.
+A journal found in neither the library nor the table gets a *newly created* macro (named by its lowercased initials, honoring `[initials.journal]`), with a warning -- so a curated `[journal_macros]` table keeps macro names and journal abbreviations consistent across libraries. The table is exposed as `Library.config.journal_macros`, a `dict` mapping each macro name to a tuple of journal names.
 
-When the derived macro name is already defined -- typically because
-the library abbreviates a journal that an imported entry spells in
-full, `prl = "Phys. Rev. Lett."` versus an incoming `Physical Review
-Letters` -- the incoming name is compared word by word against the
-existing macro's value: a dot-terminated word matches as a
-case-insensitive prefix (`Phys.` matches `Physical`), and a bare
-word must match exactly (so `Phys. Rev. A` does not capture
-`Physical Review Applied`). On a full match the existing macro is
-reused, with a warning showing the `[journal_macros]` alias line
-that makes the mapping explicit. Otherwise the import fails, and the
-error spells out the configuration for either intent: appending the
-incoming spelling to the macro's alias list (canonical value first)
-if the two name the same journal, or an entry under a fresh macro
-name (or an `[initials.journal]` exception) for a different journal
-that happens to share its initials.
+When the derived macro name is already defined -- typically because the library abbreviates a journal that an imported entry spells in full, `prl = "Phys. Rev. Lett."` versus an incoming `Physical Review Letters` -- the incoming name is compared word by word against the existing macro's value: a dot-terminated word matches as a case-insensitive prefix (`Phys.` matches `Physical`), and a bare word must match exactly (so `Phys. Rev. A` does not capture `Physical Review Applied`). On a full match the existing macro is reused, with a warning showing the `[journal_macros]` alias line that makes the mapping explicit. Otherwise the import fails, and the error spells out the configuration for either intent: appending the incoming spelling to the macro's alias list (canonical value first) if the two name the same journal, or an entry under a fresh macro name (or an `[initials.journal]` exception) for a different journal that happens to share its initials.
 
 (config-preprint-archives)=
 
 ## The `[preprint_archives]` table: recognized preprint servers
 
-The archives that may appear in a [preprint
-pseudo-journal](preprints) like `journal = {arXiv:2205.15044}`. The
-built-in archives are arXiv, bioRxiv, medRxiv, ChemRxiv, HAL, and
-SSRN; the table adds further archives (or, on a case-insensitive
-name match, overrides a built-in one), mapping the archive's
-canonical spelling to a URL template for the online location of a
-preprint, with `{id}` standing for the identifier:
+The archives that may appear in a [preprint pseudo-journal](preprints) like `journal = {arXiv:2205.15044}`. The built-in archives are arXiv, bioRxiv, medRxiv, ChemRxiv, HAL, and SSRN; the table adds further archives (or, on a case-insensitive name match, overrides a built-in one), mapping the archive's canonical spelling to a URL template for the online location of a preprint, with `{id}` standing for the identifier:
 
 ```toml
 [preprint_archives]
@@ -408,86 +251,41 @@ Zenodo = "https://zenodo.org/records/{id}"
 EarthArXiv = ""
 ```
 
-An empty template declares an archive without identifier-based URLs
-(like the built-in ChemRxiv, whose identifiers are DOIs): the archive
-is recognized, but rendering falls back to the entry's `doi`/URL for
-the hyperlink.
+An empty template declares an archive without identifier-based URLs (like the built-in ChemRxiv, whose identifiers are DOIs): the archive is recognized, but rendering falls back to the entry's `doi`/URL for the hyperlink.
 
-The recognized archives determine which entries count as
-[preprint-only](preprints): on [import](cli-import), such entries
-are normalized to the canonical `@unpublished` form (an
-*unrecognized* pseudo-journal prefix is rejected); on
-[export](cli-export), they are written in the form selected by
-`--preprint`; and when [rendering](cli-render), the preprint
-reference is hyperlinked through the archive's URL template when
-there is no DOI or URL.
+The recognized archives determine which entries count as [preprint-only](preprints): on [import](cli-import), such entries are normalized to the canonical `@unpublished` form (an *unrecognized* pseudo-journal prefix is rejected); on [export](cli-export), they are written in the form selected by `--preprint`; and when [rendering](cli-render), the preprint reference is hyperlinked through the archive's URL template when there is no DOI or URL.
 
-The URL template also determines the
-[`archive` field](preprints-archive-field) that exports emit for
-non-arXiv preprints (the link base REVTeX uses for rendered
-eprints): whenever the template has the form `<base>/{id}`, the
-`<base>` part becomes the `archive` value. The table is exposed as
-`Library.config.preprint_archives`, a `dict` mapping each lowercased
-archive prefix to a named tuple `(name, url)`.
+The URL template also determines the [`archive` field](preprints-archive-field) that exports emit for non-arXiv preprints (the link base REVTeX uses for rendered eprints): whenever the template has the form `<base>/{id}`, the `<base>` part becomes the `archive` value. The table is exposed as `Library.config.preprint_archives`, a `dict` mapping each lowercased archive prefix to a named tuple `(name, url)`.
 
 (config-preprint-export)=
 
 ## The `preprint_export` option
 
-The entry type that {py:meth}`~bibdeskparser.Library.export` (and
-the `export` CLI command) writes for a [preprint-only
-entry](preprints): `"unpublished"` (the default) or `"misc"` for
-the structured `eprint`-field forms, understood by REVTeX,
-`elsarticle`, and biblatex (`"unpublished"` guarantees the type's
-required `note` field in minimal exports -- the stored note, or
-"preprint"), or `"article"` for the pseudo-journal form, which
-renders under every classic BibTeX style:
+The entry type that {py:meth}`~bibdeskparser.Library.export` (and the `export` CLI command) writes for a [preprint-only entry](preprints): `"unpublished"` (the default) or `"misc"` for the structured `eprint`-field forms, understood by REVTeX, `elsarticle`, and biblatex (`"unpublished"` guarantees the type's required `note` field in minimal exports -- the stored note, or "preprint"), or `"article"` for the pseudo-journal form, which renders under every classic BibTeX style:
 
 ```toml
 preprint_export = "article"
 ```
 
-This is only the *default* for the `preprint` argument of
-{py:meth}`~bibdeskparser.Library.export` (`--preprint` on the
-command line), which also accepts `"stored"` for no transformation
-at all. The setting never affects the *stored* entry or an explicit
-`export --field` list. It is exposed as
-`Library.config.preprint_export`.
+This is only the *default* for the `preprint` argument of {py:meth}`~bibdeskparser.Library.export` (`--preprint` on the command line), which also accepts `"stored"` for no transformation at all. The setting never affects the *stored* entry or an explicit `export --field` list. It is exposed as `Library.config.preprint_export`.
 
 ## The `protected_words` list
 
-Words (or phrases) that
-{py:meth}`~bibdeskparser.Library.import_bibtex` (and
-{py:meth}`~bibdeskparser.Library.add`) always wraps in braces inside
-an imported `title`, protecting their capitalization from being
-lowercased by bibliography styles:
+Words (or phrases) that {py:meth}`~bibdeskparser.Library.import_bibtex` (and {py:meth}`~bibdeskparser.Library.add`) always wraps in braces inside an imported `title`, protecting their capitalization from being lowercased by bibliography styles:
 
 ```toml
 protected_words = ["Schrödinger", "Rydberg", "Bose", "Einstein", "NMR"]
 ```
 
-Independent of this list, import brace-protects every capitalized
-word of a title that looks like it is in sentence case (a heuristic
-for proper nouns); `protected_words` guarantees protection for the
-listed words even in title-case titles, where the heuristic does not
-apply. Words that are already braced are left alone. The list is
-exposed as `Library.config.protected_words`.
+Independent of this list, import brace-protects every capitalized word of a title that looks like it is in sentence case (a heuristic for proper nouns); `protected_words` guarantees protection for the listed words even in title-case titles, where the heuristic does not apply. Words that are already braced are left alone. The list is exposed as `Library.config.protected_words`.
 
 (config-types)=
 
 ## Custom and extended entry types
 
-A `[types.NAME]` table defines the mandatory (`required`) and optional
-(`optional`) fields of an entry type, exactly like BibDesk's
-per-type field templates. This both makes `NAME` a recognized entry
-type and, when `verify_fields` is on, determines which fields are
-considered appropriate for it. The `required` list is also what
-[`check`](cli-check) audits every entry of that type against, so
-declaring a type here is how an entry of an otherwise unknown type
-passes the gate.
+A `[types.NAME]` table defines the mandatory (`required`) and optional (`optional`) fields of an entry type, exactly like BibDesk's per-type field templates. This both makes `NAME` a recognized entry type and, when `verify_fields` is on, determines which fields are considered appropriate for it. The `required` list is also what [`check`](cli-check) audits every entry of that type against, so declaring a type here is how an entry of an otherwise unknown type passes the gate.
 
-For an entry type that is **not** already built in, the table simply
-defines it:
+For an entry type that is **not** already built in, the table simply defines it:
 
 ```toml
 [types.dataset]
@@ -495,16 +293,14 @@ required = ["author", "title", "year"]
 optional = ["note", "url"]
 ```
 
-For a type that **is** built in, the fields you list are *added* to the
-built-in template by default:
+For a type that **is** built in, the fields you list are *added* to the built-in template by default:
 
 ```toml
 [types.article]
 optional = ["eprint"]   # article keeps its built-in fields, plus eprint
 ```
 
-To discard the built-in template and define the type from scratch, set
-`replace = true`:
+To discard the built-in template and define the type from scratch, set `replace = true`:
 
 ```toml
 [types.report]
@@ -515,8 +311,7 @@ optional = ["note"]
 
 ## Custom fields
 
-A `[fields]` table adds recognized field names without tying them to a
-particular type:
+A `[fields]` table adds recognized field names without tying them to a particular type:
 
 ```toml
 [fields]
@@ -526,10 +321,7 @@ universal = ["mycustomtag"]
 known = ["someotherfield"]
 ```
 
-A `universal` field never triggers the inappropriate-field warning,
-whatever the entry type. A `known` field is recognized for entry types
-that have no field template of their own, but is not automatically
-appropriate for a templated type.
+A `universal` field never triggers the inappropriate-field warning, whatever the entry type. A `known` field is recognized for entry types that have no field template of their own, but is not automatically appropriate for a templated type.
 
 ## A complete example
 
@@ -559,9 +351,22 @@ lowercase = false          # lowercase the whole generated name
 clean = "tex"              # TeX cleanup: "none", "braces", or "tex"
 file_automatically = true  # auto-file on add_file by default
 
+[assets]                     # companion files, keyed by citation key
+summary = "%f{Cite Key}_summary.md"
+fulltext = "%f{Cite Key}.ingest/fulltext.md"
+topics = "%i{Topics-File}"   # a library asset, set via document info
+
 [add]                        # defaults for the `add` command
 add_abstract = true          # store the abstract the source returns
 add_preprint = true          # search arXiv for a matching preprint
+
+[rekey]                      # defaults for `rekey`
+rename_assets = true         # move asset files with the entry
+rename_attachments = true    # re-file attachments with the entry
+
+[delete]                     # defaults for `delete`
+remove_assets = false        # also delete asset files from disk
+remove_attachments = false   # also delete attached files from disk
 
 [known_missing]              # groups recording verified-absent info
 abstract = "No Abstract"
@@ -609,31 +414,6 @@ Zenodo = "https://zenodo.org/records/{id}"
 min_confidence = "high"
 ```
 
-With this configuration, the command-line tool operates on
-`~/Documents/Refs/refs.bib` unless another `.bib` file is named
-explicitly, and an `@article` in *Phys. Rev. A* is keyed
-`Goerz2014` → `GoerzPRA2014`. The `PRA` comes straight from
-`%c{journal}0`, which acronyms every word of the venue, so no
-`[initials.journal]` entry is needed for it (the recommended pattern;
-see [venue initials](specifiers-initials)). By contrast, an
-`@inproceedings` in the SPIE proceedings above becomes `GoerzSPIE2021`:
-that long `booktitle` acronyms to an unhelpful jumble of letters and
-volume digits, so `[initials.booktitle]` pins it to `SPIE`. A `@misc`
-entry, matching no listed type, falls back to `%a1%Y%u0`. Attached
-files can be filed on demand into `~/Documents/Papers`, named after
-their entry's citation key (e.g. `GoerzPRA2014.pdf`); with
-`file_automatically = true` in `[auto_file]`, every newly attached
-file would be filed that way immediately.
+With this configuration, the command-line tool operates on `~/Documents/Refs/refs.bib` unless another `.bib` file is named explicitly, and an `@article` in *Phys. Rev. A* is keyed `Goerz2014` → `GoerzPRA2014`. The `PRA` comes straight from `%c{journal}0`, which acronyms every word of the venue, so no `[initials.journal]` entry is needed for it (the recommended pattern; see [venue initials](specifiers-initials)). By contrast, an `@inproceedings` in the SPIE proceedings above becomes `GoerzSPIE2021`: that long `booktitle` acronyms to an unhelpful jumble of letters and volume digits, so `[initials.booktitle]` pins it to `SPIE`. A `@misc` entry, matching no listed type, falls back to `%a1%Y%u0`. Attached files can be filed on demand into `~/Documents/Papers`, named after their entry's citation key (e.g. `GoerzPRA2014.pdf`); with `file_automatically = true` in `[auto_file]`, every newly attached file would be filed that way immediately.
 
-The {py:meth}`~bibdeskparser.Library.import_bibtex` and
-{py:meth}`~bibdeskparser.Library.add` methods first resolve a journal
-name against the `@string` macros already defined in the library
-itself (matched by value). Only publisher spelling variants that
-differ from a macro's value in the library require a
-`[journal_macros]` entry: each list's first name is the macro's
-canonical value (matching the library), and the further names are
-alternative spellings that canonicalize to the same macro on import.
-The `[initials.journal]` entries pin the citation-key initials
-for the venues whose macro/abbreviation does not follow the
-first-letter acronym rule, and `protected_words` keeps the listed
-proper nouns and acronyms brace-protected in every imported title.
+The {py:meth}`~bibdeskparser.Library.import_bibtex` and {py:meth}`~bibdeskparser.Library.add` methods first resolve a journal name against the `@string` macros already defined in the library itself (matched by value). Only publisher spelling variants that differ from a macro's value in the library require a `[journal_macros]` entry: each list's first name is the macro's canonical value (matching the library), and the further names are alternative spellings that canonicalize to the same macro on import. The `[initials.journal]` entries pin the citation-key initials for the venues whose macro/abbreviation does not follow the first-letter acronym rule, and `protected_words` keeps the listed proper nouns and acronyms brace-protected in every imported title.

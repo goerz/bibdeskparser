@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bib Entry Types &mdash; BibDeskParser 0.7.0 documentation</title>
+  <title>Bib Entry Types &mdash; BibDeskParser 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=fe7df9b0"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -26,7 +26,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Configuration" href="config.html" />
-    <link rel="prev" title="Preprints" href="preprints.html" /> 
+    <link rel="prev" title="External Assets" href="assets.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.7.0
+    v0.8.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -64,6 +64,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assets.html">External Assets</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -164,31 +165,11 @@
              
   <section class="tex2jax_ignore mathjax_ignore" id="bib-entry-types">
 <span id="id1"></span><h1>Bib Entry Types<a class="headerlink" href="#bib-entry-types" title="Link to this heading"></a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> recognizes the entry types that
-<a class="reference external" href="https://bibdesk.sourceforge.io">BibDesk</a> itself defines. These are the
-types BibDesk templates in its editor, declared in its <code class="docutils literal notranslate"><span class="pre">TypeInfo.plist</span></code>
-source file (the <code class="docutils literal notranslate"><span class="pre">FieldsForTypes</span></code> dictionary), which is the authority
-for the per-type field lists reproduced below.</p>
-<p>Every entry type is validated when an entry is <em>constructed or
-modified</em> in Python – <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a> construction or an
-<code class="docutils literal notranslate"><span class="pre">entry_type</span></code> assignment. An unrecognized entry type raises a
-<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a>. <strong>Loading a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file never validates</strong>, so a file
-using an unusual entry type still loads and round-trips unchanged. The
-<a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span></code></span></a> command is where such a file is examined: it
-reports every entry whose type is unrecognized, and every mandatory
-field an entry’s type lists that the entry does not have.</p>
-<p>Assigning a field that is not appropriate for the entry type emits a
-<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#UserWarning" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">UserWarning</span></code></a> (the value is still stored). A field is appropriate
-if it is one of the type’s mandatory or optional fields listed below, or
-one of the <a class="reference internal" href="#common-fields">fields common to all entry types</a>. Nothing
-requires the mandatory fields to be <em>present</em> at write time; that is
-what <code class="docutils literal notranslate"><span class="pre">check</span></code> audits.</p>
-<p>The extended biblatex entry types and fields are also recognized
-(accepted without error), though only the types below are given field
-templates.</p>
-<p>The recognized types and fields, and the two validation behaviors
-described above, can be customized or disabled through a configuration
-file; see <a class="reference internal" href="config.html#configuration"><span class="std std-ref">Configuration</span></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> recognizes the entry types that <a class="reference external" href="https://bibdesk.sourceforge.io">BibDesk</a> itself defines. These are the types BibDesk templates in its editor, declared in its <code class="docutils literal notranslate"><span class="pre">TypeInfo.plist</span></code> source file (the <code class="docutils literal notranslate"><span class="pre">FieldsForTypes</span></code> dictionary), which is the authority for the per-type field lists reproduced below.</p>
+<p>Every entry type is validated when an entry is <em>constructed or modified</em> in Python – <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a> construction or an <code class="docutils literal notranslate"><span class="pre">entry_type</span></code> assignment. An unrecognized entry type raises a <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a>. <strong>Loading a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file never validates</strong>, so a file using an unusual entry type still loads and round-trips unchanged. The <a class="reference internal" href="cli.html#cli-check"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">check</span></code></span></a> command is where such a file is examined: it reports every entry whose type is unrecognized, and every mandatory field an entry’s type lists that the entry does not have.</p>
+<p>Assigning a field that is not appropriate for the entry type emits a <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#UserWarning" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">UserWarning</span></code></a> (the value is still stored). A field is appropriate if it is one of the type’s mandatory or optional fields listed below, or one of the <a class="reference internal" href="#common-fields">fields common to all entry types</a>. Nothing requires the mandatory fields to be <em>present</em> at write time; that is what <code class="docutils literal notranslate"><span class="pre">check</span></code> audits.</p>
+<p>The extended biblatex entry types and fields are also recognized (accepted without error), though only the types below are given field templates.</p>
+<p>The recognized types and fields, and the two validation behaviors described above, can be customized or disabled through a configuration file; see <a class="reference internal" href="config.html#configuration"><span class="std std-ref">Configuration</span></a>.</p>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
 <table class="docutils align-default">
@@ -274,8 +255,7 @@ file; see <a class="reference internal" href="config.html#configuration"><span c
 <span id="type-book"></span><h2>book<a class="headerlink" href="#book" title="Link to this heading"></a></h2>
 <p>A book with a named publisher.</p>
 <p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
-<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">series</span></code>,
-<code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
 </section>
 <section id="booklet">
 <span id="type-booklet"></span><h2>booklet<a class="headerlink" href="#booklet" title="Link to this heading"></a></h2>
@@ -291,11 +271,9 @@ file; see <a class="reference internal" href="config.html#configuration"><span c
 </section>
 <section id="conference">
 <span id="type-conference"></span><h2>conference<a class="headerlink" href="#conference" title="Link to this heading"></a></h2>
-<p>An article in conference proceedings (the classic BibTeX type;
-equivalent to <a class="reference internal" href="#type-inproceedings"><code class="docutils literal notranslate"><span class="pre">inproceedings</span></code></a>).</p>
+<p>An article in conference proceedings (the classic BibTeX type; equivalent to <a class="reference internal" href="#type-inproceedings"><code class="docutils literal notranslate"><span class="pre">inproceedings</span></code></a>).</p>
 <p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">booktitle</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
-<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>,
-<code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>, <code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
 </section>
 <section id="electronic">
 <span id="type-electronic"></span><h2>electronic<a class="headerlink" href="#electronic" title="Link to this heading"></a></h2>
@@ -313,22 +291,19 @@ equivalent to <a class="reference internal" href="#type-inproceedings"><code cla
 <span id="type-inbook"></span><h2>inbook<a class="headerlink" href="#inbook" title="Link to this heading"></a></h2>
 <p>A part of a book (a chapter or a range of pages) with its own identity.</p>
 <p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
-<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">chapter</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>,
-<code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">chapter</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code></p>
 </section>
 <section id="incollection">
 <span id="type-incollection"></span><h2>incollection<a class="headerlink" href="#incollection" title="Link to this heading"></a></h2>
 <p>A titled contribution to a book (a collection with its own editor).</p>
 <p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">booktitle</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
-<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">chapter</span></code>,
-<code class="docutils literal notranslate"><span class="pre">pages</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">chapter</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
 </section>
 <section id="inproceedings">
 <span id="type-inproceedings"></span><h2>inproceedings<a class="headerlink" href="#inproceedings" title="Link to this heading"></a></h2>
 <p>An article in conference proceedings.</p>
 <p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">booktitle</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
-<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>,
-<code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code>, <code class="docutils literal notranslate"><span class="pre">pages</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>, <code class="docutils literal notranslate"><span class="pre">series</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code></p>
 </section>
 <section id="jurthesis">
 <span id="type-jurthesis"></span><h2>jurthesis<a class="headerlink" href="#jurthesis" title="Link to this heading"></a></h2>
@@ -340,8 +315,7 @@ equivalent to <a class="reference internal" href="#type-inproceedings"><code cla
 <span id="type-manual"></span><h2>manual<a class="headerlink" href="#manual" title="Link to this heading"></a></h2>
 <p>Technical or other documentation, not necessarily in book form.</p>
 <p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">title</span></code></p>
-<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>,
-<code class="docutils literal notranslate"><span class="pre">year</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">edition</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
 </section>
 <section id="mastersthesis">
 <span id="type-mastersthesis"></span><h2>mastersthesis<a class="headerlink" href="#mastersthesis" title="Link to this heading"></a></h2>
@@ -371,8 +345,7 @@ equivalent to <a class="reference internal" href="#type-inproceedings"><code cla
 <span id="type-proceedings"></span><h2>proceedings<a class="headerlink" href="#proceedings" title="Link to this heading"></a></h2>
 <p>The published proceedings of a conference.</p>
 <p><strong>Mandatory:</strong> <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code></p>
-<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>,
-<code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code></p>
+<p><strong>Optional:</strong> <code class="docutils literal notranslate"><span class="pre">editor</span></code>, <code class="docutils literal notranslate"><span class="pre">number</span></code>, <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">organization</span></code>, <code class="docutils literal notranslate"><span class="pre">address</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>, <code class="docutils literal notranslate"><span class="pre">volume</span></code></p>
 </section>
 <section id="techreport">
 <span id="type-techreport"></span><h2>techreport<a class="headerlink" href="#techreport" title="Link to this heading"></a></h2>
@@ -400,45 +373,24 @@ equivalent to <a class="reference internal" href="#type-inproceedings"><code cla
 </section>
 <section id="fields-common-to-all-entry-types">
 <span id="common-fields"></span><h2>Fields common to all entry types<a class="headerlink" href="#fields-common-to-all-entry-types" title="Link to this heading"></a></h2>
-<p>Beyond the per-type fields above, <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> accepts a set of
-administrative and cross-type fields on <em>any</em> entry type, without a
-warning. These are the fields BibDesk (and BibTeX in general) may attach
-to an entry regardless of its type:</p>
+<p>Beyond the per-type fields above, <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> accepts a set of administrative and cross-type fields on <em>any</em> entry type, without a warning. These are the fields BibDesk (and BibTeX in general) may attach to an entry regardless of its type:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">keywords</span></code> – the comma-separated tag list, exposed as the
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.keywords" title="bibdeskparser.Entry.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a> tuple.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">abstract</span></code>, <code class="docutils literal notranslate"><span class="pre">annote</span></code>, <code class="docutils literal notranslate"><span class="pre">annotation</span></code>, <code class="docutils literal notranslate"><span class="pre">note</span></code> – free-form descriptive
-and note fields.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">date-added</span></code>, <code class="docutils literal notranslate"><span class="pre">date-modified</span></code> – timestamps; the latter two
-are exposed as the read-only <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_added" title="bibdeskparser.Entry.date_added"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_added</span></code></a>
-and <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_modified" title="bibdeskparser.Entry.date_modified"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_modified</span></code></a> properties.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">keywords</span></code> – the comma-separated tag list, exposed as the <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.keywords" title="bibdeskparser.Entry.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a> tuple.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">abstract</span></code>, <code class="docutils literal notranslate"><span class="pre">annote</span></code>, <code class="docutils literal notranslate"><span class="pre">annotation</span></code>, <code class="docutils literal notranslate"><span class="pre">note</span></code> – free-form descriptive and note fields.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">date-added</span></code>, <code class="docutils literal notranslate"><span class="pre">date-modified</span></code> – timestamps; the latter two are exposed as the read-only <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_added" title="bibdeskparser.Entry.date_added"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_added</span></code></a> and <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_modified" title="bibdeskparser.Entry.date_modified"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_modified</span></code></a> properties.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">doi</span></code>, <code class="docutils literal notranslate"><span class="pre">url</span></code>, <code class="docutils literal notranslate"><span class="pre">isbn</span></code>, <code class="docutils literal notranslate"><span class="pre">issn</span></code> – stable identifiers and links.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">eprint</span></code>, <code class="docutils literal notranslate"><span class="pre">eprinttype</span></code>, <code class="docutils literal notranslate"><span class="pre">eprintclass</span></code>, <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>,
-<code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> – the arXiv/eprint fields.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">eprint</span></code>, <code class="docutils literal notranslate"><span class="pre">eprinttype</span></code>, <code class="docutils literal notranslate"><span class="pre">eprintclass</span></code>, <code class="docutils literal notranslate"><span class="pre">archiveprefix</span></code>, <code class="docutils literal notranslate"><span class="pre">primaryclass</span></code> – the arXiv/eprint fields.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">crossref</span></code>, <code class="docutils literal notranslate"><span class="pre">ids</span></code> – cross-referencing and alias keys.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">language</span></code>, <code class="docutils literal notranslate"><span class="pre">rating</span></code>, <code class="docutils literal notranslate"><span class="pre">read</span></code>, <code class="docutils literal notranslate"><span class="pre">rss-description</span></code>, <code class="docutils literal notranslate"><span class="pre">local-url</span></code> –
-further BibDesk bookkeeping fields.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">language</span></code>, <code class="docutils literal notranslate"><span class="pre">rating</span></code>, <code class="docutils literal notranslate"><span class="pre">read</span></code>, <code class="docutils literal notranslate"><span class="pre">rss-description</span></code>, <code class="docutils literal notranslate"><span class="pre">local-url</span></code> – further BibDesk bookkeeping fields.</p></li>
 </ul>
-<p>Some of these are surfaced through dedicated <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> API rather
-than the plain <code class="docutils literal notranslate"><span class="pre">dict</span></code> interface:</p>
+<p>Some of these are surfaced through dedicated <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> API rather than the plain <code class="docutils literal notranslate"><span class="pre">dict</span></code> interface:</p>
 <ul class="simple">
-<li><p><strong>File attachments</strong> (<code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code>) are managed through
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_file" title="bibdeskparser.Library.add_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_file()</span></code></a>,
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.replace_file" title="bibdeskparser.Library.replace_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_file()</span></code></a>,
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.unlink_file" title="bibdeskparser.Library.unlink_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unlink_file()</span></code></a>, and
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a>.</p></li>
-<li><p><strong>Linked URLs</strong> (<code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code>) are managed through
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_url" title="bibdeskparser.Entry.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a>,
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.replace_url" title="bibdeskparser.Entry.replace_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_url()</span></code></a>, and
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.remove_url" title="bibdeskparser.Entry.remove_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_url()</span></code></a>.</p></li>
-<li><p><strong>Timestamps</strong> are read through
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_added" title="bibdeskparser.Entry.date_added"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_added</span></code></a> and
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_modified" title="bibdeskparser.Entry.date_modified"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_modified</span></code></a>.</p></li>
-<li><p><strong>Keywords</strong> are read through
-<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.keywords" title="bibdeskparser.Entry.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a>.</p></li>
+<li><p><strong>File attachments</strong> (<code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code>) are managed through <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_file" title="bibdeskparser.Library.add_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_file()</span></code></a>, <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.replace_file" title="bibdeskparser.Library.replace_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_file()</span></code></a>, <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.unlink_file" title="bibdeskparser.Library.unlink_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">unlink_file()</span></code></a>, and <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a>.</p></li>
+<li><p><strong>Linked URLs</strong> (<code class="docutils literal notranslate"><span class="pre">bdsk-url-N</span></code>) are managed through <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.add_url" title="bibdeskparser.Entry.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_url()</span></code></a>, <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.replace_url" title="bibdeskparser.Entry.replace_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">replace_url()</span></code></a>, and <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.remove_url" title="bibdeskparser.Entry.remove_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_url()</span></code></a>.</p></li>
+<li><p><strong>Timestamps</strong> are read through <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_added" title="bibdeskparser.Entry.date_added"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_added</span></code></a> and <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.date_modified" title="bibdeskparser.Entry.date_modified"><code class="xref py py-attr docutils literal notranslate"><span class="pre">date_modified</span></code></a>.</p></li>
+<li><p><strong>Keywords</strong> are read through <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.keywords" title="bibdeskparser.Entry.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a>.</p></li>
 </ul>
-<p>For how these fields are encoded on disk, see the Explanation page
-<a class="reference internal" href="bibdesk_format.html"><span class="doc std std-doc">BibDesk’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code> Format</span></a>.</p>
+<p>For how these fields are encoded on disk, see the Explanation page <a class="reference internal" href="bibdesk_format.html"><span class="doc std std-doc">BibDesk’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code> Format</span></a>.</p>
 </section>
 <section id="field-glossary">
 <h2>Field glossary<a class="headerlink" href="#field-glossary" title="Link to this heading"></a></h2>
@@ -497,9 +449,7 @@ than the plain <code class="docutils literal notranslate"><span class="pre">dict
 <p><code class="docutils literal notranslate"><span class="pre">group</span></code>
 : For <a class="reference internal" href="#type-glossdef"><code class="docutils literal notranslate"><span class="pre">glossdef</span></code></a>: a grouping label.</p>
 <p><code class="docutils literal notranslate"><span class="pre">volumetitle</span></code>
-: For <a class="reference internal" href="#type-commented"><code class="docutils literal notranslate"><span class="pre">commented</span></code></a>: the title of a specific volume.
-</content>
-</invoke></p>
+: For <a class="reference internal" href="#type-commented"><code class="docutils literal notranslate"><span class="pre">commented</span></code></a>: the title of a specific volume.</p>
 </section>
 </section>
 
@@ -507,7 +457,7 @@ than the plain <code class="docutils literal notranslate"><span class="pre">dict
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="preprints.html" class="btn btn-neutral float-left" title="Preprints" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="assets.html" class="btn btn-neutral float-left" title="External Assets" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="config.html" class="btn btn-neutral float-right" title="Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
@@ -515,7 +465,7 @@ than the plain <code class="docutils literal notranslate"><span class="pre">dict
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 29, 2026.
+      <span class="lastupdated">Last updated on Aug 03, 2026.
       </span></p>
   </div>
 

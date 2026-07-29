@@ -2,35 +2,15 @@
 
 # Bib Entry Types
 
-`bibdeskparser` recognizes the entry types that
-[BibDesk](https://bibdesk.sourceforge.io) itself defines. These are the
-types BibDesk templates in its editor, declared in its `TypeInfo.plist`
-source file (the `FieldsForTypes` dictionary), which is the authority
-for the per-type field lists reproduced below.
+`bibdeskparser` recognizes the entry types that [BibDesk](https://bibdesk.sourceforge.io) itself defines. These are the types BibDesk templates in its editor, declared in its `TypeInfo.plist` source file (the `FieldsForTypes` dictionary), which is the authority for the per-type field lists reproduced below.
 
-Every entry type is validated when an entry is *constructed or
-modified* in Python -- {class}`~bibdeskparser.Entry` construction or an
-`entry_type` assignment. An unrecognized entry type raises a
-{exc}`ValueError`. **Loading a `.bib` file never validates**, so a file
-using an unusual entry type still loads and round-trips unchanged. The
-[`check`](cli-check) command is where such a file is examined: it
-reports every entry whose type is unrecognized, and every mandatory
-field an entry's type lists that the entry does not have.
+Every entry type is validated when an entry is *constructed or modified* in Python -- {class}`~bibdeskparser.Entry` construction or an `entry_type` assignment. An unrecognized entry type raises a {exc}`ValueError`. **Loading a `.bib` file never validates**, so a file using an unusual entry type still loads and round-trips unchanged. The [`check`](cli-check) command is where such a file is examined: it reports every entry whose type is unrecognized, and every mandatory field an entry's type lists that the entry does not have.
 
-Assigning a field that is not appropriate for the entry type emits a
-{exc}`UserWarning` (the value is still stored). A field is appropriate
-if it is one of the type's mandatory or optional fields listed below, or
-one of the [fields common to all entry types](#common-fields). Nothing
-requires the mandatory fields to be *present* at write time; that is
-what `check` audits.
+Assigning a field that is not appropriate for the entry type emits a {exc}`UserWarning` (the value is still stored). A field is appropriate if it is one of the type's mandatory or optional fields listed below, or one of the [fields common to all entry types](#common-fields). Nothing requires the mandatory fields to be *present* at write time; that is what `check` audits.
 
-The extended biblatex entry types and fields are also recognized
-(accepted without error), though only the types below are given field
-templates.
+The extended biblatex entry types and fields are also recognized (accepted without error), though only the types below are given field templates.
 
-The recognized types and fields, and the two validation behaviors
-described above, can be customized or disabled through a configuration
-file; see [Configuration](configuration).
+The recognized types and fields, and the two validation behaviors described above, can be customized or disabled through a configuration file; see [Configuration](configuration).
 
 ## Overview
 
@@ -76,8 +56,7 @@ A book with a named publisher.
 
 **Mandatory:** `title`, `publisher`, `year`
 
-**Optional:** `author`, `editor`, `volume`, `number`, `series`,
-`address`, `edition`, `month`
+**Optional:** `author`, `editor`, `volume`, `number`, `series`, `address`, `edition`, `month`
 
 (type-booklet)=
 
@@ -103,13 +82,11 @@ A commented edition of a work.
 
 ## conference
 
-An article in conference proceedings (the classic BibTeX type;
-equivalent to [`inproceedings`](#type-inproceedings)).
+An article in conference proceedings (the classic BibTeX type; equivalent to [`inproceedings`](#type-inproceedings)).
 
 **Mandatory:** `author`, `title`, `booktitle`, `year`
 
-**Optional:** `editor`, `volume`, `pages`, `number`, `organization`,
-`series`, `publisher`, `address`, `month`
+**Optional:** `editor`, `volume`, `pages`, `number`, `organization`, `series`, `publisher`, `address`, `month`
 
 (type-electronic)=
 
@@ -139,8 +116,7 @@ A part of a book (a chapter or a range of pages) with its own identity.
 
 **Mandatory:** `title`, `publisher`, `year`
 
-**Optional:** `editor`, `author`, `chapter`, `number`, `volume`, `type`,
-`series`, `month`, `address`, `edition`, `pages`
+**Optional:** `editor`, `author`, `chapter`, `number`, `volume`, `type`, `series`, `month`, `address`, `edition`, `pages`
 
 (type-incollection)=
 
@@ -150,8 +126,7 @@ A titled contribution to a book (a collection with its own editor).
 
 **Mandatory:** `author`, `title`, `booktitle`, `publisher`, `year`
 
-**Optional:** `editor`, `volume`, `number`, `series`, `type`, `chapter`,
-`pages`, `address`, `edition`, `month`
+**Optional:** `editor`, `volume`, `number`, `series`, `type`, `chapter`, `pages`, `address`, `edition`, `month`
 
 (type-inproceedings)=
 
@@ -161,8 +136,7 @@ An article in conference proceedings.
 
 **Mandatory:** `author`, `title`, `booktitle`, `year`
 
-**Optional:** `editor`, `volume`, `pages`, `number`, `organization`,
-`series`, `publisher`, `address`, `month`
+**Optional:** `editor`, `volume`, `pages`, `number`, `organization`, `series`, `publisher`, `address`, `month`
 
 (type-jurthesis)=
 
@@ -182,8 +156,7 @@ Technical or other documentation, not necessarily in book form.
 
 **Mandatory:** `title`
 
-**Optional:** `author`, `organization`, `address`, `edition`, `month`,
-`year`
+**Optional:** `author`, `organization`, `address`, `edition`, `month`, `year`
 
 (type-mastersthesis)=
 
@@ -233,8 +206,7 @@ The published proceedings of a conference.
 
 **Mandatory:** `title`, `year`
 
-**Optional:** `editor`, `number`, `publisher`, `organization`,
-`address`, `month`, `volume`
+**Optional:** `editor`, `number`, `publisher`, `organization`, `address`, `month`, `volume`
 
 (type-techreport)=
 
@@ -280,45 +252,24 @@ A web page.
 
 ## Fields common to all entry types
 
-Beyond the per-type fields above, `bibdeskparser` accepts a set of
-administrative and cross-type fields on *any* entry type, without a
-warning. These are the fields BibDesk (and BibTeX in general) may attach
-to an entry regardless of its type:
+Beyond the per-type fields above, `bibdeskparser` accepts a set of administrative and cross-type fields on *any* entry type, without a warning. These are the fields BibDesk (and BibTeX in general) may attach to an entry regardless of its type:
 
-- `keywords` -- the comma-separated tag list, exposed as the
-  {attr}`~bibdeskparser.Entry.keywords` tuple.
-- `abstract`, `annote`, `annotation`, `note` -- free-form descriptive
-  and note fields.
-- `date`, `date-added`, `date-modified` -- timestamps; the latter two
-  are exposed as the read-only {attr}`~bibdeskparser.Entry.date_added`
-  and {attr}`~bibdeskparser.Entry.date_modified` properties.
+- `keywords` -- the comma-separated tag list, exposed as the {attr}`~bibdeskparser.Entry.keywords` tuple.
+- `abstract`, `annote`, `annotation`, `note` -- free-form descriptive and note fields.
+- `date`, `date-added`, `date-modified` -- timestamps; the latter two are exposed as the read-only {attr}`~bibdeskparser.Entry.date_added` and {attr}`~bibdeskparser.Entry.date_modified` properties.
 - `doi`, `url`, `isbn`, `issn` -- stable identifiers and links.
-- `eprint`, `eprinttype`, `eprintclass`, `archiveprefix`,
-  `primaryclass` -- the arXiv/eprint fields.
+- `eprint`, `eprinttype`, `eprintclass`, `archiveprefix`, `primaryclass` -- the arXiv/eprint fields.
 - `crossref`, `ids` -- cross-referencing and alias keys.
-- `language`, `rating`, `read`, `rss-description`, `local-url` --
-  further BibDesk bookkeeping fields.
+- `language`, `rating`, `read`, `rss-description`, `local-url` -- further BibDesk bookkeeping fields.
 
-Some of these are surfaced through dedicated `bibdeskparser` API rather
-than the plain `dict` interface:
+Some of these are surfaced through dedicated `bibdeskparser` API rather than the plain `dict` interface:
 
-- **File attachments** (`bdsk-file-N`) are managed through
-  {meth}`~bibdeskparser.Library.add_file`,
-  {meth}`~bibdeskparser.Library.replace_file`,
-  {meth}`~bibdeskparser.Library.unlink_file`, and
-  {meth}`~bibdeskparser.Library.rename_file`.
-- **Linked URLs** (`bdsk-url-N`) are managed through
-  {meth}`~bibdeskparser.Entry.add_url`,
-  {meth}`~bibdeskparser.Entry.replace_url`, and
-  {meth}`~bibdeskparser.Entry.remove_url`.
-- **Timestamps** are read through
-  {attr}`~bibdeskparser.Entry.date_added` and
-  {attr}`~bibdeskparser.Entry.date_modified`.
-- **Keywords** are read through
-  {attr}`~bibdeskparser.Entry.keywords`.
+- **File attachments** (`bdsk-file-N`) are managed through {meth}`~bibdeskparser.Library.add_file`, {meth}`~bibdeskparser.Library.replace_file`, {meth}`~bibdeskparser.Library.unlink_file`, and {meth}`~bibdeskparser.Library.rename_file`.
+- **Linked URLs** (`bdsk-url-N`) are managed through {meth}`~bibdeskparser.Entry.add_url`, {meth}`~bibdeskparser.Entry.replace_url`, and {meth}`~bibdeskparser.Entry.remove_url`.
+- **Timestamps** are read through {attr}`~bibdeskparser.Entry.date_added` and {attr}`~bibdeskparser.Entry.date_modified`.
+- **Keywords** are read through {attr}`~bibdeskparser.Entry.keywords`.
 
-For how these fields are encoded on disk, see the Explanation page
-[BibDesk's `.bib` Format](bibdesk_format).
+For how these fields are encoded on disk, see the Explanation page [BibDesk's `.bib` Format](bibdesk_format).
 
 ## Field glossary
 
@@ -405,5 +356,3 @@ A brief gloss of the field names used above:
 
 `volumetitle`
 : For [`commented`](#type-commented): the title of a specific volume.
-</content>
-</invoke>

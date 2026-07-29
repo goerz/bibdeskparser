@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contributing &mdash; BibDeskParser 0.7.0 documentation</title>
+  <title>Contributing &mdash; BibDeskParser 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=fe7df9b0"></script>
+      <script src="_static/documentation_options.js?v=486e5634"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.7.0
+    v0.8.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -64,6 +64,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assets.html">External Assets</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -249,6 +250,7 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
 <p>The documentation is generated with <a class="reference external" href="https://www.sphinx-doc.org/">Sphinx</a> and written in <a class="reference external" href="https://myst-parser.readthedocs.io/">MyST Markdown</a>. Docstrings are also MyST Markdown and are rendered on the auto-generated API page by <a class="reference external" href="https://sphinx-autodoc2.readthedocs.io/">autodoc2</a>; math may be written in LaTeX syntax using <code class="docutils literal notranslate"><span class="pre">$…$</span></code>. Structure content along the four <a class="reference external" href="https://diataxis.fr">Diátaxis</a> categories: a <strong>Tutorial</strong> (a linear, learning-oriented walkthrough for a newcomer), <strong>How-to guides</strong> (short, task-oriented recipes that assume basic familiarity), <strong>Explanation</strong> (background/conceptual material — why the BibDesk <code class="docutils literal notranslate"><span class="pre">.bib</span></code> format works the way it does, and how <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> handles each feature), and <strong>Reference</strong> (the auto-generated API page). Don’t mix categories within one page (e.g. don’t bury conceptual background inside a how-to recipe).</p>
+<p>Markdown prose is not hard-wrapped: a paragraph, a list item, or a table row is one long line, however wide, so that editing a sentence never reflows the lines around it. Only fenced code blocks keep their own line breaks (and stay within a width that renders without horizontal scrolling). This applies to every <code class="docutils literal notranslate"><span class="pre">.md</span></code> file in the repository, including the ones under <code class="docutils literal notranslate"><span class="pre">docs/sources/</span></code>.</p>
 <p>Every public name (one not starting with <code class="docutils literal notranslate"><span class="pre">_</span></code>) in a module must be listed in either <code class="docutils literal notranslate"><span class="pre">__all__</span></code> or <code class="docutils literal notranslate"><span class="pre">__private__</span></code>; <code class="docutils literal notranslate"><span class="pre">autodoc2</span></code> only renders <code class="docutils literal notranslate"><span class="pre">__all__</span></code> members. Keep the public API surface minimal: expose only what a <em>user</em> of the library needs (currently just <code class="docutils literal notranslate"><span class="pre">Library</span></code>, <code class="docutils literal notranslate"><span class="pre">Entry</span></code>, <code class="docutils literal notranslate"><span class="pre">ValueString</span></code>, <code class="docutils literal notranslate"><span class="pre">MacroString</span></code>, and <code class="docutils literal notranslate"><span class="pre">StaleFileError</span></code>, all re-exported from the top-level <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> package). In particular:</p>
 <ul class="simple">
 <li><p>Don’t add a standalone public function for something already reachable as an <code class="docutils literal notranslate"><span class="pre">Entry</span></code>/<code class="docutils literal notranslate"><span class="pre">Library</span></code> method (e.g. the citation-rendering, export, and <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>-editing logic lives in private free functions in <code class="docutils literal notranslate"><span class="pre">render.py</span></code>/<code class="docutils literal notranslate"><span class="pre">exporting.py</span></code>/<code class="docutils literal notranslate"><span class="pre">editing.py</span></code>, used only internally by the corresponding methods).</p></li>
@@ -304,7 +306,7 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 29, 2026.
+      <span class="lastupdated">Last updated on Aug 03, 2026.
       </span></p>
   </div>
 

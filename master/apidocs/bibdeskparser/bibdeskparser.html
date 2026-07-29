@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Package API &mdash; BibDeskParser 0.7.0 documentation</title>
+  <title>Package API &mdash; BibDeskParser 0.8.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=fe7df9b0"></script>
+      <script src="../../_static/documentation_options.js?v=486e5634"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.7.0
+    v0.8.0
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -64,6 +64,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../bibdesk_format.html">BibDesk's .bib Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../preprints.html">Preprints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../assets.html">External Assets</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -456,6 +457,10 @@ error.</p>
 citation keys as a <code class="docutils literal notranslate"><span class="pre">tuple</span></code>, optionally filtered by entry type,
 by which fields are present or missing, and by static-group
 membership.</p></li>
+<li><p><a class="reference internal" href="#bibdeskparser.Library.info" title="bibdeskparser.Library.info"><code class="xref py py-attr docutils literal notranslate"><span class="pre">info</span></code></a>: a read-write <code class="docutils literal notranslate"><span class="pre">dict</span></code>-like view of BibDesk’s
+document info – the key/value metadata that the “Document Info”
+panel attaches to the database as a whole (the <code class="docutils literal notranslate"><span class="pre">&#64;bibdesk_info</span></code>
+block of the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file). Keys are matched case-insensitively.</p></li>
 <li><p><a class="reference internal" href="#bibdeskparser.Library.path" title="bibdeskparser.Library.path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">path</span></code></a>: the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file the library was loaded from or last
 saved to (read-only; <code class="docutils literal notranslate"><span class="pre">None</span></code> for an unsaved from-scratch library).</p></li>
 <li><p><a class="reference internal" href="#bibdeskparser.Library.timestamp" title="bibdeskparser.Library.timestamp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">timestamp</span></code></a>: the save time from the header comment, updated
@@ -517,6 +522,12 @@ entry’s linked URLs (<a class="reference internal" href="#bibdeskparser.Entry.
 These delegate to the corresponding <a class="reference internal" href="#bibdeskparser.Entry" title="bibdeskparser.Entry"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entry</span></code></a> methods (URLs
 are self-contained, so unlike linked files they need no path
 resolution).</p></li>
+<li><p><a class="reference internal" href="#bibdeskparser.Library.asset" title="bibdeskparser.Library.asset"><code class="xref py py-meth docutils literal notranslate"><span class="pre">asset()</span></code></a>, <a class="reference internal" href="#bibdeskparser.Library.assets" title="bibdeskparser.Library.assets"><code class="xref py py-meth docutils literal notranslate"><span class="pre">assets()</span></code></a>: resolve and report the library’s
+<a class="reference internal" href="../../assets.html#external-assets"><span class="std std-ref">asset files</span></a> – companion files like summaries
+or extracted full texts, located by the <code class="docutils literal notranslate"><span class="pre">[assets]</span></code> path patterns
+of the configuration. <a class="reference internal" href="#bibdeskparser.Library.rekey" title="bibdeskparser.Library.rekey"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rekey()</span></code></a> moves an entry’s assets (and
+re-files its key-named attachments) along with a key change;
+<a class="reference internal" href="#bibdeskparser.Library.delete" title="bibdeskparser.Library.delete"><code class="xref py py-meth docutils literal notranslate"><span class="pre">delete()</span></code></a> can remove them together with the entry.</p></li>
 <li><p><a class="reference internal" href="#bibdeskparser.Library.render" title="bibdeskparser.Library.render"><code class="xref py py-meth docutils literal notranslate"><span class="pre">render()</span></code></a>, <a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export()</span></code></a>, <a class="reference internal" href="#bibdeskparser.Library.edit" title="bibdeskparser.Library.edit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">edit()</span></code></a>, <a class="reference internal" href="#bibdeskparser.Library.edit_strings" title="bibdeskparser.Library.edit_strings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">edit_strings()</span></code></a>:
 render a bibliography, export to bibtex text, or edit in
 <code class="docutils literal notranslate"><span class="pre">$EDITOR</span></code>, for one or more selected citation keys at once.</p></li>
@@ -1023,12 +1034,82 @@ path resolution and no on-disk file to remove), so this simply
 delegates to <a class="reference internal" href="#bibdeskparser.Entry.add_url" title="bibdeskparser.Entry.add_url"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Entry.add_url()</span></code></a>.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="bibdeskparser.Library.asset">
+<span class="sig-name descname"><span class="pre">asset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_that_file_exists</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.asset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.asset" title="Link to this definition"></a></dt>
+<dd><p>Resolve the asset class <code class="docutils literal notranslate"><span class="pre">name</span></code> (from the <code class="docutils literal notranslate"><span class="pre">[assets]</span></code> table
+of the <a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a>) to a path, relative to
+the directory of the library’s <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file; see
+<a class="reference internal" href="../../assets.html#external-assets"><span class="std std-ref">External Assets</span></a>.</p>
+<p>Whether <code class="docutils literal notranslate"><span class="pre">key</span></code> (a citation key) is required depends on the
+class: an <strong>entry asset</strong> – one whose pattern references entry
+data, and is thus per-entry – resolves for one entry and needs
+a key, while a <strong>library asset</strong> takes none. Passing the wrong
+one raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>; an unknown key raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>.</p>
+<p>Returns the path as a <code class="docutils literal notranslate"><span class="pre">str</span></code> (without a trailing slash, even
+for a directory-valued class), or <code class="docutils literal notranslate"><span class="pre">None</span></code> when the class does
+not resolve at all: <code class="docutils literal notranslate"><span class="pre">name</span></code> is not declared, its pattern is
+empty, or a <code class="docutils literal notranslate"><span class="pre">%i{Key}</span></code> it references is unset or empty in the
+document info (<a class="reference internal" href="#bibdeskparser.Library.info" title="bibdeskparser.Library.info"><code class="xref py py-attr docutils literal notranslate"><span class="pre">info</span></code></a>).</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">check_that_file_exists</span></code> (the default), a class that
+resolves to a path with nothing on disk raises
+<code class="docutils literal notranslate"><span class="pre">FileNotFoundError</span></code>; a directory-valued class requires a
+directory there, any other class a file. Pass
+<code class="docutils literal notranslate"><span class="pre">check_that_file_exists=False</span></code> to resolve without touching the
+filesystem, which is what a generator needs in order to learn
+where to <em>write</em> an asset that does not exist yet.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bibdeskparser.Library.assets">
+<span class="sig-name descname"><span class="pre">assets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">keys</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.assets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.assets" title="Link to this definition"></a></dt>
+<dd><p>Report which asset files exist on disk, over the classes of
+the <code class="docutils literal notranslate"><span class="pre">[assets]</span></code> configuration; see
+<a class="reference internal" href="../../assets.html#external-assets"><span class="std std-ref">External Assets</span></a>.</p>
+<p>With citation <code class="docutils literal notranslate"><span class="pre">keys</span></code>, a <code class="docutils literal notranslate"><span class="pre">dict</span></code> mapping each of them to a
+<code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">bool}</span></code> presence map over the <strong>entry assets</strong> (an
+unknown key raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>); the coverage table over the
+whole library is <code class="docutils literal notranslate"><span class="pre">bib.assets(*bib)</span></code>. Without keys, a single
+<code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">bool}</span></code> map over the <strong>library assets</strong>.</p>
+<p>Presence is decided as in <a class="reference internal" href="#bibdeskparser.Library.asset" title="bibdeskparser.Library.asset"><code class="xref py py-meth docutils literal notranslate"><span class="pre">asset()</span></code></a>: a directory-valued
+class is present when its path is a directory, any other class
+when its path is a file. A class that does not resolve is
+omitted.</p>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="bibdeskparser.Library.config">
 <span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#bibdeskparser.Library.config" title="Link to this definition"></a></dt>
 <dd><p>The process-global configuration (documented in the class
 docstring above): the single <code class="docutils literal notranslate"><span class="pre">bibdeskparser.config.active</span></code> object,
 which <code class="docutils literal notranslate"><span class="pre">load()</span></code>/<code class="docutils literal notranslate"><span class="pre">reset()</span></code> mutate in place.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bibdeskparser.Library.delete">
+<span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_assets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_attachments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.delete"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.delete" title="Link to this definition"></a></dt>
+<dd><p>Delete the entry at <code class="docutils literal notranslate"><span class="pre">key</span></code> from the library (<code class="docutils literal notranslate"><span class="pre">del</span> <span class="pre">lib[key]</span></code>
+is equivalent to <code class="docutils literal notranslate"><span class="pre">delete(key)</span></code>).</p>
+<p>The keyword arguments control what happens to the entry’s
+files on disk; they default to the <code class="docutils literal notranslate"><span class="pre">[delete]</span></code> table of the
+<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a> (<code class="docutils literal notranslate"><span class="pre">config.delete.remove_assets</span></code>,
+<code class="docutils literal notranslate"><span class="pre">config.delete.remove_attachments</span></code>; both <code class="docutils literal notranslate"><span class="pre">False</span></code> unless
+configured):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">remove_assets</span></code>: also delete the entry’s
+<a class="reference internal" href="../../assets.html#external-assets"><span class="std std-ref">asset files</span></a> (resolved from the <code class="docutils literal notranslate"><span class="pre">[assets]</span></code>
+patterns) from disk. For a pattern whose entry-dependent
+part is a directory (like <code class="docutils literal notranslate"><span class="pre">%f{Cite</span> <span class="pre">Key}.ingest/fulltext.md</span></code>),
+that directory is removed as a whole.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">remove_attachments</span></code>: also delete the entry’s attached files
+(<a class="reference internal" href="#bibdeskparser.Entry.files" title="bibdeskparser.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Entry.files</span></code></a>) from disk. A file still linked from
+another entry is kept (with a <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>).</p></li>
+</ul>
+<p>Files are moved to the Trash where possible (macOS, with the
+<code class="docutils literal notranslate"><span class="pre">bibdeskparser[macos]</span></code> extra), else deleted permanently. When
+removal is off, a <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code> reports any asset or attached
+files the deleted entry leaves behind on disk.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> if <code class="docutils literal notranslate"><span class="pre">key</span></code> is not in the library.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1370,6 +1451,42 @@ modification, an import only becomes permanent with
 </div>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="bibdeskparser.Library.info">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">info</span></span><a class="headerlink" href="#bibdeskparser.Library.info" title="Link to this definition"></a></dt>
+<dd><p>Read-write <code class="docutils literal notranslate"><span class="pre">dict</span></code>-like view of BibDesk’s document info: the
+key/value metadata of the “Document Info” panel
+(<em>File → Document Info…</em>), attached to the database as a whole
+and stored in the <code class="docutils literal notranslate"><span class="pre">&#64;bibdesk_info</span></code> block of the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file
+(see the <a class="reference internal" href="../../bibdesk_format.html#bibdesk-document-info"><span class="std std-ref">Document info (the &#64;bibdesk_info block)</span></a> documentation).</p>
+<p>Keys are matched case-insensitively, matching BibDesk, but
+keep the case in which they are stored in the file (or first
+assigned); they iterate in storage order, with new keys
+appended at the end. Assigning a key that is not a valid
+BibTeX field name raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> (BibDesk itself performs
+no validation, but an invalid key would produce a file BibDesk
+cannot read back). Values are plain Unicode strings; the empty
+string is allowed (matching BibDesk – unlike an empty <em>entry
+field</em>, which a BibDesk save drops).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">(</span><span class="s2">&quot;tests/Refs/refs.bib&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">)</span>
+<span class="go">[&#39;primary_topics&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;Primary_Topics&quot;</span><span class="p">]</span>
+<span class="go">&#39;Coherent Control, Numerics, OCT, ...&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;project&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;qdyn&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;project&quot;</span><span class="p">]</span>
+
+</pre></div>
+</div>
+<p>Any mutation marks the library modified (no entry is touched),
+so <a class="reference internal" href="#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a> rewrites the file; the mapping’s data replaces
+the stored <code class="docutils literal notranslate"><span class="pre">&#64;bibdesk_info</span></code> block, in BibDesk’s own layout, and
+an emptied mapping removes the block. As long as the info is
+<em>not</em> modified, the loaded block is written back verbatim. On
+a library in the plain format, assigning a key converts to the
+database format, with a <a class="reference internal" href="#bibdeskparser.FormatConversionWarning" title="bibdeskparser.FormatConversionWarning"><code class="xref py py-class docutils literal notranslate"><span class="pre">FormatConversionWarning</span></code></a>.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Library.keys">
 <span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">not_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.keys" title="Link to this definition"></a></dt>
@@ -1467,7 +1584,7 @@ to (a <code class="docutils literal notranslate"><span class="pre">pathlib.Path<
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Library.rekey">
-<span class="sig-name descname"><span class="pre">rekey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">format_spec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.rekey"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.rekey" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">rekey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">format_spec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rename_assets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rename_attachments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.rekey"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.rekey" title="Link to this definition"></a></dt>
 <dd><p>Rename the entry at <code class="docutils literal notranslate"><span class="pre">old_key</span></code>; returns the new key.</p>
 <p><code class="docutils literal notranslate"><span class="pre">Entry.key</span></code> is read-only, so this is the only way to rename
 an entry that is already in the library. The entry’s
@@ -1489,6 +1606,29 @@ format is kept as is, so regenerating is idempotent; a
 with the other entries in the library. A field the entry does
 not have renders as empty, so an entry lacking a field the
 format references just gets a shorter key.</p>
+<p>Files named after the citation key follow the rename. The
+<code class="docutils literal notranslate"><span class="pre">rename_assets</span></code> and <code class="docutils literal notranslate"><span class="pre">rename_attachments</span></code> keyword arguments
+default to the <code class="docutils literal notranslate"><span class="pre">[rekey]</span></code> table of the
+<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a> (<code class="docutils literal notranslate"><span class="pre">config.rekey.rename_assets</span></code>,
+<code class="docutils literal notranslate"><span class="pre">config.rekey.rename_attachments</span></code>; both <code class="docutils literal notranslate"><span class="pre">True</span></code> unless
+configured):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rename_assets</span></code>: move the entry’s
+<a class="reference internal" href="../../assets.html#external-assets"><span class="std std-ref">asset files</span></a> (resolved from the <code class="docutils literal notranslate"><span class="pre">[assets]</span></code>
+patterns) to the paths the new key resolves to. For a
+pattern whose entry-dependent part is a directory (like
+<code class="docutils literal notranslate"><span class="pre">%f{Cite</span> <span class="pre">Key}.ingest/fulltext.md</span></code>), that directory is moved
+as a whole.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rename_attachments</span></code>: re-file each attachment
+(<a class="reference internal" href="#bibdeskparser.Entry.files" title="bibdeskparser.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Entry.files</span></code></a>) whose current path matches what the
+<code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> format generates for the entry (via
+<a class="reference internal" href="#bibdeskparser.Library.rename_file" title="bibdeskparser.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a>, which updates every entry linking the
+file). A hand-named attachment is left alone.</p></li>
+</ul>
+<p>A file that cannot be moved – no <code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code> format for the
+entry’s type, an attachment not following it, a file absent
+from disk, or a target already occupied – is skipped with a
+<code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>; the rename of the key itself always proceeds.</p>
 <p>Raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> if <code class="docutils literal notranslate"><span class="pre">old_key</span></code> is not present, and
 <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if <code class="docutils literal notranslate"><span class="pre">new_key</span></code> is already used by a different
 entry, if both <code class="docutils literal notranslate"><span class="pre">new_key</span></code> and <code class="docutils literal notranslate"><span class="pre">format_spec</span></code> are given, if no
@@ -1689,8 +1829,8 @@ that has never been given a path).</p></li>
 <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileExistsError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileExistsError</span></code></a> checks (see below).</p></li>
 </ul>
 <p>If the library was not modified since it was loaded (no entry
-was modified, <a class="reference internal" href="#bibdeskparser.Library.groups" title="bibdeskparser.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a> was not mutated, and no
-entries/strings were added or removed),
+was modified, <a class="reference internal" href="#bibdeskparser.Library.groups" title="bibdeskparser.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a> and <a class="reference internal" href="#bibdeskparser.Library.info" title="bibdeskparser.Library.info"><code class="xref py py-attr docutils literal notranslate"><span class="pre">info</span></code></a> were not
+mutated, and no entries/strings were added or removed),
 the file is written byte-identical to how it was parsed, and
 the header timestamp is <em>not</em> touched. The one exception to
 byte-identity: a hand-edited mixed-case macro name (a
@@ -1975,7 +2115,7 @@ of the stored values (<code class="docutils literal notranslate"><span class="pr
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Jul 29, 2026.
+      <span class="lastupdated">Last updated on Aug 03, 2026.
       </span></p>
   </div>
 
