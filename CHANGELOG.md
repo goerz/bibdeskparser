@@ -3,6 +3,8 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [v0.7.0] - 2026-07-28
 
 * Fixed: reading a file written by `export` with `full=True` (`--full` on the command line) no longer fails. A full export records each attachment as a plain relative path (`Bdsk-File-1 = {GrondPRA2009a.pdf}`) rather than a base64 binary plist, and every `Library` load and every CLI command on such a file previously crashed with a bare `Error: Invalid file` when decoding that value. A `bdsk-file-N` value that is not a base64 binary plist is now read as a path-only attachment: it appears in `Entry.files` like any other, round-trips back to the same plain path, and is upgraded to a full base64 attachment (with a fresh bookmark) if renamed or replaced through the `Library` methods. [[#65], [#68]]
