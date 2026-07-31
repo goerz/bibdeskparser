@@ -79,7 +79,9 @@ in the specifier `%f{journal}[/]5`:
   insert (an author, the title, the year, ...).
 * `{journal}` -- a **`{Field}` name**, the entry field to read. Only
   `%f`, `%w`, `%c`, and `%s` take one, written right after the letter.
-  The name is case-insensitive.
+  The name is case-insensitive. (`%i` takes a `{Key}` in the same
+  position, naming a [document-info](bibdesk-document-info) key
+  rather than a field.)
 * `[/]` -- one or more **arguments** in square brackets: separators,
   "et al." text, or per-character replacements. Arguments are
   *positional*, so to supply a later one you must supply the earlier
@@ -297,6 +299,22 @@ which lives in a different field per entry type (`journal` for an
 For example, an entry with the keywords `quantum control` and
 `rydberg` renders `%k[-][_]` as `quantum-control_rydberg` (spaces
 become `-`, and the keywords are joined by `_`).
+
+### Document info: `%i`
+
+* `%i{Key}` -- the value stored under `Key` in the library's
+  [document info](bibdesk-document-info)
+  ({attr}`Library.info <bibdeskparser.Library.info>`), the key/value
+  metadata attached to the database as a whole. `Key` is matched
+  case-insensitively; a missing key renders as empty, like a missing
+  field. *Number* characters to keep.
+
+```python
+>>> bib.info["project"] = "qdyn"
+>>> bib.eval_format_spec("GoerzPRA2014", "%i{Project}:%a1%Y")
+'qdyn:Goerz2014'
+
+```
 
 ### Original file name: `%l`, `%L`, `%e`, `%E`
 
@@ -638,10 +656,6 @@ renders identically for PDFs and stays correct for everything else.
 
 ## Differences from BibDesk
 
-- `%i{Key}` (BibDesk *document info*) is recognized but raises
-  `NotImplementedError`: `bibdeskparser` does not currently model the
-  `@bibdesk_info` block in which BibDesk stores document-level
-  metadata.
 - BibDesk applies its *Preferences → Cite Key* and *Preferences →
   AutoFile* options; the equivalents here are the `format_spec`,
   `lowercase`, and `clean` keys of the `[auto_key]` and `[auto_file]`

@@ -50,7 +50,9 @@ corresponds to {py:meth}`~bibdeskparser.Library.import_bibtex`, since
 Python API map to commands as follows: `set_group`/`delete_group`
 assign to and delete from {py:attr}`~bibdeskparser.Library.groups`,
 `set_string`/`delete_string` assign to and delete from
-{py:attr}`~bibdeskparser.Library.strings`, `show`/`keys`/`delete`
+{py:attr}`~bibdeskparser.Library.strings`,
+`set_info`/`delete_info` assign to and delete from
+{py:attr}`~bibdeskparser.Library.info`, `show`/`keys`/`delete`
 index, iterate over, and `del` on the library itself, and
 `fields`/`get_field`/`set_field`/`delete_field` do the same on a
 single {class}`~bibdeskparser.Entry`. The commands that read an
@@ -629,6 +631,29 @@ $ bibdeskparser strings tests/Refs/refs.bib --bib
 @string{atoms = {Atoms}}
 @string{epjd = {Eur. Phys. J. D}}
 ...
+```
+
+(cli-info)=
+
+### `info [KEY]`
+
+Print the document info: the key/value metadata that BibDesk's
+"Document Info" panel attaches to the database as a whole (see
+{py:attr}`~bibdeskparser.Library.info` and the
+[](bibdesk-document-info) documentation). Without `KEY`, print all
+pairs, one `key = value` per line; with `KEY` (matched
+case-insensitively), print just its value.
+
+**Options**
+
+- `--json` -- print an object mapping each key to its value (with
+  `KEY`, the value as a JSON string).
+
+```console
+$ bibdeskparser info tests/Refs/refs.bib
+primary_topics = Coherent Control, Numerics, OCT, Quantum Gates, Ultracold Atoms
+$ bibdeskparser info tests/Refs/refs.bib primary_topics
+Coherent Control, Numerics, OCT, Quantum Gates, Ultracold Atoms
 ```
 
 ### `timestamp`
@@ -1283,6 +1308,29 @@ references it, via {py:meth}`~bibdeskparser.Library.rename_string`.
 
 ```console
 $ bibdeskparser rename_string tests/Refs/refs.bib quant quantum
+```
+
+## Document info
+
+### `set_info KEY VALUE`
+
+Create or update the document-info key `KEY` (see [`info`](cli-info))
+as `VALUE`. `KEY` is matched case-insensitively against the existing
+keys; a new key must be a valid BibTeX field name. Corresponds to
+`lib.info[key] = value` (see {py:attr}`~bibdeskparser.Library.info`).
+
+```console
+$ bibdeskparser set_info tests/Refs/refs.bib project qdyn
+```
+
+### `delete_info KEY`
+
+Remove the document-info key `KEY` (matched case-insensitively).
+Removing the last key removes the `@bibdesk_info` block from the
+`.bib` file. Corresponds to `del lib.info[key]`.
+
+```console
+$ bibdeskparser delete_info tests/Refs/refs.bib primary_topics
 ```
 
 ## Files

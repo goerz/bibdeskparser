@@ -33,6 +33,7 @@ from contextlib import contextmanager
 from bibtexparser.middlewares.middleware import BlockMiddleware
 
 from .bdskfile import BibDeskFile
+from .docinfo import _DocumentInfoMiddleware
 from .macros import is_valid_macro_name
 from .texmap import detexify, skip_texify, texify
 
@@ -57,11 +58,13 @@ def quiet_block_type_logging():
 
     Every middleware in `parse_stack` calls into `bibtexparser`'s
     `BlockMiddleware.transform_block`, which logs this at `WARNING`
-    for any `ParsingFailedBlock` (e.g., a duplicate key or duplicate
-    field) since it only special-cases `Entry`, `String`, `Preamble`,
-    and comment blocks -- so a single failed block produces one log
-    message per middleware. Callers inspect `failed_blocks` themselves
-    and raise their own, single `UserWarning` per condition instead.
+    for any block type it does not special-case (it only knows
+    `Entry`, `String`, `Preamble`, and comment blocks): every
+    `ParsingFailedBlock` (e.g., a duplicate key or duplicate field)
+    and every `_BibDeskInfo` block produces one log message per
+    middleware behind it in the stack. Callers inspect
+    `failed_blocks` themselves and raise their own, single
+    `UserWarning` per condition instead.
     """
     logger = logging.getLogger("bibtexparser.middlewares.middleware")
     previous_level = logger.level
@@ -234,6 +237,7 @@ def parse_stack():
 
     ```python
     [
+        _DocumentInfoMiddleware(),
         NormalizeMacroNamesMiddleware(),
         DeTeXifyMiddleware(),
         BibDeskFileMiddleware(),
@@ -248,6 +252,7 @@ def parse_stack():
     like BibDesk's internal model.
     """
     return [
+        _DocumentInfoMiddleware(),
         NormalizeMacroNamesMiddleware(),
         DeTeXifyMiddleware(),
         BibDeskFileMiddleware(),

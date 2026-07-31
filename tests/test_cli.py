@@ -991,6 +991,33 @@ def test_strings_json(runner, bibfile):
     assert data["jpb"] == "J. Phys. B"
 
 
+TOPICS = "Coherent Control, Numerics, OCT, Quantum Gates, Ultracold Atoms"
+
+
+def test_info(runner, bibfile):
+    result = _run(runner, "info", bibfile)
+    assert result.output == f"primary_topics = {TOPICS}\n"
+
+
+def test_info_json(runner, bibfile):
+    result = _run(runner, "info", bibfile, "--json")
+    assert json.loads(result.output) == {"primary_topics": TOPICS}
+
+
+def test_info_key(runner, bibfile):
+    """A KEY argument (matched case-insensitively) prints its value."""
+    result = _run(runner, "info", bibfile, "Primary_Topics")
+    assert result.output == TOPICS + "\n"
+    result = _run(runner, "info", bibfile, "primary_topics", "--json")
+    assert json.loads(result.output) == TOPICS
+
+
+def test_info_unknown_key(runner, bibfile):
+    result = runner.invoke(main, ["info", str(bibfile), "nosuchkey"])
+    assert result.exit_code == 1
+    assert "Error: unknown document-info key 'nosuchkey'" in result.stderr
+
+
 def test_duplicate_keys(runner, dupfile):
     result = _run(runner, "duplicate_keys", dupfile)
     assert result.stdout.splitlines() == ["GoerzSPP2019"]
@@ -2669,17 +2696,17 @@ def test_check_key_format_invalid_pattern(runner, keyformatfile):
     ]
 
 
-def test_check_key_format_unimplemented_pattern(runner, keyformatfile):
-    """A pattern using an unimplemented specifier (`%i`) is reported
-    once, like any other invalid pattern (not a crash, and not per
-    entry)."""
+def test_check_key_format_missing_field_pattern(runner, keyformatfile):
+    """A pattern with a specifier that is missing its `{Field}`
+    argument (a bare `%i`) is reported once, like any other invalid
+    pattern (not a crash, and not per entry)."""
     result = runner.invoke(
         main, ["check", str(keyformatfile), "--format-spec", "%i"]
     )
     assert result.exit_code == 1
     assert result.output.splitlines() == [
-        "invalid citation-key format pattern: the %i specifier "
-        "(BibDesk document info) is not implemented",
+        "invalid citation-key format pattern: specifier %i must be "
+        "followed by a {Field} name",
         "FAIL (1 problem, 7 entries checked)",
     ]
 
@@ -2829,15 +2856,20 @@ def test_rekey_format_spec_with_new_key_fails(runner, bibfile):
     assert "not both" in result.stderr
 
 
-def test_rekey_format_spec_not_implemented_specifier(runner, bibfile):
-    """`%i` in a `--format-spec` pattern is a clean error."""
-    result = runner.invoke(
-        main,
-        ["rekey", str(bibfile), "GoerzPRA2014", "--format-spec", "%i{X}"],
+def test_rekey_format_spec_document_info(runner, bibfile):
+    """`%i` in a `--format-spec` pattern reads the library's document
+    info (here, the `primary_topics` key of `refs.bib`, matched
+    case-insensitively)."""
+    result = _run(
+        runner,
+        "rekey",
+        bibfile,
+        "GoerzPRA2014",
+        "--format-spec",
+        "%i{Primary_Topics}8:%a1%Y%u0",
     )
-    assert result.exit_code == 1
-    assert "%i" in result.stderr
-    assert "Traceback" not in result.stderr
+    assert result.output.strip() == "Coherent:Goerz2014"
+    assert "Coherent:Goerz2014" in _load(bibfile)
 
 
 def test_delete(runner, bibfile):
@@ -3083,6 +3115,31 @@ def test_delete_string(runner, bibfile):
     _run(runner, "set_string", bibfile, "unused", "Unused Journal")
     _run(runner, "delete_string", bibfile, "unused")
     assert "unused" not in _load(bibfile).strings
+
+
+def test_set_info(runner, bibfile):
+    _run(runner, "set_info", bibfile, "project", "qdyn")
+    assert _load(bibfile).info["project"] == "qdyn"
+    _run(runner, "set_info", bibfile, "PROJECT", "krotov")
+    assert dict(_load(bibfile).info)["project"] == "krotov"
+
+
+def test_set_info_invalid_key(runner, bibfile):
+    result = runner.invoke(main, ["set_info", str(bibfile), "bad key", "v"])
+    assert result.exit_code == 1
+    assert "Error: invalid document-info key: 'bad key'" in result.stderr
+
+
+def test_delete_info(runner, bibfile):
+    _run(runner, "delete_info", bibfile, "Primary_Topics")
+    assert dict(_load(bibfile).info) == {}
+    assert "bibdesk_info" not in bibfile.read_text(encoding="utf-8")
+
+
+def test_delete_info_unknown_key(runner, bibfile):
+    result = runner.invoke(main, ["delete_info", str(bibfile), "nosuchkey"])
+    assert result.exit_code == 1
+    assert "Error: unknown document-info key 'nosuchkey'" in result.stderr
 
 
 def test_rename_string(runner, bibfile):

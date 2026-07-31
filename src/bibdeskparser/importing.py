@@ -714,7 +714,7 @@ def _key_format_spec(entry):
     )
 
 
-def _final_key(entry, incoming_key, taken, keep_keys, strings):
+def _final_key(entry, incoming_key, taken, keep_keys, strings, library):
     """The citation key under which the staged `entry` will be added:
     `incoming_key` itself with `keep_keys`, else a key generated from
     `_key_format_spec` (keeping an incoming key that already matches
@@ -736,6 +736,7 @@ def _final_key(entry, incoming_key, taken, keep_keys, strings):
         fmt,
         entry,
         strings=strings,
+        document_info=library.info,
         initials=active.initials,
         lowercase=active.auto_key.lowercase,
         clean=active.auto_key.clean,
@@ -811,7 +812,7 @@ def import_entries(
     final = []
     for incoming_key, entry in staged:
         key, key_problems = _final_key(
-            entry, incoming_key, taken, keep_keys, all_strings
+            entry, incoming_key, taken, keep_keys, all_strings, library
         )
         problems.extend(key_problems)
         if key is not None:

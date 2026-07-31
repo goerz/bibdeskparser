@@ -77,20 +77,13 @@ def test_local_file_specifiers_rejected():
             compile_format(f"%{char}%n0")
 
 
-def test_document_info_not_implemented():
-    """`%i` is recognized, but bibdeskparser does not model BibDesk's
-    document info."""
-    with pytest.raises(NotImplementedError, match="%i"):
-        compile_format("%a1%i{Project}%Y")
-
-
 def test_second_unique_specifier_rejected():
     with pytest.raises(ValueError, match="only once"):
         compile_format("%a1%u0%Y%n0")
 
 
 def test_missing_field_argument():
-    for char in "fwcs":
+    for char in "fwcsi":
         with pytest.raises(ValueError, match=r"followed by a \{Field\} name"):
             compile_format(f"%{char}")
         with pytest.raises(ValueError, match=r"followed by a \{Field\} name"):
@@ -107,20 +100,55 @@ def test_invalid_escape_in_opt_arg():
         compile_format("%a[%%]1")
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason="%i requires modeling BibDesk's @bibdesk_info block",
-    strict=True,
-)
 def test_document_info_rendering():
-    """Rendering `%i{Key}` should insert the document-info value once
-    document info is supported."""
+    """Rendering `%i{Key}` inserts the document-info value."""
     fmt = compile_format("%a1-%i{Project}")
     entry = _entry(author="Goerz, Michael H.")
-    # the document_info argument does not exist yet
-    # pylint: disable-next=unexpected-keyword-arg
     key = render_format(fmt, entry, document_info={"Project": "qdyn"})
     assert key == "Goerz-qdyn"
+
+
+def test_document_info_case_insensitive(entry):
+    """The `{Key}` of `%i` matches the document-info key regardless of
+    either one's case."""
+    info = {"Project": "qdyn"}
+    assert _gen(entry, "%i{project}", document_info=info) == "qdyn"
+    assert _gen(entry, "%i{PROJECT}", document_info=info) == "qdyn"
+
+
+def test_document_info_missing_key(entry):
+    """A missing (or empty) document-info key renders empty, like a
+    missing field."""
+    assert _gen(entry, "x%i{Project}", document_info={}) == "x"
+    assert _gen(entry, "x%i{Project}") == "x"
+    assert _gen(entry, "x%i{Project}", document_info={"Project": ""}) == "x"
+
+
+def test_document_info_truncation_and_sanitization(entry):
+    """`%i{Key}N` keeps the first N characters; the value is strictly
+    sanitized, like a `%f` field value (BibDesk applies
+    `stringByStrictlySanitizingString` to it)."""
+    info = {"Topics": "Quantum Control, Numerics"}
+    assert (
+        _gen(entry, "%i{Topics}", document_info=info)
+        == "Quantum-Control-Numerics"
+    )
+    assert _gen(entry, "%i{Topics}7", document_info=info) == "Quantum"
+
+
+def test_document_info_slash_in_file_context(entry):
+    """In a file-name format, a `/` in the document-info value stays a
+    path separator: BibDesk's `%i` case applies no slash replacement
+    (unlike `%f`/`%w`, whose `[slash]` argument defaults to `-` in a
+    file format), and file-name sanitization strips only `:`."""
+    fmt = compile_format("%i{Folder}%n0%e", context="file")
+    name = render_format(
+        fmt,
+        entry,
+        document_info={"Folder": "by-topic/gates"},
+        filename="paper.pdf",
+    )
+    assert name == "by-topic/gates.pdf"
 
 
 # -- literal text and escapes ------------------------------------------ #

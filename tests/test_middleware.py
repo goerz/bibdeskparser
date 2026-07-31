@@ -7,6 +7,7 @@ import bibtexparser
 import pytest
 
 from bibdeskparser.bdskfile import BibDeskFile
+from bibdeskparser.docinfo import _DocumentInfoMiddleware
 from bibdeskparser.groups import render_static_groups
 from bibdeskparser.middleware import (
     BibDeskFileMiddleware,
@@ -59,6 +60,7 @@ def test_parse_stack_returns_fresh_instances():
     stack1 = parse_stack()
     stack2 = parse_stack()
     assert [type(mw) for mw in stack1] == [
+        _DocumentInfoMiddleware,
         NormalizeMacroNamesMiddleware,
         DeTeXifyMiddleware,
         BibDeskFileMiddleware,

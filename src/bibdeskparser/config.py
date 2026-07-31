@@ -271,9 +271,9 @@ def _normalize_format_spec(value, context="key"):
     type) or a per-type `dict` mapping entry-type names to format
     strings, with the empty string `""` as the fallback for
     unlisted types. Every format string is compiled (in `context`) to
-    validate it, so a malformed one raises {exc}`ValueError` (or
-    {exc}`NotImplementedError`, for `%i`). Returns the spec with the
-    `dict` keys stripped and lowercased (a `str` is returned as is)."""
+    validate it, so a malformed one raises {exc}`ValueError`. Returns
+    the spec with the `dict` keys stripped and lowercased (a `str` is
+    returned as is)."""
     label = "auto-file" if context == "file" else "auto-key"
     if isinstance(value, str):
         specifiers.compile_format(value, context=context)  # validate
