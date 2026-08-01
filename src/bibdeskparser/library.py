@@ -23,6 +23,12 @@ from bibtexparser.model import (
 from . import editing, specifiers
 from .bdskfile import BibDeskFile
 from .config import active
+from .docinfo import (
+    _BibDeskInfo,
+    _check_info_key,
+    _check_info_value,
+    _stored_key,
+)
 from .entry import Entry, _strip_enclosing
 from .exporting import export_entries
 from .groups import (
@@ -318,6 +324,26 @@ def _hoist_last_block_above_groups(raw_library):
             return
 
 
+def _place_info_block(raw_library):
+    """Move the just-appended `@bibdesk_info` block of `raw_library` to
+    its canonical position.
+
+    BibDesk writes the block between the header comment and the
+    `@string` definitions, so the new block goes above the first
+    `@string` -- or, in a file without one, above the first entry (a
+    failed block counts as an entry) or group `@comment` block. See
+    `_hoist_last_block_above_groups` for why in-place reordering of
+    `raw_library.blocks` is safe.
+    """
+    blocks = raw_library.blocks
+    for i, block in enumerate(blocks[:-1]):
+        if isinstance(
+            block, (String, _RawEntry, ParsingFailedBlock)
+        ) or _is_groups_comment_block(block):
+            blocks.insert(i, blocks.pop())
+            return
+
+
 def _place_string_block(raw_library):
     """Move the just-appended `@string` block of `raw_library` to its
     canonical position.
@@ -434,6 +460,60 @@ class _StringsView(MutableMapping):
             p.text("{...}")
         else:
             p.pretty(dict(self))
+
+
+class _InfoView(MutableMapping):
+    """Read-write `dict`-like view of {attr}`Library.info`, mapping
+    each document-info key to its value.
+
+    A stateless facade over the owning `Library`'s document-info data
+    (loaded from the `@bibdesk_info` block): keys are matched
+    case-insensitively but iterate in the case and order in which they
+    are stored, and every mutation forwards to the `Library`, which
+    keeps the block in sync. The `MutableMapping` mixins (`pop`,
+    `popitem`, `clear`, `update`, `setdefault`) all funnel through
+    `__getitem__`/`__setitem__`/`__delitem__`, so they maintain the
+    same invariants.
+    """
+
+    def __init__(self, owner):
+        self._owner = owner
+
+    def _stored(self, key):
+        # A non-str key falls through to a dict-like KeyError.
+        if not isinstance(key, str):
+            raise KeyError(key)
+        stored = _stored_key(self._owner._info_data, key)
+        if stored is None:
+            raise KeyError(key)
+        return stored
+
+    def __getitem__(self, key):
+        return self._owner._info_data[self._stored(key)]
+
+    def __setitem__(self, key, value):
+        self._owner._assign_info(key, value)
+
+    def __delitem__(self, key):
+        self._owner._delete_info(self._stored(key))
+
+    def __iter__(self):
+        return iter(self._owner._info_data)
+
+    def __len__(self):
+        return len(self._owner._info_data)
+
+    def __repr__(self):
+        # Show the full key -> value mapping, like a plain dict.
+        return repr(self._owner._info_data)
+
+    def _repr_pretty_(self, p, cycle):
+        # IPython/Jupyter pretty-printing hook: same key -> value
+        # mapping as `repr`, but indented across multiple lines.
+        if cycle:
+            p.text("{...}")
+        else:
+            p.pretty(self._owner._info_data)
 
 
 class _GroupsView(MutableMapping):
@@ -569,6 +649,10 @@ class Library(MutableMapping):
       citation keys as a `tuple`, optionally filtered by entry type,
       by which fields are present or missing, and by static-group
       membership.
+    - {attr}`info`: a read-write `dict`-like view of BibDesk's
+      document info -- the key/value metadata that the "Document Info"
+      panel attaches to the database as a whole (the `@bibdesk_info`
+      block of the `.bib` file). Keys are matched case-insensitively.
     - {attr}`path`: the `.bib` file the library was loaded from or last
       saved to (read-only; `None` for an unsaved from-scratch library).
     - {attr}`timestamp`: the save time from the header comment, updated
@@ -778,6 +862,26 @@ class Library(MutableMapping):
             else {}
         )
 
+        # Like BibDesk, the last of several `@bibdesk_info` blocks
+        # wins; the extras stay verbatim until a mutation of `info`
+        # collapses them (`_sync_info_block`).
+        info_blocks = [
+            block
+            for block in self._library.blocks
+            if isinstance(block, _BibDeskInfo)
+        ]
+        if len(info_blocks) > 1:
+            warnings.warn(
+                f"file contains {len(info_blocks)} @bibdesk_info "
+                "blocks; using the last one",
+                UserWarning,
+                stacklevel=2,
+            )
+        self._info_block = info_blocks[-1] if info_blocks else None
+        self._info_data = (
+            dict(self._info_block.data) if self._info_block else {}
+        )
+
         self._entries = {}
         # A single one-pass reverse index over the group data to seed
         # every entry's `.groups`, rather than one scan over all groups
@@ -824,6 +928,7 @@ class Library(MutableMapping):
                 entry._stamp_dates = True  # pylint: disable=protected-access
 
         self._strings_view = _StringsView(self)
+        self._info_view = _InfoView(self)
         self._groups_view = _GroupsView(self)
         self._keywords_view = _KeywordsView(self)
 
@@ -957,6 +1062,91 @@ class Library(MutableMapping):
                     entry._touch()  # pylint: disable=protected-access
         self._modified = True
         _check_duplicate_macro_values(self._library.strings_dict)
+
+    # -- document info ------------------------------------------------ #
+
+    @property
+    def info(self):
+        """Read-write `dict`-like view of BibDesk's document info: the
+        key/value metadata of the "Document Info" panel
+        (*File → Document Info…*), attached to the database as a whole
+        and stored in the `@bibdesk_info` block of the `.bib` file
+        (see the [](bibdesk-document-info) documentation).
+
+        Keys are matched case-insensitively, matching BibDesk, but
+        keep the case in which they are stored in the file (or first
+        assigned); they iterate in storage order, with new keys
+        appended at the end. Assigning a key that is not a valid
+        BibTeX field name raises `ValueError` (BibDesk itself performs
+        no validation, but an invalid key would produce a file BibDesk
+        cannot read back). Values are plain Unicode strings; the empty
+        string is allowed (matching BibDesk -- unlike an empty *entry
+        field*, which a BibDesk save drops).
+
+        ```python
+        >>> bib = Library("tests/Refs/refs.bib")
+        >>> list(bib.info)
+        ['primary_topics']
+        >>> bib.info["Primary_Topics"]  # doctest: +ELLIPSIS
+        'Coherent Control, Numerics, OCT, ...'
+        >>> bib.info["project"] = "qdyn"
+        >>> del bib.info["project"]
+
+        ```
+
+        Any mutation marks the library modified (no entry is touched),
+        so {meth}`save` rewrites the file; the mapping's data replaces
+        the stored `@bibdesk_info` block, in BibDesk's own layout, and
+        an emptied mapping removes the block. As long as the info is
+        *not* modified, the loaded block is written back verbatim. On
+        a library in the plain format, assigning a key converts to the
+        database format, with a {class}`FormatConversionWarning`.
+        """
+        return self._info_view
+
+    def _sync_info_block(self):
+        """Bring the `@bibdesk_info` block in line with `_info_data`:
+        regenerate, create, or remove it, and drop any extra
+        `@bibdesk_info` blocks (of a file with several, only the last
+        one is exposed -- like in BibDesk). Called by every
+        document-info mutation."""
+        extra = [
+            block
+            for block in self._library.blocks
+            if isinstance(block, _BibDeskInfo)
+            and block is not self._info_block
+        ]
+        if not self._info_data:
+            if self._info_block is not None:
+                extra.append(self._info_block)
+                self._info_block = None
+        elif self._info_block is None:
+            self._info_block = _BibDeskInfo(dict(self._info_data))
+            self._library.add([self._info_block], fail_on_duplicate_key=False)
+            _place_info_block(self._library)
+        else:
+            self._info_block.update(dict(self._info_data))
+        if extra:
+            self._library.remove(extra)
+
+    def _assign_info(self, key, value):
+        """Backing implementation of `library.info[key] = value`."""
+        _check_info_key(key)
+        _check_info_value(value)
+        stored = _stored_key(self._info_data, key)
+        if stored is not None and self._info_data[stored] == value:
+            return
+        self._convert_to_database(f"document info {key!r} set")
+        self._info_data[stored if stored is not None else key] = value
+        self._sync_info_block()
+        self._modified = True
+
+    def _delete_info(self, stored):
+        """Backing implementation of `del library.info[key]`; `stored`
+        is the stored spelling of the key (which must exist)."""
+        del self._info_data[stored]
+        self._sync_info_block()
+        self._modified = True
 
     # -- groups ------------------------------------------------------ #
 
@@ -1615,6 +1805,7 @@ class Library(MutableMapping):
             fmt,
             entry,
             strings=self._all_strings(),
+            document_info=self.info,
             initials=active.initials,
             lowercase=active.auto_file.lowercase,
             clean=active.auto_file.clean,
@@ -1680,6 +1871,7 @@ class Library(MutableMapping):
             fmt,
             entry,
             strings=self._all_strings(),
+            document_info=self.info,
             initials=active.initials,
             lowercase=active.auto_key.lowercase,
             clean=active.auto_key.clean,
@@ -1744,6 +1936,7 @@ class Library(MutableMapping):
             fmt,
             entry,
             strings=self._all_strings(),
+            document_info=self.info,
             initials=active.initials,
             lowercase=active.auto_file.lowercase,
             clean=active.auto_file.clean,
@@ -2261,8 +2454,8 @@ class Library(MutableMapping):
           {exc}`FileExistsError` checks (see below).
 
         If the library was not modified since it was loaded (no entry
-        was modified, {attr}`groups` was not mutated, and no
-        entries/strings were added or removed),
+        was modified, {attr}`groups` and {attr}`info` were not
+        mutated, and no entries/strings were added or removed),
         the file is written byte-identical to how it was parsed, and
         the header timestamp is *not* touched. The one exception to
         byte-identity: a hand-edited mixed-case macro name (a

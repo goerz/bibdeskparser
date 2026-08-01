@@ -1,11 +1,12 @@
 r"""Serialization of a `bibtexparser` library in BibDesk's file format.
 
-BibDesk lays out a `.bib` file as the header comment, the `@string`
-definitions, the entries, and finally the group `@comment` blocks.
-Blocks are separated by one blank line, except for two blank lines
-before the `@string` section and before the first entry. Entry fields
-are written one per line, indented with a tab, with the closing brace
-fused onto the last field line.
+BibDesk lays out a `.bib` file as the header comment, the
+`@bibdesk_info` block (if the document has any document info), the
+`@string` definitions, the entries, and finally the group `@comment`
+blocks. Blocks are separated by one blank line, except for two blank
+lines before the `@string` section and before the first entry. Entry
+fields are written one per line, indented with a tab, with the closing
+brace fused onto the last field line.
 
 `render_library` serializes a parsed library back to that exact
 format: for an unmodified library, the output is byte-identical to the
@@ -39,9 +40,10 @@ from bibtexparser.model import (
 )
 
 from .bdskfile import BibDeskFile
+from .docinfo import _BibDeskInfo
 from .entry import Entry as _Entry
 from .header import restore_trailing_space
-from .middleware import TeXifyMiddleware
+from .middleware import TeXifyMiddleware, quiet_block_type_logging
 from .texmap import texify
 
 __all__ = []
@@ -85,6 +87,11 @@ def serialize_block(block):
       value. {class}`bibdeskparser.bdskfile.BibDeskFile` values are
       serialized via their
       {meth}`~bibdeskparser.bdskfile.BibDeskFile.to_field_value` method.
+    * `bibdeskparser.docinfo._BibDeskInfo` (a `@bibdesk_info` block):
+      the block's raw source slice, verbatim. BibDesk lays this block
+      out differently from an entry (the closing brace goes on its own
+      line) and writes its values without TeX conversion, so it must
+      not be re-serialized as an entry.
     * `Preamble`: `@preamble{...}`, with the preamble body (TeX code)
       written verbatim. BibDesk itself never writes `@preamble`
       blocks, but it preserves them, and so does this writer.
@@ -121,6 +128,8 @@ def serialize_block(block):
         return f"@string{{{block.key} = {block.value}}}"
     if isinstance(block, ExplicitComment):
         return f"@comment{{{block.comment}}}"
+    if isinstance(block, _BibDeskInfo):
+        return block.raw
     if isinstance(block, Preamble):
         return f"@preamble{{{block.value}}}"
     if isinstance(block, Entry):
@@ -161,18 +170,24 @@ def separator(prev_block, cur_block):
     ```
 
     Returns `"\\n\\n\\n"` (two blank lines) between the header comment
-    and the first `@string`, and between the last `@string` and the
-    first entry, i.e., when `prev_block` is an `ImplicitComment` and
-    `cur_block` is a `String`, or when `prev_block` is a `String` and
+    and the first `@string`, and between the last block of the
+    `@string` section and the first entry, i.e., when `prev_block` is
+    an `ImplicitComment` and `cur_block` is a `String`, or when
+    `prev_block` is a `String` or a `@bibdesk_info` block and
     `cur_block` is an `Entry`. Returns `"\\n\\n"` (one blank line) for
-    every other transition. A `ParsingFailedBlock` counts as the block
-    it wraps (usually an `Entry` with a duplicate key).
+    every other transition; in particular, a `@bibdesk_info` block sits
+    one blank line below the header and one blank line above the first
+    `@string`. A `ParsingFailedBlock` counts as the block it wraps
+    (usually an `Entry` with a duplicate key).
     """
     prev_type = _effective_type(prev_block)
     cur_type = _effective_type(cur_block)
     double = (
         issubclass(prev_type, ImplicitComment) and issubclass(cur_type, String)
-    ) or (issubclass(prev_type, String) and issubclass(cur_type, Entry))
+    ) or (
+        issubclass(prev_type, (String, _BibDeskInfo))
+        and issubclass(cur_type, Entry)
+    )
     return "\n\n\n" if double else "\n\n"
 
 
@@ -190,9 +205,13 @@ def render_library(library):
     so Unicode field values are written as TeX and the caller's
     library is left untouched.
     """
-    library = TeXifyMiddleware(allow_inplace_modification=False).transform(
-        library
-    )
+    # quiet_block_type_logging: bibtexparser's BlockMiddleware logs a
+    # warning for any block type it does not special-case, which
+    # includes the pass-through `_BibDeskInfo` blocks.
+    with quiet_block_type_logging():
+        library = TeXifyMiddleware(allow_inplace_modification=False).transform(
+            library
+        )
     pieces = []
     prev = None
     for block in library.blocks:

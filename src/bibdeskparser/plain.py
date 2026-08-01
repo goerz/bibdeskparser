@@ -6,9 +6,9 @@ fields, and `date-added`/`date-modified` bookkeeping. The *plain
 format* is what {meth}`bibdeskparser.Library.export` writes: plain
 BibTeX for citing from LaTeX, with none of the above. A loaded file is
 in the database format exactly if it contains any database-only
-content -- a BibDesk header, any BibDesk group `@comment` block, or
-any `bdsk-*` field (see `database_content`); a file with none of
-these is plain.
+content -- a BibDesk header, a `@bibdesk_info` block, any BibDesk
+group `@comment` block, or any `bdsk-*` field (see
+`database_content`); a file with none of these is plain.
 
 A plain file has three options that affect how it is regenerated and
 serialized, collected in a `PlainOptions` record: the value encoding
@@ -28,6 +28,7 @@ import bibtexparser
 from bibtexparser.model import ExplicitComment, ImplicitComment
 
 from .config import active
+from .docinfo import _BibDeskInfo, _is_document_info_entry
 from .groups import is_groups_comment
 from .header import parse_header
 from .identifiers import _entry_preprint
@@ -130,11 +131,12 @@ def database_content(raw_library):
     `bibtexparser.Library`), as a list of human-readable descriptions.
 
     An empty list means the file is in the plain format. Checked, in
-    order: a BibDesk header comment (as the first block), any BibDesk
-    group `@comment` block (static, smart, URL, or script groups), and
-    any `bdsk-*` field on any entry. The `date-added`/`date-modified`
-    fields are *not* markers: a plain file can legitimately contain
-    them (e.g. an entry pasted from a database).
+    order: a BibDesk header comment (as the first block), a
+    `@bibdesk_info` block, any BibDesk group `@comment` block (static,
+    smart, URL, or script groups), and any `bdsk-*` field on any
+    entry. The `date-added`/`date-modified` fields are *not* markers:
+    a plain file can legitimately contain them (e.g. an entry pasted
+    from a database).
     """
     found = []
     blocks = raw_library.blocks
@@ -142,6 +144,14 @@ def database_content(raw_library):
         creator, _ = parse_header(blocks[0].comment)
         if creator is not None:
             found.append("a BibDesk header")
+    # The block is checked in both its forms: the verbatim block that
+    # `parse_stack` produces, and the entry-shaped block of a library
+    # parsed without `parse_stack`.
+    if any(
+        isinstance(block, _BibDeskInfo) or _is_document_info_entry(block)
+        for block in blocks
+    ):
+        found.append("a @bibdesk_info block")
     if any(
         isinstance(block, ExplicitComment) and is_groups_comment(block.comment)
         for block in blocks

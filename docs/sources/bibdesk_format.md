@@ -2,7 +2,8 @@
 
 BibDesk stores its database as an ordinary BibTeX `.bib` file, but it leans on
 a handful of BibDesk-specific conventions on top of plain BibTeX: a header
-comment, extra bookkeeping fields, an encoding of linked files and URLs into
+comment, a `@bibdesk_info` block for document-level metadata, extra
+bookkeeping fields, an encoding of linked files and URLs into
 otherwise-plain-looking fields, and `@comment` blocks for user-defined
 groups. The `bibdeskparser` library understands all of these and reproduces
 them exactly, so that a file loaded and saved again -- without any changes --
@@ -52,6 +53,53 @@ datetime.datetime(2026, 7, 18, 16, 2, tzinfo=datetime.timezone(datetime.timedelt
 A library created from scratch has no header until it is first saved,
 at which point one is synthesized (using the current user's full name,
 or an explicit `creator=` passed to the `Library` constructor).
+
+The `Saved with string encoding` line records the file's character
+encoding, which is configurable in BibDesk's preferences.
+`bibdeskparser` reads and writes UTF-8, BibDesk's default; a database
+saved in any other encoding fails to load with a
+{exc}`UnicodeDecodeError`.
+
+(bibdesk-document-info)=
+
+## Document info (the `@bibdesk_info` block)
+
+BibDesk attaches arbitrary key/value metadata to the database as a
+whole -- not to any entry -- through its "Document Info" panel
+(*File → Document Info…*). A database with document info stores it in
+a single `@bibdesk_info` block between the header comment and the
+`@string` definitions (a database whose document info is empty has no
+such block):
+
+```
+@bibdesk_info{document_info,
+	project = {qdyn},
+	funding = {DFG SFB 450}
+}
+```
+
+The block has the syntactic shape of a BibTeX entry, but it is not
+one: `document_info` is a fixed pseudo-key that BibDesk writes always
+and ignores when reading, the keys are case-insensitive (like
+BibDesk's entry fields), and -- unlike entry fields and `@string`
+values -- the values are written as plain Unicode, without TeX
+conversion. BibDesk also lays the block out differently from an
+entry, with the closing brace on its own line. Within BibDesk, the
+data is available to the cite-key and file-name autogeneration
+formats through the `%i{Key}` specifier and to export templates, and
+AppleScript exposes it as the document's `info` records.
+
+`bibdeskparser` exposes the stored data as the read-write mapping
+{py:attr}`Library.info <bibdeskparser.Library.info>` (`info`,
+`set_info`, and `delete_info` on the [command line](cli-info)); the
+block does *not* appear as an entry under the key `document_info`.
+Keys are matched case-insensitively, mirroring BibDesk, and the data
+feeds the `%i{Key}` [format specifier](format-specifiers). As long as
+the info is not modified, the block survives any combination of other
+modifications and {py:meth}`~bibdeskparser.library.Library.save`
+byte-for-byte, exactly as BibDesk wrote it; a modification through
+the mapping regenerates it (in BibDesk's own layout, preserving the
+stored key order), and emptying the mapping removes it from the file.
 
 ## `date-added` and `date-modified`
 
@@ -606,6 +654,7 @@ A loaded `.bib` file is classified as being in the database format
 exactly if it contains any database-only content:
 
 - a BibDesk header comment,
+- a `@bibdesk_info` block,
 - any BibDesk group `@comment` block, or
 - any `bdsk-*` field (`bdsk-file-N` attachments, `bdsk-url-N` URLs).
 

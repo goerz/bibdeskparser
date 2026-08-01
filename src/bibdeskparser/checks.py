@@ -426,7 +426,7 @@ def _key_format_unavailable(format_spec):
         return None
     try:
         compile_format(format_spec)
-    except (ValueError, NotImplementedError) as exc:
+    except ValueError as exc:
         return f"invalid citation-key format pattern: {exc}"
     return None
 

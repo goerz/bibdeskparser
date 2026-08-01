@@ -46,6 +46,7 @@ __private__ = [
     "groups",
     "keywords",
     "strings",
+    "info",
     "duplicate_keys",
     "check",
     "timestamp",
@@ -68,6 +69,8 @@ __private__ = [
     "set_string",
     "delete_string",
     "rename_string",
+    "set_info",
+    "delete_info",
     "add_to_keyword",
     "remove_from_keyword",
     "add_file",
@@ -88,15 +91,12 @@ __private__ = [
 
 # Exceptions raised by the `Library` API for invalid user input; the
 # CLI converts these into clean one-line error messages (exit code 1).
-# `NotImplementedError` covers recognized-but-unsupported format
-# specifiers (`%i`) in `rekey --format-spec` patterns.
 _API_ERRORS = (
     KeyError,
     ValueError,
     FileNotFoundError,
     FileExistsError,
     StaleFileError,
-    NotImplementedError,
 )
 
 
@@ -143,6 +143,12 @@ def _check_string(lib, name):
     """Fail cleanly if no `@string` macro `name` is defined in `lib`."""
     if name not in lib.strings:
         raise click.ClickException(f"unknown @string macro {name!r}")
+
+
+def _check_info(lib, key):
+    """Fail cleanly if no document-info key `key` exists in `lib`."""
+    if key not in lib.info:
+        raise click.ClickException(f"unknown document-info key {key!r}")
 
 
 def _default_bibfile(ctx):
@@ -424,8 +430,8 @@ def main(ctx):
 
     The read-only commands (`author`, `check`, `config`,
     `config_path`, `duplicate_keys`, `editor`, `eval_format_spec`,
-    `export`, `fields`, `files`, `get_field`, `groups`, `keys`,
-    `keywords`, `path`, `render`, `search`, `show`, `strings`,
+    `export`, `fields`, `files`, `get_field`, `groups`, `info`,
+    `keys`, `keywords`, `path`, `render`, `search`, `show`, `strings`,
     `timestamp`, `urls`) print to stdout; every other command modifies
     the `.bib` file in place and prints nothing on success, except for
     the generated key/path or per-key report noted in its own help.
@@ -1297,6 +1303,38 @@ def strings(bibfile, as_bib, as_json):
 
 
 @main.command(
+    name="info",
+    cls=_BibCommand,
+    short_help="Print the document info (database-level metadata).",
+    epilog=_examples(
+        "bibdeskparser info",
+        "bibdeskparser info primary_topics",
+        "bibdeskparser info --json",
+    ),
+)
+@click.argument("key", metavar="[KEY]", required=False)
+@_json_option
+@click.pass_obj
+def info(bibfile, key, as_json):
+    """Print the document info: the key/value metadata that BibDesk's
+    "Document Info" panel attaches to the database as a whole (see
+    `set_info`/`delete_info` to modify it).
+
+    Without KEY, print all pairs, one `key = value` per line (with
+    --json, an object). With KEY (matched case-insensitively), print
+    just its value."""
+    lib = Library(bibfile)
+    if key is not None:
+        _check_info(lib, key)
+        value = lib.info[key]
+        _emit(value, as_json, value)
+        return
+    data = dict(lib.info)
+    text = "\n".join(f"{k} = {v}" for k, v in data.items())
+    _emit(data, as_json, text)
+
+
+@main.command(
     name="duplicate_keys",
     cls=_BibCommand,
     short_help="List citation keys that occur more than once.",
@@ -2153,6 +2191,45 @@ def rename_string(bibfile, old_name, new_name):
     lib = Library(bibfile)
     _check_string(lib, old_name)
     lib.rename_string(old_name, new_name)
+    _save(lib)
+
+
+@main.command(
+    name="set_info",
+    cls=_BibCommand,
+    short_help="Create or update the document-info key KEY.",
+    epilog=_examples(
+        "bibdeskparser set_info project qdyn",
+        'bibdeskparser set_info primary_topics "OCT, Numerics"',
+    ),
+)
+@click.argument("key")
+@click.argument("value")
+@click.pass_obj
+def set_info(bibfile, key, value):
+    """Create or update the document-info key KEY as VALUE (see
+    `info`). KEY is matched case-insensitively against the existing
+    keys; a new key must be a valid BibTeX field name."""
+    lib = Library(bibfile)
+    lib.info[key] = value
+    _save(lib)
+
+
+@main.command(
+    name="delete_info",
+    cls=_BibCommand,
+    short_help="Remove the document-info key KEY.",
+    epilog=_examples("bibdeskparser delete_info project"),
+)
+@click.argument("key")
+@click.pass_obj
+def delete_info(bibfile, key):
+    """Remove the document-info key KEY (matched case-insensitively,
+    see `info`). Removing the last key removes the `@bibdesk_info`
+    block from the `.bib` file."""
+    lib = Library(bibfile)
+    _check_info(lib, key)
+    del lib.info[key]
     _save(lib)
 
 

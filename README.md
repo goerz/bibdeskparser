@@ -10,8 +10,8 @@
 
 BibDeskParser reads and writes [BibDesk][]
 `.bib` files exactly as BibDesk itself produces them: the header
-comment, linked files and URLs, `@string` macros, and static groups all
-round-trip byte-for-byte. The API centers on two classes: `Library`, a
+comment, linked files and URLs, `@string` macros, static groups, and
+document info all round-trip byte-for-byte. The API centers on two classes: `Library`, a
 dict-like mapping of citation key to `Entry`, and `Entry`, a single
 bibliography record.
 

@@ -2268,6 +2268,27 @@ def test_rename_file_auto_creates_subdirectories(tmp_path):
     assert bib["K1"].files == ["Goerz/2014.pdf"]
 
 
+def test_rename_file_auto_folder_from_document_info(tmp_path):
+    """A document-info value naming a folder (a `/`-bearing value,
+    read by `%i`) acts as a path separator during auto-filing: the
+    attachment lands in the (newly created) nested subfolder, the
+    stored path uses forward slashes, and the filed path is idempotent
+    under the format. The generated name must join and split cleanly
+    on `/` regardless of the platform's native separator."""
+    bib = _file_bib(tmp_path, files=("a.pdf",))
+    bib.info["papers_folder"] = "by-topic/gates"
+    spec = "%i{Papers_Folder}/%f{Cite Key}%u0%e"
+    with _quiet_bookmarks():
+        rel = bib.rename_file("K1", "a.pdf", format_spec=spec)
+    assert rel == "by-topic/gates/K1.pdf"
+    assert (tmp_path / "by-topic" / "gates" / "K1.pdf").exists()
+    assert not (tmp_path / "a.pdf").exists()
+    assert bib["K1"].files == ["by-topic/gates/K1.pdf"]
+    # The filed path already matches the format, so it evaluates to
+    # itself (via the location-relative current-name comparison).
+    assert bib.eval_format_spec("K1", spec, filename=rel) == rel
+
+
 def test_rename_file_auto_absolute_location(tmp_path):
     """An absolute `auto_file_location` outside the library directory
     works and is created on demand."""

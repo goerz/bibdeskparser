@@ -368,9 +368,7 @@ def compile_format(format_string, *, context="key"):
     Returns an opaque compiled form for {func}`render_format`. Raises
     {exc}`ValueError` for a malformed format (unknown or misused
     specifiers, missing `{Field}` argument, a second unique specifier,
-    specifiers or requirements that do not fit the context), and
-    {exc}`NotImplementedError` for the `%i` (document info)
-    specifier."""
+    specifiers or requirements that do not fit the context)."""
     if context not in ("key", "file"):
         raise ValueError(f"invalid format context: {context!r}")
     scanner = _Scanner(format_string)
@@ -396,14 +394,6 @@ def compile_format(format_string, *, context="key"):
                 f"specifier %{char} is only valid in a format for "
                 "local files (BibDesk's AutoFile feature), not for "
                 "citation keys"
-            )
-        if char == "i":
-            # TODO: implement %i once bibdeskparser models BibDesk's
-            # document info (the `@bibdesk_info{document_info, ...}`
-            # block that BibDesk saves into the .bib file).
-            raise NotImplementedError(
-                "the %i specifier (BibDesk document info) is not "
-                "implemented"
             )
         if char in _UNIQUE_SPECIFIERS:
             if found_unique:
@@ -437,7 +427,7 @@ def compile_format(format_string, *, context="key"):
         spec.arg_escaped = arg_escaped
         if char in "aApP":
             spec.names, spec.from_end = scanner.scan_signed_digit()
-        if char in "aptTkfwcsrRduUn":
+        if char in "aptTkfwcsirRduUn":
             spec.number = scanner.scan_uint()
         tokens.append(spec)
     if context == "file" and not found_unique:
@@ -654,6 +644,7 @@ class _Renderer:
         entry,
         *,
         strings=None,
+        document_info=None,
         initials=None,
         clean="tex",
         current_key=None,
@@ -663,6 +654,7 @@ class _Renderer:
     ):
         self.entry = entry
         self.strings = strings or {}
+        self.document_info = document_info or {}
         self.initials = initials or {}
         self.clean = clean
         self.current_key = current_key
@@ -905,6 +897,31 @@ class _Renderer:
             value = value[:num_chars]
         return value
 
+    def _render_i(self, spec):
+        # `spec.field` is lowercased (`_normalize_field`), and document
+        # info is keyed case-insensitively (like in BibDesk, where the
+        # documentInfo map compares keys case-insensitively).
+        value = next(
+            (
+                val
+                for key, val in self.document_info.items()
+                if key.lower() == spec.field
+            ),
+            "",
+        )
+        if not value:
+            return ""
+        # No `_deslash`/slash replacement, matching BibDesk exactly:
+        # unlike %f/%w (whose [slash] argument defaults to `-` in a
+        # file format), BibDesk's %i case only sanitizes and
+        # truncates, so a `/` in the value reaches a generated file
+        # name as a path separator.
+        value = self.sanitized(value)
+        num_chars = spec.number or 0
+        if 0 < num_chars < len(value):
+            value = value[:num_chars]
+        return value
+
     def _render_r(self, spec):
         count = spec.number if spec.number is not None else 1
         return "".join(
@@ -1088,6 +1105,7 @@ def render_format(
     entry,
     *,
     strings=None,
+    document_info=None,
     initials=None,
     lowercase=False,
     clean="tex",
@@ -1106,6 +1124,9 @@ def render_format(
     * `entry`: the {class}`~bibdeskparser.Entry` to render.
     * `strings`: a mapping of `@string` macro names to their values
       (e.g. `library.strings`), for expanding bare macro references.
+    * `document_info`: a mapping of document-info keys to their values
+      (e.g. `library.info`), supplying the `%i{Key}` specifier; keys
+      are matched case-insensitively.
     * `initials`: the `[initials]` mapping from the
       [configuration](configuration): field name to a `dict` mapping
       a full field value (or macro name) to the initials that `%c`
@@ -1142,6 +1163,7 @@ def render_format(
     renderer = _Renderer(
         entry,
         strings=strings,
+        document_info=document_info,
         initials=initials,
         clean=clean,
         current_key=current_key,

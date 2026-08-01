@@ -368,9 +368,6 @@ def test_auto_key_format_spec_validated(tmp_path, monkeypatch):
     _write(tmp_path, '[auto_key]\nformat_spec = "%a1%x"\n')
     with pytest.raises(ValueError, match="invalid specifier"):
         config.active.load(bib_dir=tmp_path)
-    _write(tmp_path, '[auto_key]\nformat_spec = "%a1%i{Project}"\n')
-    with pytest.raises(NotImplementedError, match="%i"):
-        config.active.load(bib_dir=tmp_path)
     _write(tmp_path, '[auto_key.format_spec]\narticle = "%a1%x"\n')
     with pytest.raises(ValueError, match="invalid specifier"):
         config.active.load(bib_dir=tmp_path)
