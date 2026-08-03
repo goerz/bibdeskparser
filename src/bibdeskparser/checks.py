@@ -15,6 +15,13 @@ from collections import namedtuple
 
 from bibtexparser.model import DuplicateBlockKeyBlock
 
+from .assets import (
+    _asset_classes,
+    _asset_present,
+    _orphan_glob,
+    _resolve_asset,
+    _unit_is_dir,
+)
 from .config import active
 from .entry import _percent_encode_url, _strip_enclosing
 from .identifiers import _entry_preprint, _preprint_journal
@@ -35,7 +42,8 @@ __private__ = ["Problem", "collect_problems"]
 #: `"duplicate_keys"`, `"entry_type"`, `"required_fields"`, `"doi"`,
 #: `"empty_fields"`, `"known_missing"`, `"journal"`,
 #: `"undefined_macro"`, `"year"`, `"month"`, `"names"`,
-#: `"url_encoding"`, `"unused_strings"`, `"files"`, or `"key_format"`),
+#: `"url_encoding"`, `"unused_strings"`, `"files"`, `"key_format"`,
+#: `"assets"`, or `"asset_orphans"`),
 #: `key` is the citation key the problem is tied to
 #: (`None` for a problem that concerns the file as a whole), and
 #: `message` describes the problem.
@@ -43,7 +51,13 @@ Problem = namedtuple("Problem", ["check", "key", "message"])
 
 
 def collect_problems(
-    library, keys=None, *, audit_files=False, key_format=None
+    library,
+    keys=None,
+    *,
+    audit_files=False,
+    audit_assets=False,
+    audit_orphans=True,
+    key_format=None,
 ):
     """Every standing-audit problem in `library`, as a `list` of
     {class}`Problem`.
@@ -62,6 +76,20 @@ def collect_problems(
     disk, relative to the library's `.bib` directory, matching case
     exactly. It is off by default because attachments may legitimately
     live only on another machine.
+
+    With `audit_assets`, an additional audit checks that every
+    resolving asset of the `[assets]` configuration exists on disk:
+    per entry for the per-entry classes, file-wide for the
+    library-level ones (the latter only when auditing the whole
+    library). It is off by default for the same reason as
+    `audit_files`.
+
+    `audit_orphans` (on by default) inverts each per-entry `[assets]`
+    pattern -- globbing with the entry-dependent part wildcarded --
+    and flags matches on disk that belong to no entry, e.g. an asset
+    left behind by a delete or an old-style rekey. It is skipped when
+    auditing a `keys` subset. Both asset audits are no-ops for a
+    library that declares no assets, or that has no file path.
 
     With `key_format`, an additional per-entry audit checks that each
     entry's citation key matches its expected auto-key format, i.e.
@@ -104,13 +132,34 @@ def collect_problems(
         if unavailable is not None:
             problems.append(Problem("key_format", None, unavailable))
             audit_key_format = False
+    asset_classes = []
+    asset_env = None
+    asset_base_dir = None
+    if (audit_assets or audit_orphans) and library.path is not None:
+        asset_classes = _asset_classes(active.assets)
+        # pylint: disable-next=protected-access
+        asset_env = library._asset_env()
+        # pylint: disable-next=protected-access
+        asset_base_dir = library._files_base_dir()
     for entry in entries:
         problems += _entry_problems(entry, library, strings)
         if audit_files:
             problems += _file_problems(entry, base_dir, listdir_cache)
+        if audit_assets and asset_classes:
+            problems += _missing_asset_problems(
+                entry, asset_classes, asset_env, asset_base_dir
+            )
         if audit_key_format:
             problems += _key_format_problems(entry, library, format_spec)
     if keys is None:
+        if audit_assets and asset_classes:
+            problems += _library_asset_problems(
+                asset_classes, asset_env, asset_base_dir
+            )
+        if audit_orphans and asset_classes:
+            problems += _asset_orphan_problems(
+                library, asset_classes, asset_env, asset_base_dir
+            )
         problems += _unused_string_problems(library)
     return problems
 
@@ -540,6 +589,105 @@ def _file_problems(entry, base_dir, listdir_cache):
                     f"{on_disk!r} (case mismatch)",
                 )
             )
+    return problems
+
+
+def _missing_asset_problems(entry, classes, env, base_dir):
+    """Problems for `entry`'s resolving per-entry assets that do not
+    exist on disk."""
+    problems = []
+    for cls in classes:
+        if not cls.per_entry:
+            continue
+        rel = _resolve_asset(cls, entry, env, current_key=entry.key)
+        if rel is None or _asset_present(cls, rel, base_dir):
+            continue
+        problems.append(
+            Problem(
+                "assets",
+                entry.key,
+                f"missing asset {cls.name!r}: {rel!r}",
+            )
+        )
+    return problems
+
+
+def _library_asset_problems(classes, env, base_dir):
+    """File-wide problems for the resolving library-level assets that
+    do not exist on disk."""
+    problems = []
+    for cls in classes:
+        if cls.per_entry:
+            continue
+        rel = _resolve_asset(cls, None, env)
+        if rel is None or _asset_present(cls, rel, base_dir):
+            continue
+        problems.append(
+            Problem("assets", None, f"missing asset {cls.name!r}: {rel!r}")
+        )
+    return problems
+
+
+def _asset_orphan_problems(library, classes, env, base_dir):
+    """File-wide problems for on-disk files that match a per-entry
+    `[assets]` pattern but do not belong to any entry.
+
+    Each pattern is inverted into a glob (the entry-dependent
+    specifiers wildcarded, see `bibdeskparser.assets._orphan_glob`)
+    over its lifecycle unit; a match that no entry's resolved unit
+    accounts for is an orphan -- typically a file left behind by a
+    delete, or named after a key that has since changed.
+
+    A match that accounts for an entry's unit only case-insensitively
+    is reported as a case mismatch instead, like the linked-file audit
+    does (see `_resolve_exact_case`): on a case-insensitive filesystem
+    such a file *is* the entry's asset -- `asset`/`assets` resolve it
+    -- while on a case-sensitive one it is not, so reporting it as an
+    orphan would make the audit's verdict depend on the platform."""
+    orphans = {}  # rel path -> class names matching it
+    mismatched = {}  # rel path -> (expected rel path, class names)
+    for cls in classes:
+        if not cls.per_entry:
+            continue
+        pattern = _orphan_glob(cls, env)
+        if pattern is None:
+            continue
+        expected = {}  # a unit's rel path, by its case-folded form
+        for key, entry in library.items():
+            rel = _resolve_asset(
+                cls, entry, env, current_key=key, depth=cls.unit_index
+            )
+            if rel is not None:
+                expected.setdefault(rel.casefold(), rel)
+        want_dir = _unit_is_dir(cls)
+        for match in base_dir.glob(pattern):
+            if match.is_dir() != want_dir:
+                continue
+            rel = match.relative_to(base_dir).as_posix()
+            wanted = expected.get(rel.casefold())
+            if wanted == rel:
+                continue
+            if wanted is None:
+                orphans.setdefault(rel, []).append(cls.name)
+            else:
+                mismatched.setdefault(rel, (wanted, []))[1].append(cls.name)
+    problems = [
+        Problem(
+            "asset_orphans",
+            None,
+            f"asset {rel!r} ({', '.join(names)}) belongs to no entry",
+        )
+        for rel, names in sorted(orphans.items())
+    ]
+    problems += [
+        Problem(
+            "asset_orphans",
+            None,
+            f"asset {rel!r} ({', '.join(names)}) matches the expected "
+            f"{wanted!r} only up to case",
+        )
+        for rel, (wanted, names) in sorted(mismatched.items())
+    ]
     return problems
 
 

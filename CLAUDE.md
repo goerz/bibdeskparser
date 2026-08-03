@@ -24,7 +24,7 @@ Before the 1.0 release, backwards compatibility is not a concern. The API should
 
 ## Conventions
 
-- Line length 79.
+- Line length 79 — for Python code. Markdown prose (every `.md` file, including `docs/sources/`) is never hard-wrapped: one line per paragraph, list item, or table row, at any width. Only fenced code blocks keep their line breaks.
 - Docstrings are MyST Markdown (not reStructuredText), rendered on the auto-generated API page. Use fenced ` ```python ` blocks for doctests.
 - In the documentation, don't over-format. Use bold only for rubrics (a standalone label on its own line, like the `**Options**` rubric on the CLI reference page), never as a paragraph lead-in, a list-item lead-in ("Bold term: explanation"), or anywhere inside a paragraph.
 - Public-API minimality, the per-symbol `__all__`/`__private__` rule, and which symbols stay private are documented in CONTRIBUTING.md (Documentation); don't restate them here. One point not covered there: `render`/`export`/`edit` are `Library`-only methods (not on `Entry`), since they operate on citation keys and, for `export`/`edit`, need the library's `@string` macros to produce self-contained output.

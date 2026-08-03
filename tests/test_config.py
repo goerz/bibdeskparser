@@ -795,6 +795,70 @@ def test_add_option_validation(tmp_path, monkeypatch):
         config.active.load(bib_dir=tmp_path)
 
 
+def test_assets_defaults(tmp_path, monkeypatch):
+    """Without `[assets]`/`[rekey]`/`[delete]` tables, the built-in
+    defaults apply."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "verify_types = false\n")
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.assets == {}
+    assert config.active.rekey.rename_assets is True
+    assert config.active.rekey.rename_attachments is True
+    assert config.active.delete.remove_assets is False
+    assert config.active.delete.remove_attachments is False
+
+
+def test_assets_settings(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(
+        tmp_path,
+        "[assets]\n"
+        'summary = "%f{Cite Key}_summary.md"\n'
+        'source = "%f{Cite Key}.ingest/source/"\n'
+        'topics = "%i{Topics-File}"\n'
+        'disabled = ""\n'
+        "[rekey]\n"
+        "rename_assets = false\n"
+        "rename_attachments = false\n"
+        "[delete]\n"
+        "remove_assets = true\n"
+        "remove_attachments = true\n",
+    )
+    config.active.load(bib_dir=tmp_path)
+    assert config.active.assets == {
+        "summary": "%f{Cite Key}_summary.md",
+        "source": "%f{Cite Key}.ingest/source/",
+        "topics": "%i{Topics-File}",
+        "disabled": "",
+    }
+    assert config.active.rekey.rename_assets is False
+    assert config.active.rekey.rename_attachments is False
+    assert config.active.delete.remove_assets is True
+    assert config.active.delete.remove_attachments is True
+
+
+def test_assets_validation(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    _write(tmp_path, "assets = 1\n")
+    with pytest.raises(ValueError, match=r"\[assets\] must be a table"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[assets]\nsummary = 1\n")
+    with pytest.raises(ValueError, match="must be a path pattern"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[assets]\nsummary = "%f{Cite Key}%u0.md"\n')
+    with pytest.raises(ValueError, match="unique specifier"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[assets]\nsummary = "/abs/%f{Cite Key}.md"\n')
+    with pytest.raises(ValueError, match="relative path"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[rekey]\nrename_assets = "yes"\n')
+    with pytest.raises(ValueError, match="rename_assets must be a boolean"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[delete]\nnonsense = true\n")
+    with pytest.warns(UserWarning, match=r"unknown key\(s\) in \[delete\]"):
+        config.active.load(bib_dir=tmp_path)
+
+
 def test_known_missing_defaults(tmp_path, monkeypatch):
     """Without a `[known_missing]` table, the mapping is empty."""
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))

@@ -428,13 +428,14 @@ def main(ctx):
     already exist, except for `create`, which requires that it does
     not.
 
-    The read-only commands (`author`, `check`, `config`,
-    `config_path`, `duplicate_keys`, `editor`, `eval_format_spec`,
-    `export`, `fields`, `files`, `get_field`, `groups`, `info`,
-    `keys`, `keywords`, `path`, `render`, `search`, `show`, `strings`,
-    `timestamp`, `urls`) print to stdout; every other command modifies
-    the `.bib` file in place and prints nothing on success, except for
-    the generated key/path or per-key report noted in its own help.
+    The read-only commands (`asset`, `assets`, `author`, `check`,
+    `config`, `config_path`, `duplicate_keys`, `editor`,
+    `eval_format_spec`, `export`, `fields`, `files`, `get_field`,
+    `groups`, `info`, `keys`, `keywords`, `path`, `render`, `search`,
+    `show`, `strings`, `timestamp`, `urls`) print to stdout; every
+    other command modifies the `.bib` file in place and prints nothing
+    on success, except for the generated key/path or per-key report
+    noted in its own help.
     One exception: `export --update FILE` never modifies the `.bib`
     file it reads from, but rewrites the exported FILE. Data-printing
     commands accept `--json`.
@@ -1048,6 +1049,136 @@ def files(bibfile, citekeys, absolute, flat, as_json):
     _emit_derived(lib, citekeys, paths_for, as_json, flat)
 
 
+def _unresolved_asset(name):
+    """A `ClickException` explaining why the asset class `name` does
+    not resolve (see `Library.asset`)."""
+    pattern = config.active.assets.get(name)
+    if pattern is None:
+        reason = "it is not declared in the [assets] configuration"
+    elif not pattern:
+        reason = "its pattern is empty (the class is disabled)"
+    else:
+        reason = (
+            "a %i key its pattern references is unset in the " "document info"
+        )
+    return click.ClickException(
+        f"asset class {name!r} does not resolve: {reason}"
+    )
+
+
+def _present_name(name, present):
+    """An asset class name, `!`-prefixed when the asset is missing
+    from disk."""
+    return name if present else f"!{name}"
+
+
+@main.command(
+    name="asset",
+    cls=_BibCommand,
+    short_help="Print the path an asset class resolves to.",
+    epilog=_examples(
+        "bibdeskparser asset fulltext GoerzQ2022",
+        "bibdeskparser asset summary GoerzQ2022 --relative",
+        "bibdeskparser asset topics   # a library asset",
+        "bibdeskparser asset summary Key2026 --no-check-exists",
+    ),
+)
+@click.argument("name")
+@click.argument("citekey", metavar="[KEY]", required=False)
+@click.option(
+    "--absolute/--relative",
+    "absolute",
+    default=True,
+    show_default=True,
+    help=(
+        "Print the path as absolute (default), or as configured, "
+        "relative to the .bib file's directory (--relative)."
+    ),
+)
+@click.option(
+    "--check-exists/--no-check-exists",
+    "check_exists",
+    default=True,
+    show_default=True,
+    help=(
+        "Fail if nothing is on disk at the resolved path (a directory "
+        "for a directory-valued class, a file otherwise). With "
+        "--no-check-exists, print the path regardless -- where a "
+        "generator should write an asset that does not exist yet."
+    ),
+)
+@_json_option
+@click.pass_obj
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def asset(bibfile, name, citekey, absolute, check_exists, as_json):
+    """Print the path that the asset class NAME (declared as a path
+    pattern in the [assets] table of bibdeskparser.toml) resolves to.
+
+    An entry asset -- one whose pattern references entry data --
+    resolves for the entry KEY and requires one; a library asset takes
+    no KEY. Passing the wrong one is an error, as is a NAME that does
+    not resolve at all (not declared, an empty pattern, or a %i
+    document-info key its pattern references that is unset or empty).
+
+    Report the presence of several assets at once with `assets`; audit
+    them library-wide with `check`."""
+    lib = Library(bibfile)
+    if citekey is not None:
+        _check_keys(lib, [citekey])
+    rel = lib.asset(name, citekey, check_that_file_exists=check_exists)
+    if rel is None:
+        raise _unresolved_asset(name)
+    path = rel
+    if absolute:
+        path = str((lib._files_base_dir() / rel).resolve())
+    _emit(path, as_json, path)
+
+
+@main.command(
+    name="assets",
+    cls=_BibCommand,
+    short_help="Report which asset files exist on disk.",
+    epilog=_examples(
+        "bibdeskparser assets GoerzQ2022 Tannor2007",
+        "bibdeskparser assets   # the library assets",
+        "bibdeskparser assets --json $(bibdeskparser keys)",
+    ),
+)
+@click.argument("citekeys", metavar="[KEY...]", nargs=-1)
+@_json_option
+@click.pass_obj
+def assets(bibfile, citekeys, as_json):
+    """Report which of the assets declared in the [assets] table of
+    bibdeskparser.toml exist on disk.
+
+    With KEY..., one line per entry listing its entry assets (--json:
+    a {key: {name: bool}} map); an unknown key is an error. Without
+    KEY..., one line per library asset (--json: a {name: bool} map). A
+    '!' prefix marks an asset missing from disk. For coverage over the
+    whole library, pass every key: `assets $(bibdeskparser keys)`.
+
+    Resolve a single asset's path with `asset`."""
+    lib = Library(bibfile)
+    _check_keys(lib, citekeys)
+    data = lib.assets(*citekeys)
+    if citekeys:
+        empty, kind = not any(data.values()), "entry"
+        text = "\n".join(
+            f"{key}: " + ", ".join(_present_name(n, p) for n, p in row.items())
+            for key, row in data.items()
+        )
+    else:
+        empty, kind = not data, "library"
+        text = "\n".join(_present_name(n, p) for n, p in data.items())
+    if empty:
+        raise click.ClickException(
+            f"no {kind} asset is declared (and resolves) in the "
+            "[assets] configuration"
+        )
+    _emit(data, as_json, text)
+
+
 @main.command(
     name="urls",
     cls=_BibCommand,
@@ -1375,6 +1506,28 @@ def duplicate_keys(bibfile, as_json):
     ),
 )
 @click.option(
+    "--assets/--no-assets",
+    "audit_assets",
+    default=False,
+    show_default=True,
+    help=(
+        "Also check that every asset of the [assets] configuration "
+        "exists on disk. Off by default, since assets may live only "
+        "on another machine."
+    ),
+)
+@click.option(
+    "--orphans/--no-orphans",
+    "audit_orphans",
+    default=True,
+    show_default=True,
+    help=(
+        "Report files on disk that match an [assets] pattern but "
+        "belong to no entry. On by default (a no-op without an "
+        "[assets] configuration); skipped when auditing given KEYs."
+    ),
+)
+@click.option(
     "--key-format/--no-key-format",
     "audit_key_format",
     default=None,
@@ -1399,8 +1552,16 @@ def duplicate_keys(bibfile, as_json):
 )
 @_json_option
 @click.pass_obj
+# pylint: disable-next=too-many-positional-arguments
 def check(
-    bibfile, citekeys, audit_files, audit_key_format, format_spec, as_json
+    bibfile,
+    citekeys,
+    audit_files,
+    audit_assets,
+    audit_orphans,
+    audit_key_format,
+    format_spec,
+    as_json,
 ):
     """Run the standing audits and exit 0 (all pass) or 1 (any fail):
     a read-only pass/fail gate, e.g. after a batch of edits.
@@ -1421,11 +1582,14 @@ def check(
     - every author and editor parses as names;
     - no URL-type value (a url-named field, or a bdsk-url link) holds
       raw non-ASCII characters;
-    - every @string macro is referenced by some entry.
+    - every @string macro is referenced by some entry;
+    - no file on disk matches an [assets] pattern without belonging
+      to an entry (see --orphans).
 
     With KEY..., only the given entries are audited and the
-    unused-macro audit is skipped; an unknown key is an error. --files
-    and --key-format add the further per-entry audits described below.
+    unused-macro and orphaned-assets audits are skipped; an unknown
+    key is an error. --files, --assets, and --key-format add the
+    further per-entry audits described below.
 
     Each problem prints as 'KEY: <problem>' (or '<problem>' when not
     tied to an entry), then a PASS/FAIL summary. With --json:
@@ -1433,7 +1597,8 @@ def check(
     "message"}]}; "check" is one of parse, duplicate_keys, entry_type,
     required_fields, doi, empty_fields, known_missing, journal,
     undefined_macro, year, month, names, url_encoding, unused_strings,
-    files, key_format, and "key" is null when not tied to an entry.
+    files, key_format, assets, asset_orphans, and "key" is null when
+    not tied to an entry.
     """
     if format_spec is not None and audit_key_format is False:
         raise click.UsageError(
@@ -1466,6 +1631,8 @@ def check(
         lib,
         keys=citekeys or None,
         audit_files=audit_files,
+        audit_assets=audit_assets,
+        audit_orphans=audit_orphans,
         key_format=key_format,
     )
     n_entries = len(dict.fromkeys(citekeys)) if citekeys else len(lib)
@@ -1905,6 +2072,7 @@ def create(bibfile):
     epilog=_examples(
         "bibdeskparser rekey Preskill2018 Preskill2018NISQ",
         "bibdeskparser rekey Preskill2018 " "--format-spec '%a1%Y%u0'",
+        "bibdeskparser rekey Old2001 New2001 --no-rename-attachments",
     ),
 )
 @click.argument("old_key")
@@ -1920,8 +2088,31 @@ def create(bibfile):
         "Only valid without NEW_KEY."
     ),
 )
+@click.option(
+    "--rename-assets/--no-rename-assets",
+    default=None,
+    help=(
+        "Move the entry's asset files ([assets] patterns) to the "
+        "paths the new key resolves to. Defaults to the [rekey] "
+        "configuration (on)."
+    ),
+)
+@click.option(
+    "--rename-attachments/--no-rename-attachments",
+    default=None,
+    help=(
+        "Re-file the entry's attachments that follow the [auto_file] "
+        "format under the new key; a hand-named or missing file is "
+        "skipped with a warning. Defaults to the [rekey] "
+        "configuration (on)."
+    ),
+)
 @click.pass_obj
-def rekey(bibfile, old_key, new_key, format_spec):
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def rekey(
+    bibfile, old_key, new_key, format_spec, rename_assets, rename_attachments
+):
     """Change the citation key of an entry from OLD_KEY to NEW_KEY.
 
     Without NEW_KEY, generate it from the configured auto-key format
@@ -1929,10 +2120,21 @@ def rekey(bibfile, old_key, new_key, format_spec):
     the format is kept; a %u/%U/%n specifier resolves collisions with
     other entries; a field the entry lacks renders as empty, giving a
     shorter key.
+
+    Files named after the key follow the rename: the entry's asset
+    files ([assets] patterns) are moved, and attachments that follow
+    the [auto_file] format are re-filed, unless switched off (see the
+    options below).
     """
     lib = Library(bibfile)
     _check_keys(lib, [old_key])
-    result = lib.rekey(old_key, new_key, format_spec=format_spec)
+    result = lib.rekey(
+        old_key,
+        new_key,
+        format_spec=format_spec,
+        rename_assets=rename_assets,
+        rename_attachments=rename_attachments,
+    )
     _save(lib)
     if new_key is None:
         click.echo(result)
@@ -1942,16 +2144,46 @@ def rekey(bibfile, old_key, new_key, format_spec):
     name="delete",
     cls=_BibCommand,
     short_help="Delete the given entries from the library.",
-    epilog=_examples("bibdeskparser delete StaleEntry2001"),
+    epilog=_examples(
+        "bibdeskparser delete StaleEntry2001",
+        "bibdeskparser delete Stale2001 --remove-assets "
+        "--remove-attachments",
+    ),
 )
 @click.argument("citekeys", metavar="KEY...", nargs=-1, required=True)
+@click.option(
+    "--remove-assets/--no-remove-assets",
+    default=None,
+    help=(
+        "Also delete each entry's asset files ([assets] patterns) "
+        "from disk. Defaults to the [delete] configuration (off)."
+    ),
+)
+@click.option(
+    "--remove-attachments/--no-remove-attachments",
+    default=None,
+    help=(
+        "Also delete each entry's attached files from disk (a file "
+        "still linked from another entry is kept). Defaults to the "
+        "[delete] configuration (off)."
+    ),
+)
 @click.pass_obj
-def delete(bibfile, citekeys):
-    """Delete the entries with the given keys from the library."""
+def delete(bibfile, citekeys, remove_assets, remove_attachments):
+    """Delete the entries with the given keys from the library.
+
+    The entries' asset files and attachments stay on disk unless
+    --remove-assets/--remove-attachments (or the [delete]
+    configuration) says otherwise; files left behind are reported as
+    warnings. Removed files go to the Trash where possible."""
     lib = Library(bibfile)
     _check_keys(lib, citekeys)
     for key in citekeys:
-        del lib[key]
+        lib.delete(
+            key,
+            remove_assets=remove_assets,
+            remove_attachments=remove_attachments,
+        )
     _save(lib)
 
 

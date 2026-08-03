@@ -1,10 +1,6 @@
 # How-to Guides
 
-These short, task-oriented recipes assume you are already familiar with the
-basics of `bibdeskparser` (see the [introduction](readme)); for background on
-*why* things work this way, see [BibDesk's `.bib` Format](bibdesk_format).
-All examples operate on the example database shipped in the repository at
-`tests/Refs/refs.bib`; substitute the path to your own library.
+These short, task-oriented recipes assume you are already familiar with the basics of `bibdeskparser` (see the [introduction](readme)); for background on *why* things work this way, see [BibDesk's `.bib` Format](bibdesk_format). All examples operate on the example database shipped in the repository at `tests/Refs/refs.bib`; substitute the path to your own library.
 
 ## How to manage file attachments
 
@@ -15,21 +11,9 @@ location and renaming it by a file-name format (BibDesk's AutoFile
 feature). See [How to auto-file attachments](howto-auto-file) below.
 ```
 
-Linked files are stored with paths relative to the library's `.bib`
-file, so attaching, replacing, unlinking, and renaming them are
-`Library` operations ({py:attr}`Entry.files <bibdeskparser.entry.Entry.files>`
-itself is a read-only list of the stored relative paths; see
-[BibDesk's `.bib` Format](bibdesk_format) for the background). This
-also means the library must have a `.bib`
-path: a from-scratch library must be saved before files can be
-attached.
+Linked files are stored with paths relative to the library's `.bib` file, so attaching, replacing, unlinking, and renaming them are `Library` operations ({py:attr}`Entry.files <bibdeskparser.entry.Entry.files>` itself is a read-only list of the stored relative paths; see [BibDesk's `.bib` Format](bibdesk_format) for the background). This also means the library must have a `.bib` path: a from-scratch library must be saved before files can be attached.
 
-Attach a file with {py:meth}`Library.add_file <bibdeskparser.library.Library.add_file>`.
-The filename may be absolute, or relative to the library's directory
-or to the current working directory (a relative name that exists in
-both places is rejected as ambiguous; pass an absolute path instead).
-Here, a PDF that was saved next to the `.bib` file is attached to the
-entry for the book it belongs to:
+Attach a file with {py:meth}`Library.add_file <bibdeskparser.library.Library.add_file>`. The filename may be absolute, or relative to the library's directory or to the current working directory (a relative name that exists in both places is rejected as ambiguous; pass an absolute path instead). Here, a PDF that was saved next to the `.bib` file is attached to the entry for the book it belongs to:
 
 ```python
 >>> import warnings
@@ -48,21 +32,9 @@ entry for the book it belongs to:
 
 ```
 
-For a file that exists, a macOS *bookmark* is created automatically
-(with the `bibdeskparser[macos]` extra installed), so BibDesk can
-still locate the file after it is moved or renamed outside of
-`bibdeskparser`. To link a file that does not exist here -- say, one
-that lives only on another machine -- pass
-`check_that_file_exists=False`; the name is then stored as-is,
-relative to the library directory, and BibDesk fills in the bookmark
-on its next save, once the file appears.
+For a file that exists, a macOS *bookmark* is created automatically (with the `bibdeskparser[macos]` extra installed), so BibDesk can still locate the file after it is moved or renamed outside of `bibdeskparser`. To link a file that does not exist here -- say, one that lives only on another machine -- pass `check_that_file_exists=False`; the name is then stored as-is, relative to the library directory, and BibDesk fills in the bookmark on its next save, once the file appears.
 
-{py:meth}`Library.rename_file <bibdeskparser.library.Library.rename_file>`
-renames (or, given a path with a directory component, moves) the file
-on disk and
-updates *every* entry that links it, each with a fresh bookmark; it
-returns the new stored path (relative to the library directory), as
-does `add_file`:
+{py:meth}`Library.rename_file <bibdeskparser.library.Library.rename_file>` renames (or, given a path with a directory component, moves) the file on disk and updates *every* entry that links it, each with a fresh bookmark; it returns the new stored path (relative to the library directory), as does `add_file`:
 
 ```python
 >>> with warnings.catch_warnings():
@@ -78,14 +50,7 @@ True
 
 ```
 
-{py:meth}`Library.unlink_file <bibdeskparser.library.Library.unlink_file>`
-removes an attachment, and
-{py:meth}`Library.replace_file <bibdeskparser.library.Library.replace_file>`
-swaps one file for another in place. Both require an explicit
-`remove` keyword argument: whether to also delete the (old) file from
-the filesystem -- moved to the Trash on macOS (with the
-`bibdeskparser[macos]` extra), deleted permanently elsewhere, and
-never deleted while another entry still links it:
+{py:meth}`Library.unlink_file <bibdeskparser.library.Library.unlink_file>` removes an attachment, and {py:meth}`Library.replace_file <bibdeskparser.library.Library.replace_file>` swaps one file for another in place. Both require an explicit `remove` keyword argument: whether to also delete the (old) file from the filesystem -- moved to the Trash on macOS (with the `bibdeskparser[macos]` extra), deleted permanently elsewhere, and never deleted while another entry still links it:
 
 ```python
 >>> bib.unlink_file("Shapiro2012", "Shapiro2012.pdf", remove=False)
@@ -101,11 +66,7 @@ True
 
 ## How to auto-file attachments
 
-Instead of naming every attachment by hand, let `bibdeskparser`
-*auto-file* them (BibDesk's AutoFile feature): move each file into a
-configured location and rename it according to a
-[file-name format](specifiers-files). Configure it once in the
-[`[auto_file]` table](config-auto-file) of `bibdeskparser.toml`:
+Instead of naming every attachment by hand, let `bibdeskparser` *auto-file* them (BibDesk's AutoFile feature): move each file into a configured location and rename it according to a [file-name format](specifiers-files). Configure it once in the [`[auto_file]` table](config-auto-file) of `bibdeskparser.toml`:
 
 ```toml
 [auto_file]
@@ -113,14 +74,9 @@ format_spec = "%f{Cite Key}%u0%e"  # <citation key><the file's extension>
 location = "."                     # directory, relative to the .bib file
 ```
 
-(equivalently, for the current process only,
-`Library.config.auto_file.format_spec = "%f{Cite Key}%u0%e"`).
+(equivalently, for the current process only, `Library.config.auto_file.format_spec = "%f{Cite Key}%u0%e"`).
 
-With that in place,
-{py:meth}`Library.rename_file <bibdeskparser.library.Library.rename_file>`
-*without* a new filename files an existing attachment, and
-{py:meth}`Library.eval_format_spec <bibdeskparser.library.Library.eval_format_spec>`
-with a `filename` previews the generated path without moving anything:
+With that in place, {py:meth}`Library.rename_file <bibdeskparser.library.Library.rename_file>` *without* a new filename files an existing attachment, and {py:meth}`Library.eval_format_spec <bibdeskparser.library.Library.eval_format_spec>` with a `filename` previews the generated path without moving anything:
 
 ```python
 >>> _ = Path("tests/Refs/2018_AAMOP_sola.pdf").write_bytes(
@@ -143,16 +99,9 @@ with a `filename` previews the generated path without moving anything:
 
 ```
 
-Re-running `rename_file` on an already-filed attachment is a no-op (a
-name that matches the format is kept), so auto-filing can safely be
-applied across a whole library.
+Re-running `rename_file` on an already-filed attachment is a no-op (a name that matches the format is kept), so auto-filing can safely be applied across a whole library.
 
-By default, `add_file` attaches a file under its original name, as
-above; filing is a separate, on-demand step. Setting
-`file_automatically = true` in `[auto_file]` makes `add_file`
-auto-file every new attachment immediately. Per call, an explicit
-`auto_file_location` (or `format_spec`) also enables auto-filing --
-here into a subdirectory next to the `.bib` file:
+By default, `add_file` attaches a file under its original name, as above; filing is a separate, on-demand step. Setting `file_automatically = true` in `[auto_file]` makes `add_file` auto-file every new attachment immediately. Per call, an explicit `auto_file_location` (or `format_spec`) also enables auto-filing -- here into a subdirectory next to the `.bib` file:
 
 ```python
 >>> _ = Path("tests/Refs/simpson_chapter.pdf").write_bytes(
@@ -171,20 +120,15 @@ here into a subdirectory next to the `.bib` file:
 
 ```
 
-(Conversely, `auto_file_location=""` forces a plain attach even with
-`file_automatically = true`.)
+(Conversely, `auto_file_location=""` forces a plain attach even with `file_automatically = true`.)
 
 (howto-reconcile-attachments)=
 
 ## How to reconcile attachments against a folder of PDFs
 
-Two questions come up when a library and its folder of PDFs drift
-apart: which entries still lack a PDF, and which PDFs on disk no entry
-links. Both are read-only CLI queries.
+Two questions come up when a library and its folder of PDFs drift apart: which entries still lack a PDF, and which PDFs on disk no entry links. Both are read-only CLI queries.
 
-List the entries with no attachment with
-[`keys --without-files`](cli-keys) (`--with-files` gives the
-complement):
+List the entries with no attachment with [`keys --without-files`](cli-keys) (`--with-files` gives the complement):
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --without-files
@@ -192,10 +136,7 @@ Shapiro2012
 ...
 ```
 
-The reverse index -- every file the library references -- is
-[`files --flat`](cli-files), which prints the paths of all attachments
-as a plain list. Use `--relative`, so the paths match the names stored
-in the `.bib` file and compare directly against a directory listing:
+The reverse index -- every file the library references -- is [`files --flat`](cli-files), which prints the paths of all attachments as a plain list. Use `--relative`, so the paths match the names stored in the `.bib` file and compare directly against a directory listing:
 
 ```console
 $ bibdeskparser files tests/Refs/refs.bib --relative --flat --json
@@ -205,8 +146,7 @@ $ bibdeskparser files tests/Refs/refs.bib --relative --flat --json
 ]
 ```
 
-Diffing that set against the folder is a job for the shell or a short
-script. For example, the PDFs on disk that no entry links (orphans):
+Diffing that set against the folder is a job for the shell or a short script. For example, the PDFs on disk that no entry links (orphans):
 
 <!-- notest -->
 ```console
@@ -215,16 +155,59 @@ $ comm -23 \
     <(bibdeskparser files tests/Refs/refs.bib --relative --flat | sort)
 ```
 
+(howto-assets)=
+
+## How to track companion (asset) files
+
+Files that belong to an entry without being attachments -- a written summary, an extracted full text -- are declared as path patterns in the [`[assets]` table](config-assets) of `bibdeskparser.toml` (see [External Assets](external-assets) for the concept):
+
+<!-- notest -->
+```toml
+[assets]
+summary = "%f{Cite Key}_summary.md"
+fulltext = "%f{Cite Key}.ingest/fulltext.md"
+```
+
+Resolve where an asset lives with [`asset`](cli-asset), which fails if the file is not there; add `--no-check-exists` to get the path a generator should *write* to:
+
+<!-- notest -->
+```console
+$ bibdeskparser asset summary GoerzQ2022
+/Users/goerz/Documents/Refs/GoerzQ2022_summary.md
+$ bibdeskparser asset summary Tannor2007 --no-check-exists
+/Users/goerz/Documents/Refs/Tannor2007_summary.md
+```
+
+Get a coverage overview -- which entries have which assets -- with [`assets`](cli-assets); a `!` prefix marks a missing file. Passing every key covers the whole library, which with `--json` and a `jq` filter becomes a work list for a generator:
+
+<!-- notest -->
+```console
+$ bibdeskparser assets GoerzQ2022 Tannor2007
+GoerzQ2022: summary, fulltext
+Tannor2007: !summary, !fulltext
+$ bibdeskparser assets --json $(bibdeskparser keys) \
+    | jq -r 'to_entries[] | select(.value.summary == false) | .key'
+Tannor2007
+...
+```
+
+Audit the whole library with [`check`](cli-check): asset files whose entry is gone (orphans, e.g. left behind by an old delete) are reported by default, and `--assets` additionally reports every missing asset:
+
+<!-- notest -->
+```console
+$ bibdeskparser check
+asset 'SomeOldKey_summary.md' (summary) belongs to no entry
+FAIL (1 problem, 61 entries checked)
+$ bibdeskparser check --assets
+```
+
+The files follow the entry through its lifecycle: `rekey` moves them to the paths the new key resolves to, and `delete --remove-assets` deletes them with the entry (see the [`[rekey]` and `[delete]` tables](config-rekey-delete)).
+
 (howto-string-macros)=
 
 ## How to define or rename a `@string` macro (journal abbreviation)
 
-Define a macro through
-{py:attr}`Library.strings <bibdeskparser.library.Library.strings>`,
-then reference it in a field with a bare (unquoted) string; rename it
-everywhere it is used with
-{py:meth}`Library.rename_string <bibdeskparser.library.Library.rename_string>`.
-Here, a long book series title is turned into a macro:
+Define a macro through {py:attr}`Library.strings <bibdeskparser.library.Library.strings>`, then reference it in a field with a bare (unquoted) string; rename it everywhere it is used with {py:meth}`Library.rename_string <bibdeskparser.library.Library.rename_string>`. Here, a long book series title is turned into a macro:
 
 ```python
 >>> bib.strings["aamop"] = (
@@ -244,15 +227,7 @@ Here, a long book series title is turned into a macro:
 
 ## How to organize entries into groups
 
-{py:attr}`Library.groups <bibdeskparser.library.Library.groups>` is a
-`dict`-like mapping of each group name to the tuple of its members'
-citation keys. Create, replace, or delete whole groups through the
-mapping interface; add or remove individual keys with
-{py:meth}`Library.add_to_group <bibdeskparser.library.Library.add_to_group>` /
-{py:meth}`Library.remove_from_group <bibdeskparser.library.Library.remove_from_group>`.
-Every affected entry's
-{py:attr}`Entry.groups <bibdeskparser.entry.Entry.groups>` (a
-read-only tuple) updates immediately.
+{py:attr}`Library.groups <bibdeskparser.library.Library.groups>` is a `dict`-like mapping of each group name to the tuple of its members' citation keys. Create, replace, or delete whole groups through the mapping interface; add or remove individual keys with {py:meth}`Library.add_to_group <bibdeskparser.library.Library.add_to_group>` / {py:meth}`Library.remove_from_group <bibdeskparser.library.Library.remove_from_group>`. Every affected entry's {py:attr}`Entry.groups <bibdeskparser.entry.Entry.groups>` (a read-only tuple) updates immediately.
 
 ```python
 >>> bib.groups["To Read"] = ()  # create an empty group
@@ -267,9 +242,7 @@ read-only tuple) updates immediately.
 
 ```
 
-Assigning to a group name replaces its membership wholesale (creating
-the group if needed), and `del` removes the group entirely, dropping it
-from every member entry's `.groups`:
+Assigning to a group name replaces its membership wholesale (creating the group if needed), and `del` removes the group entirely, dropping it from every member entry's `.groups`:
 
 ```python
 >>> bib.groups["To Read"] = ("KochJPCM2016", "KochEPJQT2022")
@@ -281,31 +254,13 @@ from every member entry's `.groups`:
 
 ```
 
-Group values are always tuples, so a group's membership can never be
-mutated in place; the mapping and every entry's `.groups` therefore
-stay consistent -- including when an entry is deleted from the library
-or renamed with
-{py:meth}`Library.rekey <bibdeskparser.library.Library.rekey>`, which
-update the group data as well. `add_to_group` requires the group to
-exist already (create it first, e.g. with an empty tuple), and all
-assigned keys must belong to entries in the library.
+Group values are always tuples, so a group's membership can never be mutated in place; the mapping and every entry's `.groups` therefore stay consistent -- including when an entry is deleted from the library or renamed with {py:meth}`Library.rekey <bibdeskparser.library.Library.rekey>`, which update the group data as well. `add_to_group` requires the group to exist already (create it first, e.g. with an empty tuple), and all assigned keys must belong to entries in the library.
 
-Groups also back the *known-missing* bookkeeping of the
-[abstract](howto-add-abstract) and [preprint](howto-add-preprint)
-recipes: a group declared in the `[known_missing]` configuration
-records which entries are verified not to have a given field (see
-[Empty fields](bibdesk-empty-fields)).
+Groups also back the *known-missing* bookkeeping of the [abstract](howto-add-abstract) and [preprint](howto-add-preprint) recipes: a group declared in the `[known_missing]` configuration records which entries are verified not to have a given field (see [Empty fields](bibdesk-empty-fields)).
 
 ## How to tag entries with keywords
 
-{py:attr}`Library.keywords <bibdeskparser.library.Library.keywords>`
-works just like `.groups`, mapping each keyword to the tuple of
-citation keys of the entries carrying it, with
-{py:meth}`Library.add_to_keyword <bibdeskparser.library.Library.add_to_keyword>` /
-{py:meth}`Library.remove_from_keyword <bibdeskparser.library.Library.remove_from_keyword>`
-for per-key changes and
-{py:attr}`Entry.keywords <bibdeskparser.entry.Entry.keywords>` as
-the read-only per-entry tuple:
+{py:attr}`Library.keywords <bibdeskparser.library.Library.keywords>` works just like `.groups`, mapping each keyword to the tuple of citation keys of the entries carrying it, with {py:meth}`Library.add_to_keyword <bibdeskparser.library.Library.add_to_keyword>` / {py:meth}`Library.remove_from_keyword <bibdeskparser.library.Library.remove_from_keyword>` for per-key changes and {py:attr}`Entry.keywords <bibdeskparser.entry.Entry.keywords>` as the read-only per-entry tuple:
 
 ```python
 >>> bib.add_to_keyword("Review", "BrifNJP2010", "KochEPJQT2022")
@@ -322,29 +277,11 @@ the read-only per-entry tuple:
 
 ```
 
-Unlike groups, keywords live inside each entry (as its stored
-`keywords` field), so there is no separate creation step:
-`add_to_keyword` creates a keyword the moment the first entry carries
-it, and a keyword with no entries simply does not exist (assigning
-`()` is equivalent to deleting it). The `keywords` field is readable
-through the entry's `dict` interface (`entry["keywords"]` returns the
-comma-joined string), but deliberately *not* writable that way
-(`entry["keywords"] = ...` raises `KeyError`); routing all keyword
-edits through the `Library` is what keeps `bib.keywords` and every
-entry's `.keywords` consistent at all times. Since these edits change
-the entry's stored fields, they also bump its `date-modified` and mark
-it as modified since it was loaded.
+Unlike groups, keywords live inside each entry (as its stored `keywords` field), so there is no separate creation step: `add_to_keyword` creates a keyword the moment the first entry carries it, and a keyword with no entries simply does not exist (assigning `()` is equivalent to deleting it). The `keywords` field is readable through the entry's `dict` interface (`entry["keywords"]` returns the comma-joined string), but deliberately *not* writable that way (`entry["keywords"] = ...` raises `KeyError`); routing all keyword edits through the `Library` is what keeps `bib.keywords` and every entry's `.keywords` consistent at all times. Since these edits change the entry's stored fields, they also bump its `date-modified` and mark it as modified since it was loaded.
 
 ## How to store database-level metadata (document info)
 
-{py:attr}`Library.info <bibdeskparser.library.Library.info>` is a
-`dict`-like view of BibDesk's *document info* (the
-[`@bibdesk_info` block](bibdesk-document-info) that the
-*File → Document Info…* panel stores in the `.bib` file): arbitrary
-key/value metadata attached to the database as a whole rather than to
-any entry, e.g. a curated list of the database's topics that survives
-BibDesk saves without needing a side-channel file. Keys are matched
-case-insensitively:
+{py:attr}`Library.info <bibdeskparser.library.Library.info>` is a `dict`-like view of BibDesk's *document info* (the [`@bibdesk_info` block](bibdesk-document-info) that the *File → Document Info…* panel stores in the `.bib` file): arbitrary key/value metadata attached to the database as a whole rather than to any entry, e.g. a curated list of the database's topics that survives BibDesk saves without needing a side-channel file. Keys are matched case-insensitively:
 
 ```python
 >>> bib.info
@@ -356,8 +293,7 @@ case-insensitively:
 
 ```
 
-On the command line, the same data is read with `info` and modified
-with `set_info`/`delete_info`:
+On the command line, the same data is read with `info` and modified with `set_info`/`delete_info`:
 
 ```console
 $ bibdeskparser info tests/Refs/refs.bib primary_topics
@@ -366,16 +302,11 @@ $ bibdeskparser set_info tests/Refs/refs.bib project qdyn
 $ bibdeskparser delete_info tests/Refs/refs.bib project
 ```
 
-Unlike a keyword or group edit, a document-info edit touches no entry
-(nothing gets a `date-modified` bump); it marks the library itself as
-modified, so the next `save` rewrites the file. The values also feed
-the `%i{Key}` [format specifier](format-specifiers) for autogenerated
-citation keys and file names.
+Unlike a keyword or group edit, a document-info edit touches no entry (nothing gets a `date-modified` bump); it marks the library itself as modified, so the next `save` rewrites the file. The values also feed the `%i{Key}` [format specifier](format-specifiers) for autogenerated citation keys and file names.
 
 ## How to search a library
 
-{py:meth}`Library.search <bibdeskparser.library.Library.search>`
-returns the entries matching a query, best match first:
+{py:meth}`Library.search <bibdeskparser.library.Library.search>` returns the entries matching a query, best match first:
 
 ```python
 >>> bib = Library("tests/Refs/refs.bib")
@@ -384,8 +315,7 @@ returns the entries matching a query, best match first:
 
 ```
 
-Accented text is found by its accented, accent-stripped, and
-transliterated spellings alike:
+Accented text is found by its accented, accent-stripped, and transliterated spellings alike:
 
 ```python
 >>> for query in ("Schrödinger", "Schrodinger", "Schroedinger"):
@@ -396,13 +326,9 @@ transliterated spellings alike:
 
 ```
 
-Any letter is matched by its plain ASCII spelling, so `Molmer` finds
-`Mølmer` and `Kilic` finds `Kılıç`. Text in a script that has no ASCII
-spelling (Greek, Cyrillic, CJK) is found by itself.
+Any letter is matched by its plain ASCII spelling, so `Molmer` finds `Mølmer` and `Kilic` finds `Kılıç`. Text in a script that has no ASCII spelling (Greek, Cyrillic, CJK) is found by itself.
 
-A bare `@string` macro reference is found both by the macro's name and
-by its expansion (and `fields` limits the search, with the pseudo-field
-`"key"` selecting the citation key):
+A bare `@string` macro reference is found both by the macro's name and by its expansion (and `fields` limits the search, with the pseudo-field `"key"` selecting the citation key):
 
 ```python
 >>> [e.key for e in bib.search("epjd", fields=["journal"], match="exact")]
@@ -414,11 +340,7 @@ by its expansion (and `fields` limits the search, with the pseudo-field
 
 ```
 
-The `match` argument sets the match strictness, from `"exact"`
-(verbatim substring, up to case) through `"folded"` (accent-insensitive)
-and `"words"` (the default: most of the query's words occur, in any
-order) to `"fuzzy"` (tolerates small typos); `match="regex"` instead
-treats the query as a regular expression:
+The `match` argument sets the match strictness, from `"exact"` (verbatim substring, up to case) through `"folded"` (accent-insensitive) and `"words"` (the default: most of the query's words occur, in any order) to `"fuzzy"` (tolerates small typos); `match="regex"` instead treats the query as a regular expression:
 
 ```python
 >>> bib.search("Universitat Kassel", match="exact")
@@ -437,14 +359,7 @@ treats the query as a regular expression:
 
 ```
 
-At the `"fuzzy"` level, two words match when they agree on about 80% of
-their letters. In practice this forgives a single typo per word -- one
-wrong, missing, or extra letter, or one adjacent swap -- and along the
-way bridges US/UK spellings and the plain-ASCII spelling of a
-transliterated name. Because the threshold is a *fraction* of the word,
-shorter words tolerate less: a four-letter word can lose or gain a
-letter but not swap one for another, and a three-letter word is
-essentially exact-only. A second typo survives only in longer words.
+At the `"fuzzy"` level, two words match when they agree on about 80% of their letters. In practice this forgives a single typo per word -- one wrong, missing, or extra letter, or one adjacent swap -- and along the way bridges US/UK spellings and the plain-ASCII spelling of a transliterated name. Because the threshold is a *fraction* of the word, shorter words tolerate less: a four-letter word can lose or gain a letter but not swap one for another, and a three-letter word is essentially exact-only. A second typo survives only in longer words.
 
 | Query word | Entry word | Matches? | Note |
 | --- | --- | --- | --- |
@@ -458,14 +373,9 @@ essentially exact-only. A second typo survives only in longer words.
 | `gate` | `rate` | no | short word, wrong letter |
 | `cat` | `hat` | no | three-letter word |
 
-A complementary guard rejects word pairs whose lengths differ by more
-than two characters, and the `"words"`/`"fuzzy"` levels additionally
-require at least 70% of the query's words to match, so a two-word query
-tolerates one unmatched word but a three-word query still needs two of
-its three.
+A complementary guard rejects word pairs whose lengths differ by more than two characters, and the `"words"`/`"fuzzy"` levels additionally require at least 70% of the query's words to match, so a two-word query tolerates one unmatched word but a three-word query still needs two of its three.
 
-On the command line, the `search` subcommand prints the matching keys
-one per line, which composes with the other subcommands:
+On the command line, the `search` subcommand prints the matching keys one per line, which composes with the other subcommands:
 
 ```console
 $ bibdeskparser render tests/Refs/refs.bib \
@@ -474,11 +384,7 @@ $ bibdeskparser render tests/Refs/refs.bib \
 
 ## How to find and resolve duplicate citation keys
 
-A `.bib` file with two entries sharing a key still loads; the
-duplicated keys are reported via
-{py:attr}`Library.duplicate_keys <bibdeskparser.library.Library.duplicate_keys>`
-(and a `UserWarning` at load time). Give the offending entry a new key
-directly in the `.bib` file, then reload:
+A `.bib` file with two entries sharing a key still loads; the duplicated keys are reported via {py:attr}`Library.duplicate_keys <bibdeskparser.library.Library.duplicate_keys>` (and a `UserWarning` at load time). Give the offending entry a new key directly in the `.bib` file, then reload:
 
 ```python
 >>> with warnings.catch_warnings():
@@ -493,25 +399,14 @@ directly in the `.bib` file, then reload:
 
 ## How to automatically generate citation keys
 
-Configure an auto-key format (in BibDesk's
-[format-specifier language](format-specifiers)) in your
-`bibdeskparser.toml`, then call
-{py:meth}`Library.rekey <bibdeskparser.library.Library.rekey>` with
-just the old key:
+Configure an auto-key format (in BibDesk's [format-specifier language](format-specifiers)) in your `bibdeskparser.toml`, then call {py:meth}`Library.rekey <bibdeskparser.library.Library.rekey>` with just the old key:
 
 ```toml
 [auto_key]
 format_spec = "%a1%c{journal}0%Y%u0"
 ```
 
-This particular format is a recommended scheme for a journal article:
-first author's last name, the journal's initials, the full year, and
-(only if needed) a disambiguating letter — e.g. `GoerzPRA2014`. For a
-library that mixes entry types, give `format_spec` a
-[per-type table](config-auto-key-per-type) instead (naming `booktitle`
-for conference papers, `series` for books, and so on). The `[initials]`
-table of the configuration handles venues whose initials should not be
-the plain acronym (see [Venue initials](specifiers-initials)).
+This particular format is a recommended scheme for a journal article: first author's last name, the journal's initials, the full year, and (only if needed) a disambiguating letter — e.g. `GoerzPRA2014`. For a library that mixes entry types, give `format_spec` a [per-type table](config-auto-key-per-type) instead (naming `booktitle` for conference papers, `series` for books, and so on). The `[initials]` table of the configuration handles venues whose initials should not be the plain acronym (see [Venue initials](specifiers-initials)).
 
 ```python
 >>> bib = Library("tests/Refs/refs.bib")
@@ -519,11 +414,7 @@ the plain acronym (see [Venue initials](specifiers-initials)).
 'GoerzPRA2014'
 ```
 
-The `format_spec` argument overrides the configured format ad hoc; keys
-that already match the format are kept unchanged, so regenerating is
-idempotent and safe to re-run over many entries (here, one group; an
-entry lacking a field the format references, such as `journal`, gets a
-correspondingly shorter key):
+The `format_spec` argument overrides the configured format ad hoc; keys that already match the format are kept unchanged, so regenerating is idempotent and safe to re-run over many entries (here, one group; an entry lacking a field the format references, such as `journal`, gets a correspondingly shorter key):
 
 ```python
 >>> bib.rekey("GoerzPRA2014", format_spec="%a1%c{journal}0%Y%u0")
@@ -535,11 +426,7 @@ correspondingly shorter key):
 
 ```
 
-{py:meth}`Library.eval_format_spec <bibdeskparser.library.Library.eval_format_spec>`
-evaluates a format for an entry and returns the resulting key *without
-renaming anything*. Since a key that already matches the format evaluates to
-itself, this finds all citation keys that do not follow a given
-format:
+{py:meth}`Library.eval_format_spec <bibdeskparser.library.Library.eval_format_spec>` evaluates a format for an entry and returns the resulting key *without renaming anything*. Since a key that already matches the format evaluates to itself, this finds all citation keys that do not follow a given format:
 
 ```python
 >>> fmt = "%a1:%Y%u0"
@@ -552,17 +439,11 @@ format:
 
 ```
 
-On the command line, the same is available as `bibdeskparser rekey
-BIBFILE OLD_KEY` (see the {ref}`CLI reference <cli-rekey>`), which
-prints the generated key, and as the read-only `bibdeskparser
-eval_format_spec BIBFILE KEY [FORMAT]`.
+On the command line, the same is available as `bibdeskparser rekey BIBFILE OLD_KEY` (see the {ref}`CLI reference <cli-rekey>`), which prints the generated key, and as the read-only `bibdeskparser eval_format_spec BIBFILE KEY [FORMAT]`.
 
 ## How to add a reference from a DOI, arXiv ID, or search query
 
-{py:meth}`Library.add <bibdeskparser.library.Library.add>` fetches the
-metadata from the appropriate online source (Crossref for a DOI or free-text
-search, the arXiv API for an arXiv identifier), sanitizes it, and
-adds a new entry:
+{py:meth}`Library.add <bibdeskparser.library.Library.add>` fetches the metadata from the appropriate online source (Crossref for a DOI or free-text search, the arXiv API for an arXiv identifier), sanitizes it, and adds a new entry:
 
 ```python
 bib.add("10.1103/PhysRevA.89.032334")        # a DOI
@@ -579,21 +460,9 @@ MuellerPRA2014
 $ bibdeskparser add tests/Refs/refs.bib --dry-run some paper title  # no write
 ```
 
-The new entry follows the library's conventions automatically: the
-journal is stored as an `@string` macro (see the
-[`[journal_macros]` configuration](config-journal-macros)), the title
-is brace-protected, and the citation key is generated (e.g.
-`MuellerPRA2014`, or `Goerz2205.15044` for a preprint). An entry
-whose DOI or arXiv eprint is already in the library is rejected, so
-re-adding the same paper is safe.
+The new entry follows the library's conventions automatically: the journal is stored as an `@string` macro (see the [`[journal_macros]` configuration](config-journal-macros)), the title is brace-protected, and the citation key is generated (e.g. `MuellerPRA2014`, or `Goerz2205.15044` for a preprint). An entry whose DOI or arXiv eprint is already in the library is rejected, so re-adding the same paper is safe.
 
-To also store the paper's abstract in the new entry, pass
-`add_abstract=True` (`--add-abstract` on the command line); to also
-search arXiv for a matching preprint and record it in the `eprint`
-field, pass `add_preprint=True` (`--add-preprint`). See the next two
-recipes for filling in abstracts and arXiv identifiers after the
-fact. To make either behavior the default, set it once in the
-[`[add]` configuration table](config-add):
+To also store the paper's abstract in the new entry, pass `add_abstract=True` (`--add-abstract` on the command line); to also search arXiv for a matching preprint and record it in the `eprint` field, pass `add_preprint=True` (`--add-preprint`). See the next two recipes for filling in abstracts and arXiv identifiers after the fact. To make either behavior the default, set it once in the [`[add]` configuration table](config-add):
 
 ```toml
 [add]
@@ -605,24 +474,14 @@ add_preprint = true
 
 ## How to fill in missing abstracts
 
-{py:meth}`Library.add_abstract <bibdeskparser.library.Library.add_abstract>`
-fetches the abstract of an existing entry -- from Crossref (via the entry's
-`doi`), the entry's attached PDF (requires the
-[poppler](https://poppler.freedesktop.org) `pdftotext` tool), the
-arXiv API (via `eprint`), or Semantic Scholar -- cleans it to
-plain-unicode prose, and stores it in the entry's `abstract` field:
+{py:meth}`Library.add_abstract <bibdeskparser.library.Library.add_abstract>` fetches the abstract of an existing entry -- from Crossref (via the entry's `doi`), the entry's attached PDF (requires the [poppler](https://poppler.freedesktop.org) `pdftotext` tool), the arXiv API (via `eprint`), or Semantic Scholar -- cleans it to plain-unicode prose, and stores it in the entry's `abstract` field:
 
 ```python
 result = bib.add_abstract("SauvagePRXQ2020")
 bib.save()
 ```
 
-Each result carries the source it came from and a *confidence* level;
-only a `high`-confidence abstract (identified by the entry's
-`doi`/`eprint`, or confirmed by two independent sources) is stored by
-default. On the command line, list the entries that need an abstract,
-fill them in bulk, and review what remains
-({ref}`CLI reference <cli-add-abstract>`):
+Each result carries the source it came from and a *confidence* level; only a `high`-confidence abstract (identified by the entry's `doi`/`eprint`, or confirmed by two independent sources) is stored by default. On the command line, list the entries that need an abstract, fill them in bulk, and review what remains ({ref}`CLI reference <cli-add-abstract>`):
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing abstract
@@ -635,37 +494,21 @@ Vecheck2022.09.09.507322: needs review (semanticscholar, medium) [cr-miss]
     Quantum biology examines quantum effects in living cells ...
 ```
 
-A lower-confidence candidate is reported in full instead of stored;
-after checking it (against the PDF or the publisher page), apply it
-with `set_field`, or store whatever the sources found by lowering the
-bar with `--min-confidence medium`:
+A lower-confidence candidate is reported in full instead of stored; after checking it (against the PDF or the publisher page), apply it with `set_field`, or store whatever the sources found by lowering the bar with `--min-confidence medium`:
 
 ```console
 $ bibdeskparser set_field tests/Refs/refs.bib Vecheck2022.09.09.507322 \
     abstract "Quantum biology examines quantum effects in living cells ..."
 ```
 
-For an entry whose abstract genuinely cannot be found, record the
-verified absence as membership in a *known-missing group*: a regular
-[BibDesk static group](bibdesk-static-groups), declared in the
-`[known_missing]` table of `bibdeskparser.toml`
-([configuration](config-known-missing)):
+For an entry whose abstract genuinely cannot be found, record the verified absence as membership in a *known-missing group*: a regular [BibDesk static group](bibdesk-static-groups), declared in the `[known_missing]` table of `bibdeskparser.toml` ([configuration](config-known-missing)):
 
 ```toml
 [known_missing]
 abstract = "No Abstract"
 ```
 
-With the group declared, `add_abstract` maintains it automatically: a
-search that runs cleanly and finds nothing adds the entry to the
-group (creating the group on first use), group members are skipped by
-later runs (so repeated fill-in passes stay fast and idempotent), and
-storing an abstract removes the entry from the group again. To
-re-audit the group members on explicit demand (an abstract may have
-become available since the last check), pass `--overwrite` and select
-exactly them, as shown for preprints in the next recipe. An entry
-can also be marked by hand, with `add_to_group` or by drag and drop
-in BibDesk:
+With the group declared, `add_abstract` maintains it automatically: a search that runs cleanly and finds nothing adds the entry to the group (creating the group on first use), group members are skipped by later runs (so repeated fill-in passes stay fast and idempotent), and storing an abstract removes the entry from the group again. To re-audit the group members on explicit demand (an abstract may have become available since the last check), pass `--overwrite` and select exactly them, as shown for preprints in the next recipe. An entry can also be marked by hand, with `add_to_group` or by drag and drop in BibDesk:
 
 ```console
 $ bibdeskparser set_group tests/Refs/refs.bib "No Abstract"
@@ -674,29 +517,20 @@ $ bibdeskparser keys tests/Refs/refs.bib --group "No Abstract"
 KatrukhaNC2017
 ```
 
-An *empty* `abstract` field cannot serve as the marker: BibDesk
-deletes empty fields whenever it saves the library, while a static
-group survives (see [Empty fields](bibdesk-empty-fields)).
+An *empty* `abstract` field cannot serve as the marker: BibDesk deletes empty fields whenever it saves the library, while a static group survives (see [Empty fields](bibdesk-empty-fields)).
 
 (howto-add-preprint)=
 
 ## How to fill in missing arXiv identifiers
 
-{py:meth}`Library.add_preprint <bibdeskparser.library.Library.add_preprint>`
-searches arXiv for the preprint of an existing entry and records its identifier in
-the entry's `eprint` field (along with `archiveprefix = arXiv` and
-the preprint's primary category in `primaryclass`):
+{py:meth}`Library.add_preprint <bibdeskparser.library.Library.add_preprint>` searches arXiv for the preprint of an existing entry and records its identifier in the entry's `eprint` field (along with `archiveprefix = arXiv` and the preprint's primary category in `primaryclass`):
 
 ```python
 result = bib.add_preprint("WinckelIP2008")
 bib.save()
 ```
 
-A search result is stored only on a confident match: an arXiv DOI
-equal to the entry's `doi`, a near-exact title match, or a good title
-match corroborated by the first author. On the command line, list the
-entries whose preprint status is unknown and fill them in bulk
-({ref}`CLI reference <cli-add-preprint>`):
+A search result is stored only on a confident match: an arXiv DOI equal to the entry's `doi`, a near-exact title match, or a good title match corroborated by the first author. On the command line, list the entries whose preprint status is unknown and fill them in bulk ({ref}`CLI reference <cli-add-preprint>`):
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
@@ -707,81 +541,50 @@ WinckelIP2008: no preprint found (marked known missing in group 'No Eprint') [be
 Vecheck2022.09.09.507322: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.31]
 ```
 
-The report above assumes a known-missing group declared for `eprint`
-in `bibdeskparser.toml`, like the one of the previous recipe
-([configuration](config-known-missing)):
+The report above assumes a known-missing group declared for `eprint` in `bibdeskparser.toml`, like the one of the previous recipe ([configuration](config-known-missing)):
 
 ```toml
 [known_missing]
 eprint = "No Eprint"
 ```
 
-An entry for which the search runs cleanly and finds nothing is then
-added to the group, and group members are skipped by every later
-run, so repeated fill-in passes ("find the preprint for everything
-that is missing one") never re-query arXiv for them. Membership
-records "searched, nothing found at the time", which is not the same
-as "does not exist": the match may have failed, or the preprint may
-have been posted since the last check. Re-auditing those entries
-therefore happens only on explicit demand, by passing `--overwrite`
-and selecting exactly the group members:
+An entry for which the search runs cleanly and finds nothing is then added to the group, and group members are skipped by every later run, so repeated fill-in passes ("find the preprint for everything that is missing one") never re-query arXiv for them. Membership records "searched, nothing found at the time", which is not the same as "does not exist": the match may have failed, or the preprint may have been posted since the last check. Re-auditing those entries therefore happens only on explicit demand, by passing `--overwrite` and selecting exactly the group members:
 
 ```console
 $ bibdeskparser add_preprint tests/Refs/refs.bib --overwrite \
     $(bibdeskparser keys tests/Refs/refs.bib --group "No Eprint")
 ```
 
-A re-audited entry with another clean no-match simply stays in the
-group; a new match stores the identifier and removes the entry from
-the group.
+A re-audited entry with another clean no-match simply stays in the group; a new match stores the identifier and removes the entry from the group.
 
-A match that the search rejects as `postdated-unverified` (an arXiv
-submission years after the entry's publication, without a
-corroborating journal reference) is only reported; if reviewing it
-shows it really is the paper's preprint (authors do post old papers
-late), record it explicitly, which needs no network access:
+A match that the search rejects as `postdated-unverified` (an arXiv submission years after the entry's publication, without a corroborating journal reference) is only reported; if reviewing it shows it really is the paper's preprint (authors do post old papers late), record it explicitly, which needs no network access:
 
 ```console
 $ bibdeskparser add_preprint tests/Refs/refs.bib WinckelIP2008 \
     --eprint 2505.01234
 ```
 
-The search respects the arXiv API's rate limit of one request every
-three seconds, so filling in a large library takes time -- let it
-run.
+The search respects the arXiv API's rate limit of one request every three seconds, so filling in a large library takes time -- let it run.
 
 (howto-add-doi)=
 
 ## How to fill in missing DOIs
 
-{py:meth}`Library.add_doi <bibdeskparser.library.Library.add_doi>`
-looks up the DOI of an existing entry and records it in the entry's
-`doi` field:
+{py:meth}`Library.add_doi <bibdeskparser.library.Library.add_doi>` looks up the DOI of an existing entry and records it in the entry's `doi` field:
 
 ```python
 result = bib.add_doi("DevoretLH1995")
 bib.save()
 ```
 
-If the entry has an arXiv `eprint`, the DOI that arXiv records for
-the identifier is used directly (it names the published version of
-exactly this paper); otherwise Crossref is searched, and a result is
-stored only on a confident match: a near-exact title match, or a
-good title match corroborated by the first author (see the
-{ref}`CLI reference <cli-add-doi>` for the exact guards). On the
-command line, fill in every `article` that is missing a DOI -- the
-same entries the missing-doi audit of [`check`](cli-check) reports:
+If the entry has an arXiv `eprint`, the DOI that arXiv records for the identifier is used directly (it names the published version of exactly this paper); otherwise Crossref is searched, and a result is stored only on a confident match: a near-exact title match, or a good title match corroborated by the first author (see the {ref}`CLI reference <cli-add-doi>` for the exact guards). On the command line, fill in every `article` that is missing a DOI -- the same entries the missing-doi audit of [`check`](cli-check) reports:
 
 ```console
 $ bibdeskparser add_doi tests/Refs/refs.bib \
     $(bibdeskparser keys tests/Refs/refs.bib --type article --missing doi)
 ```
 
-The lookup is not limited to articles -- books and book chapters
-have DOIs, too, and theses sometimes do. As with abstracts and
-preprints, declare a known-missing group in `bibdeskparser.toml`
-([configuration](config-known-missing)), so that a clean search that
-finds nothing is recorded and never repeated:
+The lookup is not limited to articles -- books and book chapters have DOIs, too, and theses sometimes do. As with abstracts and preprints, declare a known-missing group in `bibdeskparser.toml` ([configuration](config-known-missing)), so that a clean search that finds nothing is recorded and never repeated:
 
 ```toml
 [known_missing]
@@ -794,15 +597,9 @@ GoerzPhd2015: no doi found (marked known missing in group 'No DOI') [best-ratio=
 GoerzDiploma2010: no doi found (marked known missing in group 'No DOI') [best-ratio=0.47]
 ```
 
-Membership in the group also makes the missing-doi audit of `check`
-accept the entry, and re-auditing the members happens only on
-explicit demand, exactly as in the previous two recipes
-(`add_doi --overwrite` over `keys --group "No DOI"`).
+Membership in the group also makes the missing-doi audit of `check` accept the entry, and re-auditing the members happens only on explicit demand, exactly as in the previous two recipes (`add_doi --overwrite` over `keys --group "No DOI"`).
 
-A candidate that the search rejects -- a `year-mismatch`, or a good
-title match without an author match -- shows up in the report's
-`[...]` note; if reviewing it confirms it really is this work's DOI,
-record it explicitly, which needs no network access:
+A candidate that the search rejects -- a `year-mismatch`, or a good title match without an author match -- shows up in the report's `[...]` note; if reviewing it confirms it really is this work's DOI, record it explicitly, which needs no network access:
 
 ```console
 $ bibdeskparser add_doi tests/Refs/refs.bib GoerzDiploma2010 \
@@ -810,37 +607,22 @@ $ bibdeskparser add_doi tests/Refs/refs.bib GoerzDiploma2010 \
 GoerzDiploma2010: stored doi 10.5555/12345678
 ```
 
-A [preprint-only](preprints) entry is skipped: a search would turn
-up the DOI of the *published version*, which does not belong on a
-preprint reference. If the work has in fact been published, update
-the entry to the published version instead (see the next recipe).
+A [preprint-only](preprints) entry is skipped: a search would turn up the DOI of the *published version*, which does not belong on a preprint reference. If the work has in fact been published, update the entry to the published version instead (see the next recipe).
 
 (howto-preprints)=
 
 ## How to manage preprint-only publications
 
-`bibdeskparser` stores a preprint-only work as an `@unpublished`
-entry that carries the structured
-`eprint`/`archiveprefix`/`primaryclass` fields, a *pseudo-journal*
-like `arXiv:2205.15044`, `bioRxiv:2022.09.09.507322`, or
-`HAL:hal-00640217`, a `doi`, and a publication-status `note` -- see
-[](preprints) for this convention and the reasoning behind it.
+`bibdeskparser` stores a preprint-only work as an `@unpublished` entry that carries the structured `eprint`/`archiveprefix`/`primaryclass` fields, a *pseudo-journal* like `arXiv:2205.15044`, `bioRxiv:2022.09.09.507322`, or `HAL:hal-00640217`, a `doi`, and a publication-status `note` -- see [](preprints) for this convention and the reasoning behind it.
 
-To add a preprint from arXiv, pass its identifier (or its
-`arxiv.org` URL) to [`add`](cli-add), which fetches the metadata and
-creates the entry in this form:
+To add a preprint from arXiv, pass its identifier (or its `arxiv.org` URL) to [`add`](cli-add), which fetches the metadata and creates the entry in this form:
 
 ```console
 $ bibdeskparser add tests/Refs/refs.bib 2212.12602
 Goerz2212.12602
 ```
 
-For any preprint server, [`import`](cli-import) recognizes a
-preprint-only entry in incoming BibTeX -- by its pseudo-journal, or
-as a `misc`/`unpublished` entry with an `eprint` (e.g. arXiv's own
-"Export BibTeX citation") -- and normalizes it into the same form
-(`@unpublished` type, canonical archive spelling, derived
-`eprint`/`archiveprefix`/`doi` fields):
+For any preprint server, [`import`](cli-import) recognizes a preprint-only entry in incoming BibTeX -- by its pseudo-journal, or as a `misc`/`unpublished` entry with an `eprint` (e.g. arXiv's own "Export BibTeX citation") -- and normalizes it into the same form (`@unpublished` type, canonical archive spelling, derived `eprint`/`archiveprefix`/`doi` fields):
 
 ```console
 $ bibdeskparser import tests/Refs/refs.bib --stdin << 'EOF'
@@ -855,30 +637,16 @@ EOF
 Naceurhal-05667276
 ```
 
-An archive that `bibdeskparser` does not recognize is rejected (the
-journal must not be turned into an `@string` macro); add it to the
-[`[preprint_archives]` configuration table](config-preprint-archives),
-or use `--keep-journals` to keep every incoming `journal` (and entry
-type) untouched.
+An archive that `bibdeskparser` does not recognize is rejected (the journal must not be turned into an `@string` macro); add it to the [`[preprint_archives]` configuration table](config-preprint-archives), or use `--keep-journals` to keep every incoming `journal` (and entry type) untouched.
 
-Record the publication status in the `note` field -- "preprint
-only", "submitted to Phys. Rev. A", "lecture notes". The note is
-never filled in automatically; an entry without one shows up as
-incomplete in BibDesk (`note` is a required field of
-`@unpublished`), which is your signal to set it:
+Record the publication status in the `note` field -- "preprint only", "submitted to Phys. Rev. A", "lecture notes". The note is never filled in automatically; an entry without one shows up as incomplete in BibDesk (`note` is a required field of `@unpublished`), which is your signal to set it:
 
 ```console
 $ bibdeskparser set_field tests/Refs/refs.bib Naceurhal-05667276 note \
     "preprint only"
 ```
 
-To cite preprints from LaTeX, export them in the form that
-matches the document's bibliography style (`--preprint`, defaulting
-to the [`preprint_export` setting](config-preprint-export)): the
-structured `unpublished` (default) or `misc` forms for styles that
-render the `eprint` field (REVTeX, `elsarticle`, biblatex), or the
-`article` form for classic styles (`plain`, `unsrt`, `IEEEtran`,
-...) that would drop it:
+To cite preprints from LaTeX, export them in the form that matches the document's bibliography style (`--preprint`, defaulting to the [`preprint_export` setting](config-preprint-export)): the structured `unpublished` (default) or `misc` forms for styles that render the `eprint` field (REVTeX, `elsarticle`, biblatex), or the `article` form for classic styles (`plain`, `unsrt`, `IEEEtran`, ...) that would drop it:
 
 ```console
 $ bibdeskparser export tests/Refs/refs.bib Wilhelm2003.10132
@@ -908,50 +676,31 @@ $ bibdeskparser export tests/Refs/refs.bib Wilhelm2003.10132 \
 }
 ```
 
-The leading marker line records the export options; it matters for
-files that are kept up to date with `export --update` (see
-[](howto-manage-export)).
+The leading marker line records the export options; it matters for files that are kept up to date with `export --update` (see [](howto-manage-export)).
 
-For a preprint on a non-arXiv archive, the structured forms also
-emit the `archive` field, so that REVTeX's eprint link points at the
-right server (see [the `archive` field](preprints-archive-field)).
-The [`render`](cli-render) command shows the preprint reference in
-the journal position, hyperlinked, with the status note appended:
+For a preprint on a non-arXiv archive, the structured forms also emit the `archive` field, so that REVTeX's eprint link points at the right server (see [the `archive` field](preprints-archive-field)). The [`render`](cli-render) command shows the preprint reference in the journal position, hyperlinked, with the status note appended:
 
 ```console
 $ bibdeskparser render tests/Refs/refs.bib TuriniciHAL00640217
 G. Turinici. [*Quantum control*](https://hal.science/hal-00640217). [HAL:hal-00640217](https://hal.science/hal-00640217) (2012), lecture notes.
 ```
 
-When a preprint gets published, update the entry in place: make
-it an `@article`, replace the pseudo-journal with the real journal
-(an `@string` macro, see [above](howto-string-macros)), add the
-`volume`, `pages`, and published `doi`, and remove (or update) the
-status `note`. The retained `eprint`/`archiveprefix` fields automatically
-start rendering and exporting as the "published, with preprint"
-link.
+When a preprint gets published, update the entry in place: make it an `@article`, replace the pseudo-journal with the real journal (an `@string` macro, see [above](howto-string-macros)), add the `volume`, `pages`, and published `doi`, and remove (or update) the status `note`. The retained `eprint`/`archiveprefix` fields automatically start rendering and exporting as the "published, with preprint" link.
 
-Then generate the key the published article should have
-(`bibdeskparser rekey`).
+Then generate the key the published article should have (`bibdeskparser rekey`).
 
-Conversely, [`add_preprint`](howto-add-preprint) fills in the
-`eprint` field for already-published entries, so that readers behind
-a paywall get a link to the free copy.
+Conversely, [`add_preprint`](howto-add-preprint) fills in the `eprint` field for already-published entries, so that readers behind a paywall get a link to the free copy.
 
 ## How to import BibTeX entries from a publisher or another library
 
-{py:meth}`Library.import_bibtex <bibdeskparser.library.Library.import_bibtex>`
-runs any BibTeX snippet -- a publisher's "export citation" download, or
-entries from another `.bib` file -- through the same sanitization and
-adds the entries:
+{py:meth}`Library.import_bibtex <bibdeskparser.library.Library.import_bibtex>` runs any BibTeX snippet -- a publisher's "export citation" download, or entries from another `.bib` file -- through the same sanitization and adds the entries:
 
 ```python
 bib.import_bibtex(text)   # text: BibTeX for one or more entries
 bib.save()
 ```
 
-On the command line, `import` reads from a file, stdin, or a URL
-({ref}`CLI reference <cli-import>`):
+On the command line, `import` reads from a file, stdin, or a URL ({ref}`CLI reference <cli-import>`):
 
 <!-- notest -->
 ```console
@@ -960,12 +709,7 @@ $ pbpaste | bibdeskparser import tests/Refs/refs.bib --stdin
 $ bibdeskparser import tests/Refs/refs.bib --url https://example.com/refs.bib
 ```
 
-Since [`export`](cli-export) writes exactly the kind of snippet that
-`import` accepts (including the `@string` definitions), this also
-moves entries between libraries. By default, `export` reduces each
-entry to a minimal, citation-oriented field selection; pass `--full`
-to move complete records (file attachments transfer only when the
-linked files also exist relative to the target library):
+Since [`export`](cli-export) writes exactly the kind of snippet that `import` accepts (including the `@string` definitions), this also moves entries between libraries. By default, `export` reduces each entry to a minimal, citation-oriented field selection; pass `--full` to move complete records (file attachments transfer only when the linked files also exist relative to the target library):
 
 ```console
 $ bibdeskparser create other.bib
@@ -974,15 +718,11 @@ $ bibdeskparser export tests/Refs/refs.bib Tannor2007 \
 Tannor2007
 ```
 
-If anything about a snippet is not acceptable (an undefined macro, an
-entry whose DOI is already present, ...), the whole import is
-rejected with a list of all problems and the library is left
-untouched.
+If anything about a snippet is not acceptable (an undefined macro, an entry whose DOI is already present, ...), the whole import is rejected with a list of all problems and the library is left untouched.
 
 ## How to edit an entry in your text editor
 
-{py:meth}`Library.edit <bibdeskparser.library.Library.edit>` opens one
-or more entries in `$EDITOR` as bibtex text and merges back whatever you save:
+{py:meth}`Library.edit <bibdeskparser.library.Library.edit>` opens one or more entries in `$EDITOR` as bibtex text and merges back whatever you save:
 
 ```python
 bib.edit("GoerzQ2022")                          # a single entry
@@ -991,11 +731,7 @@ bib.edit("GrondPRA2009a", "GrondPRA2009b", editor="vim")  # several
 
 ## How to render a bibliography in a specific citation format
 
-{py:meth}`Library.render <bibdeskparser.library.Library.render>`
-produces a formatted citation string for one or more citation keys; pass `format="markdown"`
-(default), `"tex"`, or `"html"`. When rendering several entries, `style`
-controls their layout: `"default"`, `"paragraphs"`, `"numbered list"`,
-or `"itemized list"`.
+{py:meth}`Library.render <bibdeskparser.library.Library.render>` produces a formatted citation string for one or more citation keys; pass `format="markdown"` (default), `"tex"`, or `"html"`. When rendering several entries, `style` controls their layout: `"default"`, `"paragraphs"`, `"numbered list"`, or `"itemized list"`.
 
 ```python
 >>> bib = Library("tests/Refs/refs.bib")
@@ -1017,39 +753,23 @@ D. J. Tannor. \href{https://uscibooks.aip.org/books/introduction-to-quantum-mech
 
 ## How to give an AI coding agent access to your library
 
-`bibdeskparser` ships no dedicated AI integration, because it does not
-need one: the {ref}`command-line tool <cli>` *is* the integration
-surface.
-Any agent that can run shell commands, such as
-[Claude Code](https://claude.com/claude-code), can inspect and edit
-your BibDesk library by calling `bibdeskparser`. Each invocation is a
-one-shot process that loads the `.bib` file, does its work, and exits,
-so there is no server to run and nothing to keep alive.
+`bibdeskparser` ships no dedicated AI integration, because it does not need one: the {ref}`command-line tool <cli>` *is* the integration surface. Any agent that can run shell commands, such as [Claude Code](https://claude.com/claude-code), can inspect and edit your BibDesk library by calling `bibdeskparser`. Each invocation is a one-shot process that loads the `.bib` file, does its work, and exits, so there is no server to run and nothing to keep alive.
 
-**1. Put the tool on `PATH`.** Install the package into an environment
-the agent can reach (see [Installation](readme)); the simplest way is
-`uv tool install bibdeskparser`. Verify that `bibdeskparser` runs from
-a plain shell:
+**1. Put the tool on `PATH`.** Install the package into an environment the agent can reach (see [Installation](readme)); the simplest way is `uv tool install bibdeskparser`. Verify that `bibdeskparser` runs from a plain shell:
 
 ```console
 $ bibdeskparser --version
 ```
 
-**2. Point it at your library.** Set `default_bib_file` in a
-`bibdeskparser.toml` (see [Configuration](configuration)) so commands
-need no path argument:
+**2. Point it at your library.** Set `default_bib_file` in a `bibdeskparser.toml` (see [Configuration](configuration)) so commands need no path argument:
 
 ```toml
 default_bib_file = "/Users/you/Documents/references.bib"
 ```
 
-Otherwise the agent must pass the `.bib` path as the first argument to
-every command.
+Otherwise the agent must pass the `.bib` path as the first argument to every command.
 
-**3. Tell the agent the tool exists.** In an environment file the agent
-reads at startup (for Claude Code, a `CLAUDE.md`), describe the tool and
-point it at the built-in help. The agent discovers the full command set
-itself from `--help`; you only need a few lines:
+**3. Tell the agent the tool exists.** In an environment file the agent reads at startup (for Claude Code, a `CLAUDE.md`), describe the tool and point it at the built-in help. The agent discovers the full command set itself from `--help`; you only need a few lines:
 
 ```markdown
 ## Bibliography
@@ -1064,36 +784,15 @@ edits, pipe modified `export --full --preprint stored` output back
 through `edit --stdin`.
 ```
 
-**4. Reduce permission prompts (optional).** Agents that gate shell
-access can be told to allow the tool without prompting. In Claude Code,
-add `bibdeskparser` to the allowlist (`Bash(bibdeskparser:*)` in
-`.claude/settings.json`).
+**4. Reduce permission prompts (optional).** Agents that gate shell access can be told to allow the tool without prompting. In Claude Code, add `bibdeskparser` to the allowlist (`Bash(bibdeskparser:*)` in `.claude/settings.json`).
 
 A few properties make the CLI safe to hand to an agent:
 
-- **Machine-readable output.** Every read-only command accepts `--json`,
-  so the agent parses structured data instead of scraping text.
-- **Concurrent-edit safety.** Mutating commands save in place and refuse
-  to overwrite a `.bib` file that changed on disk since it was read
-  (whether by BibDesk, by you, or by another agent), failing with a
-  {exc}`~bibdeskparser.StaleFileError` and exit code 1 rather than
-  clobbering the newer version. Nothing coordinates *between* agents up
-  front, but no write silently loses another's changes.
-- **Nothing blocks.** Every command is usable non-interactively.
-  `edit` and `edit_strings` open `$EDITOR` only when run from a
-  terminal; an agent passes `--stdin` instead and pipes in the edited
-  text (see below). Invoked without a terminal and without
-  `--stdin`/`--editor`, they fail fast with a usage error rather than
-  hanging on `$EDITOR`.
+- **Machine-readable output.** Every read-only command accepts `--json`, so the agent parses structured data instead of scraping text.
+- **Concurrent-edit safety.** Mutating commands save in place and refuse to overwrite a `.bib` file that changed on disk since it was read (whether by BibDesk, by you, or by another agent), failing with a {exc}`~bibdeskparser.StaleFileError` and exit code 1 rather than clobbering the newer version. Nothing coordinates *between* agents up front, but no write silently loses another's changes.
+- **Nothing blocks.** Every command is usable non-interactively. `edit` and `edit_strings` open `$EDITOR` only when run from a terminal; an agent passes `--stdin` instead and pipes in the edited text (see below). Invoked without a terminal and without `--stdin`/`--editor`, they fail fast with a usage error rather than hanging on `$EDITOR`.
 
-For edits beyond the dedicated mutating commands (changing a title,
-fixing an author list, adding an arbitrary field), the agent round-trips
-an entry through `export` and `edit --stdin`: with `--full --preprint
-stored`, `export` prints the entry exactly as `edit` would show it in
-an editor, so transforming that text and piping it back applies the
-change, and piping it back unchanged is a no-op. (A field missing from
-the piped text is deleted, so the default minimal export must not be
-used here.)
+For edits beyond the dedicated mutating commands (changing a title, fixing an author list, adding an arbitrary field), the agent round-trips an entry through `export` and `edit --stdin`: with `--full --preprint stored`, `export` prints the entry exactly as `edit` would show it in an editor, so transforming that text and piping it back applies the change, and piping it back unchanged is a no-op. (A field missing from the piped text is deleted, so the default minimal export must not be used here.)
 
 ```console
 $ bibdeskparser export GoerzQ2022 --full --preprint stored \
@@ -1101,29 +800,13 @@ $ bibdeskparser export GoerzQ2022 --full --preprint stored \
     | bibdeskparser edit GoerzQ2022 --stdin
 ```
 
-The `@string` macro definitions round-trip the same way, from
-`strings --bib` into `edit_strings --stdin`. Invalid edited text (an
-unparseable block, a reference to an undefined macro) exits with code 1
-and the list of problems on stderr, leaving the `.bib` file untouched.
+The `@string` macro definitions round-trip the same way, from `strings --bib` into `edit_strings --stdin`. Invalid edited text (an unparseable block, a reference to an undefined macro) exits with code 1 and the list of problems on stderr, leaving the `.bib` file untouched.
 
 ## How to export a minimal BibTeX file for LaTeX
 
-{py:meth}`Library.export <bibdeskparser.library.Library.export>` writes
-selected entries as plain bibtex text, stripped of BibDesk-only fields.
-By default, each entry is reduced to a small, per-entry-type whitelist
-of citation-relevant fields (dropping things like `abstract` and
-`annote`); pass `fields="full"` for complete records, and `outfile=`
-to write straight to a file. The `@string` definitions referenced by
-the exported entries are included, so the file is self-contained (pass
-`expand_strings=True` to instead replace each reference by the
-macro's value and omit the definitions). The output begins with a
-marker line recording the export options, for later updates (see
-[the next section](howto-manage-export)).
+{py:meth}`Library.export <bibdeskparser.library.Library.export>` writes selected entries as plain bibtex text, stripped of BibDesk-only fields. By default, each entry is reduced to a small, per-entry-type whitelist of citation-relevant fields (dropping things like `abstract` and `annote`); pass `fields="full"` for complete records, and `outfile=` to write straight to a file. The `@string` definitions referenced by the exported entries are included, so the file is self-contained (pass `expand_strings=True` to instead replace each reference by the macro's value and omit the definitions). The output begins with a marker line recording the export options, for later updates (see [the next section](howto-manage-export)).
 
-Note how the entries' `abstract` and `keywords`, and the `article`
-entry's linked file, are all dropped (the `eprint` fields are kept:
-they render as a "published, with preprint" link under styles like
-REVTeX, and are ignored by classic styles; see [](preprints)):
+Note how the entries' `abstract` and `keywords`, and the `article` entry's linked file, are all dropped (the `eprint` fields are kept: they render as a "published, with preprint" link under styles like REVTeX, and are ignored by classic styles; see [](preprints)):
 
 ```python
 >>> bib.export("GrondPRA2009a", "Evans1983", outfile="paper.bib")
@@ -1157,10 +840,7 @@ REVTeX, and are ignored by classic styles; see [](preprints)):
 
 ## How to manage an exported `.bib` file
 
-Files created by `export` are plain BibTeX: no BibDesk header, no
-groups, no attachments, no date bookkeeping. Treat such a file as a
-snapshot of your library, taken for one paper: corrections belong in
-the library, and the file is refreshed from it.
+Files created by `export` are plain BibTeX: no BibDesk header, no groups, no attachments, no date bookkeeping. Treat such a file as a snapshot of your library, taken for one paper: corrections belong in the library, and the file is refreshed from it.
 
 Create the file by exporting the entries the paper cites:
 
@@ -1168,11 +848,7 @@ Create the file by exporting the entries the paper cites:
 $ bibdeskparser export tests/Refs/refs.bib GrondPRA2009a Evans1983 --outfile paper.bib
 ```
 
-The file begins with a marker line, `%% Created by BibDeskParser
-(unicode, preprints as unpublished).`, recording the export options
-for later updates. Each entry is reduced to the fields needed to
-typeset a bibliography (pass `--full` for complete records), and the
-`@string` definitions the entries reference are included.
+The file begins with a marker line, `%% Created by BibDeskParser (unicode, preprints as unpublished).`, recording the export options for later updates. Each entry is reduced to the fields needed to typeset a bibliography (pass `--full` for complete records), and the `@string` definitions the entries reference are included.
 
 To cite one more reference, update the file with the new key:
 
@@ -1180,19 +856,15 @@ To cite one more reference, update the file with the new key:
 $ bibdeskparser export tests/Refs/refs.bib --update paper.bib GoerzQ2022
 ```
 
-To pick up corrections made in the library, update without naming
-keys; every entry the library knows is re-exported in place:
+To pick up corrections made in the library, update without naming keys; every entry the library knows is re-exported in place:
 
 ```console
 $ bibdeskparser export tests/Refs/refs.bib --update paper.bib
 ```
 
-An update never removes anything: entries the library does not know
-(e.g. pasted in by hand from a colleague's file) are kept unchanged,
-as are `@string` definitions that are no longer referenced.
+An update never removes anything: entries the library does not know (e.g. pasted in by hand from a colleague's file) are kept unchanged, as are `@string` definitions that are no longer referenced.
 
-All other commands work directly on the exported file and preserve
-its plain format:
+All other commands work directly on the exported file and preserve its plain format:
 
 ```console
 $ bibdeskparser check paper.bib
@@ -1202,13 +874,6 @@ $ bibdeskparser set_field paper.bib Evans1983 note "Lecture notes"
 $ bibdeskparser delete paper.bib GrondPRA2009a
 ```
 
-Mind that a local edit like the `set_field` above is overwritten by
-the next `--update` if the library knows the entry; make persistent
-corrections in the library instead. To remove an entry, use `delete`
-(or a text editor); `--update` will not re-add it unless you name its
-key again.
+Mind that a local edit like the `set_field` above is overwritten by the next `--update` if the library knows the entry; make persistent corrections in the library instead. To remove an entry, use `delete` (or a text editor); `--update` will not re-add it unless you name its key again.
 
-Groups, file attachments, and linked URLs exist only in a BibDesk
-database. Using one of those commands (`set_group`, `add_file`,
-`add_url`, ...) on a plain file converts it to the database format on
-save, with a warning; the way back to a plain file is a fresh export.
+Groups, file attachments, and linked URLs exist only in a BibDesk database. Using one of those commands (`set_group`, `add_file`, `add_url`, ...) on a plain file converts it to the database format on save, with a warning; the way back to a plain file is a fresh export.
