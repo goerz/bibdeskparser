@@ -21,6 +21,12 @@ from bibtexparser.model import (
 )
 
 from . import editing, specifiers
+from .assets import (
+    _asset_classes,
+    _asset_present,
+    _compile_asset_pattern,
+    _resolve_asset,
+)
 from .bdskfile import BibDeskFile
 from .config import active
 from .docinfo import (
@@ -244,10 +250,9 @@ def _names(value):
     return list(value)
 
 
-def _delete_file(path):
-    """Remove `path` from the filesystem: move it to the Trash where
-    possible (macOS, with pyobjc installed), else delete it
-    permanently."""
+def _trash(path):
+    """Move `path` to the Trash where possible (macOS, with pyobjc
+    installed); returns whether it succeeded."""
     if sys.platform == "darwin":
         try:
             # pylint: disable=import-outside-toplevel
@@ -256,18 +261,33 @@ def _delete_file(path):
                 NSFileManager,
             )
         except ImportError:
-            pass
-        else:
-            url = NSURL.fileURLWithPath_(str(path))
-            manager = NSFileManager.defaultManager()
-            # The selector name exceeds the line length limit.
-            trash_item = getattr(
-                manager, "trashItemAtURL_resultingItemURL_error_"
-            )
-            ok, _resulting_url, _error = trash_item(url, None, None)
-            if ok:
-                return
-    os.remove(path)
+            return False
+        url = NSURL.fileURLWithPath_(str(path))
+        manager = NSFileManager.defaultManager()
+        # The selector name exceeds the line length limit.
+        trash_item = getattr(manager, "trashItemAtURL_resultingItemURL_error_")
+        ok, _resulting_url, _error = trash_item(url, None, None)
+        return bool(ok)
+    return False
+
+
+def _delete_file(path):
+    """Remove the file `path` from the filesystem: move it to the
+    Trash where possible (see `_trash`), else delete it permanently."""
+    if not _trash(path):
+        os.remove(path)
+
+
+def _delete_path(path):
+    """Remove the file or directory `path` from the filesystem: move
+    it to the Trash where possible (see `_trash`), else delete it
+    permanently (a directory with its entire contents)."""
+    if _trash(path):
+        return
+    if os.path.isdir(path) and not os.path.islink(path):
+        shutil.rmtree(path)
+    else:
+        os.remove(path)
 
 
 def _find_header_block(raw_library):
@@ -714,6 +734,12 @@ class Library(MutableMapping):
       These delegate to the corresponding {class}`Entry` methods (URLs
       are self-contained, so unlike linked files they need no path
       resolution).
+    - {meth}`asset`, {meth}`assets`: resolve and report the library's
+      [asset files](external-assets) -- companion files like summaries
+      or extracted full texts, located by the `[assets]` path patterns
+      of the configuration. {meth}`rekey` moves an entry's assets (and
+      re-files its key-named attachments) along with a key change;
+      {meth}`delete` can remove them together with the entry.
     - {meth}`render`, {meth}`export`, {meth}`edit`, {meth}`edit_strings`:
       render a bibliography, export to bibtex text, or edit in
       `$EDITOR`, for one or more selected citation keys at once.
@@ -1656,6 +1682,11 @@ class Library(MutableMapping):
         self._modified = True
 
     def __delitem__(self, key):
+        self.delete(key)
+
+    def _remove_entry(self, key):
+        """Remove the entry at `key` from the library data, without
+        any file lifecycle (backs {meth}`delete` and {meth}`rekey`)."""
         entry = self._entries.pop(key)
         self._library.remove(
             [entry._entry]
@@ -1669,7 +1700,100 @@ class Library(MutableMapping):
                 self._set_group(name, tuple(k for k in keys if k != key))
         self._modified = True
 
-    def rekey(self, old_key, new_key=None, *, format_spec=None):
+    def delete(self, key, *, remove_assets=None, remove_attachments=None):
+        """Delete the entry at `key` from the library (`del lib[key]`
+        is equivalent to `delete(key)`).
+
+        The keyword arguments control what happens to the entry's
+        files on disk; they default to the `[delete]` table of the
+        [configuration](configuration) (`config.delete.remove_assets`,
+        `config.delete.remove_attachments`; both `False` unless
+        configured):
+
+        * `remove_assets`: also delete the entry's
+          [asset files](external-assets) (resolved from the `[assets]`
+          patterns) from disk. For a pattern whose entry-dependent
+          part is a directory (like `%f{Cite Key}.ingest/fulltext.md`),
+          that directory is removed as a whole.
+        * `remove_attachments`: also delete the entry's attached files
+          ({attr}`Entry.files`) from disk. A file still linked from
+          another entry is kept (with a `UserWarning`).
+
+        Files are moved to the Trash where possible (macOS, with the
+        `bibdeskparser[macos]` extra), else deleted permanently. When
+        removal is off, a `UserWarning` reports any asset or attached
+        files the deleted entry leaves behind on disk.
+
+        Raises `KeyError` if `key` is not in the library.
+        """
+        if key not in self._entries:
+            raise KeyError(key)
+        if remove_assets is None:
+            remove_assets = active.delete.remove_assets
+        if remove_attachments is None:
+            remove_attachments = active.delete.remove_attachments
+        base_dir = None
+        units = []
+        attachments = []
+        if self._path is not None:
+            base_dir = self._files_base_dir()
+            units = [
+                rel
+                for rel in self._asset_units(key)
+                if (base_dir / rel).exists()
+            ]
+            attachments = list(self._entries[key].files)
+        self._remove_entry(key)
+        if base_dir is None:
+            return
+        if remove_assets:
+            for rel in units:
+                _delete_path(base_dir / rel)
+        elif units:
+            warnings.warn(
+                f"deleting {key!r} leaves asset files behind: {units} "
+                "(delete them with remove_assets=True)",
+                UserWarning,
+                stacklevel=2,
+            )
+        left_behind = []
+        for rel in attachments:
+            abs_path = (base_dir / rel).resolve()
+            if not abs_path.exists():
+                continue
+            if remove_attachments:
+                # declines (with a warning) if still linked elsewhere
+                self._remove_linked_file(rel)
+            elif not self._is_linked(abs_path):
+                left_behind.append(rel)
+        if left_behind:
+            warnings.warn(
+                f"deleting {key!r} leaves attached files behind: "
+                f"{left_behind} (delete them with "
+                "remove_attachments=True)",
+                UserWarning,
+                stacklevel=2,
+            )
+
+    def _is_linked(self, abs_path):
+        """Whether any entry links the file at `abs_path` (a resolved
+        absolute path)."""
+        base_dir = self._files_base_dir()
+        return any(
+            (base_dir / rel).resolve() == abs_path
+            for entry in self._entries.values()
+            for rel in entry.files
+        )
+
+    def rekey(
+        self,
+        old_key,
+        new_key=None,
+        *,
+        format_spec=None,
+        rename_assets=None,
+        rename_attachments=None,
+    ):
         """Rename the entry at `old_key`; returns the new key.
 
         `Entry.key` is read-only, so this is the only way to rename
@@ -1693,6 +1817,30 @@ class Library(MutableMapping):
         with the other entries in the library. A field the entry does
         not have renders as empty, so an entry lacking a field the
         format references just gets a shorter key.
+
+        Files named after the citation key follow the rename. The
+        `rename_assets` and `rename_attachments` keyword arguments
+        default to the `[rekey]` table of the
+        [configuration](configuration) (`config.rekey.rename_assets`,
+        `config.rekey.rename_attachments`; both `True` unless
+        configured):
+
+        * `rename_assets`: move the entry's
+          [asset files](external-assets) (resolved from the `[assets]`
+          patterns) to the paths the new key resolves to. For a
+          pattern whose entry-dependent part is a directory (like
+          `%f{Cite Key}.ingest/fulltext.md`), that directory is moved
+          as a whole.
+        * `rename_attachments`: re-file each attachment
+          ({attr}`Entry.files`) whose current path matches what the
+          `[auto_file]` format generates for the entry (via
+          {meth}`rename_file`, which updates every entry linking the
+          file). A hand-named attachment is left alone.
+
+        A file that cannot be moved -- no `[auto_file]` format for the
+        entry's type, an attachment not following it, a file absent
+        from disk, or a target already occupied -- is skipped with a
+        `UserWarning`; the rename of the key itself always proceeds.
 
         Raises `KeyError` if `old_key` is not present, and
         `ValueError` if `new_key` is already used by a different
@@ -1725,8 +1873,23 @@ class Library(MutableMapping):
                 f"key {new_key!r} is already used by another entry in "
                 "this library"
             )
+        if rename_assets is None:
+            rename_assets = active.rekey.rename_assets
+        if rename_attachments is None:
+            rename_attachments = active.rekey.rename_attachments
+        # The file moves are planned against the entry's *current*
+        # key (which decides what follows the format), executed after
+        # the rename below.
+        asset_moves = []
+        refile = []
+        if self._path is not None:
+            base_dir = self._files_base_dir()
+            if rename_assets:
+                asset_moves = self._asset_moves(old_key, new_key, base_dir)
+            if rename_attachments:
+                refile = self._attachments_to_refile(old_key, base_dir)
         # Rewrite the group data first (keeping each key's position
-        # within its group), so that the `__delitem__` cascade below
+        # within its group), so that the `_remove_entry` cascade below
         # finds nothing left to remove; `__setitem__` then restores
         # `entry.groups` from the rewritten data.
         for name, keys in list(self._group_data.items()):
@@ -1735,8 +1898,121 @@ class Library(MutableMapping):
                     new_key if k == old_key else k for k in keys
                 )
                 self._modified = True
-        self[new_key] = self.pop(old_key)
+        entry = self._entries[old_key]
+        self._remove_entry(old_key)
+        self[new_key] = entry
+        self._move_assets(asset_moves)
+        for rel in refile:
+            try:
+                self.rename_file(new_key, rel)
+            except FileExistsError as exc:
+                warnings.warn(
+                    f"not re-filing attachment {rel!r}: {exc}",
+                    UserWarning,
+                    stacklevel=2,
+                )
         return new_key
+
+    def _asset_moves(self, old_key, new_key, base_dir):
+        """The `(old, new)` absolute path pairs of the asset moves a
+        rename from `old_key` to `new_key` entails: for each per-entry
+        asset class, its lifecycle unit (the deepest entry-dependent
+        path component), resolved under both keys. A unit that does
+        not exist on disk contributes no move; an occupied target is
+        skipped with a `UserWarning`.
+
+        Classes sharing a unit yield one move. The pairs are ordered
+        by depth, so that a unit nested inside another unit is moved
+        after its ancestor (see {meth}`_move_assets`)."""
+        env = self._asset_env()
+        entry = self._entries[old_key]
+        moves = []
+        seen = set()
+        for cls in self._per_entry_asset_classes():
+            old_rel = _resolve_asset(
+                cls, entry, env, current_key=old_key, depth=cls.unit_index
+            )
+            new_rel = _resolve_asset(
+                cls, entry, env, current_key=new_key, depth=cls.unit_index
+            )
+            if old_rel is None or old_rel == new_rel or old_rel in seen:
+                continue
+            seen.add(old_rel)
+            old_abs = base_dir / old_rel
+            if not old_abs.exists():
+                continue
+            new_abs = base_dir / new_rel
+            if new_abs.exists():
+                warnings.warn(
+                    f"not moving asset {old_rel!r} to {new_rel!r}: "
+                    "the target already exists",
+                    UserWarning,
+                    stacklevel=3,
+                )
+                continue
+            moves.append((old_abs, new_abs))
+        return sorted(moves, key=lambda pair: len(pair[0].parts))
+
+    @staticmethod
+    def _move_assets(moves):
+        """Execute the planned asset `moves` (`(old, new)` absolute
+        path pairs, ancestors first).
+
+        A unit nested inside another unit has already travelled with
+        its ancestor by the time its own move runs, so its source is
+        rebased onto wherever the ancestor landed; a layout with a
+        key-named directory inside a key-named directory is thus
+        renamed at every level."""
+        done = []
+        for old_abs, new_abs in moves:
+            for moved_old, moved_new in done:
+                if old_abs.is_relative_to(moved_old):
+                    old_abs = moved_new / old_abs.relative_to(moved_old)
+            new_abs.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(os.fspath(old_abs), os.fspath(new_abs))
+            done.append((old_abs, new_abs))
+
+    def _attachments_to_refile(self, key, base_dir):
+        """The attachments of entry `key` that {meth}`rekey` re-files:
+        those whose current path matches what the `[auto_file]` format
+        generates (checked via {meth}`eval_format_spec` idempotency)
+        and that exist on disk. Every skipped attachment -- and an
+        entry type without a usable format -- is reported with a
+        `UserWarning`."""
+        if active.auto_file.format_spec is None:
+            # without an [auto_file] format there is no naming scheme
+            # for attachments to follow; nothing to re-file
+            return []
+        entry = self._entries[key]
+        refile = []
+        for rel in entry.files:
+            try:
+                generated = self.eval_format_spec(key, filename=rel)
+            except ValueError as exc:
+                warnings.warn(
+                    f"attachments of {key!r} not re-filed: {exc}",
+                    UserWarning,
+                    stacklevel=3,
+                )
+                return []
+            if generated != rel:
+                warnings.warn(
+                    f"not re-filing attachment {rel!r}: it does not "
+                    "follow the [auto_file] format",
+                    UserWarning,
+                    stacklevel=3,
+                )
+                continue
+            if not (base_dir / rel).resolve().exists():
+                warnings.warn(
+                    f"not re-filing attachment {rel!r}: the file does "
+                    "not exist",
+                    UserWarning,
+                    stacklevel=3,
+                )
+                continue
+            refile.append(rel)
+        return refile
 
     def eval_format_spec(self, key, format_spec=None, *, filename=None):
         """Evaluate a format specification for the entry at `key`;
@@ -1959,14 +2235,14 @@ class Library(MutableMapping):
     # -- file attachments -------------------------------------------- #
 
     def _files_base_dir(self):
-        """The directory that linked-file paths are relative to (the
-        library file's directory), as a resolved `Path`.
+        """The directory that linked-file and asset paths are relative
+        to (the library file's directory), as a resolved `Path`.
 
         Raises `ValueError` if the library has no file path yet."""
         if self._path is None:
             raise ValueError(
-                "cannot modify file attachments of a library that has "
-                "no file path (linked files are stored relative to the "
+                "this operation requires a library with a file path "
+                "(linked files and assets resolve relative to the "
                 "library's .bib file); save the library first"
             )
         return Path(self._path).resolve().parent
@@ -2410,6 +2686,130 @@ class Library(MutableMapping):
         Delegates to {meth}`Entry.remove_url`.
         """
         self._entries[key].remove_url(url)
+
+    # -- assets ------------------------------------------------------ #
+
+    def _asset_env(self):
+        """The rendering environment for `[assets]` patterns (see
+        `bibdeskparser.assets`)."""
+        return {
+            "strings": self._all_strings(),
+            "info": self.info,
+            "initials": active.initials,
+            "document_name": (
+                Path(self._path).stem if self._path is not None else None
+            ),
+        }
+
+    def _asset_units(self, key):
+        """The distinct lifecycle units (relative paths) that entry
+        `key`'s resolving asset classes map to."""
+        env = self._asset_env()
+        entry = self._entries[key]
+        units = {}
+        for cls in self._per_entry_asset_classes():
+            rel = _resolve_asset(
+                cls, entry, env, current_key=key, depth=cls.unit_index
+            )
+            if rel is not None:
+                units.setdefault(rel)
+        return list(units)
+
+    @staticmethod
+    def _per_entry_asset_classes():
+        """The compiled per-entry classes of the `[assets]`
+        configuration (those whose pattern references entry data)."""
+        return [cls for cls in _asset_classes(active.assets) if cls.per_entry]
+
+    def asset(self, name, key=None, *, check_that_file_exists=True):
+        """Resolve the asset class `name` (from the `[assets]` table
+        of the [configuration](configuration)) to a path, relative to
+        the directory of the library's `.bib` file; see
+        [External Assets](external-assets).
+
+        Whether `key` (a citation key) is required depends on the
+        class: an **entry asset** -- one whose pattern references entry
+        data, and is thus per-entry -- resolves for one entry and needs
+        a key, while a **library asset** takes none. Passing the wrong
+        one raises `ValueError`; an unknown key raises `KeyError`.
+
+        Returns the path as a `str` (without a trailing slash, even
+        for a directory-valued class), or `None` when the class does
+        not resolve at all: `name` is not declared, its pattern is
+        empty, or a `%i{Key}` it references is unset or empty in the
+        document info ({attr}`info`).
+
+        With `check_that_file_exists` (the default), a class that
+        resolves to a path with nothing on disk raises
+        `FileNotFoundError`; a directory-valued class requires a
+        directory there, any other class a file. Pass
+        `check_that_file_exists=False` to resolve without touching the
+        filesystem, which is what a generator needs in order to learn
+        where to *write* an asset that does not exist yet.
+        """
+        cls = _compile_asset_pattern(name, active.assets.get(name, ""))
+        if cls is None:
+            return None
+        if cls.per_entry and key is None:
+            raise ValueError(
+                f"asset class {name!r} is an entry asset: a citation "
+                "key is required"
+            )
+        if not cls.per_entry and key is not None:
+            raise ValueError(
+                f"asset class {name!r} is a library asset: it takes "
+                "no citation key"
+            )
+        entry = None if key is None else self._entries[key]
+        rel = _resolve_asset(cls, entry, self._asset_env(), current_key=key)
+        if rel is None or not check_that_file_exists:
+            return rel
+        base_dir = self._files_base_dir()
+        if not _asset_present(cls, rel, base_dir):
+            what = "directory" if cls.is_dir else "file"
+            raise FileNotFoundError(
+                f"asset {name!r}: no such {what}: {base_dir / rel}"
+            )
+        return rel
+
+    def assets(self, *keys):
+        """Report which asset files exist on disk, over the classes of
+        the `[assets]` configuration; see
+        [External Assets](external-assets).
+
+        With citation `keys`, a `dict` mapping each of them to a
+        `{name: bool}` presence map over the **entry assets** (an
+        unknown key raises `KeyError`); the coverage table over the
+        whole library is `bib.assets(*bib)`. Without keys, a single
+        `{name: bool}` map over the **library assets**.
+
+        Presence is decided as in {meth}`asset`: a directory-valued
+        class is present when its path is a directory, any other class
+        when its path is a file. A class that does not resolve is
+        omitted.
+        """
+        base_dir = self._files_base_dir()
+        env = self._asset_env()
+
+        def presence(classes, entry, key):
+            row = {}
+            for cls in classes:
+                rel = _resolve_asset(cls, entry, env, current_key=key)
+                if rel is not None:
+                    row[cls.name] = _asset_present(cls, rel, base_dir)
+            return row
+
+        if not keys:
+            library_level = [
+                cls
+                for cls in _asset_classes(active.assets)
+                if not cls.per_entry
+            ]
+            return presence(library_level, None, None)
+        per_entry = self._per_entry_asset_classes()
+        return {
+            key: presence(per_entry, self._entries[key], key) for key in keys
+        }
 
     # -- saving ------------------------------------------------------ #
 

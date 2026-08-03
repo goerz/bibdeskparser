@@ -2879,7 +2879,232 @@ def test_delete(runner, bibfile):
     assert "GoerzPhd2015" not in lib
 
 
-def test_set_type(runner, bibfile):
+_ASSETS_TOML = (
+    "[auto_file]\n"
+    'format_spec = "%f{Cite Key}%u0%e"\n'
+    "[assets]\n"
+    'summary = "%f{Cite Key}_summary.md"\n'
+    'fulltext = "%f{Cite Key}.ingest/fulltext.md"\n'
+    'source = "%f{Cite Key}.ingest/source/"\n'
+    'topics = "%i{Topics-File}"\n'
+)
+
+
+def _write_assets_config(bibfile):
+    """Declare the example `[assets]` map (and an `[auto_file]`
+    format) next to `bibfile`."""
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        _ASSETS_TOML, encoding="utf-8"
+    )
+
+
+def _make_assets(directory, key):
+    """Create the summary file and ingest bundle for entry `key`."""
+    (directory / f"{key}_summary.md").write_text("summary")
+    bundle = directory / f"{key}.ingest"
+    (bundle / "source").mkdir(parents=True)
+    (bundle / "fulltext.md").write_text("fulltext")
+
+
+def test_asset(runner, bibfile):
+    """`asset` resolves a class to a path, absolute by default."""
+    _write_assets_config(bibfile)
+    _make_assets(bibfile.parent, "GoerzQ2022")
+    result = _run(runner, "asset", bibfile, "summary", "GoerzQ2022")
+    assert result.output.strip() == str(
+        (bibfile.parent / "GoerzQ2022_summary.md").resolve()
+    )
+    result = _run(
+        runner, "asset", bibfile, "fulltext", "GoerzQ2022", "--relative"
+    )
+    assert result.output.strip() == "GoerzQ2022.ingest/fulltext.md"
+    result = _run(runner, "asset", bibfile, "summary", "GoerzQ2022", "--json")
+    assert json.loads(result.output).endswith("GoerzQ2022_summary.md")
+
+
+def test_asset_check_exists(runner, bibfile):
+    """The existence check is on by default; `--no-check-exists`
+    prints the path of an asset that is not there yet."""
+    _write_assets_config(bibfile)
+    result = runner.invoke(
+        main, ["asset", str(bibfile), "summary", "GoerzQ2022"]
+    )
+    assert result.exit_code == 1
+    assert "no such file" in result.stderr
+    result = _run(
+        runner,
+        "asset",
+        bibfile,
+        "summary",
+        "GoerzQ2022",
+        "--relative",
+        "--no-check-exists",
+    )
+    assert result.output.strip() == "GoerzQ2022_summary.md"
+
+
+def test_asset_library_level(runner, bibfile):
+    """A library-level class needs no KEY and resolves through the
+    document info."""
+    _write_assets_config(bibfile)
+    (bibfile.parent / "topics.md").write_text("topics", encoding="utf-8")
+    result = runner.invoke(main, ["asset", str(bibfile), "topics"])
+    assert result.exit_code == 1
+    assert "is unset in the document info" in result.stderr
+    _run(runner, "set_info", bibfile, "Topics-File", "topics.md")
+    result = _run(runner, "asset", bibfile, "topics", "--relative")
+    assert result.output.strip() == "topics.md"
+
+
+def test_asset_errors(runner, bibfile):
+    """An undeclared name, a disabled class, an entry asset without a
+    KEY, and a library asset with one all fail cleanly."""
+    _write_assets_config(bibfile)
+    _run(runner, "set_info", bibfile, "Topics-File", "topics.md")
+    result = runner.invoke(main, ["asset", str(bibfile), "nope", "GoerzQ2022"])
+    assert result.exit_code == 1
+    assert "not declared in the [assets] configuration" in result.stderr
+    result = runner.invoke(main, ["asset", str(bibfile), "summary"])
+    assert result.exit_code == 1
+    assert "is an entry asset: a citation key is required" in result.stderr
+    result = runner.invoke(
+        main, ["asset", str(bibfile), "topics", "GoerzQ2022"]
+    )
+    assert result.exit_code == 1
+    assert "is a library asset: it takes no citation key" in result.stderr
+    result = runner.invoke(
+        main, ["asset", str(bibfile), "summary", "NoSuchKey"]
+    )
+    assert result.exit_code == 1
+    assert "unknown citation key" in result.stderr
+    (bibfile.parent / "bibdeskparser.toml").write_text(
+        '[assets]\nsummary = ""\n', encoding="utf-8"
+    )
+    result = runner.invoke(
+        main, ["asset", str(bibfile), "summary", "GoerzQ2022"]
+    )
+    assert result.exit_code == 1
+    assert "the class is disabled" in result.stderr
+
+
+def test_assets_per_entry(runner, bibfile):
+    """With KEYs, `assets` reports the per-entry classes, `!` marking
+    an asset missing from disk."""
+    _write_assets_config(bibfile)
+    _make_assets(bibfile.parent, "GoerzQ2022")
+    result = _run(runner, "assets", bibfile, "GoerzQ2022", "GoerzA2023")
+    assert result.output.splitlines() == [
+        "GoerzQ2022: summary, fulltext, source",
+        "GoerzA2023: !summary, !fulltext, !source",
+    ]
+    data = json.loads(
+        _run(runner, "assets", bibfile, "GoerzQ2022", "--json").output
+    )
+    assert data == {
+        "GoerzQ2022": {"summary": True, "fulltext": True, "source": True}
+    }
+    # the whole-library sweep is an explicit composition
+    keys = _run(runner, "keys", bibfile).output.split()
+    result = _run(runner, "assets", bibfile, *keys, "--json")
+    assert len(json.loads(result.output)) == len(keys)
+
+
+def test_assets_library_level(runner, bibfile):
+    """Without KEYs, `assets` reports the library-level classes."""
+    _write_assets_config(bibfile)
+    _run(runner, "set_info", bibfile, "Topics-File", "topics.md")
+    result = _run(runner, "assets", bibfile)
+    assert result.output.splitlines() == ["!topics"]
+    (bibfile.parent / "topics.md").write_text("topics", encoding="utf-8")
+    assert json.loads(_run(runner, "assets", bibfile, "--json").output) == {
+        "topics": True
+    }
+
+
+def test_assets_unconfigured(runner, bibfile):
+    """With no resolving class of the requested kind, `assets` fails
+    cleanly, naming the kind."""
+    result = runner.invoke(main, ["assets", str(bibfile)])
+    assert result.exit_code == 1
+    assert "no library asset is declared" in result.stderr
+    result = runner.invoke(main, ["assets", str(bibfile), "GoerzQ2022"])
+    assert result.exit_code == 1
+    assert "no entry asset is declared" in result.stderr
+
+
+def test_rekey_moves_files(runner, bibfile):
+    """`rekey` moves assets and re-files the attachment; the `--no-*`
+    options switch either half off."""
+    _write_assets_config(bibfile)
+    _make_assets(bibfile.parent, "GoerzQ2022")
+    _run(runner, "rekey", bibfile, "GoerzQ2022", "GoerzQ2022SAD")
+    assert (bibfile.parent / "GoerzQ2022SAD_summary.md").is_file()
+    assert (bibfile.parent / "GoerzQ2022SAD.ingest" / "source").is_dir()
+    assert (bibfile.parent / "GoerzQ2022SAD.pdf").is_file()
+    assert not (bibfile.parent / "GoerzQ2022.pdf").exists()
+    assert _load(bibfile)["GoerzQ2022SAD"].files == ["GoerzQ2022SAD.pdf"]
+
+
+def test_rekey_no_rename_options(runner, bibfile):
+    _write_assets_config(bibfile)
+    _make_assets(bibfile.parent, "GoerzQ2022")
+    _run(
+        runner,
+        "rekey",
+        bibfile,
+        "GoerzQ2022",
+        "GoerzQ2022SAD",
+        "--no-rename-assets",
+        "--no-rename-attachments",
+    )
+    assert (bibfile.parent / "GoerzQ2022_summary.md").is_file()
+    assert (bibfile.parent / "GoerzQ2022.pdf").is_file()
+    assert _load(bibfile)["GoerzQ2022SAD"].files == ["GoerzQ2022.pdf"]
+
+
+def test_delete_remove_options(runner, bibfile):
+    """`delete --remove-assets --remove-attachments` deletes the
+    entry's files; without the options they stay, with a warning."""
+    _write_assets_config(bibfile)
+    _make_assets(bibfile.parent, "GoerzQ2022")
+    result = _run(runner, "delete", bibfile, "GoerzQ2022")
+    assert "leaves asset files behind" in result.stderr
+    assert "leaves attached files behind" in result.stderr
+    assert (bibfile.parent / "GoerzQ2022_summary.md").is_file()
+    _make_assets(bibfile.parent, "GoerzA2023")
+    result = _run(
+        runner,
+        "delete",
+        bibfile,
+        "GoerzA2023",
+        "--remove-assets",
+        "--remove-attachments",
+    )
+    assert not (bibfile.parent / "GoerzA2023_summary.md").exists()
+    assert not (bibfile.parent / "GoerzA2023.ingest").exists()
+    assert not (bibfile.parent / "GoerzA2023.pdf").exists()
+
+
+def test_check_asset_audits(runner, bibfile):
+    """The orphan audit is on by default; `--no-orphans` skips it and
+    `--assets` adds the missing-assets audit."""
+    _write_assets_config(bibfile)
+    _make_assets(bibfile.parent, "SomeOldKey")
+    result = runner.invoke(main, ["check", str(bibfile)])
+    assert result.exit_code == 1
+    assert "'SomeOldKey_summary.md' (summary) belongs to no entry" in (
+        result.output
+    )
+    assert "'SomeOldKey.ingest' (fulltext, source)" in result.output
+    result = _run(runner, "check", bibfile, "--no-orphans")
+    assert "SomeOldKey" not in result.output
+    result = runner.invoke(
+        main, ["check", str(bibfile), "GoerzA2023", "--assets", "--json"]
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    checks = {problem["check"] for problem in data["problems"]}
+    assert checks == {"assets"}
     _run(runner, "set_type", bibfile, "GoerzJPB2011", "Misc")
     assert _load(bibfile)["GoerzJPB2011"].entry_type == "misc"
 

@@ -2,25 +2,9 @@
 
 # Format Specifiers
 
-BibDesk has a small *format-specifier language* -- `%`-templates like
-`"%a1%c{journal}0%Y%u0"` that expand against an entry's fields. BibDesk
-uses it in two places: to autogenerate **citation keys** (its
-*Preferences → Cite Key* pane) and to autogenerate **attachment file
-names** (its AutoFile feature). This page documents the language
-itself. `bibdeskparser` applies it in the same two places: citation
-keys ({meth}`Library.rekey <bibdeskparser.Library.rekey>`, configured
-by the [`[auto_key]` table](config-auto-key)) and attachment file
-names ({meth}`Library.add_file <bibdeskparser.Library.add_file>` and
-{meth}`Library.rename_file <bibdeskparser.Library.rename_file>`,
-configured by the [`[auto_file]` table](config-auto-file)). The two
-uses share the specifiers described below; the
-[file-name dialect](specifiers-files) differs only in the few points
-covered in its own section.
+BibDesk has a small *format-specifier language* -- `%`-templates like `"%a1%c{journal}0%Y%u0"` that expand against an entry's fields. BibDesk uses it in two places: to autogenerate **citation keys** (its *Preferences → Cite Key* pane) and to autogenerate **attachment file names** (its AutoFile feature). This page documents the language itself. `bibdeskparser` applies it in the same two places: citation keys ({meth}`Library.rekey <bibdeskparser.Library.rekey>`, configured by the [`[auto_key]` table](config-auto-key)) and attachment file names ({meth}`Library.add_file <bibdeskparser.Library.add_file>` and {meth}`Library.rename_file <bibdeskparser.Library.rename_file>`, configured by the [`[auto_file]` table](config-auto-file)). The two uses share the specifiers described below; the [file-name dialect](specifiers-files) differs only in the few points covered in its own section.
 
-The most common use is autogenerating a citation key from a *format
-string*, via single-argument
-{meth}`Library.rekey <bibdeskparser.Library.rekey>` (or the
-[`rekey` CLI command](cli-rekey) without a `NEW_KEY`):
+The most common use is autogenerating a citation key from a *format string*, via single-argument {meth}`Library.rekey <bibdeskparser.Library.rekey>` (or the [`rekey` CLI command](cli-rekey) without a `NEW_KEY`):
 
 ```python
 >>> from bibdeskparser import Library, Entry
@@ -44,19 +28,9 @@ string*, via single-argument
 
 ```
 
-The format string language is **BibDesk's own**: a format string that
-works in BibDesk's *Preferences → Cite Key* pane works here identically
-(with the few exceptions [noted below](specifiers-differences)).
+The format string language is **BibDesk's own**: a format string that works in BibDesk's *Preferences → Cite Key* pane works here identically (with the few exceptions [noted below](specifiers-differences)).
 
-For citation keys, the format is usually configured once, in the
-`[auto_key]` table of `bibdeskparser.toml` (see the
-[configuration](configuration)), where
-it may also be given [per entry type](config-auto-key); the
-`format_spec` argument used above overrides it ad hoc. The examples
-below use {meth}`Library.eval_format_spec
-<bibdeskparser.Library.eval_format_spec>` instead, which evaluates a
-format for an entry and returns the resulting key *without renaming
-anything*:
+For citation keys, the format is usually configured once, in the `[auto_key]` table of `bibdeskparser.toml` (see the [configuration](configuration)), where it may also be given [per entry type](config-auto-key); the `format_spec` argument used above overrides it ad hoc. The examples below use {meth}`Library.eval_format_spec <bibdeskparser.Library.eval_format_spec>` instead, which evaluates a format for an entry and returns the resulting key *without renaming anything*:
 
 ```python
 >>> bib.eval_format_spec("GoerzPRA2014", "%a1%Y")
@@ -66,40 +40,20 @@ anything*:
 
 ## Specifiers
 
-Any character other than `%` stands for itself (subject to
-[sanitization](specifiers-sanitization)); a `%` introduces a specifier.
+Any character other than `%` stands for itself (subject to [sanitization](specifiers-sanitization)); a `%` introduces a specifier.
 
 ### Anatomy of a specifier
 
-After the `%`, a specifier has up to four parts, always in this order.
-Only the letter is required; the rest are added as needed. For example,
-in the specifier `%f{journal}[/]5`:
+After the `%`, a specifier has up to four parts, always in this order. Only the letter is required; the rest are added as needed. For example, in the specifier `%f{journal}[/]5`:
 
-* `%f` -- the **specifier**: `%` plus one letter that chooses *what* to
-  insert (an author, the title, the year, ...).
-* `{journal}` -- a **`{Field}` name**, the entry field to read. Only
-  `%f`, `%w`, `%c`, and `%s` take one, written right after the letter.
-  The name is case-insensitive. (`%i` takes a `{Key}` in the same
-  position, naming a [document-info](bibdesk-document-info) key
-  rather than a field.)
-* `[/]` -- one or more **arguments** in square brackets: separators,
-  "et al." text, or per-character replacements. Arguments are
-  *positional*, so to supply a later one you must supply the earlier
-  ones too, giving an unused one as empty (`[]`).
-* `5` -- the **trailing number**, which caps an amount. *What* it
-  counts is specific to the specifier (names, words, keywords,
-  characters, ...). A few specifiers take *two* numbers, written back
-  to back with no separator: `%a22` means two names, two characters
-  each.
+* `%f` -- the **specifier**: `%` plus one letter that chooses *what* to insert (an author, the title, the year, ...).
+* `{journal}` -- a **`{Field}` name**, the entry field to read. Only `%f`, `%w`, `%c`, and `%s` take one, written right after the letter. The name is case-insensitive. (`%i` takes a `{Key}` in the same position, naming a [document-info](bibdesk-document-info) key rather than a field.)
+* `[/]` -- one or more **arguments** in square brackets: separators, "et al." text, or per-character replacements. Arguments are *positional*, so to supply a later one you must supply the earlier ones too, giving an unused one as empty (`[]`).
+* `5` -- the **trailing number**, which caps an amount. *What* it counts is specific to the specifier (names, words, keywords, characters, ...). A few specifiers take *two* numbers, written back to back with no separator: `%a22` means two names, two characters each.
 
-A bare `@string` macro reference as a field value (e.g.
-`journal = pra`) is expanded using the library's macro definitions
-before any specifier is applied.
+A bare `@string` macro reference as a field value (e.g. `journal = pra`) is expanded using the library's macro definitions before any specifier is applied.
 
-A field the entry does not have renders as empty, so a format may
-reference a field that only some entries carry; those entries get a
-correspondingly shorter result. Under `%a1%c{booktitle}%Y`, a
-conference paper keys as `GoerzPECC2019`, an article as:
+A field the entry does not have renders as empty, so a format may reference a field that only some entries carry; those entries get a correspondingly shorter result. Under `%a1%c{booktitle}%Y`, a conference paper keys as `GoerzPECC2019`, an article as:
 
 ```python
 >>> bib.eval_format_spec("GoerzPRA2014", "%a1%c{booktitle}%Y")
@@ -107,23 +61,14 @@ conference paper keys as `GoerzPECC2019`, an article as:
 
 ```
 
-The subsections below are the complete reference for each group of
-specifiers. The examples evaluate a format against the
-`GoerzPRA2014` entry defined above (an `@article` by Goerz and Koch).
+The subsections below are the complete reference for each group of specifiers. The examples evaluate a format against the `GoerzPRA2014` entry defined above (an `@article` by Goerz and Koch).
 
 ### Author names: `%a`, `%A`, `%p`, `%P`
 
-The last names of the people in the `author` field. `%p` and `%P` use
-the `editor` field instead when the entry has no author.
+The last names of the people in the `author` field. `%p` and `%P` use the `editor` field instead when the entry has no author.
 
-* `%a` / `%p` -- the last names, concatenated. *Arguments*
-  `[separator][etal]`: text placed between names, and text appended
-  when names are dropped. *Number* the count of names (a single digit,
-  or a negative `-N` counting from the last author), optionally
-  followed by a second digit giving the characters to keep per name.
-* `%A` / `%P` -- the last names, each with the author's first initial.
-  *Arguments* `[author separator][name separator][etal]`. *Number* the
-  count of names.
+* `%a` / `%p` -- the last names, concatenated. *Arguments* `[separator][etal]`: text placed between names, and text appended when names are dropped. *Number* the count of names (a single digit, or a negative `-N` counting from the last author), optionally followed by a second digit giving the characters to keep per name.
+* `%A` / `%P` -- the last names, each with the author's first initial. *Arguments* `[author separator][name separator][etal]`. *Number* the count of names.
 
 ```python
 >>> key = "GoerzPRA2014"
@@ -144,19 +89,12 @@ the `editor` field instead when the entry has no author.
 
 ```
 
-As a BibDesk quirk, an unescaped trailing digit in the `[etal]`
-argument further lowers the name count: for a five-author paper,
-`%a[][X1]2` requests two names but the trailing `1` cuts that to one,
-rendering the first author followed by `X` (`GoerzX`).
+As a BibDesk quirk, an unescaped trailing digit in the `[etal]` argument further lowers the name count: for a five-author paper, `%a[][X1]2` requests two names but the trailing `1` cuts that to one, rendering the first author followed by `X` (`GoerzX`).
 
 ### Title: `%t`, `%T`
 
 * `%t` -- the whole title. *Number* characters to keep.
-* `%T` -- the title word by word, joined with `-`. *Number* words to
-  keep, counting only words longer than the *small word length*
-  (default 3). *Argument* `[small word length]` overrides that length
-  **and** drops the short words entirely; without the argument, short
-  words are kept (they simply do not count toward the number).
+* `%T` -- the title word by word, joined with `-`. *Number* words to keep, counting only words longer than the *small word length* (default 3). *Argument* `[small word length]` overrides that length **and** drops the short words entirely; without the argument, short words are kept (they simply do not count toward the number).
 
 ```python
 >>> bib.eval_format_spec(key, "%t12")    # first 12 characters
@@ -171,8 +109,7 @@ rendering the first author followed by `X` (`GoerzX`).
 ### Date: `%y`, `%Y`, `%m`
 
 * `%y` / `%Y` -- the year, two-digit / four-digit.
-* `%m` -- the month as two digits, read from a number or an English
-  month name (`aug`, `August`).
+* `%m` -- the month as two digits, read from a number or an English month name (`aug`, `August`).
 
 ```python
 >>> bib.eval_format_spec(key, "%Y-%y-%m")
@@ -180,16 +117,9 @@ rendering the first author followed by `X` (`GoerzX`).
 
 ```
 
-All three read whatever the field happens to contain, and none of
-them reports a value it cannot make sense of. The rules are BibDesk's,
-inherited rather than chosen, so `bibdeskparser` reproduces them
-instead of correcting them.
+All three read whatever the field happens to contain, and none of them reports a value it cannot make sense of. The rules are BibDesk's, inherited rather than chosen, so `bibdeskparser` reproduces them instead of correcting them.
 
-`%Y` (and with it `%y`) reads the *leading* digits of the `year`
-field, and yields `0` when there are none. That is the opposite end of
-the value from BibTeX itself, whose standard styles take the last four
-nonpunctuation characters. A `year` like `(about 1984)` therefore
-typesets as 1984 in the bibliography and still keys as `0`:
+`%Y` (and with it `%y`) reads the *leading* digits of the `year` field, and yields `0` when there are none. That is the opposite end of the value from BibTeX itself, whose standard styles take the last four nonpunctuation characters. A `year` like `(about 1984)` therefore typesets as 1984 in the bibliography and still keys as `0`:
 
 ```python
 >>> dates = Library()
@@ -202,9 +132,7 @@ typesets as 1984 in the bibliography and still keys as `0`:
 
 ```
 
-Trailing text after the digits is harmless (`2008a` and `2001--` both
-give `2008` and `2001`), and a `year` whose value is exactly two
-characters long maps into 1950--2049:
+Trailing text after the digits is harmless (`2008a` and `2001--` both give `2008` and `2001`), and a `year` whose value is exactly two characters long maps into 1950--2049:
 
 ```python
 >>> dates["Short"] = Entry("article", "Short", {"year": "08"})
@@ -216,13 +144,7 @@ characters long maps into 1950--2049:
 
 ```
 
-`%m` falls back to `01` for anything it cannot parse, so an
-out-of-range or unrecognized month silently becomes January rather
-than rendering empty. Full English month names and their standard
-abbreviations are both recognized (`June` as well as `jun`), but
-nothing else -- `sep` is, `sept` is not -- and a value whose leading
-letters are not a month name is unparseable even when it carries a
-usable number:
+`%m` falls back to `01` for anything it cannot parse, so an out-of-range or unrecognized month silently becomes January rather than rendering empty. Full English month names and their standard abbreviations are both recognized (`June` as well as `jun`), but nothing else -- `sep` is, `sept` is not -- and a value whose leading letters are not a month name is unparseable even when it carries a usable number:
 
 ```python
 >>> for month in ["jun", "June", "6", "sept", "13", "8th"]:
@@ -237,20 +159,14 @@ usable number:
 
 ```
 
-These edge cases are exactly what the `year` and `month` audits of
-[`check`](cli-check) report. A bare four-digit `year` and a `month`
-written as one of the twelve
-[standard month macros](bibdesk-default-macros) avoid all of them.
+These edge cases are exactly what the `year` and `month` audits of [`check`](cli-check) report. A bare four-digit `year` and a `month` written as one of the twelve [standard month macros](bibdesk-default-macros) avoid all of them.
 
 ### Arbitrary fields: `%f`, `%w`
 
-Both take a `{Field}` name. The special names `Cite Key` and
-`BibTeX Type` yield the entry's current key and its type.
+Both take a `{Field}` name. The special names `Cite Key` and `BibTeX Type` yield the entry's current key and its type.
 
-* `%f{Field}` -- the field's value. *Argument* `[slash]`, a
-  replacement for any `/` in the value. *Number* characters to keep.
-* `%w{Field}` -- the field's value split into words. *Arguments*
-  `[separator characters][slash][separator]`. *Number* words to keep.
+* `%f{Field}` -- the field's value. *Argument* `[slash]`, a replacement for any `/` in the value. *Number* characters to keep.
+* `%w{Field}` -- the field's value split into words. *Arguments* `[separator characters][slash][separator]`. *Number* words to keep.
 
 ```python
 >>> bib.eval_format_spec(key, "%f{volume}")
@@ -266,48 +182,26 @@ Both take a `{Field}` name. The special names `Cite Key` and
 
 ### Conditional text: `%s`
 
-* `%s{Field}` -- fixed text chosen by interpreting a field's value as
-  boolean-ish (`yes`/`no`/`true`/`false`/`1`/`0`, plus a "mixed" state
-  for `-1`). *Arguments* `[yes][no][mixed]`. *Number* characters to
-  keep. Unlike the other field specifiers, `%s` emits its argument
-  text, not the field value itself.
+* `%s{Field}` -- fixed text chosen by interpreting a field's value as boolean-ish (`yes`/`no`/`true`/`false`/`1`/`0`, plus a "mixed" state for `-1`). *Arguments* `[yes][no][mixed]`. *Number* characters to keep. Unlike the other field specifiers, `%s` emits its argument text, not the field value itself.
 
-For example, `%s{Draft}[D][F]` renders `D` when the entry has
-`Draft = {yes}` and `F` otherwise.
+For example, `%s{Draft}[D][F]` renders `D` when the entry has `Draft = {yes}` and `F` otherwise.
 
 ### Acronym: `%c`
 
-* `%c{Field}` -- the acronym ("initials") of a field value: the
-  uppercased first letter of each of its words. *Number* the small word
-  length (default 3; use `0` to keep every word).
+* `%c{Field}` -- the acronym ("initials") of a field value: the uppercased first letter of each of its words. *Number* the small word length (default 3; use `0` to keep every word).
 
-`%c` works on any field, but in practice it abbreviates a venue name
-(e.g. `Phys. Rev. A` → `PRA`) — a journal, conference, or book series,
-which lives in a different field per entry type (`journal` for an
-`@article`, `booktitle` for an `@inproceedings`, `series` for a
-`@book`). Its recommended pattern, the small-word-length rule, and the
-`[initials]` exception table are covered in
-[venue initials](specifiers-initials).
+`%c` works on any field, but in practice it abbreviates a venue name (e.g. `Phys. Rev. A` → `PRA`) — a journal, conference, or book series, which lives in a different field per entry type (`journal` for an `@article`, `booktitle` for an `@inproceedings`, `series` for a `@book`). Its recommended pattern, the small-word-length rule, and the `[initials]` exception table are covered in [venue initials](specifiers-initials).
 
 ### Keywords and file name: `%k`, `%b`
 
-* `%k` -- the entry's keywords, concatenated. *Arguments*
-  `[slash][separator]` (a replacement for `/` inside a keyword, and
-  text between keywords). *Number* keywords to keep.
+* `%k` -- the entry's keywords, concatenated. *Arguments* `[slash][separator]` (a replacement for `/` inside a keyword, and text between keywords). *Number* keywords to keep.
 * `%b` -- the library file's name, without the `.bib` extension.
 
-For example, an entry with the keywords `quantum control` and
-`rydberg` renders `%k[-][_]` as `quantum-control_rydberg` (spaces
-become `-`, and the keywords are joined by `_`).
+For example, an entry with the keywords `quantum control` and `rydberg` renders `%k[-][_]` as `quantum-control_rydberg` (spaces become `-`, and the keywords are joined by `_`).
 
 ### Document info: `%i`
 
-* `%i{Key}` -- the value stored under `Key` in the library's
-  [document info](bibdesk-document-info)
-  ({attr}`Library.info <bibdeskparser.Library.info>`), the key/value
-  metadata attached to the database as a whole. `Key` is matched
-  case-insensitively; a missing key renders as empty, like a missing
-  field. *Number* characters to keep.
+* `%i{Key}` -- the value stored under `Key` in the library's [document info](bibdesk-document-info) ({attr}`Library.info <bibdeskparser.Library.info>`), the key/value metadata attached to the database as a whole. `Key` is matched case-insensitively; a missing key renders as empty, like a missing field. *Number* characters to keep.
 
 ```python
 >>> bib.info["project"] = "qdyn"
@@ -318,39 +212,23 @@ become `-`, and the keywords are joined by `_`).
 
 ### Original file name: `%l`, `%L`, `%e`, `%E`
 
-These four specifiers exist only in
-[file-name formats](specifiers-files) (they are rejected in a
-citation-key format, exactly as in BibDesk). They refer to the
-attached file that is being renamed, under its *current* name -- the
-name it has before the move; no separate "original" name is stored
-anywhere:
+These four specifiers exist only in [file-name formats](specifiers-files) (they are rejected in a citation-key format, exactly as in BibDesk). They refer to the attached file that is being renamed, under its *current* name -- the name it has before the move; no separate "original" name is stored anywhere:
 
 * `%l` -- the file's name without its extension.
 * `%L` -- the file's full name, including the extension.
-* `%e` -- the extension, *with* its leading dot (`.pdf`), or nothing
-  if the file has no extension.
-* `%E` -- the extension *without* the dot. *Argument* `[default]`, a
-  fallback used when the file has no extension.
+* `%e` -- the extension, *with* its leading dot (`.pdf`), or nothing if the file has no extension.
+* `%E` -- the extension *without* the dot. *Argument* `[default]`, a fallback used when the file has no extension.
 
-BibDesk's default file-name format, `%l%n0%e`, keeps every file's
-name and merely appends a number when a file of that name already
-exists at the target location.
+BibDesk's default file-name format, `%l%n0%e`, keeps every file's name and merely appends a number when a file of that name already exists at the target location.
 
 ### Random and unique characters: `%r`, `%R`, `%d`, `%u`, `%U`, `%n`
 
-* `%r` / `%R` / `%d` -- random lowercase letters / uppercase letters /
-  digits. *Number* characters (default 1).
-* `%u` / `%U` / `%n` -- **unique** lowercase letters / uppercase
-  letters / digits, inserted to make the key unique in the library.
-  *Number* characters (default 1; `0` inserts only as many as needed).
-  At most one of these three may appear in a format. They have their
-  own section: [unique specifiers](specifiers-unique).
+* `%r` / `%R` / `%d` -- random lowercase letters / uppercase letters / digits. *Number* characters (default 1).
+* `%u` / `%U` / `%n` -- **unique** lowercase letters / uppercase letters / digits, inserted to make the key unique in the library. *Number* characters (default 1; `0` inserts only as many as needed). At most one of these three may appear in a format. They have their own section: [unique specifiers](specifiers-unique).
 
 ### Literal characters: `%0`–`%9`, `%[`, `%]`, `%-`
 
-A digit or bracket right after another specifier would be read as its
-number or an argument, so these characters are escaped as `%<char>` to
-insert them literally:
+A digit or bracket right after another specifier would be read as its number or an argument, so these characters are escaped as `%<char>` to insert them literally:
 
 ```python
 >>> bib.eval_format_spec(key, "ref%-%Y%1%[x%]")  # literal - 1 [ ]
@@ -362,18 +240,9 @@ insert them literally:
 
 ## Venue initials: `%c` and the `[initials]` mapping
 
-`%c{Field}` builds an acronym from the uppercased first letters of the
-words of a field value. The trailing number is the *small word length*:
-words no longer than it are dropped, except words ending in a period
-(like the `Phys.` and `Rev.` of a journal abbreviation), which always
-count. The default is 3.
+`%c{Field}` builds an acronym from the uppercased first letters of the words of a field value. The trailing number is the *small word length*: words no longer than it are dropped, except words ending in a period (like the `Phys.` and `Rev.` of a journal abbreviation), which always count. The default is 3.
 
-Because that default drops words of three or fewer letters, a value
-like `Phys. Rev. A` would lose its trailing `A`. **The recommended
-pattern is therefore `%c{journal}0`:** the trailing `0` sets the small
-word length to zero, so no words are omitted and the acronym is built
-from every word. `Phys. Rev. A` then abbreviates to `PRA` with no
-manual configuration:
+Because that default drops words of three or fewer letters, a value like `Phys. Rev. A` would lose its trailing `A`. **The recommended pattern is therefore `%c{journal}0`:** the trailing `0` sets the small word length to zero, so no words are omitted and the acronym is built from every word. `Phys. Rev. A` then abbreviates to `PRA` with no manual configuration:
 
 ```python
 >>> bib.eval_format_spec(key, "%c{journal}0")  # keep every word
@@ -383,14 +252,9 @@ manual configuration:
 
 ```
 
-The `0` is a plain example of the trailing *number*; it is not special
-to `%c` beyond meaning "small word length zero". Use it (or a per-type
-`%c{...}0` format) wherever you want the full venue acronym.
+The `0` is a plain example of the trailing *number*; it is not special to `%c` beyond meaning "small word length zero". Use it (or a per-type `%c{...}0` format) wherever you want the full venue acronym.
 
-For venue names where the acronym is *not* the desired abbreviation,
-the `[initials]` table in `bibdeskparser.toml` (see the
-[configuration](configuration)) defines explicit exceptions per
-field, keyed by the full field value or by the `@string` macro name:
+For venue names where the acronym is *not* the desired abbreviation, the `[initials]` table in `bibdeskparser.toml` (see the [configuration](configuration)) defines explicit exceptions per field, keyed by the full field value or by the `@string` macro name:
 
 ```toml
 [initials.journal]
@@ -398,43 +262,22 @@ field, keyed by the full field value or by the `@string` macro name:
 "SIAM Rev." = "SR"
 ```
 
-With this configuration, `%c{journal}0` renders `NPJQI` for an entry
-published in npj Quantum Inf (instead of the plain acronym `NQI`).
-The mapping applies whenever `%c` is rendered, including with an
-explicit `format_spec` pattern.
+With this configuration, `%c{journal}0` renders `NPJQI` for an entry published in npj Quantum Inf (instead of the plain acronym `NQI`). The mapping applies whenever `%c` is rendered, including with an explicit `format_spec` pattern.
 
-The table works for any field, so a per-type format that uses
-`%c{booktitle}` for conference papers or `%c{series}` for books draws
-on `[initials.booktitle]` / `[initials.series]` the same way:
+The table works for any field, so a per-type format that uses `%c{booktitle}` for conference papers or `%c{series}` for books draws on `[initials.booktitle]` / `[initials.series]` the same way:
 
 ```toml
 [initials.booktitle]
 "Proc. SPIE 11700, Optical and Quantum Sensing" = "SPIE"
 ```
 
-Conference `booktitle` values are awkward for a plain acronym — they
-carry a volume number and a long subtitle that change from year to
-year — so this mapping is the intended way to pin a stable
-abbreviation (here `SPIE` rather than the raw acronym `PSOAQS`).
-Because the mapping matches the *full* field value, and that value
-differs for every proceedings volume, it is often cleaner to store the
-`booktitle` as an `@string` macro and key the mapping by the macro
-name: one macro (e.g. `spie_oqspm`) can then stand in for every volume
-of the series, and `[initials.booktitle]` needs only the single entry
-`spie_oqspm = "SPIE"`.
+Conference `booktitle` values are awkward for a plain acronym — they carry a volume number and a long subtitle that change from year to year — so this mapping is the intended way to pin a stable abbreviation (here `SPIE` rather than the raw acronym `PSOAQS`). Because the mapping matches the *full* field value, and that value differs for every proceedings volume, it is often cleaner to store the `booktitle` as an `@string` macro and key the mapping by the macro name: one macro (e.g. `spie_oqspm`) can then stand in for every volume of the series, and `[initials.booktitle]` needs only the single entry `spie_oqspm = "SPIE"`.
 
 (specifiers-unique)=
 
 ## Unique specifiers
 
-At most one `%u` (lowercase letters), `%U` (uppercase letters), or
-`%n` (digits) may occur in a format. It inserts, at its position,
-characters that make the key unique within the library (in a
-[file-name format](specifiers-files), where it is required, unique
-against the files at the target location). With a
-trailing count of `0`, characters are only added when needed for
-disambiguation; with a fixed count `N`, exactly `N` characters are
-always added:
+At most one `%u` (lowercase letters), `%U` (uppercase letters), or `%n` (digits) may occur in a format. It inserts, at its position, characters that make the key unique within the library (in a [file-name format](specifiers-files), where it is required, unique against the files at the target location). With a trailing count of `0`, characters are only added when needed for disambiguation; with a fixed count `N`, exactly `N` characters are always added:
 
 ```python
 >>> bib["Goerz2014"] = Entry(
@@ -452,10 +295,7 @@ always added:
 
 ```
 
-Regenerating a key is **idempotent**: a key that already fits the
-format (base text, any unique characters, ending) is kept unchanged,
-so re-running key generation over a library does not churn the
-disambiguation suffixes:
+Regenerating a key is **idempotent**: a key that already fits the format (base text, any unique characters, ending) is kept unchanged, so re-running key generation over a library does not churn the disambiguation suffixes:
 
 ```python
 >>> bib.eval_format_spec("GoerzPRA2014a", "%a1%c{journal}0%Y%u0")
@@ -463,20 +303,13 @@ disambiguation suffixes:
 
 ```
 
-Conversely, `bib.eval_format_spec(key, fmt) != key` identifies the
-entries whose key does *not* follow a given format (see the
-[how-to guide](howto-auto-keys)).
+Conversely, `bib.eval_format_spec(key, fmt) != key` identifies the entries whose key does *not* follow a given format (see the [how-to guide](howto-auto-keys)).
 
-A format *without* a unique specifier can generate a key that is
-already taken; `rekey` then raises a `ValueError`, like an explicit
-rename to a taken key. Should a format render an entirely empty
-key, a plain number is used instead (`1`, `2`, ...).
+A format *without* a unique specifier can generate a key that is already taken; `rekey` then raises a `ValueError`, like an explicit rename to a taken key. Should a format render an entirely empty key, a plain number is used instead (`1`, `2`, ...).
 
 ### Deterministic unique characters
 
-With a fixed count, an optional `[Field]` argument derives the added
-characters from a hash of that field instead of by sequential search,
-so the same reference gets the same key in any library:
+With a fixed count, an optional `[Field]` argument derives the added characters from a hash of that field instead of by sequential search, so the same reference gets the same key in any library:
 
 ```python
 >>> bib.eval_format_spec("GoerzPRA2014", "%a1:%Y%u[Title]2")
@@ -484,31 +317,17 @@ so the same reference gets the same key in any library:
 
 ```
 
-(If the hashed candidate is taken, sequential search is the
-fallback.) The exact format `%a1:%Y%u[Title]2` — or with `[Doi]` — is
-BibDesk's "universal cite key", hash-compatible with the Papers 2/3
-reference manager.
+(If the hashed candidate is taken, sequential search is the fallback.) The exact format `%a1:%Y%u[Title]2` — or with `[Doi]` — is BibDesk's "universal cite key", hash-compatible with the Papers 2/3 reference manager.
 
 (specifiers-sanitization)=
 
 ## Sanitization
 
-This section describes the citation-key context; file names are
-sanitized differently (see [file-name formats](specifiers-files)).
-Generated keys must be TeX-safe. Every field value is cleaned up
-before it enters the key:
+This section describes the citation-key context; file names are sanitized differently (see [file-name formats](specifiers-files)). Generated keys must be TeX-safe. Every field value is cleaned up before it enters the key:
 
-1. TeX markup is removed, per the `clean` option of the `[auto_key]`
-   configuration table: `"tex"` (the default) removes commands like
-   `\emph{...}` and all braces, `"braces"` removes only braces, and
-   `"none"` disables this step.
-2. Every letter is reduced to its plain-ASCII spelling: `ü` → `u`,
-   `ø` → `o`, `ł` → `l`, `ı` → `i`, `æ` → `ae`, `ß` → `ss`.
-3. Whitespace becomes `-`, and any remaining character outside
-   `a-z A-Z 0-9 - . / : ;` is dropped. Text in a script that has no
-   ASCII spelling (Greek, Cyrillic, CJK) disappears here, so an entry
-   whose author names are not written in the Latin alphabet needs a
-   hand-written key.
+1. TeX markup is removed, per the `clean` option of the `[auto_key]` configuration table: `"tex"` (the default) removes commands like `\emph{...}` and all braces, `"braces"` removes only braces, and `"none"` disables this step.
+2. Every letter is reduced to its plain-ASCII spelling: `ü` → `u`, `ø` → `o`, `ł` → `l`, `ı` → `i`, `æ` → `ae`, `ß` → `ss`.
+3. Whitespace becomes `-`, and any remaining character outside `a-z A-Z 0-9 - . / : ;` is dropped. Text in a script that has no ASCII spelling (Greek, Cyrillic, CJK) disappears here, so an entry whose author names are not written in the Latin alphabet needs a hand-written key.
 
 ```python
 >>> bib["Mueller"] = Entry(
@@ -538,61 +357,22 @@ before it enters the key:
 
 ```
 
-The result is a spelling approximation, not a transliteration: BibDesk
-strips accented characters of their accent (`Müller` → `Muller`) and
-does not apply German conventions (`Mueller`). If you want `Mueller`,
-hard-code the intended key with a two-argument `rekey`. Literal text
-in the format itself is sanitized similarly (whitespace becomes `-`;
-characters invalid in a hand-typed key are dropped, which notably
-includes `(`, `)`, and `@`), except that it is not ASCII-folded, so a
-non-ASCII character written into a format is dropped rather than
-folded.
+The result is a spelling approximation, not a transliteration: BibDesk strips accented characters of their accent (`Müller` → `Muller`) and does not apply German conventions (`Mueller`). If you want `Mueller`, hard-code the intended key with a two-argument `rekey`. Literal text in the format itself is sanitized similarly (whitespace becomes `-`; characters invalid in a hand-typed key are dropped, which notably includes `(`, `)`, and `@`), except that it is not ASCII-folded, so a non-ASCII character written into a format is dropped rather than folded.
 
-The `lowercase` option of the `[auto_key]` table lowercases the whole
-generated key; a `%U` specifier then adds lowercase characters, like
-`%u`.
+The `lowercase` option of the `[auto_key]` table lowercases the whole generated key; a `%U` specifier then adds lowercase characters, like `%u`.
 
 (specifiers-files)=
 
 ## File-name formats
 
-A format for attachment file names (BibDesk's *AutoFile* feature) is
-the same language, with a few differences. It is configured in the
-[`[auto_file]` table](config-auto-file) and used by
-{meth}`Library.rename_file <bibdeskparser.Library.rename_file>`
-without a `new_filename` and by
-{meth}`Library.add_file <bibdeskparser.Library.add_file>` when
-auto-filing (see the [how-to guide](howto-auto-file)); the generated
-name is interpreted relative to the configured auto-file *location*.
+A format for attachment file names (BibDesk's *AutoFile* feature) is the same language, with a few differences. It is configured in the [`[auto_file]` table](config-auto-file) and used by {meth}`Library.rename_file <bibdeskparser.Library.rename_file>` without a `new_filename` and by {meth}`Library.add_file <bibdeskparser.Library.add_file>` when auto-filing (see the [how-to guide](howto-auto-file)); the generated name is interpreted relative to the configured auto-file *location*.
 
-* The original-file-name specifiers `%l`, `%L`, `%e`, and `%E`
-  (documented above) are available.
-* A **unique specifier** (`%u`/`%U`/`%n`) is **required**, so that
-  generated names can never collide. Uniqueness is checked against
-  the *files on disk* at the target location, not against the
-  library: a candidate name is taken if a file already exists there.
-  It also fills in for an entry that renders every other specifier
-  empty, which would otherwise leave the bare extension (`.pdf`) as
-  the name: such a file is filed as `a.pdf`, not as a hidden file.
-* A literal `/` in the format is a **directory separator**: the file
-  is filed into (newly created, as needed) subfolders of the
-  location. A `/` inside a *field value* becomes `-` instead, so
-  values can never introduce unintended subfolders.
-* Sanitization is file-name oriented: after the TeX cleanup (the
-  `clean` option of `[auto_file]`), only `:` -- the one character
-  invalid in a file name -- is removed. In particular, spaces,
-  parentheses, and non-ASCII text all survive, unlike in a citation
-  key. The `lowercase` option of `[auto_file]` lowercases the whole
-  generated name.
+* The original-file-name specifiers `%l`, `%L`, `%e`, and `%E` (documented above) are available.
+* A **unique specifier** (`%u`/`%U`/`%n`) is **required**, so that generated names can never collide. Uniqueness is checked against the *files on disk* at the target location, not against the library: a candidate name is taken if a file already exists there. It also fills in for an entry that renders every other specifier empty, which would otherwise leave the bare extension (`.pdf`) as the name: such a file is filed as `a.pdf`, not as a hidden file.
+* A literal `/` in the format is a **directory separator**: the file is filed into (newly created, as needed) subfolders of the location. A `/` inside a *field value* becomes `-` instead, so values can never introduce unintended subfolders.
+* Sanitization is file-name oriented: after the TeX cleanup (the `clean` option of `[auto_file]`), only `:` -- the one character invalid in a file name -- is removed. In particular, spaces, parentheses, and non-ASCII text all survive, unlike in a citation key. The `lowercase` option of `[auto_file]` lowercases the whole generated name.
 
-To preview the file name a format generates, use
-{meth}`Library.eval_format_spec <bibdeskparser.Library.eval_format_spec>`
-with a `filename`. This is a pure evaluation of the format: it never
-touches the filesystem and moves nothing. The `filename` argument only
-supplies the original-name specifiers `%l`/`%L`/`%e`/`%E` (above); it
-need not exist or be one of the entry's attachments, and any
-non-`None` value -- including the empty string `""` -- selects the
-file-name dialect:
+To preview the file name a format generates, use {meth}`Library.eval_format_spec <bibdeskparser.Library.eval_format_spec>` with a `filename`. This is a pure evaluation of the format: it never touches the filesystem and moves nothing. The `filename` argument only supplies the original-name specifiers `%l`/`%L`/`%e`/`%E` (above); it need not exist or be one of the entry's attachments, and any non-`None` value -- including the empty string `""` -- selects the file-name dialect:
 
 ```python
 >>> filebib = Library()
@@ -625,18 +405,9 @@ file-name dialect:
 
 ```
 
-A preview shows the *base* name, with the required unique specifier
-contributing no disambiguation. On-disk collision avoidance happens
-only during actual filing ({meth}`~bibdeskparser.Library.rename_file`
-/ {meth}`~bibdeskparser.Library.add_file`), where the unique specifier
-grows a suffix (e.g. `GoerzPRA2014a.pdf`) whenever another file already
-occupies the target name.
+A preview shows the *base* name, with the required unique specifier contributing no disambiguation. On-disk collision avoidance happens only during actual filing ({meth}`~bibdeskparser.Library.rename_file` / {meth}`~bibdeskparser.Library.add_file`), where the unique specifier grows a suffix (e.g. `GoerzPRA2014a.pdf`) whenever another file already occupies the target name.
 
-If `filename` is an attachment's current library-relative path (as
-listed by {attr}`~bibdeskparser.Entry.files`) and already matches the format, it
-evaluates to itself -- the same idempotency as a regenerated citation
-key. `bib.eval_format_spec(key, fmt, filename=name) != name` thus
-identifies the attachments that do not yet follow the format:
+If `filename` is an attachment's current library-relative path (as listed by {attr}`~bibdeskparser.Entry.files`) and already matches the format, it evaluates to itself -- the same idempotency as a regenerated citation key. `bib.eval_format_spec(key, fmt, filename=name) != name` thus identifies the attachments that do not yet follow the format:
 
 ```python
 >>> filebib.eval_format_spec(  # "downloaded.pdf" matches %l%n0%e
@@ -646,34 +417,20 @@ identifies the attachments that do not yet follow the format:
 
 ```
 
-**The recommended format is `%f{Cite Key}%u0%e`:** it names each
-attachment after its entry's citation key while preserving the file's
-real extension. Prefer `%e` over hard-coding an extension like
-`.pdf`, which would mislabel a `.ps` or `.epub` attachment; `%e`
-renders identically for PDFs and stays correct for everything else.
+**The recommended format is `%f{Cite Key}%u0%e`:** it names each attachment after its entry's citation key while preserving the file's real extension. Prefer `%e` over hard-coding an extension like `.pdf`, which would mislabel a `.ps` or `.epub` attachment; `%e` renders identically for PDFs and stays correct for everything else.
+
+(specifiers-assets)=
+
+## Asset path patterns
+
+The path patterns of the [`[assets]` table](config-assets) (see [External Assets](external-assets)) use the file-name dialect -- file-name sanitization, `/` as a directory separator -- with the specifiers that would break deterministic, filesystem-free resolution rejected: the unique specifiers `%u`/`%U`/`%n` (there is no collision to resolve; the path *is* the asset's identity), the random specifiers `%r`/`%R`/`%d`, and the original-name specifiers `%l`/`%L`/`%e`/`%E` (an asset has no pre-existing file name). A pattern must be a relative path; a trailing `/` marks a directory-valued asset.
 
 (specifiers-differences)=
 
 ## Differences from BibDesk
 
-- BibDesk applies its *Preferences → Cite Key* and *Preferences →
-  AutoFile* options; the equivalents here are the `format_spec`,
-  `lowercase`, and `clean` keys of the `[auto_key]` and `[auto_file]`
-  configuration tables. BibDesk's two strictest file-name cleaning
-  levels (Windows-safe characters, and lossy ASCII) have no
-  equivalent; `clean` stops at `"tex"`.
-- BibDesk files attachments into its global *Papers Folder*
-  preference, falling back to the document's own directory when it is
-  empty. The equivalent here is the `location` key of `[auto_file]`,
-  whose default `"."` (the `.bib` file's directory) corresponds to
-  the empty Papers Folder.
-- BibDesk has a single, global cite-key format and a single file-name
-  format. Here, `format_spec` may instead be a
-  [per-type mapping](config-auto-key) that applies a different format
-  to each entry type — a `bibdeskparser` extension.
-- The `[initials]` exception mapping for `%c` is a `bibdeskparser`
-  extension; BibDesk always uses the plain acronym.
-- BibDesk guarantees a non-empty result but not a non-empty *stem*, so
-  an entry rendering every specifier of a file-name format empty is
-  filed under the bare extension (`.pdf`, a hidden file). Here the
-  unique specifier fills the stem instead (`a.pdf`).
+- BibDesk applies its *Preferences → Cite Key* and *Preferences → AutoFile* options; the equivalents here are the `format_spec`, `lowercase`, and `clean` keys of the `[auto_key]` and `[auto_file]` configuration tables. BibDesk's two strictest file-name cleaning levels (Windows-safe characters, and lossy ASCII) have no equivalent; `clean` stops at `"tex"`.
+- BibDesk files attachments into its global *Papers Folder* preference, falling back to the document's own directory when it is empty. The equivalent here is the `location` key of `[auto_file]`, whose default `"."` (the `.bib` file's directory) corresponds to the empty Papers Folder.
+- BibDesk has a single, global cite-key format and a single file-name format. Here, `format_spec` may instead be a [per-type mapping](config-auto-key) that applies a different format to each entry type — a `bibdeskparser` extension.
+- The `[initials]` exception mapping for `%c` is a `bibdeskparser` extension; BibDesk always uses the plain acronym.
+- BibDesk guarantees a non-empty result but not a non-empty *stem*, so an entry rendering every specifier of a file-name format empty is filed under the bare extension (`.pdf`, a hidden file). Here the unique specifier fills the stem instead (`a.pdf`).

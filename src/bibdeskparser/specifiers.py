@@ -42,6 +42,22 @@ __private__ = [
 ]
 
 
+def _references_entry(fmt):
+    """Whether the compiled format `fmt` reads any entry data.
+
+    True if any specifier derives its value from the entry being
+    rendered -- names, title, year/month, keywords, `%f{Field}`
+    (including `%f{Cite Key}` and `%f{BibTeX Type}`), `%w`/`%c`/`%s`.
+    A format built only from literal text, document info (`%i{Key}`),
+    and the document name (`%b`) does not reference the entry; such a
+    format renders identically for every entry. Used to classify an
+    `[assets]` pattern as per-entry or library-level."""
+    return any(
+        isinstance(token, _Spec) and token.char in _ENTRY_SPECIFIERS
+        for token in fmt.tokens
+    )
+
+
 # Shared random source for the %r/%R/%d specifiers (seedable in tests).
 _RNG = random.Random()
 
@@ -57,6 +73,14 @@ _LOCAL_FILE_SPECIFIERS = frozenset("lLeE")
 
 # Unique specifiers (at most one may occur in a format).
 _UNIQUE_SPECIFIERS = frozenset("uUn")
+
+# Random-text specifiers (a fresh random draw on every render).
+_RANDOM_SPECIFIERS = frozenset("rRd")
+
+# Specifiers whose value derives from the entry being rendered (as
+# opposed to document info, the document name, or literal text). Used
+# by `_references_entry` to classify a format as per-entry.
+_ENTRY_SPECIFIERS = frozenset("aApPtTmyYkfwcs")
 
 # Specifiers with a compulsory `{Field}` argument.
 _ARG_SPECIFIERS = frozenset("fwcsi")
@@ -359,17 +383,23 @@ def compile_format(format_string, *, context="key"):
     """Parse and validate a format string.
 
     `context` selects the dialect: `"key"` for citation keys (the
-    default) or `"file"` for attachment file names (BibDesk's AutoFile
-    feature). The file context additionally accepts the `%l`/`%L`/
-    `%e`/`%E` specifiers and *requires* a unique specifier
+    default), `"file"` for attachment file names (BibDesk's AutoFile
+    feature), or `"asset"` for the path patterns of the `[assets]`
+    configuration. The file context additionally accepts the `%l`/
+    `%L`/`%e`/`%E` specifiers and *requires* a unique specifier
     (`%u`/`%U`/`%n`), and sanitizes text for file names instead of
-    for TeX-safe keys.
+    for TeX-safe keys. The asset context sanitizes like the file
+    context, but *rejects* the unique specifiers (asset resolution
+    never consults the filesystem, so uniqueness is meaningless), the
+    random specifiers `%r`/`%R`/`%d` (resolution must be
+    deterministic), and the original-name specifiers `%l`/`%L`/`%e`/
+    `%E` (an asset has no pre-existing file name).
 
     Returns an opaque compiled form for {func}`render_format`. Raises
     {exc}`ValueError` for a malformed format (unknown or misused
     specifiers, missing `{Field}` argument, a second unique specifier,
     specifiers or requirements that do not fit the context)."""
-    if context not in ("key", "file"):
+    if context not in ("key", "file", "asset"):
         raise ValueError(f"invalid format context: {context!r}")
     scanner = _Scanner(format_string)
     tokens = []
@@ -392,10 +422,21 @@ def compile_format(format_string, *, context="key"):
         if char in _LOCAL_FILE_SPECIFIERS and context != "file":
             raise ValueError(
                 f"specifier %{char} is only valid in a format for "
-                "local files (BibDesk's AutoFile feature), not for "
-                "citation keys"
+                "local files (BibDesk's AutoFile feature): it reads "
+                "the file's pre-existing name"
+            )
+        if char in _RANDOM_SPECIFIERS and context == "asset":
+            raise ValueError(
+                f"random specifier %{char} is not valid in an asset "
+                "path pattern (resolution must be deterministic)"
             )
         if char in _UNIQUE_SPECIFIERS:
+            if context == "asset":
+                raise ValueError(
+                    f"unique specifier %{char} is not valid in an "
+                    "asset path pattern (asset resolution never "
+                    "consults the filesystem)"
+                )
             if found_unique:
                 raise ValueError(
                     f"unique specifier %{char} can appear only once "
@@ -482,10 +523,10 @@ def _sanitize(string, context="key"):
     `stringBySanitizingString:forField:`.
 
     For keys, whitespace becomes `-` and only TeX-safe characters
-    survive. For file names, TeX markup is removed and only `:` (the
-    one character invalid in a file name) is dropped; spaces and
-    non-ASCII text survive."""
-    if context == "file":
+    survive. For file names (and asset paths), TeX markup is removed
+    and only `:` (the one character invalid in a file name) is
+    dropped; spaces and non-ASCII text survive."""
+    if context != "key":
         return _remove_tex(string).replace(":", "")
     string = _replace_composed(string)
     string = re.sub(r"\s", "-", string)
@@ -498,8 +539,8 @@ def _strict_sanitize(string, clean="tex", context="key"):
 
     `clean` is the TeX-cleaning level: `"none"`, `"braces"` (remove
     curly braces), or `"tex"` (also remove TeX commands; the
-    default, matching BibDesk's default preference). In the file
-    context, only `:` is removed after TeX cleaning; keys are
+    default, matching BibDesk's default preference). In the file and
+    asset contexts, only `:` is removed after TeX cleaning; keys are
     additionally ASCII-folded and restricted to TeX-safe characters."""
     if not string:
         return ""
@@ -507,7 +548,7 @@ def _strict_sanitize(string, clean="tex", context="key"):
         string = _remove_braces(string)
     elif clean == "tex":
         string = _remove_tex(string)
-    if context == "file":
+    if context != "key":
         return string.replace(":", "")
     string = _replace_composed(string)
     string = re.sub(r"\s", "-", string)
@@ -661,10 +702,11 @@ class _Renderer:
         self.document_name = document_name
         self.context = context
         self.filename = filename
-        # in a file name, `/` from a *value* would create spurious
-        # subfolders, so it defaults to `-` there (a literal `/` in the
-        # format itself is the directory separator and passes through)
-        self.default_slash = "-" if context == "file" else "/"
+        # in a file name (or asset path), `/` from a *value* would
+        # create spurious subfolders, so it defaults to `-` there (a
+        # literal `/` in the format itself is the directory separator
+        # and passes through)
+        self.default_slash = "-" if context != "key" else "/"
 
     def value(self, field):
         return _field_value(self.entry, field, self.strings, self.current_key)
@@ -673,7 +715,7 @@ class _Renderer:
         return _strict_sanitize(string, clean=self.clean, context=self.context)
 
     def _deslash(self, string):
-        return string.replace("/", "-") if self.context == "file" else string
+        return string.replace("/", "-") if self.context != "key" else string
 
     def render(self, spec):
         """Render one non-unique specifier token to a string."""
@@ -1207,7 +1249,9 @@ def render_format(
             unique_char = "u"
 
     # never return an empty key: fall back to a grown numeric suffix
-    if not base and not end and unique_char is None:
+    # (not in the asset context, whose deterministic result may be
+    # empty -- and which never has a unique specifier to grow)
+    if not base and not end and unique_char is None and fmt.context != "asset":
         unique_char = "n"
         number = 0
 
