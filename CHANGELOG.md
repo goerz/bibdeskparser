@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.8.0] - 2026-08-03
 
 * Added: `Library.info`, a read-write `dict`-like view of BibDesk's *document info* -- the key/value metadata that the "Document Info" panel attaches to the database as a whole, stored in the `@bibdesk_info` block of the `.bib` file. Keys are matched case-insensitively (preserving their stored spelling and order); values are plain Unicode strings, with the empty string allowed. A mutation regenerates the block in BibDesk's own layout (deleting the last key removes it from the file) and, on a plain BibTeX file, converts to the database format with a `FormatConversionWarning`; an unmodified block round-trips byte-for-byte. On the command line, `info` (read-only) prints the data (all pairs, or the value of a given KEY), and `set_info KEY VALUE` / `delete_info KEY` modify it. The `%i{Key}` format specifier (case-insensitive lookup, empty for a missing key, `%i{Key}N` truncating to N characters) is now implemented on top of this data instead of raising `NotImplementedError`. [[#69], [#70]]
 * Fixed: a `@bibdesk_info` block is now preserved byte-for-byte as long as the document info is not modified. The block has the syntactic shape of an entry, and was previously treated as one: it appeared in the entry API under the pseudo-key `document_info` (in `keys`, `show`, `search`, the `check` audits, ...), and any save that rewrote the file re-serialized it in entry layout (closing brace fused onto the last field line instead of on its own line) and could plant `date-added`/`date-modified` bookkeeping inside it. It is no longer exposed as an entry; a file containing one counts as a BibDesk database for the purpose of plain-format detection. [[#69], [#70]]
@@ -151,7 +151,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial release.
 
-[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.7.0..HEAD
+[Unreleased]: https://github.com/goerz/bibdeskparser/compare/v0.8.0..HEAD
+[v0.8.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.8.0
 [v0.7.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.7.0
 [v0.6.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.6.0
 [v0.5.0]: https://github.com/goerz/bibdeskparser/releases/tag/v0.5.0
