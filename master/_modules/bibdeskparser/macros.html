@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.macros &mdash; BibDeskParser 0.8.0 documentation</title>
+  <title>bibdeskparser.macros &mdash; BibDeskParser 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=486e5634"></script>
+      <script src="../../_static/documentation_options.js?v=ec16d22d"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.8.0
+    v0.8.1
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -135,7 +135,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for bibdeskparser.macros</h1><div class="highlight"><pre>
-<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;BibDesk macro (`@string`) names and macro-aware field values.</span>
+<span></span><span class="sa">r</span><span class="sd">"""BibDesk macro (`@string`) names and macro-aware field values.</span>
 
 <span class="sd">BibDesk restricts the names of macros (BibTeX `@string` definitions) to a</span>
 <span class="sd">subset of printable ASCII and treats them case-insensitively: its macro</span>
@@ -144,42 +144,42 @@
 <span class="sd">replicates those rules, and defines the {class}`ValueString` /</span>
 <span class="sd">{class}`MacroString` marker types that force a field value to be stored</span>
 <span class="sd">as a literal braced string or as a bare macro reference, respectively.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="c1"># ValueString and MacroString are re-exported from the top-level</span>
 <span class="c1"># `bibdeskparser` package, which is their public (documented) location.</span>
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ValueString&quot;</span><span class="p">,</span> <span class="s2">&quot;MacroString&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"ValueString"</span><span class="p">,</span> <span class="s2">"MacroString"</span><span class="p">]</span>
 
 <span class="c1"># All members whose name does not start with an underscore must be listed</span>
 <span class="c1"># either in __all__ or in __private__</span>
 <span class="n">__private__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;is_valid_macro_name&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;normalize_macro_name&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;STANDARD_MACROS&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;STANDARD_MONTH_MACROS&quot;</span><span class="p">,</span>
+    <span class="s2">"is_valid_macro_name"</span><span class="p">,</span>
+    <span class="s2">"normalize_macro_name"</span><span class="p">,</span>
+    <span class="s2">"STANDARD_MACROS"</span><span class="p">,</span>
+    <span class="s2">"STANDARD_MONTH_MACROS"</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="c1"># The twelve BibTeX month macros, the canonical way to write a `month`</span>
-<span class="c1"># field (`btxdoc.tex`: &quot;You should use the standard three-letter</span>
-<span class="c1"># abbreviation&quot;). BibDesk maps them to the localized full month names;</span>
+<span class="c1"># field (`btxdoc.tex`: "You should use the standard three-letter</span>
+<span class="c1"># abbreviation"). BibDesk maps them to the localized full month names;</span>
 <span class="c1"># we use the (deterministic) English names, which is also what the</span>
 <span class="c1"># standard BibTeX style `plain.bst` defines.</span>
 <span class="n">STANDARD_MONTH_MACROS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;jan&quot;</span><span class="p">:</span> <span class="s2">&quot;January&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;feb&quot;</span><span class="p">:</span> <span class="s2">&quot;February&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;mar&quot;</span><span class="p">:</span> <span class="s2">&quot;March&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;apr&quot;</span><span class="p">:</span> <span class="s2">&quot;April&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;may&quot;</span><span class="p">:</span> <span class="s2">&quot;May&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jun&quot;</span><span class="p">:</span> <span class="s2">&quot;June&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;jul&quot;</span><span class="p">:</span> <span class="s2">&quot;July&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;aug&quot;</span><span class="p">:</span> <span class="s2">&quot;August&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;sep&quot;</span><span class="p">:</span> <span class="s2">&quot;September&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;oct&quot;</span><span class="p">:</span> <span class="s2">&quot;October&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;nov&quot;</span><span class="p">:</span> <span class="s2">&quot;November&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;dec&quot;</span><span class="p">:</span> <span class="s2">&quot;December&quot;</span><span class="p">,</span>
+    <span class="s2">"jan"</span><span class="p">:</span> <span class="s2">"January"</span><span class="p">,</span>
+    <span class="s2">"feb"</span><span class="p">:</span> <span class="s2">"February"</span><span class="p">,</span>
+    <span class="s2">"mar"</span><span class="p">:</span> <span class="s2">"March"</span><span class="p">,</span>
+    <span class="s2">"apr"</span><span class="p">:</span> <span class="s2">"April"</span><span class="p">,</span>
+    <span class="s2">"may"</span><span class="p">:</span> <span class="s2">"May"</span><span class="p">,</span>
+    <span class="s2">"jun"</span><span class="p">:</span> <span class="s2">"June"</span><span class="p">,</span>
+    <span class="s2">"jul"</span><span class="p">:</span> <span class="s2">"July"</span><span class="p">,</span>
+    <span class="s2">"aug"</span><span class="p">:</span> <span class="s2">"August"</span><span class="p">,</span>
+    <span class="s2">"sep"</span><span class="p">:</span> <span class="s2">"September"</span><span class="p">,</span>
+    <span class="s2">"oct"</span><span class="p">:</span> <span class="s2">"October"</span><span class="p">,</span>
+    <span class="s2">"nov"</span><span class="p">:</span> <span class="s2">"November"</span><span class="p">,</span>
+    <span class="s2">"dec"</span><span class="p">:</span> <span class="s2">"December"</span><span class="p">,</span>
 <span class="p">}</span>
 
-<span class="c1"># BibDesk&#39;s built-in &quot;standard&quot; macros, i.e. the names that resolve</span>
+<span class="c1"># BibDesk's built-in "standard" macros, i.e. the names that resolve</span>
 <span class="c1"># without a `@string` definition: exactly the twelve months and nothing</span>
 <span class="c1"># else (`standardMacroDefinitions` in `BDSKMacroResolver.m` builds the</span>
 <span class="c1"># table in a hardcoded twelve-iteration loop, with no way to extend it).</span>
@@ -197,20 +197,20 @@
 <span class="c1"># 32..125, then remove the BibTeX separators/specials. Everything outside</span>
 <span class="c1"># this set (control chars, `~`, and all non-ASCII) is invalid.</span>
 <span class="n">_MACRO_NAME_CHARS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="nb">chr</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">126</span><span class="p">))</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span>
-    <span class="s2">&quot; &#39;</span><span class="se">\&quot;</span><span class="s2">@,</span><span class="se">\\</span><span class="s2">#}{~%()=&quot;</span>
+    <span class="s2">" '</span><span class="se">\"</span><span class="s2">@,</span><span class="se">\\</span><span class="s2">#}{~%()="</span>
 <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">is_valid_macro_name</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return whether `name` is a valid BibDesk macro (`@string`) name.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Return whether `name` is a valid BibDesk macro (`@string`) name.</span>
 
 <span class="sd">    ```python</span>
 <span class="sd">    is_valid_macro_name(name, normalized=True)</span>
 <span class="sd">    ```</span>
 
 <span class="sd">    Mirrors `-[BDSKMacroTextViewController isPartialStringValid:...]`: a</span>
-<span class="sd">    name is valid iff every character is in BibDesk&#39;s allowed set (printable</span>
-<span class="sd">    ASCII 32..125 minus the BibTeX separators/specials `` &#39;&quot;@,\#}{~%()=``</span>
+<span class="sd">    name is valid iff every character is in BibDesk's allowed set (printable</span>
+<span class="sd">    ASCII 32..125 minus the BibTeX separators/specials `` '"@,\#}{~%()=``</span>
 <span class="sd">    and the space character) and it does not begin with a decimal digit.</span>
 
 <span class="sd">    * `name`: the macro name to check.</span>
@@ -222,19 +222,19 @@
 
 <span class="sd">    ```python</span>
 <span class="sd">    &gt;&gt;&gt; from bibdeskparser.macros import is_valid_macro_name</span>
-<span class="sd">    &gt;&gt;&gt; is_valid_macro_name(&quot;pra&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; is_valid_macro_name("pra")</span>
 <span class="sd">    True</span>
-<span class="sd">    &gt;&gt;&gt; is_valid_macro_name(&quot;bad name&quot;)  # space is not allowed</span>
+<span class="sd">    &gt;&gt;&gt; is_valid_macro_name("bad name")  # space is not allowed</span>
 <span class="sd">    False</span>
-<span class="sd">    &gt;&gt;&gt; is_valid_macro_name(&quot;2pac&quot;)  # must not start with a digit</span>
+<span class="sd">    &gt;&gt;&gt; is_valid_macro_name("2pac")  # must not start with a digit</span>
 <span class="sd">    False</span>
-<span class="sd">    &gt;&gt;&gt; is_valid_macro_name(&quot;PRA&quot;)  # not lowercase</span>
+<span class="sd">    &gt;&gt;&gt; is_valid_macro_name("PRA")  # not lowercase</span>
 <span class="sd">    False</span>
-<span class="sd">    &gt;&gt;&gt; is_valid_macro_name(&quot;PRA&quot;, normalized=False)</span>
+<span class="sd">    &gt;&gt;&gt; is_valid_macro_name("PRA", normalized=False)</span>
 <span class="sd">    True</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">ch</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_MACRO_NAME_CHARS</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">name</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="k">if</span> <span class="n">name</span> <span class="ow">and</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isascii</span><span class="p">()</span> <span class="ow">and</span> <span class="n">name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
@@ -248,13 +248,13 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">normalize_macro_name</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the BibDesk-canonical form of a macro name.</span>
+<span class="w">    </span><span class="sd">"""Return the BibDesk-canonical form of a macro name.</span>
 
 <span class="sd">    ```python</span>
 <span class="sd">    normalize_macro_name(name)</span>
 <span class="sd">    ```</span>
 
-<span class="sd">    BibDesk&#39;s macro editor forces names to lowercase as they are typed</span>
+<span class="sd">    BibDesk's macro editor forces names to lowercase as they are typed</span>
 <span class="sd">    (`*partialStringPtr = [partialString lowercaseString]`) while rejecting</span>
 <span class="sd">    any input that contains a disallowed character or starts with a digit.</span>
 <span class="sd">    This returns the lowercased name that BibDesk would store, matching its</span>
@@ -269,28 +269,28 @@
 
 <span class="sd">    ```python</span>
 <span class="sd">    &gt;&gt;&gt; from bibdeskparser.macros import normalize_macro_name</span>
-<span class="sd">    &gt;&gt;&gt; normalize_macro_name(&quot;PRA&quot;)</span>
-<span class="sd">    &#39;pra&#39;</span>
-<span class="sd">    &gt;&gt;&gt; normalize_macro_name(&quot;pra&quot;)</span>
-<span class="sd">    &#39;pra&#39;</span>
-<span class="sd">    &gt;&gt;&gt; normalize_macro_name(&quot;bad name&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; normalize_macro_name("PRA")</span>
+<span class="sd">    'pra'</span>
+<span class="sd">    &gt;&gt;&gt; normalize_macro_name("pra")</span>
+<span class="sd">    'pra'</span>
+<span class="sd">    &gt;&gt;&gt; normalize_macro_name("bad name")</span>
 <span class="sd">    Traceback (most recent call last):</span>
 <span class="sd">        ...</span>
-<span class="sd">    ValueError: invalid BibDesk macro name: &#39;bad name&#39;</span>
+<span class="sd">    ValueError: invalid BibDesk macro name: 'bad name'</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;macro name must not be empty&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"macro name must not be empty"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">is_valid_macro_name</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;invalid BibDesk macro name: </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"invalid BibDesk macro name: </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 
 
 <div class="viewcode-block" id="ValueString">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.ValueString">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ValueString</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Force a field value to be stored as a braced BibTeX string.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Force a field value to be stored as a braced BibTeX string.</span>
 
 <span class="sd">    ```python</span>
 <span class="sd">    ValueString(value)</span>
@@ -313,25 +313,25 @@
 <span class="sd">    ```python</span>
 <span class="sd">    &gt;&gt;&gt; from bibdeskparser import Entry, Library, ValueString</span>
 <span class="sd">    &gt;&gt;&gt; bib = Library()</span>
-<span class="sd">    &gt;&gt;&gt; entry = Entry(&quot;article&quot;, &quot;Key2024&quot;)</span>
-<span class="sd">    &gt;&gt;&gt; entry[&quot;journal&quot;] = ValueString(&quot;prl&quot;)  # forced literal text</span>
-<span class="sd">    &gt;&gt;&gt; entry[&quot;journal&quot;]</span>
-<span class="sd">    &#39;prl&#39;</span>
-<span class="sd">    &gt;&gt;&gt; bib[&quot;Key2024&quot;] = entry</span>
-<span class="sd">    &gt;&gt;&gt; print(bib.export(&quot;Key2024&quot;, unicode=False, marker=False), end=&quot;&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; entry = Entry("article", "Key2024")</span>
+<span class="sd">    &gt;&gt;&gt; entry["journal"] = ValueString("prl")  # forced literal text</span>
+<span class="sd">    &gt;&gt;&gt; entry["journal"]</span>
+<span class="sd">    'prl'</span>
+<span class="sd">    &gt;&gt;&gt; bib["Key2024"] = entry</span>
+<span class="sd">    &gt;&gt;&gt; print(bib.export("Key2024", unicode=False, marker=False), end="")</span>
 <span class="sd">    @article{Key2024,</span>
 <span class="sd">        Journal = {prl},</span>
 <span class="sd">    }</span>
-<span class="sd">    &gt;&gt;&gt; entry[&quot;journal&quot;] = &quot;prl&quot;  # bare str: treated as a macro ref</span>
-<span class="sd">    &gt;&gt;&gt; entry[&quot;journal&quot;]</span>
-<span class="sd">    &#39;prl&#39;</span>
-<span class="sd">    &gt;&gt;&gt; print(bib.export(&quot;Key2024&quot;, unicode=False, marker=False), end=&quot;&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; entry["journal"] = "prl"  # bare str: treated as a macro ref</span>
+<span class="sd">    &gt;&gt;&gt; entry["journal"]</span>
+<span class="sd">    'prl'</span>
+<span class="sd">    &gt;&gt;&gt; print(bib.export("Key2024", unicode=False, marker=False), end="")</span>
 <span class="sd">    @article{Key2024,</span>
 <span class="sd">        Journal = prl,</span>
 <span class="sd">    }</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span></div>
 
@@ -340,7 +340,7 @@
 <div class="viewcode-block" id="MacroString">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.MacroString">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MacroString</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Force a field value to be stored as a bare `@string` macro</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Force a field value to be stored as a bare `@string` macro</span>
 <span class="sd">    reference.</span>
 
 <span class="sd">    ```python</span>
@@ -349,10 +349,10 @@
 
 <span class="sd">    A plain `str` value assigned via `entry[field] = value` is already</span>
 <span class="sd">    stored as a bare macro reference whenever it looks like a valid</span>
-<span class="sd">    macro name (e.g. `entry[&quot;journal&quot;] = &quot;prl&quot;` stores `journal = prl`).</span>
+<span class="sd">    macro name (e.g. `entry["journal"] = "prl"` stores `journal = prl`).</span>
 <span class="sd">    Wrapping the value in `MacroString` makes that intent explicit and</span>
 <span class="sd">    forces bare-macro storage even in code that cannot rely on the</span>
-<span class="sd">    value&#39;s shape. The macro name is validated (it must be a valid,</span>
+<span class="sd">    value's shape. The macro name is validated (it must be a valid,</span>
 <span class="sd">    normalized BibDesk macro name), so an invalid name raises</span>
 <span class="sd">    {exc}`ValueError`. To force the opposite -- a literal braced value</span>
 <span class="sd">    for a macro-shaped string -- wrap it in {class}`ValueString`.</span>
@@ -367,18 +367,18 @@
 <span class="sd">    ```python</span>
 <span class="sd">    &gt;&gt;&gt; from bibdeskparser import Entry, Library, MacroString</span>
 <span class="sd">    &gt;&gt;&gt; bib = Library()</span>
-<span class="sd">    &gt;&gt;&gt; entry = Entry(&quot;article&quot;, &quot;Key2024&quot;)</span>
-<span class="sd">    &gt;&gt;&gt; entry[&quot;journal&quot;] = MacroString(&quot;prl&quot;)  # forced macro reference</span>
-<span class="sd">    &gt;&gt;&gt; entry[&quot;journal&quot;]</span>
-<span class="sd">    &#39;prl&#39;</span>
-<span class="sd">    &gt;&gt;&gt; bib[&quot;Key2024&quot;] = entry</span>
-<span class="sd">    &gt;&gt;&gt; print(bib.export(&quot;Key2024&quot;, unicode=False, marker=False), end=&quot;&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; entry = Entry("article", "Key2024")</span>
+<span class="sd">    &gt;&gt;&gt; entry["journal"] = MacroString("prl")  # forced macro reference</span>
+<span class="sd">    &gt;&gt;&gt; entry["journal"]</span>
+<span class="sd">    'prl'</span>
+<span class="sd">    &gt;&gt;&gt; bib["Key2024"] = entry</span>
+<span class="sd">    &gt;&gt;&gt; print(bib.export("Key2024", unicode=False, marker=False), end="")</span>
 <span class="sd">    @article{Key2024,</span>
 <span class="sd">        Journal = prl,</span>
 <span class="sd">    }</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span></div>
 
@@ -392,7 +392,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 03, 2026.
+      <span class="lastupdated">Last updated on Aug 21, 2026.
       </span></p>
   </div>
 

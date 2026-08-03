@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Command Line Interface &mdash; BibDeskParser 0.8.0 documentation</title>
+  <title>Command Line Interface &mdash; BibDeskParser 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/documentation_options.js?v=ec16d22d"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.8.0
+    v0.8.1
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -255,9 +255,9 @@
 <p>Every command that prints structured data (all read-only commands except <code class="docutils literal notranslate"><span class="pre">render</span></code> and <code class="docutils literal notranslate"><span class="pre">export</span></code>) accepts a <code class="docutils literal notranslate"><span class="pre">--json</span></code> flag to print the data as JSON instead of human-readable text, for consumption by other tools:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>show<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GoerzA2023<span class="w"> </span>--field<span class="w"> </span>doi,volume<span class="w"> </span>--json
 <span class="go">{</span>
-<span class="go">  &quot;GoerzA2023&quot;: {</span>
-<span class="go">    &quot;doi&quot;: &quot;10.3390/atoms11020036&quot;,</span>
-<span class="go">    &quot;volume&quot;: &quot;11&quot;</span>
+<span class="go">  "GoerzA2023": {</span>
+<span class="go">    "doi": "10.3390/atoms11020036",</span>
+<span class="go">    "volume": "11"</span>
 <span class="go">  }</span>
 <span class="go">}</span>
 </pre></div>
@@ -338,19 +338,19 @@
 <span class="go">Duplicate2026: duplicate citation key</span>
 <span class="go">MissingDoi2026: missing doi</span>
 <span class="go">EmptyDoi2026: missing doi</span>
-<span class="go">EmptyDoi2026: empty field &#39;doi&#39; (BibDesk deletes empty fields on save)</span>
-<span class="go">LiteralJournal2026: journal is the literal string &#39;Some Journal&#39;, not an @string macro reference</span>
-<span class="go">UndefinedMacro2026: journal references undefined @string macro &#39;nosuchjournal&#39;</span>
-<span class="go">UndefinedField2026: publisher references undefined @string macro &#39;elsevir&#39;</span>
+<span class="go">EmptyDoi2026: empty field 'doi' (BibDesk deletes empty fields on save)</span>
+<span class="go">LiteralJournal2026: journal is the literal string 'Some Journal', not an @string macro reference</span>
+<span class="go">UndefinedMacro2026: journal references undefined @string macro 'nosuchjournal'</span>
+<span class="go">UndefinedField2026: publisher references undefined @string macro 'elsevir'</span>
 <span class="go">BadNames2026: author does not parse as names: Cannot split the following name `Doe, John, Jr, X, Y` into parts: Too many commas</span>
-<span class="go">MissingRequired2026: missing required field &#39;year&#39; for entry type &#39;article&#39;</span>
-<span class="go">UnknownType2026: unrecognized entry type &#39;bogustype&#39;</span>
-<span class="go">BadYear2026: year &#39;August, 2026&#39; does not read as a four-digit year (%Y gives &#39;0&#39;)</span>
-<span class="go">LiteralMonth2026: month is the literal string &#39;June&#39;, not one of the twelve standard month macros (jan ... dec)</span>
-<span class="go">BadMonthMacro2026: month references the macro &#39;sept&#39;, not one of the twelve standard month macros (jan ... dec)</span>
-<span class="go">BadMonthMacro2026: month references undefined @string macro &#39;sept&#39;</span>
-<span class="go">UnencodedURL2026: url contains non-ASCII characters: &#39;https://example.com/münchen&#39; (use &#39;https://example.com/m%C3%BCnchen&#39;)</span>
-<span class="go">unused @string macro &#39;unusedjrnl&#39;</span>
+<span class="go">MissingRequired2026: missing required field 'year' for entry type 'article'</span>
+<span class="go">UnknownType2026: unrecognized entry type 'bogustype'</span>
+<span class="go">BadYear2026: year 'August, 2026' does not read as a four-digit year (%Y gives '0')</span>
+<span class="go">LiteralMonth2026: month is the literal string 'June', not one of the twelve standard month macros (jan ... dec)</span>
+<span class="go">BadMonthMacro2026: month references the macro 'sept', not one of the twelve standard month macros (jan ... dec)</span>
+<span class="go">BadMonthMacro2026: month references undefined @string macro 'sept'</span>
+<span class="go">UnencodedURL2026: url contains non-ASCII characters: 'https://example.com/münchen' (use 'https://example.com/m%C3%BCnchen')</span>
+<span class="go">unused @string macro 'unusedjrnl'</span>
 <span class="go">FAIL (16 problems, 14 entries checked)</span>
 </pre></div>
 </div>
@@ -389,15 +389,15 @@
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>check<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--files
 <span class="go">PASS (61 entries checked)</span>
 <span class="gp">$ </span>bibdeskparser<span class="w"> </span>check<span class="w"> </span>tests/test_cli_fail_checks/deadfiles.bib<span class="w"> </span>--files
-<span class="go">Dead2020: linked file does not exist: &#39;Dead2020.pdf&#39;</span>
-<span class="go">Case2020: linked file &#39;case2020.pdf&#39; exists only as &#39;Case2020.pdf&#39; (case mismatch)</span>
+<span class="go">Dead2020: linked file does not exist: 'Dead2020.pdf'</span>
+<span class="go">Case2020: linked file 'case2020.pdf' exists only as 'Case2020.pdf' (case mismatch)</span>
 <span class="go">FAIL (2 problems, 2 entries checked)</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">--key-format</span></code> flags every key that <a class="reference internal" href="#cli-rekey"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">rekey</span></code></span></a> without <code class="docutils literal notranslate"><span class="pre">NEW_KEY</span></code> would regenerate differently. A key already matching the format evaluates to itself, so a disambiguated sibling like <code class="docutils literal notranslate"><span class="pre">CollidingPRA2015a</span></code> still conforms, and an entry lacking a field the format references is audited against the shorter key it generates (<code class="docutils literal notranslate"><span class="pre">Handpicked</span></code> below has no <code class="docutils literal notranslate"><span class="pre">journal</span></code>). With no usable format available, a single message is reported rather than one failure per entry.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>check<span class="w"> </span>tests/test_cli_fail_checks/keyformat.bib<span class="w"> </span>--format-spec<span class="w"> </span><span class="s2">&quot;%p1%c{journal}0%Y%u0&quot;</span>
-<span class="go">Deviation2015: does not match the citation-key format (would be &#39;DeviationPRA2015&#39;)</span>
-<span class="go">Handpicked: does not match the citation-key format (would be &#39;Venueless2015&#39;)</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>check<span class="w"> </span>tests/test_cli_fail_checks/keyformat.bib<span class="w"> </span>--format-spec<span class="w"> </span><span class="s2">"%p1%c{journal}0%Y%u0"</span>
+<span class="go">Deviation2015: does not match the citation-key format (would be 'DeviationPRA2015')</span>
+<span class="go">Handpicked: does not match the citation-key format (would be 'Venueless2015')</span>
 <span class="go">FAIL (2 problems, 7 entries checked)</span>
 </pre></div>
 </div>
@@ -473,15 +473,15 @@
 <span class="gp">$ </span>bibdeskparser<span class="w"> </span>author<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>KochJPCM2016<span class="w"> </span>--json
 <span class="go">[</span>
 <span class="go">  {</span>
-<span class="go">    &quot;first&quot;: [</span>
-<span class="go">      &quot;Christiane&quot;,</span>
-<span class="go">      &quot;P.&quot;</span>
+<span class="go">    "first": [</span>
+<span class="go">      "Christiane",</span>
+<span class="go">      "P."</span>
 <span class="go">    ],</span>
-<span class="go">    &quot;von&quot;: [],</span>
-<span class="go">    &quot;last&quot;: [</span>
-<span class="go">      &quot;Koch&quot;</span>
+<span class="go">    "von": [],</span>
+<span class="go">    "last": [</span>
+<span class="go">      "Koch"</span>
 <span class="go">    ],</span>
-<span class="go">    &quot;jr&quot;: []</span>
+<span class="go">    "jr": []</span>
 <span class="go">  }</span>
 <span class="go">]</span>
 </pre></div>
@@ -503,8 +503,8 @@
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>files<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--relative<span class="w"> </span>--json
 <span class="go">{</span>
-<span class="go">  &quot;BrifNJP2010&quot;: [</span>
-<span class="go">    &quot;BrifNJP2010.pdf&quot;</span>
+<span class="go">  "BrifNJP2010": [</span>
+<span class="go">    "BrifNJP2010.pdf"</span>
 <span class="go">  ],</span>
 <span class="go">  ...</span>
 <span class="go">}</span>
@@ -554,8 +554,8 @@
 <!-- notest -->
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>assets<span class="w"> </span>--json<span class="w"> </span><span class="k">$(</span>bibdeskparser<span class="w"> </span>keys<span class="k">)</span>
 <span class="go">{</span>
-<span class="go">  &quot;BrifNJP2010&quot;: {</span>
-<span class="go">    &quot;summary&quot;: true,</span>
+<span class="go">  "BrifNJP2010": {</span>
+<span class="go">    "summary": true,</span>
 <span class="go">    ...</span>
 <span class="go">  },</span>
 <span class="go">  ...</span>
@@ -595,7 +595,7 @@
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--json</span></code> – print the keys as a JSON array.</p></li>
 </ul>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>search<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="s2">&quot;Schroedinger&quot;</span><span class="w"> </span>--field<span class="w"> </span>title
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>search<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="s2">"Schroedinger"</span><span class="w"> </span>--field<span class="w"> </span>title
 <span class="go">WP_Schroedinger</span>
 </pre></div>
 </div>
@@ -703,11 +703,11 @@
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>config<span class="w"> </span>--no-types
 <span class="go">verify_types = true</span>
 <span class="go">verify_fields = true</span>
-<span class="go">preprint_export = &quot;unpublished&quot;</span>
+<span class="go">preprint_export = "unpublished"</span>
 <span class="go">protected_words = []</span>
 <span class="go">...</span>
 <span class="go">[preprint_archives]</span>
-<span class="go">arXiv = &quot;https://arxiv.org/abs/{id}&quot;</span>
+<span class="go">arXiv = "https://arxiv.org/abs/{id}"</span>
 <span class="go">...</span>
 </pre></div>
 </div>
@@ -730,12 +730,12 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">--json</span></code> – print the result as a JSON string.</p></li>
 </ul>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>eval_format_spec<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>LapertPRA09<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="s1">&#39;%a1%c{journal}0%Y%u0&#39;</span>
+<span class="w">    </span><span class="s1">'%a1%c{journal}0%Y%u0'</span>
 <span class="go">LapertPRA2009</span>
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>eval_format_spec<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Shapiro2012<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="s1">&#39;%f{Cite Key}%u0%e&#39;</span><span class="w"> </span>--filename<span class="w"> </span>shapiro.pdf
+<span class="w">    </span><span class="s1">'%f{Cite Key}%u0%e'</span><span class="w"> </span>--filename<span class="w"> </span>shapiro.pdf
 <span class="go">Shapiro2012.pdf</span>
 </pre></div>
 </div>
@@ -766,7 +766,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">--field</span> <span class="pre">FIELD</span></code> – export only the named fields (repeatable and comma-separated). Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">--minimal</span></code>/<code class="docutils literal notranslate"><span class="pre">--full</span></code>, and always exports the stored fields.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--preprint</span> <span class="pre">FORM</span></code> – the form a <a class="reference internal" href="preprints.html"><span class="doc std std-doc">preprint-only entry</span></a> is exported as, whatever its stored form: <code class="docutils literal notranslate"><span class="pre">unpublished</span></code> (structured <code class="docutils literal notranslate"><span class="pre">eprint</span></code> fields, with the required <code class="docutils literal notranslate"><span class="pre">note</span></code> guaranteed in minimal exports; the default, via the <a class="reference internal" href="config.html#config-preprint-export"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">preprint_export</span></code> setting</span></a>), <code class="docutils literal notranslate"><span class="pre">misc</span></code> (the same structured form), <code class="docutils literal notranslate"><span class="pre">article</span></code> (the pseudo-journal form, hyperlinked via <code class="docutils literal notranslate"><span class="pre">url</span></code>), or <code class="docutils literal notranslate"><span class="pre">stored</span></code> (no transformation).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--outfile</span> <span class="pre">PATH</span></code> – write to a file instead of stdout. Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">--update</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">--update</span> <span class="pre">FILE</span></code> – rewrite the exported FILE (which must exist and be plain BibTeX, not a BibDesk database), refreshing it from the library: the given KEYs (without KEYs: every key in FILE that the library knows) are freshly exported in place, KEYs not yet in FILE are appended, and everything else – unknown entries, comments, <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions – is kept; nothing is ever removed. The <code class="docutils literal notranslate"><span class="pre">--unicode</span></code>/<code class="docutils literal notranslate"><span class="pre">--expand-strings</span></code>/<code class="docutils literal notranslate"><span class="pre">--preprint</span></code> options default to the FILE’s own recorded or detected options.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--update</span> <span class="pre">FILE</span></code> – rewrite the exported FILE (which must exist and be plain BibTeX, not a BibDesk database), refreshing it from the library: the given KEYs (without KEYs: every key in FILE that the library knows) take the library’s current values, KEYs not yet in FILE are appended, and everything else – unknown entries, comments, <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions – is kept; nothing is ever removed. That holds field by field: a refreshed entry keeps the fields it has in FILE, in FILE’s own field order, and the field selection only adds to them. The <code class="docutils literal notranslate"><span class="pre">--unicode</span></code>/<code class="docutils literal notranslate"><span class="pre">--expand-strings</span></code>/<code class="docutils literal notranslate"><span class="pre">--preprint</span></code> options default to the FILE’s own recorded or detected options.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--no-marker</span></code> – do not begin the output with the marker line; with <code class="docutils literal notranslate"><span class="pre">--update</span></code>, leave the FILE’s marker state untouched.</p></li>
 </ul>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GoerzA2023<span class="w"> </span><span class="se">\</span>
@@ -794,7 +794,7 @@
 <!-- notest -->
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>rekey<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>LapertPRA09
 <span class="go">LapertPRA2009</span>
-<span class="gp">$ </span>bibdeskparser<span class="w"> </span>rekey<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>LapertPRA09<span class="w"> </span>--format-spec<span class="w"> </span><span class="s1">&#39;%a1:%Y%u0&#39;</span>
+<span class="gp">$ </span>bibdeskparser<span class="w"> </span>rekey<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>LapertPRA09<span class="w"> </span>--format-spec<span class="w"> </span><span class="s1">'%a1:%Y%u0'</span>
 <span class="go">Lapert:2009</span>
 </pre></div>
 </div>
@@ -827,7 +827,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">--macro</span></code> – store <code class="docutils literal notranslate"><span class="pre">VALUE</span></code> as a bare macro reference (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.MacroString" title="bibdeskparser.MacroString"><code class="xref py py-class docutils literal notranslate"><span class="pre">MacroString</span></code></a>), failing if it is not a valid macro name.</p></li>
 </ul>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_field<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>TuriniciHAL00640217<span class="w"> </span>note<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="s2">&quot;Lecture notes for a graduate course&quot;</span>
+<span class="w">    </span><span class="s2">"Lecture notes for a graduate course"</span>
 </pre></div>
 </div>
 <p>An empty <code class="docutils literal notranslate"><span class="pre">VALUE</span></code> is an error, since BibDesk deletes empty fields on save (see <a class="reference internal" href="bibdesk_format.html#bibdesk-empty-fields"><span class="std std-ref">Empty fields</span></a>): use <a class="reference internal" href="#cli-set-field"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">delete_field</span></code></span></a> to remove a field, or add the entry to a <a class="reference internal" href="config.html#config-known-missing"><span class="std std-ref">known-missing group</span></a> to record a verified absence.</p>
@@ -926,7 +926,7 @@
 <span class="go">Vecheck2022.09.09.507322: needs review (semanticscholar, medium) [cr-miss]</span>
 <span class="go">    Quantum biology examines quantum effects in living cells ...</span>
 <span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_field<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Vecheck2022.09.09.507322<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>abstract<span class="w"> </span><span class="s2">&quot;Quantum biology examines quantum effects in living cells ...&quot;</span>
+<span class="w">    </span>abstract<span class="w"> </span><span class="s2">"Quantum biology examines quantum effects in living cells ..."</span>
 </pre></div>
 </div>
 </section>
@@ -948,15 +948,15 @@
 </ul>
 <p>Re-audit the known-missing group members like this:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_preprint<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--overwrite<span class="w"> </span><span class="se">\</span>
-<span class="gp">    $</span><span class="o">(</span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--group<span class="w"> </span><span class="s2">&quot;No Eprint&quot;</span><span class="o">)</span>
+<span class="gp">    $</span><span class="o">(</span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--group<span class="w"> </span><span class="s2">"No Eprint"</span><span class="o">)</span>
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--type<span class="w"> </span>article<span class="w"> </span>--missing<span class="w"> </span>eprint
 <span class="go">WinckelIP2008</span>
 <span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_preprint<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>WinckelIP2008<span class="w"> </span>Vecheck2022.09.09.507322
-<span class="go">WinckelIP2008: no preprint found (marked known missing in group &#39;No Eprint&#39;) [best-ratio=0.42]</span>
-<span class="go">Vecheck2022.09.09.507322: no preprint found (marked known missing in group &#39;No Eprint&#39;) [best-ratio=0.31]</span>
+<span class="go">WinckelIP2008: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.42]</span>
+<span class="go">Vecheck2022.09.09.507322: no preprint found (marked known missing in group 'No Eprint') [best-ratio=0.31]</span>
 </pre></div>
 </div>
 <p>The report above assumes a known-missing group declared for <code class="docutils literal notranslate"><span class="pre">eprint</span></code> in <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code>; without one, the two lines end at the <code class="docutils literal notranslate"><span class="pre">[best-ratio=...]</span></code> note and nothing is recorded.</p>
@@ -978,12 +978,12 @@
 </ul>
 <p>Re-audit the known-missing group members like this:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_doi<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--overwrite<span class="w"> </span><span class="se">\</span>
-<span class="gp">    $</span><span class="o">(</span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--group<span class="w"> </span><span class="s2">&quot;No DOI&quot;</span><span class="o">)</span>
+<span class="gp">    $</span><span class="o">(</span>bibdeskparser<span class="w"> </span>keys<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--group<span class="w"> </span><span class="s2">"No DOI"</span><span class="o">)</span>
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_doi<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GoerzPhd2015<span class="w"> </span>GoerzDiploma2010
-<span class="go">GoerzPhd2015: no doi found (marked known missing in group &#39;No DOI&#39;) [best-ratio=0.55]</span>
-<span class="go">GoerzDiploma2010: no doi found (marked known missing in group &#39;No DOI&#39;) [best-ratio=0.47]</span>
+<span class="go">GoerzPhd2015: no doi found (marked known missing in group 'No DOI') [best-ratio=0.55]</span>
+<span class="go">GoerzDiploma2010: no doi found (marked known missing in group 'No DOI') [best-ratio=0.47]</span>
 </pre></div>
 </div>
 <p>The report above assumes a known-missing group declared for <code class="docutils literal notranslate"><span class="pre">doi</span></code> in <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code>; without one, the two lines end at the <code class="docutils literal notranslate"><span class="pre">[best-ratio=...]</span></code> note and nothing is recorded.</p>
@@ -1008,7 +1008,7 @@
 <section id="set-group-name-key">
 <h3><code class="docutils literal notranslate"><span class="pre">set_group</span> <span class="pre">NAME</span> <span class="pre">[KEY...]</span></code><a class="headerlink" href="#set-group-name-key" title="Link to this heading"></a></h3>
 <p>Create the static group <code class="docutils literal notranslate"><span class="pre">NAME</span></code> with exactly the given entries, or replace its membership if it already exists. With zero keys, the group is created (or emptied) with no members. Corresponds to <code class="docutils literal notranslate"><span class="pre">lib.groups[name]</span> <span class="pre">=</span> <span class="pre">keys</span></code> (see <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.groups" title="bibdeskparser.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>).</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_group<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="s2">&quot;To Read&quot;</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_group<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span><span class="s2">"To Read"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>BrifNJP2010<span class="w"> </span>KochEPJQT2022
 </pre></div>
 </div>
@@ -1043,7 +1043,7 @@
 <section id="set-string-name-value">
 <h3><code class="docutils literal notranslate"><span class="pre">set_string</span> <span class="pre">NAME</span> <span class="pre">VALUE</span></code><a class="headerlink" href="#set-string-name-value" title="Link to this heading"></a></h3>
 <p>Define or redefine the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro <code class="docutils literal notranslate"><span class="pre">NAME</span></code>. Corresponds to <code class="docutils literal notranslate"><span class="pre">lib.strings[name]</span> <span class="pre">=</span> <span class="pre">value</span></code> (see <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.strings" title="bibdeskparser.Library.strings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strings</span></code></a>).</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_string<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>prl<span class="w"> </span><span class="s2">&quot;Phys. Rev. Lett.&quot;</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>set_string<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>prl<span class="w"> </span><span class="s2">"Phys. Rev. Lett."</span>
 </pre></div>
 </div>
 </section>
@@ -1100,7 +1100,7 @@
 <!-- notest -->
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>add_file<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>Shapiro2012<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>~/Downloads/9780471973461.pdf<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--format-spec<span class="w"> </span><span class="s1">&#39;%f{Cite Key}%u0%e&#39;</span><span class="w"> </span>--location<span class="w"> </span>Papers
+<span class="w">    </span>--format-spec<span class="w"> </span><span class="s1">'%f{Cite Key}%u0%e'</span><span class="w"> </span>--location<span class="w"> </span>Papers
 <span class="go">Papers/Shapiro2012.pdf</span>
 </pre></div>
 </div>
@@ -1189,7 +1189,7 @@
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span><span class="nb">export</span><span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GoerzQ2022<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/Semi-Automatic/Semiautomatic/&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">'s/Semi-Automatic/Semiautomatic/'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>edit<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>GoerzQ2022<span class="w"> </span>--stdin
 </pre></div>
 </div>
@@ -1206,7 +1206,7 @@
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>strings<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--bib<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/EPJ Quantum Technol./EPJ Quantum Technology/&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">'s/EPJ Quantum Technol./EPJ Quantum Technology/'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="p">|</span><span class="w"> </span>bibdeskparser<span class="w"> </span>edit_strings<span class="w"> </span>tests/Refs/refs.bib<span class="w"> </span>--stdin
 </pre></div>
 </div>
@@ -1226,7 +1226,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 03, 2026.
+      <span class="lastupdated">Last updated on Aug 21, 2026.
       </span></p>
   </div>
 

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>External Assets &mdash; BibDeskParser 0.8.0 documentation</title>
+  <title>External Assets &mdash; BibDeskParser 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/documentation_options.js?v=ec16d22d"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.8.0
+    v0.8.1
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -148,10 +148,10 @@
 <p>However, a user may have additional files associated with the bibliography as a whole, or with particular entries: an extracted full text, a written summary, a folder with the paper source (extracted from arXiv), or library-level documents such as a thematic survey. The pragmatic convention is to keep such files next to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file, named after the citation key: <code class="docutils literal notranslate"><span class="pre">GoerzQ2022_summary.md</span></code> obviously belongs to <code class="docutils literal notranslate"><span class="pre">GoerzQ2022</span></code>.</p>
 <p>BibDeskParser can be configured to recognize and manage such “asset” files that are not tracked through the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file directly, through an <a class="reference internal" href="config.html#config-assets"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">[assets]</span></code> section in the config file</span></a>. It declares the path conventions, once, as patterns in the <a class="reference internal" href="specifiers.html#format-specifiers"><span class="std std-ref">format-specifier language</span></a>. For example:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[assets]</span>
-<span class="n">summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;%f{Cite Key}_summary.md&quot;</span>
-<span class="n">fulltext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;%f{Cite Key}.ingest/fulltext.md&quot;</span>
-<span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;%f{Cite Key}.ingest/source/&quot;</span><span class="w">   </span><span class="c1"># trailing slash: a directory</span>
-<span class="n">topics</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;%i{Topics-File}&quot;</span><span class="w">               </span><span class="c1"># library-level</span>
+<span class="n">summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%f{Cite Key}_summary.md"</span>
+<span class="n">fulltext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%f{Cite Key}.ingest/fulltext.md"</span>
+<span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%f{Cite Key}.ingest/source/"</span><span class="w">   </span><span class="c1"># trailing slash: a directory</span>
+<span class="n">topics</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"%i{Topics-File}"</span><span class="w">               </span><span class="c1"># library-level</span>
 </pre></div>
 </div>
 <p>Each pattern is either an entry asset or a library asset, depending on which specifiers it uses: A pattern referencing entry data (<code class="docutils literal notranslate"><span class="pre">%f{Cite</span> <span class="pre">Key}</span></code>, <code class="docutils literal notranslate"><span class="pre">%a1</span></code>, <code class="docutils literal notranslate"><span class="pre">%Y</span></code>) is per-entry. A pattern built only from document info (<code class="docutils literal notranslate"><span class="pre">%i{Key}</span></code>), the document name (<code class="docutils literal notranslate"><span class="pre">%b</span></code>), and literal text is library-level: it belongs to no entry, resolves once for the database, and entry operations leave it alone.</p>
@@ -196,7 +196,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 03, 2026.
+      <span class="lastupdated">Last updated on Aug 21, 2026.
       </span></p>
   </div>
 

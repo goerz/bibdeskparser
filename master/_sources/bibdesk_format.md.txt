@@ -126,7 +126,7 @@ When you *do* want to store literal text that happens to look like a macro name 
 
 ```
 
-A plain `str` assigned to a field that happens to match a defined (or even undefined) macro name is instead stored as a bare reference, the same way BibDesk would read it back. To make that intent explicit -- or to force bare-reference storage in code that cannot rely on the value's shape -- wrap the value in {class}`~bibdeskparser.MacroString` instead, the mirror image of `ValueString`.
+A plain `str` assigned to a field that happens to match a defined (or even undefined) macro name is instead stored as a bare reference, the same way BibDesk would read it back. This does not include URLs. To make that intent explicit -- or to force bare-reference storage in code that cannot rely on the value's shape -- wrap the value in {class}`~bibdeskparser.MacroString` instead, the mirror image of `ValueString`.
 
 (bibdesk-default-macros)=
 

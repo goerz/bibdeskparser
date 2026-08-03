@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Format Specifiers &mdash; BibDeskParser 0.8.0 documentation</title>
+  <title>Format Specifiers &mdash; BibDeskParser 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/documentation_options.js?v=ec16d22d"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.8.0
+    v0.8.1
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -169,29 +169,29 @@
 <p>The most common use is autogenerating a citation key from a <em>format string</em>, via single-argument <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rekey" title="bibdeskparser.Library.rekey"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.rekey</span></code></a> (or the <a class="reference internal" href="cli.html#cli-rekey"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">rekey</span></code> CLI command</span></a> without a <code class="docutils literal notranslate"><span class="pre">NEW_KEY</span></code>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Library</span><span class="p">,</span> <span class="n">Entry</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;temp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="s2">&quot;temp&quot;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"temp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">"article"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">"temp"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Goerz, Michael H. and Koch, Christiane P.&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Robustness of high-fidelity </span><span class="si">{Rydberg}</span><span class="s2"> gates&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;Phys. Rev. A&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;volume&quot;</span><span class="p">:</span> <span class="s2">&quot;90&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;pages&quot;</span><span class="p">:</span> <span class="s2">&quot;032329&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2014&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;month&quot;</span><span class="p">:</span> <span class="s2">&quot;aug&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;doi&quot;</span><span class="p">:</span> <span class="s2">&quot;10.1103/PhysRevA.90.032329&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"author"</span><span class="p">:</span> <span class="s2">"Goerz, Michael H. and Koch, Christiane P."</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Robustness of high-fidelity </span><span class="si">{Rydberg}</span><span class="s2"> gates"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"journal"</span><span class="p">:</span> <span class="s2">"Phys. Rev. A"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"volume"</span><span class="p">:</span> <span class="s2">"90"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"pages"</span><span class="p">:</span> <span class="s2">"032329"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"year"</span><span class="p">:</span> <span class="s2">"2014"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"month"</span><span class="p">:</span> <span class="s2">"aug"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"doi"</span><span class="p">:</span> <span class="s2">"10.1103/PhysRevA.90.032329"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="s2">&quot;temp&quot;</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">)</span>
-<span class="go">&#39;GoerzPRA2014&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="s2">"temp"</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="s2">"</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0"</span><span class="p">)</span>
+<span class="go">'GoerzPRA2014'</span>
 
 </pre></div>
 </div>
 <p>The format string language is <strong>BibDesk’s own</strong>: a format string that works in BibDesk’s <em>Preferences → Cite Key</em> pane works here identically (with the few exceptions <a class="reference internal" href="#specifiers-differences"><span class="std std-ref">noted below</span></a>).</p>
 <p>For citation keys, the format is usually configured once, in the <code class="docutils literal notranslate"><span class="pre">[auto_key]</span></code> table of <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> (see the <a class="reference internal" href="config.html#configuration"><span class="std std-ref">configuration</span></a>), where it may also be given <a class="reference internal" href="config.html#config-auto-key"><span class="std std-ref">per entry type</span></a>; the <code class="docutils literal notranslate"><span class="pre">format_spec</span></code> argument used above overrides it ad hoc. The examples below use <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.eval_format_spec" title="bibdeskparser.Library.eval_format_spec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.eval_format_spec</span></code></a> instead, which evaluates a format for an entry and returns the resulting key <em>without renaming anything</em>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1%Y&quot;</span><span class="p">)</span>
-<span class="go">&#39;Goerz2014&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"GoerzPRA2014"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">1%Y"</span><span class="p">)</span>
+<span class="go">'Goerz2014'</span>
 
 </pre></div>
 </div>
@@ -209,8 +209,8 @@
 </ul>
 <p>A bare <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference as a field value (e.g. <code class="docutils literal notranslate"><span class="pre">journal</span> <span class="pre">=</span> <span class="pre">pra</span></code>) is expanded using the library’s macro definitions before any specifier is applied.</p>
 <p>A field the entry does not have renders as empty, so a format may reference a field that only some entries carry; those entries get a correspondingly shorter result. Under <code class="docutils literal notranslate"><span class="pre">%a1%c{booktitle}%Y</span></code>, a conference paper keys as <code class="docutils literal notranslate"><span class="pre">GoerzPECC2019</span></code>, an article as:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{booktitle}</span><span class="s2">%Y&quot;</span><span class="p">)</span>
-<span class="go">&#39;Goerz2014&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"GoerzPRA2014"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{booktitle}</span><span class="s2">%Y"</span><span class="p">)</span>
+<span class="go">'Goerz2014'</span>
 
 </pre></div>
 </div>
@@ -223,21 +223,21 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">%a</span></code> / <code class="docutils literal notranslate"><span class="pre">%p</span></code> – the last names, concatenated. <em>Arguments</em> <code class="docutils literal notranslate"><span class="pre">[separator][etal]</span></code>: text placed between names, and text appended when names are dropped. <em>Number</em> the count of names (a single digit, or a negative <code class="docutils literal notranslate"><span class="pre">-N</span></code> counting from the last author), optionally followed by a second digit giving the characters to keep per name.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">%A</span></code> / <code class="docutils literal notranslate"><span class="pre">%P</span></code> – the last names, each with the author’s first initial. <em>Arguments</em> <code class="docutils literal notranslate"><span class="pre">[author</span> <span class="pre">separator][name</span> <span class="pre">separator][etal]</span></code>. <em>Number</em> the count of names.</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;GoerzPRA2014&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">)</span>     <span class="c1"># all authors, full last names</span>
-<span class="go">&#39;GoerzKoch&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1&quot;</span><span class="p">)</span>    <span class="c1"># first author only</span>
-<span class="go">&#39;Goerz&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">22&quot;</span><span class="p">)</span>   <span class="c1"># two authors, two chars each</span>
-<span class="go">&#39;GoKo&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">-1&quot;</span><span class="p">)</span>   <span class="c1"># the *last* author</span>
-<span class="go">&#39;Koch&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">[-][X]1&quot;</span><span class="p">)</span>   <span class="c1"># &quot;X&quot; marks dropped authors</span>
-<span class="go">&#39;GoerzX&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%A&quot;</span><span class="p">)</span>     <span class="c1"># last name + first initial</span>
-<span class="go">&#39;Goerz.M;Koch.C&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%A[-][][]1&quot;</span><span class="p">)</span>  <span class="c1"># empty in-name separator</span>
-<span class="go">&#39;GoerzM&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">key</span> <span class="o">=</span> <span class="s2">"GoerzPRA2014"</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">"</span><span class="p">)</span>     <span class="c1"># all authors, full last names</span>
+<span class="go">'GoerzKoch'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">1"</span><span class="p">)</span>    <span class="c1"># first author only</span>
+<span class="go">'Goerz'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">22"</span><span class="p">)</span>   <span class="c1"># two authors, two chars each</span>
+<span class="go">'GoKo'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">-1"</span><span class="p">)</span>   <span class="c1"># the *last* author</span>
+<span class="go">'Koch'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">[-][X]1"</span><span class="p">)</span>   <span class="c1"># "X" marks dropped authors</span>
+<span class="go">'GoerzX'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"%A"</span><span class="p">)</span>     <span class="c1"># last name + first initial</span>
+<span class="go">'Goerz.M;Koch.C'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"%A[-][][]1"</span><span class="p">)</span>  <span class="c1"># empty in-name separator</span>
+<span class="go">'GoerzM'</span>
 
 </pre></div>
 </div>
@@ -249,10 +249,10 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">%t</span></code> – the whole title. <em>Number</em> characters to keep.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">%T</span></code> – the title word by word, joined with <code class="docutils literal notranslate"><span class="pre">-</span></code>. <em>Number</em> words to keep, counting only words longer than the <em>small word length</em> (default 3). <em>Argument</em> <code class="docutils literal notranslate"><span class="pre">[small</span> <span class="pre">word</span> <span class="pre">length]</span></code> overrides that length <strong>and</strong> drops the short words entirely; without the argument, short words are kept (they simply do not count toward the number).</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%t12&quot;</span><span class="p">)</span>    <span class="c1"># first 12 characters</span>
-<span class="go">&#39;Robustness-o&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%T[3]2&quot;</span><span class="p">)</span>  <span class="c1"># two words longer than 3 chars</span>
-<span class="go">&#39;Robustness-high-fidelity&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"%t12"</span><span class="p">)</span>    <span class="c1"># first 12 characters</span>
+<span class="go">'Robustness-o'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"%T[3]2"</span><span class="p">)</span>  <span class="c1"># two words longer than 3 chars</span>
+<span class="go">'Robustness-high-fidelity'</span>
 
 </pre></div>
 </div>
@@ -263,37 +263,37 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">%y</span></code> / <code class="docutils literal notranslate"><span class="pre">%Y</span></code> – the year, two-digit / four-digit.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">%m</span></code> – the month as two digits, read from a number or an English month name (<code class="docutils literal notranslate"><span class="pre">aug</span></code>, <code class="docutils literal notranslate"><span class="pre">August</span></code>).</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%Y-%y-%m&quot;</span><span class="p">)</span>
-<span class="go">&#39;2014-14-08&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"%Y-%y-%m"</span><span class="p">)</span>
+<span class="go">'2014-14-08'</span>
 
 </pre></div>
 </div>
 <p>All three read whatever the field happens to contain, and none of them reports a value it cannot make sense of. The rules are BibDesk’s, inherited rather than chosen, so <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> reproduces them instead of correcting them.</p>
 <p><code class="docutils literal notranslate"><span class="pre">%Y</span></code> (and with it <code class="docutils literal notranslate"><span class="pre">%y</span></code>) reads the <em>leading</em> digits of the <code class="docutils literal notranslate"><span class="pre">year</span></code> field, and yields <code class="docutils literal notranslate"><span class="pre">0</span></code> when there are none. That is the opposite end of the value from BibTeX itself, whose standard styles take the last four nonpunctuation characters. A <code class="docutils literal notranslate"><span class="pre">year</span></code> like <code class="docutils literal notranslate"><span class="pre">(about</span> <span class="pre">1984)</span></code> therefore typesets as 1984 in the bibliography and still keys as <code class="docutils literal notranslate"><span class="pre">0</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">&quot;Vague&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Vague&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;(about 1984)&quot;</span><span class="p">})</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Vague&quot;</span><span class="p">,</span> <span class="s2">&quot;%Y&quot;</span><span class="p">)</span>
-<span class="go">&#39;0&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">&quot;Pressed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Pressed&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;in press&quot;</span><span class="p">})</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Pressed&quot;</span><span class="p">,</span> <span class="s2">&quot;%Y&quot;</span><span class="p">)</span>
-<span class="go">&#39;0&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">"Vague"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">"article"</span><span class="p">,</span> <span class="s2">"Vague"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"year"</span><span class="p">:</span> <span class="s2">"(about 1984)"</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"Vague"</span><span class="p">,</span> <span class="s2">"%Y"</span><span class="p">)</span>
+<span class="go">'0'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">"Pressed"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">"article"</span><span class="p">,</span> <span class="s2">"Pressed"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"year"</span><span class="p">:</span> <span class="s2">"in press"</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"Pressed"</span><span class="p">,</span> <span class="s2">"%Y"</span><span class="p">)</span>
+<span class="go">'0'</span>
 
 </pre></div>
 </div>
 <p>Trailing text after the digits is harmless (<code class="docutils literal notranslate"><span class="pre">2008a</span></code> and <code class="docutils literal notranslate"><span class="pre">2001--</span></code> both give <code class="docutils literal notranslate"><span class="pre">2008</span></code> and <code class="docutils literal notranslate"><span class="pre">2001</span></code>), and a <code class="docutils literal notranslate"><span class="pre">year</span></code> whose value is exactly two characters long maps into 1950–2049:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">&quot;Short&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Short&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;08&quot;</span><span class="p">})</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Short&quot;</span><span class="p">,</span> <span class="s2">&quot;%Y&quot;</span><span class="p">)</span>
-<span class="go">&#39;2008&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">&quot;Fifty&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Fifty&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;50&quot;</span><span class="p">})</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Fifty&quot;</span><span class="p">,</span> <span class="s2">&quot;%Y&quot;</span><span class="p">)</span>
-<span class="go">&#39;1950&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">"Short"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">"article"</span><span class="p">,</span> <span class="s2">"Short"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"year"</span><span class="p">:</span> <span class="s2">"08"</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"Short"</span><span class="p">,</span> <span class="s2">"%Y"</span><span class="p">)</span>
+<span class="go">'2008'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="p">[</span><span class="s2">"Fifty"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">"article"</span><span class="p">,</span> <span class="s2">"Fifty"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"year"</span><span class="p">:</span> <span class="s2">"50"</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"Fifty"</span><span class="p">,</span> <span class="s2">"%Y"</span><span class="p">)</span>
+<span class="go">'1950'</span>
 
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">%m</span></code> falls back to <code class="docutils literal notranslate"><span class="pre">01</span></code> for anything it cannot parse, so an out-of-range or unrecognized month silently becomes January rather than rendering empty. Full English month names and their standard abbreviations are both recognized (<code class="docutils literal notranslate"><span class="pre">June</span></code> as well as <code class="docutils literal notranslate"><span class="pre">jun</span></code>), but nothing else – <code class="docutils literal notranslate"><span class="pre">sep</span></code> is, <code class="docutils literal notranslate"><span class="pre">sept</span></code> is not – and a value whose leading letters are not a month name is unparseable even when it carries a usable number:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">month</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;jun&quot;</span><span class="p">,</span> <span class="s2">&quot;June&quot;</span><span class="p">,</span> <span class="s2">&quot;6&quot;</span><span class="p">,</span> <span class="s2">&quot;sept&quot;</span><span class="p">,</span> <span class="s2">&quot;13&quot;</span><span class="p">,</span> <span class="s2">&quot;8th&quot;</span><span class="p">]:</span>
-<span class="gp">... </span>    <span class="n">dates</span><span class="p">[</span><span class="s2">&quot;Month&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Month&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;month&quot;</span><span class="p">:</span> <span class="n">month</span><span class="p">})</span>
-<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">month</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s1">&#39;Month&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;%m&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">month</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"jun"</span><span class="p">,</span> <span class="s2">"June"</span><span class="p">,</span> <span class="s2">"6"</span><span class="p">,</span> <span class="s2">"sept"</span><span class="p">,</span> <span class="s2">"13"</span><span class="p">,</span> <span class="s2">"8th"</span><span class="p">]:</span>
+<span class="gp">... </span>    <span class="n">dates</span><span class="p">[</span><span class="s2">"Month"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">"article"</span><span class="p">,</span> <span class="s2">"Month"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"month"</span><span class="p">:</span> <span class="n">month</span><span class="p">})</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">month</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">dates</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s1">'Month'</span><span class="p">,</span><span class="w"> </span><span class="s1">'%m'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="go">  jun -&gt; 06</span>
 <span class="go"> June -&gt; 06</span>
 <span class="go">    6 -&gt; 06</span>
@@ -312,14 +312,14 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">%f{Field}</span></code> – the field’s value. <em>Argument</em> <code class="docutils literal notranslate"><span class="pre">[slash]</span></code>, a replacement for any <code class="docutils literal notranslate"><span class="pre">/</span></code> in the value. <em>Number</em> characters to keep.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">%w{Field}</span></code> – the field’s value split into words. <em>Arguments</em> <code class="docutils literal notranslate"><span class="pre">[separator</span> <span class="pre">characters][slash][separator]</span></code>. <em>Number</em> words to keep.</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%f{volume}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="go">&#39;90&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%f{journal}</span><span class="s2">5&quot;</span><span class="p">)</span>  <span class="c1"># first 5 characters</span>
-<span class="go">&#39;Phys.&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%f{doi}</span><span class="s2">[_]&quot;</span><span class="p">)</span>    <span class="c1"># &quot;/&quot; replaced by &quot;_&quot;</span>
-<span class="go">&#39;10.1103_PhysRevA.90.032329&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;%w</span><span class="si">{doi}</span><span class="s2">[./][-][_]2&quot;</span><span class="p">)</span>  <span class="c1"># first 2 &quot;words&quot;</span>
-<span class="go">&#39;10_1103&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"</span><span class="si">%f{volume}</span><span class="s2">"</span><span class="p">)</span>
+<span class="go">'90'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"</span><span class="si">%f{journal}</span><span class="s2">5"</span><span class="p">)</span>  <span class="c1"># first 5 characters</span>
+<span class="go">'Phys.'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"</span><span class="si">%f{doi}</span><span class="s2">[_]"</span><span class="p">)</span>    <span class="c1"># "/" replaced by "_"</span>
+<span class="go">'10.1103_PhysRevA.90.032329'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"%w</span><span class="si">{doi}</span><span class="s2">[./][-][_]2"</span><span class="p">)</span>  <span class="c1"># first 2 "words"</span>
+<span class="go">'10_1103'</span>
 
 </pre></div>
 </div>
@@ -351,9 +351,9 @@
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">%i{Key}</span></code> – the value stored under <code class="docutils literal notranslate"><span class="pre">Key</span></code> in the library’s <a class="reference internal" href="bibdesk_format.html#bibdesk-document-info"><span class="std std-ref">document info</span></a> (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.info" title="bibdeskparser.Library.info"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Library.info</span></code></a>), the key/value metadata attached to the database as a whole. <code class="docutils literal notranslate"><span class="pre">Key</span></code> is matched case-insensitively; a missing key renders as empty, like a missing field. <em>Number</em> characters to keep.</p></li>
 </ul>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;project&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;qdyn&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%i{Project}</span><span class="s2">:</span><span class="si">%a</span><span class="s2">1%Y&quot;</span><span class="p">)</span>
-<span class="go">&#39;qdyn:Goerz2014&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">"project"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"qdyn"</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"GoerzPRA2014"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%i{Project}</span><span class="s2">:</span><span class="si">%a</span><span class="s2">1%Y"</span><span class="p">)</span>
+<span class="go">'qdyn:Goerz2014'</span>
 
 </pre></div>
 </div>
@@ -379,8 +379,8 @@
 <section id="literal-characters-0-9">
 <h3>Literal characters: <code class="docutils literal notranslate"><span class="pre">%0</span></code>–<code class="docutils literal notranslate"><span class="pre">%9</span></code>, <code class="docutils literal notranslate"><span class="pre">%[</span></code>, <code class="docutils literal notranslate"><span class="pre">%]</span></code>, <code class="docutils literal notranslate"><span class="pre">%-</span></code><a class="headerlink" href="#literal-characters-0-9" title="Link to this heading"></a></h3>
 <p>A digit or bracket right after another specifier would be read as its number or an argument, so these characters are escaped as <code class="docutils literal notranslate"><span class="pre">%&lt;char&gt;</span></code> to insert them literally:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;ref</span><span class="si">%-%</span><span class="s2">Y</span><span class="si">%1%</span><span class="s2">[x%]&quot;</span><span class="p">)</span>  <span class="c1"># literal - 1 [ ]</span>
-<span class="go">&#39;ref-20141[x]&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"ref</span><span class="si">%-%</span><span class="s2">Y</span><span class="si">%1%</span><span class="s2">[x%]"</span><span class="p">)</span>  <span class="c1"># literal - 1 [ ]</span>
+<span class="go">'ref-20141[x]'</span>
 
 </pre></div>
 </div>
@@ -390,24 +390,24 @@
 <span id="specifiers-initials"></span><h2>Venue initials: <code class="docutils literal notranslate"><span class="pre">%c</span></code> and the <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> mapping<a class="headerlink" href="#venue-initials-c-and-the-initials-mapping" title="Link to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">%c{Field}</span></code> builds an acronym from the uppercased first letters of the words of a field value. The trailing number is the <em>small word length</em>: words no longer than it are dropped, except words ending in a period (like the <code class="docutils literal notranslate"><span class="pre">Phys.</span></code> and <code class="docutils literal notranslate"><span class="pre">Rev.</span></code> of a journal abbreviation), which always count. The default is 3.</p>
 <p>Because that default drops words of three or fewer letters, a value like <code class="docutils literal notranslate"><span class="pre">Phys.</span> <span class="pre">Rev.</span> <span class="pre">A</span></code> would lose its trailing <code class="docutils literal notranslate"><span class="pre">A</span></code>. <strong>The recommended pattern is therefore <code class="docutils literal notranslate"><span class="pre">%c{journal}0</span></code>:</strong> the trailing <code class="docutils literal notranslate"><span class="pre">0</span></code> sets the small word length to zero, so no words are omitted and the acronym is built from every word. <code class="docutils literal notranslate"><span class="pre">Phys.</span> <span class="pre">Rev.</span> <span class="pre">A</span></code> then abbreviates to <code class="docutils literal notranslate"><span class="pre">PRA</span></code> with no manual configuration:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%c{journal}</span><span class="s2">0&quot;</span><span class="p">)</span>  <span class="c1"># keep every word</span>
-<span class="go">&#39;PRA&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%c{journal}</span><span class="s2">&quot;</span><span class="p">)</span>   <span class="c1"># default 3 drops the &quot;A&quot;</span>
-<span class="go">&#39;PR&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"</span><span class="si">%c{journal}</span><span class="s2">0"</span><span class="p">)</span>  <span class="c1"># keep every word</span>
+<span class="go">'PRA'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">"</span><span class="si">%c{journal}</span><span class="s2">"</span><span class="p">)</span>   <span class="c1"># default 3 drops the "A"</span>
+<span class="go">'PR'</span>
 
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">0</span></code> is a plain example of the trailing <em>number</em>; it is not special to <code class="docutils literal notranslate"><span class="pre">%c</span></code> beyond meaning “small word length zero”. Use it (or a per-type <code class="docutils literal notranslate"><span class="pre">%c{...}0</span></code> format) wherever you want the full venue acronym.</p>
 <p>For venue names where the acronym is <em>not</em> the desired abbreviation, the <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> table in <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> (see the <a class="reference internal" href="config.html#configuration"><span class="std std-ref">configuration</span></a>) defines explicit exceptions per field, keyed by the full field value or by the <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro name:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[initials.journal]</span>
-<span class="s2">&quot;npj Quantum Inf&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;NPJQI&quot;</span>
-<span class="s2">&quot;SIAM Rev.&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;SR&quot;</span>
+<span class="s2">"npj Quantum Inf"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"NPJQI"</span>
+<span class="s2">"SIAM Rev."</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"SR"</span>
 </pre></div>
 </div>
 <p>With this configuration, <code class="docutils literal notranslate"><span class="pre">%c{journal}0</span></code> renders <code class="docutils literal notranslate"><span class="pre">NPJQI</span></code> for an entry published in npj Quantum Inf (instead of the plain acronym <code class="docutils literal notranslate"><span class="pre">NQI</span></code>). The mapping applies whenever <code class="docutils literal notranslate"><span class="pre">%c</span></code> is rendered, including with an explicit <code class="docutils literal notranslate"><span class="pre">format_spec</span></code> pattern.</p>
 <p>The table works for any field, so a per-type format that uses <code class="docutils literal notranslate"><span class="pre">%c{booktitle}</span></code> for conference papers or <code class="docutils literal notranslate"><span class="pre">%c{series}</span></code> for books draws on <code class="docutils literal notranslate"><span class="pre">[initials.booktitle]</span></code> / <code class="docutils literal notranslate"><span class="pre">[initials.series]</span></code> the same way:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[initials.booktitle]</span>
-<span class="s2">&quot;Proc. SPIE 11700, Optical and Quantum Sensing&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;SPIE&quot;</span>
+<span class="s2">"Proc. SPIE 11700, Optical and Quantum Sensing"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"SPIE"</span>
 </pre></div>
 </div>
 <p>Conference <code class="docutils literal notranslate"><span class="pre">booktitle</span></code> values are awkward for a plain acronym — they carry a volume number and a long subtitle that change from year to year — so this mapping is the intended way to pin a stable abbreviation (here <code class="docutils literal notranslate"><span class="pre">SPIE</span></code> rather than the raw acronym <code class="docutils literal notranslate"><span class="pre">PSOAQS</span></code>). Because the mapping matches the <em>full</em> field value, and that value differs for every proceedings volume, it is often cleaner to store the <code class="docutils literal notranslate"><span class="pre">booktitle</span></code> as an <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro and key the mapping by the macro name: one macro (e.g. <code class="docutils literal notranslate"><span class="pre">spie_oqspm</span></code>) can then stand in for every volume of the series, and <code class="docutils literal notranslate"><span class="pre">[initials.booktitle]</span></code> needs only the single entry <code class="docutils literal notranslate"><span class="pre">spie_oqspm</span> <span class="pre">=</span> <span class="pre">&quot;SPIE&quot;</span></code>.</p>
@@ -415,24 +415,24 @@
 <section id="unique-specifiers">
 <span id="specifiers-unique"></span><h2>Unique specifiers<a class="headerlink" href="#unique-specifiers" title="Link to this heading"></a></h2>
 <p>At most one <code class="docutils literal notranslate"><span class="pre">%u</span></code> (lowercase letters), <code class="docutils literal notranslate"><span class="pre">%U</span></code> (uppercase letters), or <code class="docutils literal notranslate"><span class="pre">%n</span></code> (digits) may occur in a format. It inserts, at its position, characters that make the key unique within the library (in a <a class="reference internal" href="#specifiers-files"><span class="std std-ref">file-name format</span></a>, where it is required, unique against the files at the target location). With a trailing count of <code class="docutils literal notranslate"><span class="pre">0</span></code>, characters are only added when needed for disambiguation; with a fixed count <code class="docutils literal notranslate"><span class="pre">N</span></code>, exactly <code class="docutils literal notranslate"><span class="pre">N</span></code> characters are always added:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Goerz2014&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="s2">&quot;Goerz2014&quot;</span><span class="p">,</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Goerz2014"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">"article"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">"Goerz2014"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Goerz, Michael H.&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Another Paper&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;Phys. Rev. A&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2014&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"author"</span><span class="p">:</span> <span class="s2">"Goerz, Michael H."</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Another Paper"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"journal"</span><span class="p">:</span> <span class="s2">"Phys. Rev. A"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"year"</span><span class="p">:</span> <span class="s2">"2014"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="s2">&quot;Goerz2014&quot;</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">)</span>
-<span class="go">&#39;GoerzPRA2014a&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">rekey</span><span class="p">(</span><span class="s2">"Goerz2014"</span><span class="p">,</span> <span class="n">format_spec</span><span class="o">=</span><span class="s2">"</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0"</span><span class="p">)</span>
+<span class="go">'GoerzPRA2014a'</span>
 
 </pre></div>
 </div>
 <p>Regenerating a key is <strong>idempotent</strong>: a key that already fits the format (base text, any unique characters, ending) is kept unchanged, so re-running key generation over a library does not churn the disambiguation suffixes:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014a&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">)</span>
-<span class="go">&#39;GoerzPRA2014a&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"GoerzPRA2014a"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y</span><span class="si">%u</span><span class="s2">0"</span><span class="p">)</span>
+<span class="go">'GoerzPRA2014a'</span>
 
 </pre></div>
 </div>
@@ -441,8 +441,8 @@
 <section id="deterministic-unique-characters">
 <h3>Deterministic unique characters<a class="headerlink" href="#deterministic-unique-characters" title="Link to this heading"></a></h3>
 <p>With a fixed count, an optional <code class="docutils literal notranslate"><span class="pre">[Field]</span></code> argument derives the added characters from a hash of that field instead of by sequential search, so the same reference gets the same key in any library:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1:%Y</span><span class="si">%u</span><span class="s2">[Title]2&quot;</span><span class="p">)</span>
-<span class="go">&#39;Goerz:2014vy&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"GoerzPRA2014"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">1:%Y</span><span class="si">%u</span><span class="s2">[Title]2"</span><span class="p">)</span>
+<span class="go">'Goerz:2014vy'</span>
 
 </pre></div>
 </div>
@@ -457,30 +457,30 @@
 <li><p>Every letter is reduced to its plain-ASCII spelling: <code class="docutils literal notranslate"><span class="pre">ü</span></code> → <code class="docutils literal notranslate"><span class="pre">u</span></code>, <code class="docutils literal notranslate"><span class="pre">ø</span></code> → <code class="docutils literal notranslate"><span class="pre">o</span></code>, <code class="docutils literal notranslate"><span class="pre">ł</span></code> → <code class="docutils literal notranslate"><span class="pre">l</span></code>, <code class="docutils literal notranslate"><span class="pre">ı</span></code> → <code class="docutils literal notranslate"><span class="pre">i</span></code>, <code class="docutils literal notranslate"><span class="pre">æ</span></code> → <code class="docutils literal notranslate"><span class="pre">ae</span></code>, <code class="docutils literal notranslate"><span class="pre">ß</span></code> → <code class="docutils literal notranslate"><span class="pre">ss</span></code>.</p></li>
 <li><p>Whitespace becomes <code class="docutils literal notranslate"><span class="pre">-</span></code>, and any remaining character outside <code class="docutils literal notranslate"><span class="pre">a-z</span> <span class="pre">A-Z</span> <span class="pre">0-9</span> <span class="pre">-</span> <span class="pre">.</span> <span class="pre">/</span> <span class="pre">:</span> <span class="pre">;</span></code> is dropped. Text in a script that has no ASCII spelling (Greek, Cyrillic, CJK) disappears here, so an entry whose author names are not written in the Latin alphabet needs a hand-written key.</p></li>
 </ol>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Mueller&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="s2">&quot;Mueller&quot;</span><span class="p">,</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Mueller"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">"article"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">"Mueller"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Müller, Jörg&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;It&#39;s a </span><span class="si">{Schrödinger}</span><span class="s2"> World&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;New J. Phys.&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2020&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"author"</span><span class="p">:</span> <span class="s2">"Müller, Jörg"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"It's a </span><span class="si">{Schrödinger}</span><span class="s2"> World"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"journal"</span><span class="p">:</span> <span class="s2">"New J. Phys."</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"year"</span><span class="p">:</span> <span class="s2">"2020"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Mueller&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y:%t&quot;</span><span class="p">)</span>
-<span class="go">&#39;MullerNJP2020:Its-a-Schrodinger-World&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"Mueller"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">1</span><span class="si">%c{journal}</span><span class="s2">0%Y:%t"</span><span class="p">)</span>
+<span class="go">'MullerNJP2020:Its-a-Schrodinger-World'</span>
 
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Kilic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="s2">&quot;Kilic&quot;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Kilic"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">"article"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">"Kilic"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Kılıç, Ayşe and Masłowski, Tomasz&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;New J. Phys.&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2024&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"author"</span><span class="p">:</span> <span class="s2">"Kılıç, Ayşe and Masłowski, Tomasz"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"journal"</span><span class="p">:</span> <span class="s2">"New J. Phys."</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"year"</span><span class="p">:</span> <span class="s2">"2024"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">&quot;Kilic&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a%c{journal}</span><span class="s2">0%Y&quot;</span><span class="p">)</span>
-<span class="go">&#39;KilicMaslowskiNJP2024&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span><span class="s2">"Kilic"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a%c{journal}</span><span class="s2">0%Y"</span><span class="p">)</span>
+<span class="go">'KilicMaslowskiNJP2024'</span>
 
 </pre></div>
 </div>
@@ -498,41 +498,41 @@
 </ul>
 <p>To preview the file name a format generates, use <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.eval_format_spec" title="bibdeskparser.Library.eval_format_spec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.eval_format_spec</span></code></a> with a <code class="docutils literal notranslate"><span class="pre">filename</span></code>. This is a pure evaluation of the format: it never touches the filesystem and moves nothing. The <code class="docutils literal notranslate"><span class="pre">filename</span></code> argument only supplies the original-name specifiers <code class="docutils literal notranslate"><span class="pre">%l</span></code>/<code class="docutils literal notranslate"><span class="pre">%L</span></code>/<code class="docutils literal notranslate"><span class="pre">%e</span></code>/<code class="docutils literal notranslate"><span class="pre">%E</span></code> (above); it need not exist or be one of the entry’s attachments, and any non-<code class="docutils literal notranslate"><span class="pre">None</span></code> value – including the empty string <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> – selects the file-name dialect:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="p">[</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="p">[</span><span class="s2">"GoerzPRA2014"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">"article"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">"GoerzPRA2014"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Goerz, Michael H. and Koch, Christiane P.&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Robustness of high-fidelity </span><span class="si">{Rydberg}</span><span class="s2"> gates&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;journal&quot;</span><span class="p">:</span> <span class="s2">&quot;Phys. Rev. A&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="s2">&quot;2014&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"author"</span><span class="p">:</span> <span class="s2">"Goerz, Michael H. and Koch, Christiane P."</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Robustness of high-fidelity </span><span class="si">{Rydberg}</span><span class="s2"> gates"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"journal"</span><span class="p">:</span> <span class="s2">"Phys. Rev. A"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"year"</span><span class="p">:</span> <span class="s2">"2014"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">{Cite Key}</span><span class="si">%u</span><span class="s2">0</span><span class="si">%e</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;downloaded.pdf&quot;</span>
+<span class="gp">... </span>    <span class="s2">"GoerzPRA2014"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%f</span><span class="s2">{Cite Key}</span><span class="si">%u</span><span class="s2">0</span><span class="si">%e</span><span class="s2">"</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">"downloaded.pdf"</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="go">&#39;GoerzPRA2014.pdf&#39;</span>
+<span class="go">'GoerzPRA2014.pdf'</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">1/%Y</span><span class="si">%u</span><span class="s2">0</span><span class="si">%e</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;downloaded.pdf&quot;</span>
+<span class="gp">... </span>    <span class="s2">"GoerzPRA2014"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%a</span><span class="s2">1/%Y</span><span class="si">%u</span><span class="s2">0</span><span class="si">%e</span><span class="s2">"</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">"downloaded.pdf"</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="go">&#39;Goerz/2014.pdf&#39;</span>
+<span class="go">'Goerz/2014.pdf'</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>  <span class="c1"># spaces survive in a file name</span>
-<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;%t</span><span class="si">%u</span><span class="s2">0</span><span class="si">%e</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;downloaded.pdf&quot;</span>
+<span class="gp">... </span>    <span class="s2">"GoerzPRA2014"</span><span class="p">,</span> <span class="s2">"%t</span><span class="si">%u</span><span class="s2">0</span><span class="si">%e</span><span class="s2">"</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">"downloaded.pdf"</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="go">&#39;Robustness of high-fidelity Rydberg gates.pdf&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>  <span class="c1"># &quot;&quot; still selects the file dialect</span>
-<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">{Cite Key}</span><span class="si">%u</span><span class="s2">0&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+<span class="go">'Robustness of high-fidelity Rydberg gates.pdf'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>  <span class="c1"># "" still selects the file dialect</span>
+<span class="gp">... </span>    <span class="s2">"GoerzPRA2014"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%f</span><span class="s2">{Cite Key}</span><span class="si">%u</span><span class="s2">0"</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">""</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="go">&#39;GoerzPRA2014&#39;</span>
+<span class="go">'GoerzPRA2014'</span>
 
 </pre></div>
 </div>
 <p>A preview shows the <em>base</em> name, with the required unique specifier contributing no disambiguation. On-disk collision avoidance happens only during actual filing (<a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.rename_file" title="bibdeskparser.Library.rename_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rename_file()</span></code></a> / <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_file" title="bibdeskparser.Library.add_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_file()</span></code></a>), where the unique specifier grows a suffix (e.g. <code class="docutils literal notranslate"><span class="pre">GoerzPRA2014a.pdf</span></code>) whenever another file already occupies the target name.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">filename</span></code> is an attachment’s current library-relative path (as listed by <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Entry.files" title="bibdeskparser.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">files</span></code></a>) and already matches the format, it evaluates to itself – the same idempotency as a regenerated citation key. <code class="docutils literal notranslate"><span class="pre">bib.eval_format_spec(key,</span> <span class="pre">fmt,</span> <span class="pre">filename=name)</span> <span class="pre">!=</span> <span class="pre">name</span></code> thus identifies the attachments that do not yet follow the format:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>  <span class="c1"># &quot;downloaded.pdf&quot; matches %l%n0%e</span>
-<span class="gp">... </span>    <span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">%l%</span><span class="s2">n0</span><span class="si">%e</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;downloaded.pdf&quot;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">filebib</span><span class="o">.</span><span class="n">eval_format_spec</span><span class="p">(</span>  <span class="c1"># "downloaded.pdf" matches %l%n0%e</span>
+<span class="gp">... </span>    <span class="s2">"GoerzPRA2014"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%l%</span><span class="s2">n0</span><span class="si">%e</span><span class="s2">"</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">"downloaded.pdf"</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="go">&#39;downloaded.pdf&#39;</span>
+<span class="go">'downloaded.pdf'</span>
 
 </pre></div>
 </div>
@@ -566,7 +566,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 03, 2026.
+      <span class="lastupdated">Last updated on Aug 21, 2026.
       </span></p>
   </div>
 

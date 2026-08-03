@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Changelog &mdash; BibDeskParser 0.8.0 documentation</title>
+  <title>Changelog &mdash; BibDeskParser 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=486e5634"></script>
+      <script src="_static/documentation_options.js?v=ec16d22d"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -38,7 +38,7 @@
   </a>
 
   <div class="version">
-    v0.8.0
+    v0.8.1
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -78,6 +78,7 @@
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#v0-8-1-2026-08-21">v0.8.1 - 2026-08-21</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#v0-8-0-2026-08-03">v0.8.0 - 2026-08-03</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#v0-7-0-2026-07-28">v0.7.0 - 2026-07-28</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#v0-6-0-2026-07-27">v0.6.0 - 2026-07-27</a></li>
@@ -151,6 +152,15 @@
 <h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading"></a></h1>
 <p>The format is based on <a class="reference external" href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
 and this project adheres to <a class="reference external" href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<section id="v0-8-1-2026-08-21">
+<h2><a class="reference external" href="https://github.com/goerz/bibdeskparser/releases/tag/v0.8.1">v0.8.1</a> - 2026-08-21<a class="headerlink" href="#v0-8-1-2026-08-21" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Fixed: an <code class="docutils literal notranslate"><span class="pre">export</span></code> with the default minimal field selection no longer drops fields that the entry type requires. Every entry type BibDesk documents now has a field whitelist of its own, holding the type’s required fields together with the optional ones that identify the work (a book’s edition, a report’s number) or locate it (a <code class="docutils literal notranslate"><span class="pre">url</span></code>, a <code class="docutils literal notranslate"><span class="pre">doi</span></code>): <code class="docutils literal notranslate"><span class="pre">book</span></code>, <code class="docutils literal notranslate"><span class="pre">inbook</span></code>, and <code class="docutils literal notranslate"><span class="pre">proceedings</span></code> keep <code class="docutils literal notranslate"><span class="pre">publisher</span></code>, <code class="docutils literal notranslate"><span class="pre">techreport</span></code> keeps <code class="docutils literal notranslate"><span class="pre">institution</span></code>, <code class="docutils literal notranslate"><span class="pre">booklet</span></code> keeps <code class="docutils literal notranslate"><span class="pre">howpublished</span></code>, <code class="docutils literal notranslate"><span class="pre">manual</span></code> keeps <code class="docutils literal notranslate"><span class="pre">organization</span></code>, <code class="docutils literal notranslate"><span class="pre">unpublished</span></code> keeps <code class="docutils literal notranslate"><span class="pre">note</span></code> and <code class="docutils literal notranslate"><span class="pre">url</span></code>, <code class="docutils literal notranslate"><span class="pre">webpage</span></code> keeps <code class="docutils literal notranslate"><span class="pre">url</span></code>, <code class="docutils literal notranslate"><span class="pre">periodical</span></code> keeps <code class="docutils literal notranslate"><span class="pre">journal</span></code>, <code class="docutils literal notranslate"><span class="pre">jurthesis</span></code> keeps <code class="docutils literal notranslate"><span class="pre">school</span></code>, <code class="docutils literal notranslate"><span class="pre">glossdef</span></code> keeps <code class="docutils literal notranslate"><span class="pre">word</span></code>/<code class="docutils literal notranslate"><span class="pre">definition</span></code>, and <code class="docutils literal notranslate"><span class="pre">conference</span></code> is exported like <code class="docutils literal notranslate"><span class="pre">inproceedings</span></code>. Previously only <code class="docutils literal notranslate"><span class="pre">article</span></code>, <code class="docutils literal notranslate"><span class="pre">inproceedings</span></code>, <code class="docutils literal notranslate"><span class="pre">incollection</span></code>, <code class="docutils literal notranslate"><span class="pre">mastersthesis</span></code>, and <code class="docutils literal notranslate"><span class="pre">phdthesis</span></code> had a whitelist and every other type fell back to <code class="docutils literal notranslate"><span class="pre">author</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">year</span></code>, so that a minimally exported <code class="docutils literal notranslate"><span class="pre">&#64;book</span></code> carried no publisher and a <code class="docutils literal notranslate"><span class="pre">&#64;techreport</span></code> no institution. A stored <code class="docutils literal notranslate"><span class="pre">doi</span></code> is now exported for every type, including the thesis types. The fallback applies only to entry types outside BibDesk’s own table, i.e. biblatex-only types like <code class="docutils literal notranslate"><span class="pre">&#64;online</span></code> and types added by a <code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code>. [<a class="reference external" href="https://github.com/goerz/bibdeskparser/issues/74">#74</a>, <a class="reference external" href="https://github.com/goerz/bibdeskparser/pull/77">#77</a>]</p></li>
+<li><p>Fixed: <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">--update</span> <span class="pre">FILE</span></code> (<code class="docutils literal notranslate"><span class="pre">Library.export(update=...)</span></code>) no longer drops the fields of an entry that its field selection does not cover. A refreshed entry now keeps every field it has in FILE, in FILE’s own field order, with the library’s current value where the library’s entry has the field (and FILE’s value where it does not); the selection – <code class="docutils literal notranslate"><span class="pre">&quot;minimal&quot;</span></code> by default, and <code class="docutils literal notranslate"><span class="pre">--full</span></code>/<code class="docutils literal notranslate"><span class="pre">--field</span></code> on the command line – only adds fields on top of that. Refreshing a file exported with <code class="docutils literal notranslate"><span class="pre">--full</span></code> therefore no longer strips it down to the minimal fields, and hand-added fields such as an <code class="docutils literal notranslate"><span class="pre">annote</span></code> survive an update, making the documented “nothing is ever removed” true field by field. [<a class="reference external" href="https://github.com/goerz/bibdeskparser/issues/75">#75</a>, <a class="reference external" href="https://github.com/goerz/bibdeskparser/pull/79">#79</a>]</p></li>
+<li><p>Fixed: setting a field to a URL no longer stores it as a bare <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference. An ordinary URL is a valid BibDesk macro name, so <code class="docutils literal notranslate"><span class="pre">set_field</span> <span class="pre">KEY</span> <span class="pre">url</span> <span class="pre">...</span></code> (and the equivalent assignment in Python) stored an unbraced value, which made the next <code class="docutils literal notranslate"><span class="pre">save</span></code> fail with <code class="docutils literal notranslate"><span class="pre">undefined</span> <span class="pre">macro(s)</span> <span class="pre">referenced</span> <span class="pre">by</span> <span class="pre">one</span> <span class="pre">or</span> <span class="pre">more</span> <span class="pre">entries</span></code> and made <code class="docutils literal notranslate"><span class="pre">export</span></code> write invalid BibTeX. A plain <code class="docutils literal notranslate"><span class="pre">str</span></code> is now always stored as literal text when it carries a URL scheme (<code class="docutils literal notranslate"><span class="pre">://</span></code>), and in any field whose name contains <code class="docutils literal notranslate"><span class="pre">url</span></code>; <code class="docutils literal notranslate"><span class="pre">MacroString</span></code> still forces a macro reference. [<a class="reference external" href="https://github.com/goerz/bibdeskparser/issues/78">#78</a>, <a class="reference external" href="https://github.com/goerz/bibdeskparser/pull/80">#80</a>]</p></li>
+<li><p>Added: <code class="docutils literal notranslate"><span class="pre">export</span></code> (including <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">--update</span></code>) now warns about every bare <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> macro reference it keeps for a macro that nothing defines – neither the library (nor the <code class="docutils literal notranslate"><span class="pre">strings</span></code> argument of <code class="docutils literal notranslate"><span class="pre">export_entries</span></code>) nor the standard month macros – since such output is not valid BibTeX. Only the <code class="docutils literal notranslate"><span class="pre">expand_strings=True</span></code> path warned before. [<a class="reference external" href="https://github.com/goerz/bibdeskparser/issues/78">#78</a>, <a class="reference external" href="https://github.com/goerz/bibdeskparser/pull/80">#80</a>]</p></li>
+</ul>
+</section>
 <section id="v0-8-0-2026-08-03">
 <h2><a class="reference external" href="https://github.com/goerz/bibdeskparser/releases/tag/v0.8.0">v0.8.0</a> - 2026-08-03<a class="headerlink" href="#v0-8-0-2026-08-03" title="Link to this heading"></a></h2>
 <ul class="simple">
@@ -328,7 +338,7 @@ and this project adheres to <a class="reference external" href="https://semver.o
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 03, 2026.
+      <span class="lastupdated">Last updated on Aug 21, 2026.
       </span></p>
   </div>
 

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Package API &mdash; BibDeskParser 0.8.0 documentation</title>
+  <title>Package API &mdash; BibDeskParser 0.8.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=486e5634"></script>
+      <script src="../../_static/documentation_options.js?v=ec16d22d"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.8.0
+    v0.8.1
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -580,24 +580,24 @@ above apply.</p>
 <p>Loading an existing library (here, the example database shipped
 in the <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> repository as <code class="docutils literal notranslate"><span class="pre">tests/Refs/refs.bib</span></code>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">Library</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">(</span><span class="s2">&quot;tests/Refs/refs.bib&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">(</span><span class="s2">"tests/Refs/refs.bib"</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">bib</span><span class="p">)</span>
 <span class="go">61</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzQ2022&quot;</span><span class="p">][</span><span class="s2">&quot;title&quot;</span><span class="p">]</span>
-<span class="go">&#39;Quantum Optimal Control via Semi-Automatic Differentiation&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;tractor atom interferometry&quot;</span><span class="p">)]</span>
-<span class="go">[&#39;RaithelQST2022&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"GoerzQ2022"</span><span class="p">][</span><span class="s2">"title"</span><span class="p">]</span>
+<span class="go">'Quantum Optimal Control via Semi-Automatic Differentiation'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">"tractor atom interferometry"</span><span class="p">)]</span>
+<span class="go">['RaithelQST2022']</span>
 
 </pre></div>
 </div>
 <p>A library can also be built from scratch, in memory:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>  <span class="c1"># a fresh, empty, in-memory library</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">&quot;jpb&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;J. Phys. B&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">&quot;jpb&quot;</span><span class="p">]</span>
-<span class="go">&#39;J. Phys. B&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Key2026&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;A Title&quot;</span><span class="p">})</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2026&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2026&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="n">entry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">"jpb"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"J. Phys. B"</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">"jpb"</span><span class="p">]</span>
+<span class="go">'J. Phys. B'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">"article"</span><span class="p">,</span> <span class="s2">"Key2026"</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s2">"title"</span><span class="p">:</span> <span class="s2">"A Title"</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Key2026"</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Key2026"</span><span class="p">]</span> <span class="ow">is</span> <span class="n">entry</span>
 <span class="go">True</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">bib</span><span class="p">)</span>
 <span class="go">1</span>
@@ -607,23 +607,23 @@ in the <code class="docutils literal notranslate"><span class="pre">bibdeskparse
 <p>Deleting a macro that is still referenced by an entry is rejected:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-<span class="gp">... </span>    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-<span class="gp">... </span>    <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;jpb&quot;</span>  <span class="c1"># a bare macro reference</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">&quot;jpb&quot;</span><span class="p">]</span>
+<span class="gp">... </span>    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">entry</span><span class="p">[</span><span class="s2">"journal"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"jpb"</span>  <span class="c1"># a bare macro reference</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">"jpb"</span><span class="p">]</span>
 <span class="gt">Traceback (most recent call last):</span>
 <span class="w">    </span><span class="o">...</span>
-<span class="gr">ValueError</span>: <span class="n">cannot delete macro &#39;jpb&#39;: in use by entries [&#39;Key2026&#39;]</span>
+<span class="gr">ValueError</span>: <span class="n">cannot delete macro 'jpb': in use by entries ['Key2026']</span>
 
 </pre></div>
 </div>
 <p>Group membership is mutated through <code class="docutils literal notranslate"><span class="pre">Library</span></code> itself, which keeps
 <a class="reference internal" href="#bibdeskparser.Entry.groups" title="bibdeskparser.Entry.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Entry.groups</span></code></a> in sync immediately:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;My Papers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>  <span class="c1"># create an empty group</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">add_to_group</span><span class="p">(</span><span class="s2">&quot;My Papers&quot;</span><span class="p">,</span> <span class="s2">&quot;Key2026&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2026&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">groups</span>
-<span class="go">(&#39;My Papers&#39;,)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">"My Papers"</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>  <span class="c1"># create an empty group</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">add_to_group</span><span class="p">(</span><span class="s2">"My Papers"</span><span class="p">,</span> <span class="s2">"Key2026"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Key2026"</span><span class="p">]</span><span class="o">.</span><span class="n">groups</span>
+<span class="go">('My Papers',)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span>
-<span class="go">{&#39;My Papers&#39;: (&#39;Key2026&#39;,)}</span>
+<span class="go">{'My Papers': ('Key2026',)}</span>
 
 </pre></div>
 </div>
@@ -1214,8 +1214,9 @@ the <code class="docutils literal notranslate"><span class="pre">&#64;string</sp
 are included, so the export is self-contained; with <code class="docutils literal notranslate"><span class="pre">True</span></code>,
 each reference is replaced by the macro’s value (the
 standard BibTeX month macros <code class="docutils literal notranslate"><span class="pre">jan</span></code> … <code class="docutils literal notranslate"><span class="pre">dec</span></code> also resolve),
-and no <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions are emitted. An undefined
-macro stays a bare reference, with a <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>.</p></li>
+and no <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions are emitted. Either way, an
+undefined macro stays a bare reference, with a
+<code class="docutils literal notranslate"><span class="pre">UserWarning</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">fields</span></code>: <code class="docutils literal notranslate"><span class="pre">&quot;minimal&quot;</span></code> (default: only the fields needed to
 typeset a bibliography), <code class="docutils literal notranslate"><span class="pre">&quot;full&quot;</span></code> (every field except the
 <code class="docutils literal notranslate"><span class="pre">date-added</span></code>/<code class="docutils literal notranslate"><span class="pre">date-modified</span></code> bookkeeping fields, with
@@ -1280,23 +1281,28 @@ open file object instead of being returned.</p>
 export) is refreshed from this library instead: this library
 is only read, and the target file is rewritten in place.
 Every key in the target that exists in this library – or, if
-<code class="docutils literal notranslate"><span class="pre">keys</span></code> are given, exactly those keys – is replaced by a
-fresh export of that entry; keys not yet in the target are
-appended, and nothing is ever removed. Entries the library
-does not know, <code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions (refreshed to this
-library’s values where it defines the macro, kept otherwise),
-and comments are all preserved. Entries written by an update
-never include <code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields, which a plain target cannot
-represent. The <code class="docutils literal notranslate"><span class="pre">unicode</span></code>/<code class="docutils literal notranslate"><span class="pre">expand_strings</span></code>/<code class="docutils literal notranslate"><span class="pre">preprint</span></code> options
-default to the target file’s own options (from its marker
-line, or detected from its content); an explicit argument
-overrides them and, with <code class="docutils literal notranslate"><span class="pre">marker</span></code>, is recorded in the
-rewritten marker, so it is sticky for subsequent updates
-(with <code class="docutils literal notranslate"><span class="pre">marker=False</span></code>, the file’s marker state is left
-untouched). The target must exist and be in the plain format
-(a BibDesk database is refused); it is rewritten
-unconditionally, with no staleness check. Mutually exclusive
-with <code class="docutils literal notranslate"><span class="pre">outfile</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">keys</span></code> are given, exactly those keys – takes this library’s
+current values; keys not yet in the target are appended, and
+nothing is ever removed. That holds field by field: a
+refreshed entry keeps every field it has in the target (in
+the target’s own field order), and <code class="docutils literal notranslate"><span class="pre">fields</span></code> only selects
+which further fields to add, so a target exported with
+<code class="docutils literal notranslate"><span class="pre">fields=&quot;full&quot;</span></code> stays full under a later default update. A
+field the target has but this library’s entry does not keeps
+the target’s value. Entries the library does not know,
+<code class="docutils literal notranslate"><span class="pre">&#64;string</span></code> definitions (refreshed to this library’s values
+where it defines the macro, kept otherwise), and comments are
+all preserved. Entries written by an update never include
+<code class="docutils literal notranslate"><span class="pre">bdsk-*</span></code> fields, which a plain target cannot represent. The
+<code class="docutils literal notranslate"><span class="pre">unicode</span></code>/<code class="docutils literal notranslate"><span class="pre">expand_strings</span></code>/<code class="docutils literal notranslate"><span class="pre">preprint</span></code> options default to the
+target file’s own options (from its marker line, or detected
+from its content); an explicit argument overrides them and,
+with <code class="docutils literal notranslate"><span class="pre">marker</span></code>, is recorded in the rewritten marker, so it is
+sticky for subsequent updates (with <code class="docutils literal notranslate"><span class="pre">marker=False</span></code>, the
+file’s marker state is left untouched). The target must exist
+and be in the plain format (a BibDesk database is refused);
+it is rewritten unconditionally, with no staleness check.
+Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">outfile</span></code>.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1429,8 +1435,8 @@ modification, an import only becomes permanent with
 <a class="reference internal" href="#bibdeskparser.Library.save" title="bibdeskparser.Library.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Library</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">&quot;pra&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Phys. Rev. A&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">keys</span> <span class="o">=</span> <span class="n">bib</span><span class="o">.</span><span class="n">import_bibtex</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">strings</span><span class="p">[</span><span class="s2">"pra"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Phys. Rev. A"</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">keys</span> <span class="o">=</span> <span class="n">bib</span><span class="o">.</span><span class="n">import_bibtex</span><span class="p">(</span><span class="s1">'''</span>
 <span class="gp">... </span><span class="s1">@article{PhysRevA.89.032334,</span>
 <span class="gp">... </span><span class="s1">    Author = {Goerz, Michael and Reich, Daniel M.},</span>
 <span class="gp">... </span><span class="s1">    Title = {Optimal control theory for a quantum gate},</span>
@@ -1439,13 +1445,13 @@ modification, an import only becomes permanent with
 <span class="gp">... </span><span class="s1">    Doi = {10.1103/PhysRevA.89.032334},</span>
 <span class="gp">... </span><span class="s1">    Pages = </span><span class="si">{032334}</span><span class="s1">,</span>
 <span class="gp">... </span><span class="s1">    Volume = </span><span class="si">{89}</span><span class="s1">,</span>
-<span class="gp">... </span><span class="s1">}&#39;&#39;&#39;</span><span class="p">)</span>
+<span class="gp">... </span><span class="s1">}'''</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">keys</span>
-<span class="go">[&#39;GoerzPRA2014&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">][</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
-<span class="go">&#39;pra&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;GoerzPRA2014&quot;</span><span class="p">][</span><span class="s2">&quot;doi&quot;</span><span class="p">]</span>
-<span class="go">&#39;10.1103/physreva.89.032334&#39;</span>
+<span class="go">['GoerzPRA2014']</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"GoerzPRA2014"</span><span class="p">][</span><span class="s2">"journal"</span><span class="p">]</span>
+<span class="go">'pra'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"GoerzPRA2014"</span><span class="p">][</span><span class="s2">"doi"</span><span class="p">]</span>
+<span class="go">'10.1103/physreva.89.032334'</span>
 
 </pre></div>
 </div>
@@ -1468,13 +1474,13 @@ no validation, but an invalid key would produce a file BibDesk
 cannot read back). Values are plain Unicode strings; the empty
 string is allowed (matching BibDesk – unlike an empty <em>entry
 field</em>, which a BibDesk save drops).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">(</span><span class="s2">&quot;tests/Refs/refs.bib&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">(</span><span class="s2">"tests/Refs/refs.bib"</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">)</span>
-<span class="go">[&#39;primary_topics&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;Primary_Topics&quot;</span><span class="p">]</span>
-<span class="go">&#39;Coherent Control, Numerics, OCT, ...&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;project&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;qdyn&quot;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;project&quot;</span><span class="p">]</span>
+<span class="go">['primary_topics']</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">"Primary_Topics"</span><span class="p">]</span>
+<span class="go">'Coherent Control, Numerics, OCT, ...'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">"project"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"qdyn"</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">bib</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">"project"</span><span class="p">]</span>
 
 </pre></div>
 </div>
@@ -1531,23 +1537,23 @@ when it saves a <code class="docutils literal notranslate"><span class="pre">.bi
 <code class="docutils literal notranslate"><span class="pre">not_group</span></code>) that does not exist in the library.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">Library</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2026&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Key2026&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;A Title&quot;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Key2026"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">"article"</span><span class="p">,</span> <span class="s2">"Key2026"</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s2">"title"</span><span class="p">:</span> <span class="s2">"A Title"</span><span class="p">}</span>
 <span class="gp">... </span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-<span class="go">(&#39;Key2026&#39;,)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">types</span><span class="o">=</span><span class="s2">&quot;book&quot;</span><span class="p">)</span>
+<span class="go">('Key2026',)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">types</span><span class="o">=</span><span class="s2">"book"</span><span class="p">)</span>
 <span class="go">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">has</span><span class="o">=</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="n">missing</span><span class="o">=</span><span class="s2">&quot;doi&quot;</span><span class="p">)</span>
-<span class="go">(&#39;Key2026&#39;,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">has</span><span class="o">=</span><span class="s2">"title"</span><span class="p">,</span> <span class="n">missing</span><span class="o">=</span><span class="s2">"doi"</span><span class="p">)</span>
+<span class="go">('Key2026',)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">with_files</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># no attachment yet</span>
 <span class="go">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">with_files</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="go">(&#39;Key2026&#39;,)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;My Papers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Key2026&quot;</span><span class="p">,)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">&quot;My Papers&quot;</span><span class="p">)</span>
-<span class="go">(&#39;Key2026&#39;,)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">not_group</span><span class="o">=</span><span class="s2">&quot;My Papers&quot;</span><span class="p">)</span>
+<span class="go">('Key2026',)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">"My Papers"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"Key2026"</span><span class="p">,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">"My Papers"</span><span class="p">)</span>
+<span class="go">('Key2026',)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">not_group</span><span class="o">=</span><span class="s2">"My Papers"</span><span class="p">)</span>
 <span class="go">()</span>
 
 </pre></div>
@@ -1881,7 +1887,7 @@ database format, with a <a class="reference internal" href="#bibdeskparser.Forma
 <span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">match</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'words'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.search" title="Link to this definition"></a></dt>
 <dd><p>Return a list of the entries matching <code class="docutils literal notranslate"><span class="pre">query</span></code>, best match
 first.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">library</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;words&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">library</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"words"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>For every searched field, the query is matched against the
@@ -1924,20 +1930,20 @@ matching at a stricter ladder level rank above looser matches;
 ties keep the library’s entry order.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">Library</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Schroedinger1926&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
-<span class="gp">... </span>    <span class="s2">&quot;article&quot;</span><span class="p">,</span>
-<span class="gp">... </span>    <span class="s2">&quot;Schroedinger1926&quot;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Schroedinger1926"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">"article"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">"Schroedinger1926"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="n">fields</span><span class="o">=</span><span class="p">{</span>
-<span class="gp">... </span>        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;Schrödinger, Erwin&quot;</span><span class="p">,</span>
-<span class="gp">... </span>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Quantisierung als Eigenwertproblem&quot;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"author"</span><span class="p">:</span> <span class="s2">"Schrödinger, Erwin"</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Quantisierung als Eigenwertproblem"</span><span class="p">,</span>
 <span class="gp">... </span>    <span class="p">},</span>
 <span class="gp">... </span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Schrodinger&quot;</span><span class="p">)]</span>
-<span class="go">[&#39;Schroedinger1926&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;Schroedinger&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;author&quot;</span><span class="p">])]</span>
-<span class="go">[&#39;Schroedinger1926&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;eigenwertproblem quantisierung&quot;</span><span class="p">)]</span>
-<span class="go">[&#39;Schroedinger1926&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">"Schrodinger"</span><span class="p">)]</span>
+<span class="go">['Schroedinger1926']</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">"Schroedinger"</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">"author"</span><span class="p">])]</span>
+<span class="go">['Schroedinger1926']</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">bib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">"eigenwertproblem quantisierung"</span><span class="p">)]</span>
+<span class="go">['Schroedinger1926']</span>
 
 </pre></div>
 </div>
@@ -2030,12 +2036,12 @@ braced string), visible in an export of the stored values
 (<code class="docutils literal notranslate"><span class="pre">unicode=False</span></code>, see <a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.export()</span></code></a>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">Library</span><span class="p">,</span> <span class="n">MacroString</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Key2024&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MacroString</span><span class="p">(</span><span class="s2">&quot;prl&quot;</span><span class="p">)</span>  <span class="c1"># forced macro reference</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
-<span class="go">&#39;prl&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2024&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">"article"</span><span class="p">,</span> <span class="s2">"Key2024"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">"journal"</span><span class="p">]</span> <span class="o">=</span> <span class="n">MacroString</span><span class="p">(</span><span class="s2">"prl"</span><span class="p">)</span>  <span class="c1"># forced macro reference</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">"journal"</span><span class="p">]</span>
+<span class="go">'prl'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Key2024"</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">"Key2024"</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
 <span class="go">@article{Key2024,</span>
 <span class="go">    Journal = prl,</span>
 <span class="go">}</span>
@@ -2078,19 +2084,19 @@ braced string vs. a bare macro reference), visible in an export
 of the stored values (<code class="docutils literal notranslate"><span class="pre">unicode=False</span></code>, see <a class="reference internal" href="#bibdeskparser.Library.export" title="bibdeskparser.Library.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Library.export()</span></code></a>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">Library</span><span class="p">,</span> <span class="n">ValueString</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">&quot;article&quot;</span><span class="p">,</span> <span class="s2">&quot;Key2024&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="s2">&quot;prl&quot;</span><span class="p">)</span>  <span class="c1"># forced literal text</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
-<span class="go">&#39;prl&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">&quot;Key2024&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span><span class="s2">"article"</span><span class="p">,</span> <span class="s2">"Key2024"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">"journal"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="s2">"prl"</span><span class="p">)</span>  <span class="c1"># forced literal text</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">"journal"</span><span class="p">]</span>
+<span class="go">'prl'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Key2024"</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">"Key2024"</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
 <span class="go">@article{Key2024,</span>
 <span class="go">    Journal = {prl},</span>
 <span class="go">}</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;prl&quot;</span>  <span class="c1"># bare str: treated as a macro ref</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;journal&quot;</span><span class="p">]</span>
-<span class="go">&#39;prl&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">&quot;Key2024&quot;</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">"journal"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"prl"</span>  <span class="c1"># bare str: treated as a macro ref</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">entry</span><span class="p">[</span><span class="s2">"journal"</span><span class="p">]</span>
+<span class="go">'prl'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bib</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">"Key2024"</span><span class="p">,</span> <span class="n">unicode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
 <span class="go">@article{Key2024,</span>
 <span class="go">    Journal = prl,</span>
 <span class="go">}</span>
@@ -2115,7 +2121,7 @@ of the stored values (<code class="docutils literal notranslate"><span class="pr
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 03, 2026.
+      <span class="lastupdated">Last updated on Aug 21, 2026.
       </span></p>
   </div>
 
