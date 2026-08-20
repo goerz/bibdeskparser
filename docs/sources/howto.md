@@ -830,6 +830,8 @@ Note how the entries' `abstract` and `keywords`, and the `article` entry's linke
 @unpublished{Evans1983,
     Author = {Evans, Lawrence C.},
     Title = {An Introduction to Mathematical Optimal Control Theory},
+    Note = {Lecture Notes, University of California, Berkeley},
+    Url = {https://math.berkeley.edu/~evans/control.course.pdf},
     Year = {1983},
 }
 <BLANKLINE>
@@ -868,8 +870,7 @@ All other commands work directly on the exported file and preserve its plain for
 
 ```console
 $ bibdeskparser check paper.bib
-Evans1983: missing required field 'note' for entry type 'unpublished'
-FAIL (1 problem, 3 entries checked)
+PASS (3 entries checked)
 $ bibdeskparser set_field paper.bib Evans1983 note "Lecture notes"
 $ bibdeskparser delete paper.bib GrondPRA2009a
 ```

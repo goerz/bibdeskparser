@@ -9,7 +9,12 @@ from bibtexparser.model import Field
 
 import bibdeskparser.config as config
 from bibdeskparser.entry import Entry
-from bibdeskparser.exporting import export_entries
+from bibdeskparser.entrytypes import DOCUMENTED_TYPES
+from bibdeskparser.exporting import (
+    _MINIMAL_FALLBACK,
+    _MINIMAL_FIELDS,
+    export_entries,
+)
 from bibdeskparser.macros import ValueString
 from bibdeskparser.middleware import parse_stack
 
@@ -341,17 +346,252 @@ def test_minimal_phdthesis_whitelist(phd_entry):
         assert line == f"    {name.capitalize()} = {{{value}}},\n"
 
 
-def test_minimal_fallback_whitelist():
-    """An entry type without a dedicated whitelist falls back to
-    `author, title, year`."""
+def test_minimal_book_whitelist():
+    """`book` whitelist: the type's required `publisher`, and the
+    imprint details, are kept."""
     entry = Entry(
-        "misc",
+        "book",
+        "Tannor2007",
+        fields={
+            "author": "Tannor, David J.",
+            "address": "Sausalito, California",
+            "publisher": "University Science Books",
+            "title": "Introduction to Quantum Mechanics",
+            "year": "2007",
+            "abstract": "A textbook.",
+        },
+    )
+    text = export_entries([entry], fields="minimal")
+    assert text == (
+        "@book{Tannor2007,\n"
+        "    Author = {Tannor, David J.},\n"
+        "    Title = {Introduction to Quantum Mechanics},\n"
+        "    Publisher = {University Science Books},\n"
+        "    Year = {2007},\n"
+        "    Address = {Sausalito, California},\n"
+        "}\n"
+    )
+
+
+def test_minimal_techreport_whitelist():
+    """`techreport` whitelist: the type's required `institution`, and
+    the report number, are kept."""
+    entry = Entry(
+        "techreport",
+        "Two2026",
+        fields={
+            "author": "B. Two",
+            "title": "A Report",
+            "institution": "Institute of Reports",
+            "number": "IR-2026-01",
+            "year": "2026",
+            "abstract": "An abstract.",
+        },
+    )
+    text = export_entries([entry], fields="minimal")
+    assert text == (
+        "@techreport{Two2026,\n"
+        "    Author = {B. Two},\n"
+        "    Title = {A Report},\n"
+        "    Institution = {Institute of Reports},\n"
+        "    Year = {2026},\n"
+        "    Number = {IR-2026-01},\n"
+        "}\n"
+    )
+
+
+def test_minimal_unpublished_keeps_note_and_url():
+    """`unpublished` whitelist: the type's required `note` is kept,
+    along with the `url` that locates the work (for an entry that is
+    not a preprint)."""
+    entry = Entry(
+        "unpublished",
+        "Evans1983",
+        fields={
+            "author": "Evans, Lawrence C.",
+            "title": "An Introduction to Mathematical Optimal Control",
+            "note": "Lecture Notes, University of California, Berkeley",
+            "url": "https://math.berkeley.edu/~evans/control.course.pdf",
+            "year": "1983",
+        },
+    )
+    text = export_entries([entry], fields="minimal")
+    assert text == (
+        "@unpublished{Evans1983,\n"
+        "    Author = {Evans, Lawrence C.},\n"
+        "    Title = {An Introduction to Mathematical Optimal Control},\n"
+        "    Note = {Lecture Notes, University of California, Berkeley},\n"
+        "    Url = {https://math.berkeley.edu/~evans/control.course.pdf},\n"
+        "    Year = {1983},\n"
+        "}\n"
+    )
+
+
+def test_minimal_inbook_whitelist():
+    """`inbook` whitelist: the part-of-the-book fields and the
+    type's required `publisher` are kept."""
+    entry = Entry(
+        "inbook",
+        "Three2026",
+        fields={
+            "author": "C. Three",
+            "title": "A Book",
+            "chapter": "4",
+            "pages": "51--72",
+            "publisher": "A Press",
+            "series": "A Series",
+            "number": "7",
+            "year": "2026",
+            "abstract": "An abstract.",
+        },
+    )
+    text = export_entries([entry], fields="minimal")
+    assert _body_lines(text) == [
+        "    Author = {C. Three},\n",
+        "    Title = {A Book},\n",
+        "    Chapter = {4},\n",
+        "    Pages = {51--72},\n",
+        "    Publisher = {A Press},\n",
+        "    Year = {2026},\n",
+        "    Series = {A Series},\n",
+        "    Number = {7},\n",
+    ]
+
+
+def test_minimal_proceedings_whitelist():
+    """`proceedings` whitelist: editor-led, with the publisher and the
+    volume/number identification of the volume."""
+    entry = Entry(
+        "proceedings",
+        "Four2026",
+        fields={
+            "editor": "D. Four",
+            "title": "Proceedings of a Conference",
+            "publisher": "A Press",
+            "volume": "12",
+            "address": "Somewhere",
+            "year": "2026",
+            "abstract": "An abstract.",
+        },
+    )
+    text = export_entries([entry], fields="minimal")
+    assert _body_lines(text) == [
+        "    Editor = {D. Four},\n",
+        "    Title = {Proceedings of a Conference},\n",
+        "    Publisher = {A Press},\n",
+        "    Year = {2026},\n",
+        "    Volume = {12},\n",
+        "    Address = {Somewhere},\n",
+    ]
+
+
+def test_minimal_booklet_whitelist():
+    """`booklet` whitelist: `howpublished` says where the work came
+    from, and is kept."""
+    entry = Entry(
+        "booklet",
+        "Five2026",
+        fields={
+            "author": "E. Five",
+            "title": "A Booklet",
+            "howpublished": "Privately printed",
+            "year": "2026",
+            "abstract": "An abstract.",
+        },
+    )
+    text = export_entries([entry], fields="minimal")
+    assert _body_lines(text) == [
+        "    Author = {E. Five},\n",
+        "    Title = {A Booklet},\n",
+        "    Howpublished = {Privately printed},\n",
+        "    Year = {2026},\n",
+    ]
+
+
+def test_minimal_manual_whitelist():
+    """`manual` whitelist: the issuing `organization` and the
+    `edition` are kept."""
+    entry = Entry(
+        "manual",
+        "Six2026",
+        fields={
+            "author": "F. Six",
+            "title": "A Manual",
+            "organization": "An Organization",
+            "edition": "Second",
+            "year": "2026",
+            "abstract": "An abstract.",
+        },
+    )
+    text = export_entries([entry], fields="minimal")
+    assert _body_lines(text) == [
+        "    Author = {F. Six},\n",
+        "    Title = {A Manual},\n",
+        "    Organization = {An Organization},\n",
+        "    Year = {2026},\n",
+        "    Edition = {Second},\n",
+    ]
+
+
+def test_minimal_conference_uses_inproceedings_whitelist():
+    """`conference`, BibTeX's alias for `inproceedings`, keeps the
+    required `booktitle` that the fallback would drop."""
+    fields = {
+        "author": "G. Seven",
+        "title": "A Contribution",
+        "booktitle": "Proceedings of a Conference",
+        "pages": "1--10",
+        "year": "2026",
+    }
+    conference = Entry("conference", "Seven2026", fields=dict(fields))
+    inproceedings = Entry("inproceedings", "Seven2026", fields=dict(fields))
+    text = export_entries([conference], fields="minimal")
+    assert _body_lines(text) == _body_lines(
+        export_entries([inproceedings], fields="minimal")
+    )
+    assert "    Booktitle = {Proceedings of a Conference},\n" in text
+
+
+def test_minimal_whitelist_for_every_documented_type():
+    """Every entry type BibDesk documents has a whitelist of its own;
+    the fallback is for types outside that table."""
+    assert set(DOCUMENTED_TYPES) <= set(_MINIMAL_FIELDS)
+
+
+def test_minimal_whitelists_hold_appropriate_fields():
+    """No whitelist names a field that BibDesk does not accept on the
+    type (beyond the `author`/`title`/`year` of the fallback, which
+    every type is exported with)."""
+    for entry_type, whitelist in _MINIMAL_FIELDS.items():
+        for name in whitelist:
+            if name in _MINIMAL_FALLBACK:
+                continue
+            assert config.active.field_is_appropriate(
+                entry_type, name
+            ), f"{entry_type} whitelist holds inappropriate {name!r}"
+
+
+def test_minimal_whitelists_cover_required_fields():
+    """Every per-type whitelist includes all fields that BibDesk
+    considers required for the type, so that a minimal export is a
+    complete reference."""
+    for entry_type, whitelist in _MINIMAL_FIELDS.items():
+        required = DOCUMENTED_TYPES[entry_type]["required"]
+        missing = [name for name in required if name not in whitelist]
+        assert not missing, f"{entry_type} whitelist is missing {missing}"
+
+
+def test_minimal_fallback_whitelist():
+    """An entry type outside BibDesk's own table (here the
+    biblatex-only `online`) falls back to `author, title, year`."""
+    entry = Entry(
+        "online",
         "X2026",
         fields={"title": "T", "author": "A. One", "year": "2026"},
     )
     text = export_entries([entry], fields="minimal")
     assert text == (
-        "@misc{X2026,\n"
+        "@online{X2026,\n"
         "    Author = {A. One},\n"
         "    Title = {T},\n"
         "    Year = {2026},\n"

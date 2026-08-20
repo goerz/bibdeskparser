@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Fixed: an `export` with the default minimal field selection no longer drops fields that the entry type requires. Every entry type BibDesk documents now has a field whitelist of its own, holding the type's required fields together with the optional ones that identify the work (a book's edition, a report's number) or locate it (a `url`, a `doi`): `book`, `inbook`, and `proceedings` keep `publisher`, `techreport` keeps `institution`, `booklet` keeps `howpublished`, `manual` keeps `organization`, `unpublished` keeps `note` and `url`, `webpage` keeps `url`, `periodical` keeps `journal`, `jurthesis` keeps `school`, `glossdef` keeps `word`/`definition`, and `conference` is exported like `inproceedings`. Previously only `article`, `inproceedings`, `incollection`, `mastersthesis`, and `phdthesis` had a whitelist and every other type fell back to `author`, `title`, `year`, so that a minimally exported `@book` carried no publisher and a `@techreport` no institution. A stored `doi` is now exported for every type, including the thesis types. The fallback applies only to entry types outside BibDesk's own table, i.e. biblatex-only types like `@online` and types added by a `bibdeskparser.toml`. [[#74], [#77]]
+
 ## [v0.8.0] - 2026-08-03
 
 * Added: `Library.info`, a read-write `dict`-like view of BibDesk's *document info* -- the key/value metadata that the "Document Info" panel attaches to the database as a whole, stored in the `@bibdesk_info` block of the `.bib` file. Keys are matched case-insensitively (preserving their stored spelling and order); values are plain Unicode strings, with the empty string allowed. A mutation regenerates the block in BibDesk's own layout (deleting the last key removes it from the file) and, on a plain BibTeX file, converts to the database format with a `FormatConversionWarning`; an unmodified block round-trips byte-for-byte. On the command line, `info` (read-only) prints the data (all pairs, or the value of a given KEY), and `set_info KEY VALUE` / `delete_info KEY` modify it. The `%i{Key}` format specifier (case-insensitive lookup, empty for a missing key, `%i{Key}N` truncating to N characters) is now implemented on top of this data instead of raising `NotImplementedError`. [[#69], [#70]]
@@ -227,3 +229,5 @@ Initial release.
 [#70]: https://github.com/goerz/bibdeskparser/pull/70
 [#71]: https://github.com/goerz/bibdeskparser/issues/71
 [#72]: https://github.com/goerz/bibdeskparser/pull/72
+[#74]: https://github.com/goerz/bibdeskparser/issues/74
+[#77]: https://github.com/goerz/bibdeskparser/pull/77
