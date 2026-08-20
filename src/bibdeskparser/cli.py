@@ -1893,10 +1893,12 @@ def render(bibfile, citekeys, format_, style):
         "Rewrite the exported FILE (which must exist and be plain "
         "BibTeX, not a BibDesk database), refreshing its entries "
         "from the library: the given KEYs (or, without KEYs, every "
-        "key in FILE that the library knows) are freshly exported in "
-        "place, KEYs not yet in FILE are appended, and everything "
-        "else (unknown entries, comments, @string definitions) is "
-        "kept. Nothing is ever removed."
+        "key in FILE that the library knows) take the library's "
+        "current values, KEYs not yet in FILE are appended, and "
+        "everything else (unknown entries, comments, @string "
+        "definitions) is kept. Nothing is ever removed, down to the "
+        "single field: an entry keeps the fields it has in FILE, and "
+        "the field selection only adds to them."
     ),
 )
 @click.option(
@@ -1958,9 +1960,10 @@ def export(
     or writes the file given with --outfile. With --update FILE, it
     instead rewrites that previously exported FILE in place,
     refreshing it from the library (which is only read): the given
-    KEYs (without KEYs: every key in FILE that the library knows) are
-    re-exported in place or appended, and everything else in FILE is
-    kept.
+    KEYs (without KEYs: every key in FILE that the library knows)
+    take the library's current values or are appended, and nothing
+    in FILE is removed -- neither an entry the library does not know
+    nor a field outside the field selection.
     """
     if minimal is not None and field_args:
         raise click.UsageError(

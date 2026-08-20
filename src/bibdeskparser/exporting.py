@@ -640,26 +640,17 @@ def _render_fields(
     return "".join(lines)
 
 
-def _render_entry(
-    entry,
-    fields,
-    unicode,
-    expand_strings,
-    strings,
-    referenced,
-    preprint,
-    skip_bdsk=False,
-):
-    """Render a single `entry`; returns `(text, has_bdsk)`: the
-    rendered text (with a trailing newline), and whether it includes
-    any `bdsk-*` field.
+def _export_fields(entry, fields, preprint):
+    """The `(entry_type, selected)` an export of `entry` yields: the
+    entry type it is written as, and the `Field` objects the field
+    selection resolves to, in export order.
 
-    `preprint` (`"misc"`, `"unpublished"`, `"article"`, or
-    `"stored"`) selects the export form of a preprint-only entry;
-    explicit field lists and `"stored"` always render the stored
-    entry as-is. With `skip_bdsk`, `bdsk-*` fields are dropped from
-    the selection, whatever `fields` says (for targets that cannot
-    represent them, i.e. plain-format files)."""
+    `fields` is a validated `"full"`/`"minimal"`/list-of-names
+    value; `preprint` (`"misc"`, `"unpublished"`, `"article"`, or
+    `"stored"`) selects the export form of a preprint-only entry,
+    which may replace the entry type and synthesize derived fields.
+    Explicit field lists and `"stored"` always select the stored
+    fields of the stored entry type, as-is."""
     entry_type = entry.entry_type
     selected = None
     if preprint != "stored" and fields in ("full", "minimal"):
@@ -679,12 +670,17 @@ def _render_entry(
                     ) + _bdsk_fields(entry)
                 else:
                     selected.append(extra)
-    if skip_bdsk:
-        selected = [
-            field
-            for field in selected
-            if not field.key.lower().startswith("bdsk-")
-        ]
+    return entry_type, selected
+
+
+def _render_entry(
+    entry, fields, unicode, expand_strings, strings, referenced, preprint
+):
+    """Render a single `entry`; returns `(text, has_bdsk)`: the
+    rendered text (with a trailing newline), and whether it includes
+    any `bdsk-*` field. The `fields` selection and the `preprint`
+    export form resolve as described for `_export_fields`."""
+    entry_type, selected = _export_fields(entry, fields, preprint)
     has_bdsk = any(field.key.lower().startswith("bdsk-") for field in selected)
     text = _render_fields(
         entry,

@@ -3257,23 +3257,28 @@ class Library(MutableMapping):
         export) is refreshed from this library instead: this library
         is only read, and the target file is rewritten in place.
         Every key in the target that exists in this library -- or, if
-        `keys` are given, exactly those keys -- is replaced by a
-        fresh export of that entry; keys not yet in the target are
-        appended, and nothing is ever removed. Entries the library
-        does not know, `@string` definitions (refreshed to this
-        library's values where it defines the macro, kept otherwise),
-        and comments are all preserved. Entries written by an update
-        never include `bdsk-*` fields, which a plain target cannot
-        represent. The `unicode`/`expand_strings`/`preprint` options
-        default to the target file's own options (from its marker
-        line, or detected from its content); an explicit argument
-        overrides them and, with `marker`, is recorded in the
-        rewritten marker, so it is sticky for subsequent updates
-        (with `marker=False`, the file's marker state is left
-        untouched). The target must exist and be in the plain format
-        (a BibDesk database is refused); it is rewritten
-        unconditionally, with no staleness check. Mutually exclusive
-        with `outfile`.
+        `keys` are given, exactly those keys -- takes this library's
+        current values; keys not yet in the target are appended, and
+        nothing is ever removed. That holds field by field: a
+        refreshed entry keeps every field it has in the target (in
+        the target's own field order), and `fields` only selects
+        which further fields to add, so a target exported with
+        `fields="full"` stays full under a later default update. A
+        field the target has but this library's entry does not keeps
+        the target's value. Entries the library does not know,
+        `@string` definitions (refreshed to this library's values
+        where it defines the macro, kept otherwise), and comments are
+        all preserved. Entries written by an update never include
+        `bdsk-*` fields, which a plain target cannot represent. The
+        `unicode`/`expand_strings`/`preprint` options default to the
+        target file's own options (from its marker line, or detected
+        from its content); an explicit argument overrides them and,
+        with `marker`, is recorded in the rewritten marker, so it is
+        sticky for subsequent updates (with `marker=False`, the
+        file's marker state is left untouched). The target must exist
+        and be in the plain format (a BibDesk database is refused);
+        it is rewritten unconditionally, with no staleness check.
+        Mutually exclusive with `outfile`.
         """
         if update is not None:
             if outfile is not None:

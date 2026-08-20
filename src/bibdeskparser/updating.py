@@ -3,9 +3,11 @@
 Backs the `update` mode of {meth}`bibdeskparser.Library.export`
 (`export --update` on the command line): the target file -- an
 earlier export, evolving alongside a paper -- is rewritten in place,
-with selected entries replaced by fresh exports from the source
-library, new entries appended, and everything else (hand-written
-entries, comments, `@string` definitions) preserved.
+with selected entries refreshed from the source library, new
+entries appended, and everything else (hand-written entries,
+comments, `@string` definitions) preserved. Refreshing an entry
+merges rather than replaces: the fields the target file gives it
+are kept, and the field selection only adds to them.
 
 This module intentionally does not import `bibdeskparser.library`
 (which imports this module), to avoid a circular dependency; the
@@ -25,7 +27,12 @@ from bibtexparser.model import (
 )
 
 from .entry import Entry, _strip_enclosing
-from .exporting import _check_fields, _render_entry, _render_entry_verbatim
+from .exporting import (
+    _check_fields,
+    _export_fields,
+    _render_entry_verbatim,
+    _render_fields,
+)
 from .macros import STANDARD_MACROS
 from .middleware import parse_stack, quiet_block_type_logging
 from .plain import (
@@ -66,6 +73,31 @@ def _load_target(path):
             f"(found {', '.join(found)})"
         )
     return text, parsed
+
+
+def _merged_fields(entry, selected, existing):
+    """The fields of a refreshed entry: the `existing` `Field`
+    objects of its block in the target file first, in the file's own
+    order, followed by the `selected` fields of a fresh export whose
+    name the file does not already have. A name the file has is
+    rendered from the matching `selected` field where the export
+    covers it (so a derived value stays derived), else from the
+    matching field of `entry` (so a correction in the library
+    propagates), else from the file itself (so a field only the file
+    has keeps its value)."""
+    chosen = {field.key.lower(): field for field in selected}
+    merged = []
+    seen = set()
+    for field in existing:
+        name = field.key.lower()
+        if name in seen:
+            continue
+        seen.add(name)
+        # pylint: disable-next=protected-access
+        current = chosen.get(name) or entry._find_field(name)
+        merged.append(field if current is None else current)
+    merged.extend(field for field in selected if field.key.lower() not in seen)
+    return merged
 
 
 def _updated_strings(parsed, referenced, library_strings):
@@ -116,7 +148,10 @@ def update_exported_file(
       resolves to the target file's own options; an explicit value
       overrides them (and is recorded in the marker).
     * `fields`: the field selection for the rewritten entries
-      (`bdsk-*` fields are always excluded, whatever it says).
+      (`bdsk-*` fields are always excluded, whatever it says). It
+      only ever adds: a field an entry already has in the target
+      file is kept even if `fields` does not select it (see
+      `_merged_fields`).
     * `marker`: whether to write a marker line recording the
       effective options (rewriting an existing one, or adding one to
       a marker-less file). With `False`, the file's marker state is
@@ -138,7 +173,8 @@ def update_exported_file(
         preprint=target_options.preprint if preprint is None else preprint,
     )
 
-    target_keys = [block.key for block in parsed.entries]
+    target_blocks = {block.key: block for block in parsed.entries}
+    target_keys = list(target_blocks)
     keys = list(dict.fromkeys(keys))
     if keys:
         missing = [key for key in keys if key not in library]
@@ -168,15 +204,25 @@ def update_exported_file(
     referenced = set()
     rendered = {}
     for key in sorted(update_keys):
-        entry_text, _ = _render_entry(
-            library[key],
-            fields,
+        entry = library[key]
+        entry_type, selected = _export_fields(entry, fields, options.preprint)
+        existing = target_blocks.get(key)
+        if existing is not None:
+            selected = _merged_fields(entry, selected, existing.fields)
+        # a plain target cannot represent `bdsk-*` fields
+        selected = [
+            field
+            for field in selected
+            if not field.key.lower().startswith("bdsk-")
+        ]
+        entry_text = _render_fields(
+            entry,
+            entry_type,
+            selected,
             options.unicode,
             options.expand_strings,
             all_strings,
             referenced,
-            options.preprint,
-            skip_bdsk=True,
         )
         rendered[key] = entry_text.rstrip("\n")
 
