@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 * Fixed: an `export` with the default minimal field selection no longer drops fields that the entry type requires. Every entry type BibDesk documents now has a field whitelist of its own, holding the type's required fields together with the optional ones that identify the work (a book's edition, a report's number) or locate it (a `url`, a `doi`): `book`, `inbook`, and `proceedings` keep `publisher`, `techreport` keeps `institution`, `booklet` keeps `howpublished`, `manual` keeps `organization`, `unpublished` keeps `note` and `url`, `webpage` keeps `url`, `periodical` keeps `journal`, `jurthesis` keeps `school`, `glossdef` keeps `word`/`definition`, and `conference` is exported like `inproceedings`. Previously only `article`, `inproceedings`, `incollection`, `mastersthesis`, and `phdthesis` had a whitelist and every other type fell back to `author`, `title`, `year`, so that a minimally exported `@book` carried no publisher and a `@techreport` no institution. A stored `doi` is now exported for every type, including the thesis types. The fallback applies only to entry types outside BibDesk's own table, i.e. biblatex-only types like `@online` and types added by a `bibdeskparser.toml`. [[#74], [#77]]
+* Fixed: `export --update FILE` (`Library.export(update=...)`) no longer drops the fields of an entry that its field selection does not cover. A refreshed entry now keeps every field it has in FILE, in FILE's own field order, with the library's current value where the library's entry has the field (and FILE's value where it does not); the selection -- `"minimal"` by default, and `--full`/`--field` on the command line -- only adds fields on top of that. Refreshing a file exported with `--full` therefore no longer strips it down to the minimal fields, and hand-added fields such as an `annote` survive an update, making the documented "nothing is ever removed" true field by field. [[#75], [#79]]
 
 ## [v0.8.0] - 2026-08-03
 
@@ -230,4 +231,6 @@ Initial release.
 [#71]: https://github.com/goerz/bibdeskparser/issues/71
 [#72]: https://github.com/goerz/bibdeskparser/pull/72
 [#74]: https://github.com/goerz/bibdeskparser/issues/74
+[#75]: https://github.com/goerz/bibdeskparser/issues/75
 [#77]: https://github.com/goerz/bibdeskparser/pull/77
+[#79]: https://github.com/goerz/bibdeskparser/pull/79

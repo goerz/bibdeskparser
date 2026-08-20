@@ -864,7 +864,7 @@ To pick up corrections made in the library, update without naming keys; every en
 $ bibdeskparser export tests/Refs/refs.bib --update paper.bib
 ```
 
-An update never removes anything: entries the library does not know (e.g. pasted in by hand from a colleague's file) are kept unchanged, as are `@string` definitions that are no longer referenced.
+An update never removes anything: entries the library does not know (e.g. pasted in by hand from a colleague's file) are kept unchanged, as are `@string` definitions that are no longer referenced. The same holds field by field: a refreshed entry keeps the fields it has in the file, in the file's own field order, and the field selection only adds to them. A file exported with `--full` therefore stays full under a later `--update`, and a field the library entry does not have keeps the file's value.
 
 All other commands work directly on the exported file and preserve its plain format:
 
@@ -875,6 +875,6 @@ $ bibdeskparser set_field paper.bib Evans1983 note "Lecture notes"
 $ bibdeskparser delete paper.bib GrondPRA2009a
 ```
 
-Mind that a local edit like the `set_field` above is overwritten by the next `--update` if the library knows the entry; make persistent corrections in the library instead. To remove an entry, use `delete` (or a text editor); `--update` will not re-add it unless you name its key again.
+Mind that a local edit like the `set_field` above is overwritten by the next `--update` if the library knows the entry *and* has that field; make persistent corrections in the library instead. To remove an entry or a field, use `delete`/`delete_field` (or a text editor); an `--update` will not bring back the entry unless you name its key again, but it will bring back a deleted field that the field selection covers.
 
 Groups, file attachments, and linked URLs exist only in a BibDesk database. Using one of those commands (`set_group`, `add_file`, `add_url`, ...) on a plain file converts it to the database format on save, with a warning; the way back to a plain file is a fresh export.

@@ -582,6 +582,87 @@ def test_update_never_removes(paper, refs):
     assert "@string{unused = {Unused Journal}}" in text
 
 
+def test_update_keeps_fields_outside_the_selection(refs, tmp_path):
+    """A refresh only adds fields: what the target file gives an
+    entry survives a selection that does not cover it, so a file
+    exported with `fields="full"` is unchanged by a default update."""
+    path = tmp_path / "paper.bib"
+    refs.export("Shapiro2012", fields="full", outfile=path)
+    before = path.read_text(encoding="utf-8")
+    # `keywords` is not part of the minimal selection for a `book`
+    assert "Keywords = {Coherent Control}," in before
+    refs.export(update=path)
+    assert path.read_text(encoding="utf-8") == before
+
+
+def test_update_refreshes_kept_fields(refs, tmp_path):
+    """A kept field the library also has takes the library's current
+    value, in the field order the target file has."""
+    path = _write(
+        tmp_path,
+        "@book{Shapiro2012,\n"
+        "    Author = {Shapiro, Moshe},\n"
+        "    Keywords = {Stale Keyword},\n"
+        "    Title = {Quantum Control of Molecular Processes},\n"
+        "    Year = {2012},\n"
+        "}\n",
+        "paper.bib",
+    )
+    refs.export(update=path)
+    text = path.read_text(encoding="utf-8")
+    assert "Keywords = {Coherent Control}," in text
+    assert "Stale Keyword" not in text
+    # the selection still adds what the file does not have yet
+    assert "Publisher = {Wiley and Sons}," in text
+    entry = text.split("@book{Shapiro2012,\n")[1]
+    assert [
+        line.split(" =")[0].strip() for line in entry.splitlines()[:4]
+    ] == [
+        "Author",
+        "Keywords",
+        "Title",
+        "Year",
+    ]
+
+
+def test_update_keeps_derived_fields_derived(refs, tmp_path):
+    """Where the export derives a field's value, that value wins over
+    the target file's: the `url` of a preprint exported as an
+    `article` is the entry's DOI resolver address, not whatever the
+    file happens to hold."""
+    path = tmp_path / "paper.bib"
+    key = "Vecheck2022.09.09.507322"
+    refs.export(key, preprint="article", outfile=path)
+    stale = path.read_text(encoding="utf-8").replace(
+        "Url = {https://doi.org/10.1101/2022.09.09.507322}",
+        "Url = {https://example.com/stale}",
+    )
+    path.write_text(stale, encoding="utf-8")
+    refs.export(update=path)
+    text = path.read_text(encoding="utf-8")
+    assert "Url = {https://doi.org/10.1101/2022.09.09.507322}," in text
+    assert "stale" not in text
+
+
+def test_update_keeps_fields_only_in_the_file(refs, tmp_path):
+    """A field the library entry does not have at all keeps the
+    file's own value."""
+    path = _write(
+        tmp_path,
+        "@book{Shapiro2012,\n"
+        "    Author = {Shapiro, Moshe},\n"
+        "    Title = {Quantum Control of Molecular Processes},\n"
+        "    Year = {2012},\n"
+        "    Annote = {cited in the introduction},\n"
+        "}\n",
+        "paper.bib",
+    )
+    refs.export(update=path)
+    assert "Annote = {cited in the introduction}," in path.read_text(
+        encoding="utf-8"
+    )
+
+
 def test_update_unknown_key_rejected(paper, refs):
     with pytest.raises(KeyError, match="NoSuchKey"):
         refs.export("NoSuchKey", update=paper)
