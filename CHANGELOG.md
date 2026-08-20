@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* Added: optional semantic indexing, behind a new optional-dependency extra named `semantic`, which adds `fastembed` and `numpy`; a bare install keeps exactly the previous feature set. `Library.build_semantic_indexes` embeds each entry's text with a local model and writes the vectors to a directory beside the `.bib` file (`refs.semantic/` for `refs.bib`, configurable), refreshing per entry and never touching the `.bib` file. `Library.semantic_search(query)` ranks entries by meaning rather than by the query's characters, returning `(Entry, cosine)` pairs, only for entries that stand out from the library's background similarity (so an unrelated query returns nothing), by default fused with the lexical `Library.search` ranking. `Library.semantic_score(text, keys=...)` scores a candidate paper's title and abstract against the library or a collection within it, reporting a calibrated percentile rather than a raw similarity, the nearest entries, and (with `keys`) the quartiles of the collection members' own scores. `build_semantic_indexes` accepts a `progress` hook, which the command line uses to draw a progress bar per index on stderr. On the command line, `build_semantic_indexes`, `semantic_search QUERY`, and `semantic_score ARXIV_ID` (the candidate also via `--title`/`--abstract` or `--stdin`). A new `semantic` configuration table sets the index directory, the default index for each method, and any additional indexes over entry fields or asset classes; the built-in `default` index over title and abstract always exists. See the new "Semantic Indexing" documentation page. [[#73]]
+
 ## [v0.8.1] - 2026-08-21
 
 * Fixed: an `export` with the default minimal field selection no longer drops fields that the entry type requires. Every entry type BibDesk documents now has a field whitelist of its own, holding the type's required fields together with the optional ones that identify the work (a book's edition, a report's number) or locate it (a `url`, a `doi`): `book`, `inbook`, and `proceedings` keep `publisher`, `techreport` keeps `institution`, `booklet` keeps `howpublished`, `manual` keeps `organization`, `unpublished` keeps `note` and `url`, `webpage` keeps `url`, `periodical` keeps `journal`, `jurthesis` keeps `school`, `glossdef` keeps `word`/`definition`, and `conference` is exported like `inproceedings`. Previously only `article`, `inproceedings`, `incollection`, `mastersthesis`, and `phdthesis` had a whitelist and every other type fell back to `author`, `title`, `year`, so that a minimally exported `@book` carried no publisher and a `@techreport` no institution. A stored `doi` is now exported for every type, including the thesis types. The fallback applies only to entry types outside BibDesk's own table, i.e. biblatex-only types like `@online` and types added by a `bibdeskparser.toml`. [[#74], [#77]]
@@ -235,6 +237,7 @@ Initial release.
 [#70]: https://github.com/goerz/bibdeskparser/pull/70
 [#71]: https://github.com/goerz/bibdeskparser/issues/71
 [#72]: https://github.com/goerz/bibdeskparser/pull/72
+[#73]: https://github.com/goerz/bibdeskparser/issues/73
 [#74]: https://github.com/goerz/bibdeskparser/issues/74
 [#75]: https://github.com/goerz/bibdeskparser/issues/75
 [#77]: https://github.com/goerz/bibdeskparser/pull/77

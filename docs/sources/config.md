@@ -204,6 +204,33 @@ Manual marking and unmarking always works, for declared and undeclared groups al
 
 Field names are lowercased; each field needs its own group, and group names must be non-empty (a shared group would make membership ambiguous between fields). The table is exposed as `Library.config.known_missing`, a `dict` mapping the field name to the group name. See [Empty fields](bibdesk-empty-fields) for why an empty field value cannot record this information.
 
+(config-semantic)=
+
+## The `[semantic]` table: embedding indexes
+
+The `[semantic]` table configures the embedding indexes behind {py:meth}`~bibdeskparser.Library.semantic_search` and {py:meth}`~bibdeskparser.Library.semantic_score` (CLI: [`build_semantic_indexes`](cli-build-semantic-indexes), [`semantic_search`](cli-semantic-search), [`semantic_score`](cli-semantic-score)); see [Semantic Indexing](semantic-indexing) for what an index is and how it is used. The whole feature needs the `bibdeskparser[semantic]` extra; without the table, the built-in `default` index over title and abstract is the only one, which is enough for both methods.
+
+```toml
+[semantic]
+index_dir = "refs.semantic"  # where the built indexes are stored
+search_index = "default"     # what semantic_search queries
+score_index = "default"      # what semantic_score matches against
+
+[semantic.indexes]
+summary = ["summary"]        # one additional index, over an asset class
+```
+
+* `index_dir` (default: the `.bib` path with its extension replaced by `.semantic`, so `refs.semantic/` for `refs.bib`): the directory the built indexes are written to. A relative path is interpreted against the directory containing the `.bib` file; `~` and `$VAR` are expanded, the same path handling as `location` in `[auto_file]`. The directory holds derived data that `build_semantic_indexes` owns and rewrites; it is deliberately not an `[assets]` class, since those describe files the package never writes.
+* `search_index` (default `"default"`): the index `semantic_search` queries when the call names none.
+* `score_index` (default `"default"`): the index `semantic_score` matches a candidate against when the call names none. Prefer an index whose sources have uniform coverage here, since a mixture of long and short rows makes the raw similarities less comparable across entries.
+* `[semantic.indexes]`: additional indexes, each an ordered list of sources. A source names an entry field or an `[assets]` class, and an asset class shadows a field of the same name; a name that is neither is reported as an error when the index is built. A bare string is shorthand for a one-element list. The elements are joined with a blank line in list order, a source an entry has nothing for is skipped, and an entry no source covers is left out of that index. The table is empty by default; the entry shown is the summary index of a library whose `[assets]` declares a `summary` class.
+
+The name `default` is reserved for the built-in index, which is equivalent to `["title", "abstract"]` and cannot be redefined: its rows have the shape of an incoming candidate paper, which is what lets `semantic_score` use them to calibrate. Index names become file names inside `index_dir`.
+
+Nothing else is configurable. The embedding model and the statistical procedures of search and scoring are fixed, so that a score means the same thing in every library; per-call choices (which index, how many results, whether to fuse with lexical search) are method arguments and command-line options.
+
+The table is exposed as `Library.config.semantic`, with `index_dir`, `search_index`, `score_index`, and `indexes` attributes; `indexes` always presents lists, normalizing the string shorthand on assignment.
+
 ## The `[initials]` table: acronym exceptions
 
 The `[initials]` table defines, per field, exceptions to the acronym that the `%c` format specifier builds from a field value (see [Venue initials](specifiers-initials)). Keys are full field values or `@string` macro names:
@@ -372,6 +399,13 @@ remove_attachments = false   # also delete attached files from disk
 abstract = "No Abstract"
 eprint = "No Eprint"
 doi = "No DOI"
+
+[semantic]                   # embedding indexes (the [semantic] extra)
+search_index = "summary"     # richer text than title plus abstract
+score_index = "summary"
+
+[semantic.indexes]
+summary = ["summary"]        # an index over the summary asset files
 
 [initials.journal]                   # acronym exceptions for %c{journal}
 "AIP Advances" = "AIPA"

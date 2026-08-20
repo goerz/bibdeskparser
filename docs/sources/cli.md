@@ -2,7 +2,7 @@
 
 # Command Line Interface
 
-The `bibdeskparser` command-line tool exposes the public {class}`~bibdeskparser.Library` API as subcommands, so that a BibDesk `.bib` database can be inspected and modified from the shell without writing Python code. The `bibdeskparser` script is installed together with the package (e.g. via `pip install bibdeskparser`); to install just the command-line tool on your `PATH`, without adding the package to a Python environment, use [`uv tool install bibdeskparser`](https://docs.astral.sh/uv/guides/tools/).
+The `bibdeskparser` command-line tool exposes the public {class}`~bibdeskparser.Library` API as subcommands, so that a BibDesk `.bib` database can be inspected and modified from the shell without writing Python code. The `bibdeskparser` script is installed together with the package (e.g. via `pip install bibdeskparser`); to install just the command-line tool on your `PATH`, without adding the package to a Python environment, use [`uv tool install bibdeskparser`](https://docs.astral.sh/uv/guides/tools/), or `uv tool install "bibdeskparser[semantic]"` to include the [semantic indexing](semantic-indexing) commands.
 
 The command-line tool is also the project's intended integration surface for AI coding agents: an agent that can run shell commands can work with a BibDesk library through one-shot `bibdeskparser` invocations, guided by the `--help` output alone (see {ref}`howto-ai`).
 
@@ -19,7 +19,7 @@ Every command operates on a single `.bib` file, given as the first argument afte
 
 The commands are named after the corresponding {class}`~bibdeskparser.Library` methods and properties (`import` corresponds to {py:meth}`~bibdeskparser.Library.import_bibtex`, since `import` is a Python keyword). The `dict`-like operations of the Python API map to commands as follows: `set_group`/`delete_group` assign to and delete from {py:attr}`~bibdeskparser.Library.groups`, `set_string`/`delete_string` assign to and delete from {py:attr}`~bibdeskparser.Library.strings`, `set_info`/`delete_info` assign to and delete from {py:attr}`~bibdeskparser.Library.info`, `show`/`keys`/`delete` index, iterate over, and `del` on the library itself, and `fields`/`get_field`/`set_field`/`delete_field` do the same on a single {class}`~bibdeskparser.Entry`. The commands that read an entry's derived data (`author`, `editor`, `files`, `urls`, `groups`, `keywords`) correspond to the same-named {class}`~bibdeskparser.Entry` properties (`groups --index` / `keywords --index` read the inverse {py:attr}`~bibdeskparser.Library.groups` / {py:attr}`~bibdeskparser.Library.keywords` mappings), and `set_type` assigns {py:attr}`~bibdeskparser.Entry.entry_type`. The one command with no API counterpart is [`config_path`](cli-config-path), which reports the discovered configuration file.
 
-Read-only commands print their result to stdout; so does `export`, which only writes a file when asked to, with `--outfile` or `--update` (the latter rewrites a previously exported file, never the library itself). Mutating commands load the library, apply the change, save the file in place, and print nothing on success. Two of them can also touch files on disk: [`rekey`](cli-rekey) moves asset files and key-named attachments along with the key change, and [`delete`](cli-delete) can remove an entry's files. The exceptions that do print: [`rekey`](cli-rekey) without `NEW_KEY` and [`rename_file`](cli-rename-file) without `NEW` print the generated key or file path, as does [`add_file`](cli-add-file) when it auto-files; [`import`](cli-import) and [`add`](cli-add) print the citation keys of the added entries (`add --dry-run` prints the fetched entry without modifying the file); and [`add_abstract`](cli-add-abstract), [`add_preprint`](cli-add-preprint), and [`add_doi`](cli-add-doi) print a per-key report of the fetched abstracts, arXiv identifiers, and DOIs (with `--dry-run`, without modifying the file).
+Read-only commands print their result to stdout; so does `export`, which only writes a file when asked to, with `--outfile` or `--update` (the latter rewrites a previously exported file, never the library itself). [`build_semantic_indexes`](cli-build-semantic-indexes) is a category of its own: it writes the derived embedding indexes into a directory beside the `.bib` file, and never the `.bib` file itself. Mutating commands load the library, apply the change, save the file in place, and print nothing on success. Two of them can also touch files on disk: [`rekey`](cli-rekey) moves asset files and key-named attachments along with the key change, and [`delete`](cli-delete) can remove an entry's files. The exceptions that do print: [`rekey`](cli-rekey) without `NEW_KEY` and [`rename_file`](cli-rename-file) without `NEW` print the generated key or file path, as does [`add_file`](cli-add-file) when it auto-files; [`import`](cli-import) and [`add`](cli-add) print the citation keys of the added entries (`add --dry-run` prints the fetched entry without modifying the file); and [`add_abstract`](cli-add-abstract), [`add_preprint`](cli-add-preprint), and [`add_doi`](cli-add-doi) print a per-key report of the fetched abstracts, arXiv identifiers, and DOIs (with `--dry-run`, without modifying the file).
 
 ## JSON output
 
@@ -400,6 +400,8 @@ $ bibdeskparser urls tests/Refs/refs.bib KochJPCM2016
 KochJPCM2016: http://dx.doi.org/10.1088/0953-8984/28/21/213001
 ```
 
+(cli-search)=
+
 ### `search QUERY`
 
 List the keys of the entries matching `QUERY`, best match first, one per line. See {py:meth}`~bibdeskparser.Library.search`. The query is matched against the stored field values (bare `@string` macro names intact), the decoded Unicode values, and macro expansions.
@@ -419,6 +421,8 @@ List the keys of the entries matching `QUERY`, best match first, one per line. S
 $ bibdeskparser search tests/Refs/refs.bib "Schroedinger" --field title
 WP_Schroedinger
 ```
+
+To find entries by meaning rather than by the query's literal text, see [`semantic_search`](cli-semantic-search).
 
 (cli-groups)=
 
@@ -627,6 +631,121 @@ $ bibdeskparser export tests/Refs/refs.bib GoerzA2023 \
     --expand-strings --outfile out.bib
 $ bibdeskparser export tests/Refs/refs.bib --update out.bib GoerzQ2022
 ```
+
+## Semantic indexing
+
+These three commands need the `semantic` extra (`uv tool install "bibdeskparser[semantic]"`, or the equivalent with `pip install` or `uv add`; see [Installation](readme)); without it, each fails with a message naming it. They are the command-line side of the embedding indexes described in [Semantic Indexing](semantic-indexing). `build_semantic_indexes` is the one command that writes derived files, into a directory beside the `.bib` file; it never modifies the `.bib` file, and the other two only read.
+
+(cli-build-semantic-indexes)=
+
+### `build_semantic_indexes`
+
+Build or refresh the library's embedding indexes, via {py:meth}`~bibdeskparser.Library.build_semantic_indexes`: the built-in `default` index over title and abstract, plus every index the [`[semantic.indexes]` table](config-semantic) defines. Refreshing is per entry, so a run after a few edits re-embeds only those entries. Prints one summary line per index. Embedding a whole library takes tens of seconds, so a progress bar per index is drawn on stderr while it runs, leaving stdout free for the report; it is omitted when the output is not a terminal. The first run downloads the embedding model (about 130 MB) into a local cache; later runs need no network.
+
+**Options**
+
+- `--json` -- print a `{index: {"embedded": [keys], "pruned": [keys], "unchanged": count}}` object.
+
+<!-- notest -->
+```console
+$ bibdeskparser build_semantic_indexes
+default: 12 embedded, 1 pruned, 987 unchanged
+summary: 11 embedded, 1 pruned, 922 unchanged
+```
+
+(cli-semantic-search)=
+
+### `semantic_search QUERY`
+
+List the keys of the entries most relevant to `QUERY`, best first, one per line, via {py:meth}`~bibdeskparser.Library.semantic_search`. Where [`search`](cli-search) matches the characters of the query against field values, this ranks entries by meaning, so a phrase finds relevant entries that share no word with it. It reads an index built by [`build_semantic_indexes`](cli-build-semantic-indexes); an index that is not defined or not built is an error.
+
+Only entries that stand out from the library's background similarity are listed, so an unrelated query prints nothing and fewer than `--limit` keys is normal. The two search commands complement each other: `search` is exhaustive and deterministic over a query's literal text, `semantic_search` a truncated ranking by meaning.
+
+**Options**
+
+- `--index NAME` -- query this index instead of the configured `search_index`.
+- `--limit N` -- print at most N keys (default 10).
+- `--no-hybrid` -- rank by cosine alone, instead of merging the semantic and lexical rankings (the default, which is what keeps exact technical terms working).
+- `--json` -- print a list of `{"key": ..., "cosine": ...}` objects. The cosine is comparable only within one query, and is `null` for an entry that only the lexical leg found.
+
+<!-- notest -->
+```console
+$ bibdeskparser semantic_search "robust two-qubit gates via Rydberg blockade"
+JanduraQ2022
+JanduraPRXQ2023
+SaffmanRMP2010
+WilkPRL2010
+MullerQIP2011
+$ bibdeskparser semantic_search "robust two-qubit gates" --limit 3 --json
+[
+  {
+    "key": "JanduraQ2022",
+    "cosine": 0.712
+  },
+  {
+    "key": "JanduraPRXQ2023",
+    "cosine": 0.734
+  },
+  {
+    "key": "SaffmanRMP2010",
+    "cosine": 0.688
+  }
+]
+```
+
+Only five of the ten entries the default `--limit` allows passed the match cut; the rest of the library sat in the background. The cosines are not monotonic in the printed order because the lexical leg ranks `JanduraQ2022` first. The plain output is ready for command substitution into [`show`](cli-show), [`render`](cli-render), or the `--key` option of [`semantic_score`](cli-semantic-score).
+
+(cli-semantic-score)=
+
+### `semantic_score [ARXIV_ID]`
+
+Score how relevant a candidate paper is to the library, or to a collection within it, via {py:meth}`~bibdeskparser.Library.semantic_score`. Give the candidate exactly one way: as an `ARXIV_ID` (its title and abstract are fetched from arXiv), as `--title` and `--abstract`, or on stdin with `--stdin`.
+
+The printed score is a percentile from 0 to 100, not a raw similarity: the share of the library's own papers that would score lower, had each of them arrived as this candidate did. An unrelated candidate scores near 0.
+
+**Options**
+
+- `--title TEXT`, `--abstract TEXT` -- the candidate's title and abstract.
+- `--stdin` -- read the candidate's title and abstract from stdin.
+- `--index NAME` -- match against this index instead of the configured `score_index`.
+- `--key KEY` -- score against a collection instead of the whole library (repeatable; each value may list several whitespace-separated keys, so a command substitution over `search` output works).
+- `--k N` -- average the cosines of the N nearest entries (default 10, clamped to the size of the collection).
+- `--json` -- print the full report: `score`, `nearest` (the N closest entries with their raw cosines), and, with `--key`, `members` (the quartiles of the collection members' own percentiles).
+
+<!-- notest -->
+```console
+$ bibdeskparser semantic_score --title "..." --abstract "..."
+71.4
+$ bibdeskparser semantic_score --title "..." --abstract "..." \
+    --key "$(bibdeskparser search 'Coherent Control' --field keywords --match exact)"
+82.7
+$ bibdeskparser semantic_score --title "..." --abstract "..." --json \
+    --key "$(bibdeskparser search 'Coherent Control' --field keywords --match exact)"
+{
+  "score": 82.7,
+  "nearest": [
+    {
+      "key": "LeibscherJCP2019",
+      "cosine": 0.683
+    },
+    {
+      "key": "SolaJPB2022",
+      "cosine": 0.671
+    },
+    {
+      "key": "CarrascoPCCP2022",
+      "cosine": 0.659
+    }
+  ],
+  "members": {
+    "q1": 58.2,
+    "median": 77.5,
+    "q3": 90.1
+  }
+}
+```
+
+The candidate scores 82.7 against the "Coherent Control" group but only 71.4 against the whole library: a strong fit to one topic is diluted across all the others, which is why scoring per topic group is the intended use. The `members` band locates it between the group's median and upper quartile, so it would sit among those papers like a typical member.
 
 ## Entries
 

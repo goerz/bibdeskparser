@@ -31,6 +31,17 @@ UV := uv run $(PYTHON_ARG) --resolution $(RESOLUTION) --all-groups
 # Locations passed to the linters and formatters.
 SOURCES ?= src tests
 
+# Extras installed by `make install`; `macos` is added automatically on
+# macOS. Override on the command line, e.g. `make INSTALL_EXTRAS= install`
+# for a plain install with no extras, or `make INSTALL_EXTRAS=semantic,foo
+# install` for a different extras list.
+ifeq ($(shell uname -s),Darwin)
+  INSTALL_EXTRAS ?= semantic,macos
+else
+  INSTALL_EXTRAS ?= semantic
+endif
+INSTALL_SOURCE = $(if $(INSTALL_EXTRAS),.[$(INSTALL_EXTRAS)],.)
+
 define PRINT_HELP_PYSCRIPT
 import re, sys
 
@@ -113,8 +124,9 @@ upload: dist-check  ## package and upload a release to pypi.org
 release:  ## create a new version, package and upload it
 	$(UV) python scripts/release.py
 
-install:  ## install the `bibdeskparser` CLI as an editable uv tool
-	uv tool install --editable .
+install:  ## install the `bibdeskparser` CLI as an editable uv tool (extras: INSTALL_EXTRAS)
+	@echo "INSTALL_EXTRAS: $(INSTALL_EXTRAS)"
+	uv tool install --editable "$(INSTALL_SOURCE)"
 
 uninstall:  ## remove the `bibdeskparser` CLI installed via `make install`
 	uv tool uninstall bibdeskparser

@@ -40,6 +40,7 @@ bibdeskparser = "bibdeskparser.cli:main"
 
 [project.optional-dependencies]
 macos = ["pyobjc-framework-Cocoa>=8; sys_platform == 'darwin'"]
+semantic = ["fastembed>=0.7", "numpy>=1.24"]
 
 [project.urls]
 Homepage = "https://github.com/goerz/bibdeskparser"
@@ -47,6 +48,9 @@ Homepage = "https://github.com/goerz/bibdeskparser"
 [dependency-groups]
 dev = [
     "pytest>=7.2",
+    # exercises the semantic index arithmetic against a stub embedder;
+    # `fastembed` is deliberately absent, so no test can download a model
+    "numpy>=1.24",
     "pytest-cov>=4",
     "pytest-xdist>=3",
     "packaging>=21",

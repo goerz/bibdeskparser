@@ -10,9 +10,11 @@ bibfile is taken from the `default_bib_file` key of the discovered
 The commands map directly onto the {class}`bibdeskparser.Library` API:
 read-only commands print data (optionally as JSON, via `--json`);
 mutating commands load the library, apply one change, and save it back
-in place.
+in place; `build_semantic_indexes` writes the derived embedding indexes beside
+the `.bib` file.
 """
 
+import contextlib
 import json
 import sys
 import textwrap
@@ -56,6 +58,9 @@ __private__ = [
     "render",
     "export",
     "eval_format_spec",
+    "build_semantic_indexes",
+    "semantic_search",
+    "semantic_score",
     "create",
     "rekey",
     "delete",
@@ -91,12 +96,15 @@ __private__ = [
 
 # Exceptions raised by the `Library` API for invalid user input; the
 # CLI converts these into clean one-line error messages (exit code 1).
+# `ImportError` is among them because the methods behind an optional
+# extra raise it with a message naming the extra to install.
 _API_ERRORS = (
     KeyError,
     ValueError,
     FileNotFoundError,
     FileExistsError,
     StaleFileError,
+    ImportError,
 )
 
 
@@ -330,6 +338,43 @@ def _save(lib):
             click.echo(f"Warning: {message}", err=True)
 
 
+@contextlib.contextmanager
+def _index_progress():
+    """Yield a `progress` factory for
+    {meth}`~bibdeskparser.Library.build_semantic_indexes` that draws
+    one `click` progress bar per index on stderr, leaving stdout free
+    for the report.
+
+    The indexes are built one after another, so the bar of the
+    previous index is closed when the next one opens. An index with
+    nothing to embed gets no bar, and neither does a run whose stderr
+    is not a terminal, so redirected or piped output stays quiet.
+    """
+    open_bars = []
+
+    def close():
+        while open_bars:
+            open_bars.pop().__exit__(None, None, None)
+
+    def factory(name, total):
+        close()
+        if not total or not sys.stderr.isatty():
+            # A hidden `click` bar still echoes its label once, which
+            # would pollute a redirected or piped run.
+            return None
+        bar = click.progressbar(
+            length=total, label=f"{name}:", file=sys.stderr
+        )
+        bar.__enter__()
+        open_bars.append(bar)
+        return bar.update
+
+    try:
+        yield factory
+    finally:
+        close()
+
+
 def _echo_block(text):
     """Print multi-line `text` without adding a trailing blank line."""
     click.echo(text, nl=not text.endswith("\n"))
@@ -405,6 +450,7 @@ def _print_short_usage(ctx, _param, value):
         "bibdeskparser export --update paper.bib Key3",
         "bibdeskparser render Preskill2018  # formatted citation",
         "bibdeskparser check  # run the standing audits (exit 0/1)",
+        'bibdeskparser semantic_search "robust two-qubit gates"',
         "bibdeskparser add 10.1103/PhysRevA.89.032334  # by DOI",
         "pbpaste | bibdeskparser import --stdin",
     ),
@@ -432,13 +478,16 @@ def main(ctx):
     `config`, `config_path`, `duplicate_keys`, `editor`,
     `eval_format_spec`, `export`, `fields`, `files`, `get_field`,
     `groups`, `info`, `keys`, `keywords`, `path`, `render`, `search`,
-    `show`, `strings`, `timestamp`, `urls`) print to stdout; every
-    other command modifies the `.bib` file in place and prints nothing
-    on success, except for the generated key/path or per-key report
-    noted in its own help.
-    One exception: `export --update FILE` never modifies the `.bib`
-    file it reads from, but rewrites the exported FILE. Data-printing
-    commands accept `--json`.
+    `semantic_score`, `semantic_search`, `show`, `strings`,
+    `timestamp`, `urls`) print to stdout; every other command
+    modifies the `.bib` file in place and prints nothing on success,
+    except for the generated key/path or per-key report noted in its
+    own help.
+    Two exceptions: `export --update FILE` never modifies the `.bib`
+    file it reads from, but rewrites the exported FILE, and
+    `build_semantic_indexes` writes the derived embedding indexes beside the
+    `.bib` file, never the `.bib` file itself. Data-printing commands
+    accept `--json`.
 
     On error, commands print `Error: <message>` to stderr and exit 2
     (bad usage) or 1 (a library error, e.g. an unknown key or a file
@@ -2037,6 +2086,248 @@ def eval_format_spec(bibfile, citekey, format_spec, filename, as_json):
     _check_keys(lib, [citekey])
     data = lib.eval_format_spec(citekey, format_spec, filename=filename)
     _emit(data, as_json, data)
+
+
+# -- semantic indexing -------------------------------------------------- #
+
+
+@main.command(
+    name="build_semantic_indexes",
+    cls=_BibCommand,
+    short_help="Build or refresh the library's embedding indexes.",
+    epilog=_examples(
+        "bibdeskparser build_semantic_indexes",
+        "bibdeskparser build_semantic_indexes --json",
+    ),
+)
+@_json_option
+@click.pass_obj
+def build_semantic_indexes(bibfile, as_json):
+    """Build or refresh the embedding indexes of the library.
+
+    Writes the built-in 'default' index (title plus abstract) and
+    every index defined in the [semantic.indexes] configuration into
+    the index directory beside the .bib file (see the 'semantic'
+    section of `config`). This is the one command that writes derived
+    files; it never modifies the .bib file.
+
+    Refreshing is per entry: an unchanged entry keeps its stored
+    vector, a changed or new one is re-embedded, and an entry the
+    library no longer has is dropped. A changed index definition or
+    embedding model rebuilds that index as a whole.
+
+    Embedding a whole library takes tens of seconds, so a progress
+    bar per index is drawn on stderr while it runs, and is left out
+    when the output is not a terminal. Prints one summary line per
+    index on stdout; with --json, maps each index name to {embedded,
+    pruned, unchanged}. Requires the bibdeskparser[semantic] extra;
+    the first run downloads the embedding model (~130 MB) and later
+    runs are offline.
+    """
+    lib = Library(bibfile)
+    with _index_progress() as progress:
+        report = lib.build_semantic_indexes(progress=progress)
+    lines = [
+        f"{name}: {len(result['embedded'])} embedded, "
+        f"{len(result['pruned'])} pruned, {result['unchanged']} unchanged"
+        for name, result in report.items()
+    ]
+    _emit(report, as_json, "\n".join(lines))
+
+
+@main.command(
+    name="semantic_search",
+    cls=_BibCommand,
+    short_help="List the keys of entries most relevant to QUERY.",
+    epilog=_examples(
+        'bibdeskparser semantic_search "robust two-qubit gates"',
+        'bibdeskparser semantic_search "shortcuts to adiabaticity" --limit 5',
+        'bibdeskparser semantic_search "laser cooling" --index summary --json',
+    ),
+)
+@click.argument("query")
+@click.option(
+    "--index",
+    "index_name",
+    metavar="NAME",
+    default=None,
+    help=(
+        "Query this index instead of the configured search_index. "
+        "An index that is not defined or not built is an error."
+    ),
+)
+@click.option(
+    "--limit",
+    type=int,
+    default=10,
+    show_default=True,
+    help="Print at most this many keys (fewer if fewer match).",
+)
+@click.option(
+    "--hybrid/--no-hybrid",
+    default=True,
+    show_default=True,
+    help=(
+        "Merge the semantic ranking with the lexical `search` ranking "
+        "(default), which is what keeps exact technical terms "
+        "working. With --no-hybrid, rank by cosine alone."
+    ),
+)
+@_json_option
+@click.pass_obj
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def semantic_search(bibfile, query, index_name, limit, hybrid, as_json):
+    """List the keys of the entries most relevant to QUERY, best
+    first, one per line.
+
+    Unlike `search`, which matches the characters of the query, this
+    ranks entries by meaning, so a phrase finds relevant entries whose
+    title and abstract share no word with it. It reads an index built
+    by `build_semantic_indexes` and modifies nothing.
+
+    Only entries that stand out from the library's background
+    similarity are listed, so an unrelated query prints nothing at
+    all, and fewer than --limit keys is normal. With --json, each key
+    comes with its cosine similarity to the query, which is
+    comparable only within this one query and is null for an entry
+    that only the lexical leg of the hybrid ranking found.
+
+    Requires the bibdeskparser[semantic] extra.
+    """
+    lib = Library(bibfile)
+    results = lib.semantic_search(
+        query, index=index_name, limit=limit, hybrid=hybrid
+    )
+    data = [{"key": entry.key, "cosine": cosine} for entry, cosine in results]
+    _emit(data, as_json, "\n".join(item["key"] for item in data))
+
+
+@main.command(
+    name="semantic_score",
+    cls=_BibCommand,
+    short_help="Score a candidate paper's relevance to the library.",
+    epilog=_examples(
+        'bibdeskparser semantic_score --title "..." --abstract "..."',
+        "bibdeskparser semantic_score 2409.17398  # from arXiv",
+        "bibdeskparser semantic_score --stdin < candidate.txt",
+        "bibdeskparser semantic_score 2409.17398 --json \\\n"
+        "    --key \"$(bibdeskparser search 'Coherent Control' "
+        '--field keywords --match exact)"',
+    ),
+)
+@click.argument("eprint", metavar="[ARXIV_ID]", required=False)
+@click.option(
+    "--title",
+    metavar="TEXT",
+    default=None,
+    help="The candidate's title (combine with --abstract).",
+)
+@click.option(
+    "--abstract",
+    metavar="TEXT",
+    default=None,
+    help="The candidate's abstract (combine with --title).",
+)
+@click.option(
+    "--stdin",
+    "read_stdin",
+    is_flag=True,
+    help="Read the candidate's title and abstract from stdin.",
+)
+@click.option(
+    "--index",
+    "index_name",
+    metavar="NAME",
+    default=None,
+    help=(
+        "Match against this index instead of the configured "
+        "score_index. An index that is not defined or not built is "
+        "an error."
+    ),
+)
+@click.option(
+    "--key",
+    "citekeys",
+    multiple=True,
+    metavar="KEY",
+    help=(
+        "Score against this collection of entries instead of the "
+        "whole library (repeatable; each value may list several "
+        "whitespace-separated keys, so a command substitution over "
+        "`search` output works)."
+    ),
+)
+@click.option(
+    "--k",
+    type=int,
+    default=10,
+    show_default=True,
+    help=(
+        "Average the cosines of this many nearest entries (clamped "
+        "to the size of the collection)."
+    ),
+)
+@_json_option
+@click.pass_obj
+# click passes all parameters by keyword
+# pylint: disable-next=too-many-positional-arguments
+def semantic_score(
+    bibfile,
+    eprint,
+    title,
+    abstract,
+    read_stdin,
+    index_name,
+    citekeys,
+    k,
+    as_json,
+):
+    """Score how relevant a candidate paper is to the library.
+
+    Give the candidate as an ARXIV_ID (fetched from arXiv), as
+    --title and --abstract, or on stdin with --stdin; exactly one of
+    the three. The candidate is matched against an index built by
+    `build_semantic_indexes`, restricted to a collection with --key. This
+    command modifies nothing.
+
+    Prints the score: not a raw similarity but a percentile from 0 to
+    100, the share of the library's own papers that score lower, had
+    each of them arrived as this candidate did. An unrelated
+    candidate scores near 0. With --json, the full report adds
+    'nearest' (the closest entries with their raw cosines) and, with
+    --key, 'members' (the quartiles of the collection members' own
+    percentiles) -- the band that says whether the candidate would
+    sit among those papers like one of their own.
+
+    Scoring per topic group is the intended use: a single
+    whole-library score dilutes a strong fit to one topic across all
+    the others. Requires the bibdeskparser[semantic] extra.
+    """
+    given = [bool(eprint), bool(title or abstract), read_stdin]
+    if sum(given) != 1:
+        raise click.UsageError(
+            "give the candidate exactly one way: an ARXIV_ID, "
+            "--title/--abstract, or --stdin"
+        )
+    if read_stdin:
+        text = sys.stdin.read()
+    elif eprint:
+        # Imported lazily: the preprints module pulls in the network
+        # dependencies, needed nowhere else.
+        from . import preprints  # pylint: disable=import-outside-toplevel
+
+        text = preprints.preprint_text(eprint)
+    else:
+        text = "\n\n".join(part for part in (title, abstract) if part)
+    if not text.strip():
+        raise click.UsageError("the candidate text is empty")
+    keys = [key for value in citekeys for key in value.split()] or None
+    lib = Library(bibfile)
+    if keys is not None:
+        _check_keys(lib, keys)
+    report = lib.semantic_score(text, keys=keys, index=index_name, k=k)
+    _emit(report, as_json, str(report["score"]))
 
 
 # -- mutating commands -------------------------------------------------- #

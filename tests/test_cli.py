@@ -116,9 +116,10 @@ def _load(bibfile):
         return Library(bibfile)
 
 
-def _run(runner, *args):
+def _run(runner, *args, input=None):
     """Invoke the CLI with `args`, asserting success."""
-    result = runner.invoke(main, [str(arg) for arg in args])
+    # pylint: disable-next=redefined-builtin
+    result = runner.invoke(main, [str(arg) for arg in args], input=input)
     assert result.exit_code == 0, result.output + result.stderr
     return result
 
@@ -5044,3 +5045,114 @@ def test_export_preprint_unpublished(runner, bibfile):
     assert "Eprint = {hal-00640217}," in result.output
     assert "Archive = {https://hal.science}," in result.output
     assert "Journal" not in result.output
+
+
+# -- semantic indexing --------------------------------------------------- #
+
+
+@pytest.fixture(name="semantic_bib")
+def fixture_semantic_bib(bibfile, monkeypatch):
+    """A library with its indexes built against the stub embedder of
+    `tests/test_semantic.py`, so that no test loads a model."""
+    # pylint: disable-next=import-outside-toplevel
+    from test_semantic import StubEmbedder
+
+    monkeypatch.setattr(
+        bibdeskparser.semantic, "embedder", lambda: StubEmbedder()
+    )
+    Library(bibfile).build_semantic_indexes()
+    return bibfile
+
+
+def test_build_semantic_indexes(runner, bibfile, monkeypatch):
+    # pylint: disable-next=import-outside-toplevel
+    from test_semantic import StubEmbedder
+
+    monkeypatch.setattr(
+        bibdeskparser.semantic, "embedder", lambda: StubEmbedder()
+    )
+    result = _run(runner, "build_semantic_indexes", bibfile)
+    assert result.output.splitlines() == [
+        f"default: {len(_load(bibfile))} embedded, 0 pruned, 0 unchanged"
+    ]
+    assert (bibfile.parent / "refs.semantic" / "default.npz").is_file()
+    result = _run(runner, "build_semantic_indexes", bibfile, "--json")
+    assert json.loads(result.output)["default"]["embedded"] == []
+
+
+def test_semantic_search(runner, semantic_bib):
+    result = _run(
+        runner, "semantic_search", semantic_bib, "optimal control landscape"
+    )
+    assert result.output.splitlines()
+    result = _run(
+        runner,
+        "semantic_search",
+        semantic_bib,
+        "optimal control landscape",
+        "--limit",
+        "3",
+        "--no-hybrid",
+        "--json",
+    )
+    data = json.loads(result.output)
+    assert len(data) <= 3
+    assert set(data[0]) == {"key", "cosine"}
+
+
+def test_semantic_search_unbuilt_index(runner, semantic_bib):
+    result = runner.invoke(
+        main,
+        ["semantic_search", str(semantic_bib), "x", "--index", "nope"],
+    )
+    assert result.exit_code == 1
+    assert "undefined semantic index" in result.stderr
+
+
+def test_semantic_score(runner, semantic_bib):
+    result = _run(
+        runner,
+        "semantic_score",
+        semantic_bib,
+        "--title",
+        "Optimal control of a quantum gate",
+        "--abstract",
+        "We optimize a two-qubit gate with a gradient-based method.",
+    )
+    assert 0.0 <= float(result.output.strip()) <= 100.0
+
+
+def test_semantic_score_collection_json(runner, semantic_bib):
+    keys = _run(runner, "keys", semantic_bib, "--type", "phdthesis").output
+    result = _run(
+        runner,
+        "semantic_score",
+        semantic_bib,
+        "--stdin",
+        "--key",
+        " ".join(keys.split()),
+        "--json",
+        input="Optimal control theory\n\nA thesis about quantum control.",
+    )
+    data = json.loads(result.output)
+    assert set(data) == {"score", "nearest", "members"}
+    assert {item["key"] for item in data["nearest"]} <= set(keys.split())
+
+
+def test_semantic_score_needs_exactly_one_candidate(runner, semantic_bib):
+    result = runner.invoke(main, ["semantic_score", str(semantic_bib)])
+    assert result.exit_code == 2
+    assert "exactly one way" in result.stderr
+
+
+def test_semantic_without_the_extra(runner, bibfile, monkeypatch):
+    """Without the extra installed, the command fails with the
+    one-line error the lazy import raises, not a traceback."""
+
+    def missing():
+        raise ImportError("semantic indexing requires numpy")
+
+    monkeypatch.setattr(bibdeskparser.library, "_semantic_backend", missing)
+    result = runner.invoke(main, ["build_semantic_indexes", str(bibfile)])
+    assert result.exit_code == 1
+    assert result.stderr.strip() == ("Error: semantic indexing requires numpy")

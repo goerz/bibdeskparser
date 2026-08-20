@@ -82,6 +82,21 @@ uv tool install bibdeskparser
 > `bib import 10.22331/q-2022-12-07-871`.
 
 
+The optional `semantic` extra adds embedding indexes over the library,
+which give you search by meaning rather than by matching text, and a
+calibrated relevance score for a new paper (see [Semantic
+Indexing][semantic]). It pulls in a small local embedding model that
+runs on the CPU. Name the extra in square brackets, in whichever of the
+three commands above you use:
+
+```
+pip install "bibdeskparser[semantic]"
+uv add "bibdeskparser[semantic]"
+uv tool install "bibdeskparser[semantic]"
+```
+
+[semantic]: https://goerz.github.io/bibdeskparser/semantic.html
+
 To install the latest development version from [Github][]:
 
 ```
@@ -153,7 +168,7 @@ To put the `bibdeskparser` [command-line tool][cli] on your `PATH` as an *editab
 make install
 ```
 
-Use `make uninstall` to remove it again.
+This includes the `semantic` extra by default, plus `macos` when run on macOS; override with e.g. `make INSTALL_EXTRAS= install` for a plain install with no extras. Use `make uninstall` to remove it again.
 
 [BibDesk]: https://bibdesk.sourceforge.io
 [BibTeX]: https://en.wikipedia.org/wiki/BibTeX
