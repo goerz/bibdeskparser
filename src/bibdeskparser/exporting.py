@@ -19,10 +19,11 @@ independent parameters control the output:
   `UserWarning`.
 - `fields` (default `"minimal"`): which fields to include. `"minimal"`
   restricts each entry to a small, LaTeX-bibliography-oriented
-  whitelist of fields per entry type (covering `article`,
-  `inproceedings`, `incollection`, `mastersthesis`, and `phdthesis`,
-  with a best-effort `author, title, year` fallback for every other
-  entry type). `"full"` includes every stored field except the BibDesk
+  whitelist of fields per entry type, holding the type's required
+  fields and the optional ones that identify or locate the specific
+  work (every entry type BibDesk documents has such a whitelist; a
+  biblatex-only or user-configured type falls back to `author, title,
+  year`). `"full"` includes every stored field except the BibDesk
   bookkeeping fields (`date-added`/`date-modified`), in BibDesk's
   field order, plus the entry's `bdsk-file-N`/`bdsk-url-N` fields
   rendered as plain relative paths/URLs. An explicit list of field
@@ -138,7 +139,12 @@ _DATE_KEYS = frozenset(("date-added", "date-modified"))
 _BDSK_FILE_RE = re.compile(r"bdsk-file-(\d+)$", re.IGNORECASE)
 _BDSK_URL_RE = re.compile(r"bdsk-url-(\d+)$", re.IGNORECASE)
 
-#: Per-entry-type field whitelist for `fields="minimal"`. The
+#: Per-entry-type field whitelist for `fields="minimal"`, covering
+#: every entry type BibDesk documents
+#: (`bibdeskparser.entrytypes.DOCUMENTED_TYPES`). Each whitelist holds
+#: the type's required fields, the optional ones that identify the
+#: specific work (a book's edition, a report's number) or locate it (a
+#: `url`, a `doi`), and nothing else. The
 #: `eprint`/`archiveprefix`/`primaryclass` fields of an `article`
 #: give a "published, with preprint" reference under eprint-aware
 #: styles like REVTeX (and are ignored by classic styles).
@@ -178,14 +184,124 @@ _MINIMAL_FIELDS = {
         "publisher",
         "volume",
     ),
-    "mastersthesis": ("author", "title", "school", "year"),
-    "phdthesis": ("author", "title", "school", "year"),
+    "book": (
+        "author",
+        "editor",
+        "title",
+        "publisher",
+        "year",
+        "doi",
+        "series",
+        "volume",
+        "number",
+        "edition",
+        "address",
+    ),
+    "inbook": (
+        "author",
+        "editor",
+        "title",
+        "chapter",
+        "pages",
+        "publisher",
+        "year",
+        "doi",
+        "series",
+        "volume",
+        "number",
+        "edition",
+        "address",
+    ),
+    "proceedings": (
+        "editor",
+        "title",
+        "publisher",
+        "year",
+        "doi",
+        "volume",
+        "number",
+        "address",
+    ),
+    "commented": (
+        "author",
+        "editor",
+        "title",
+        "volumetitle",
+        "publisher",
+        "year",
+        "doi",
+    ),
+    "booklet": (
+        "author",
+        "title",
+        "howpublished",
+        "year",
+        "doi",
+        "address",
+    ),
+    "manual": (
+        "author",
+        "title",
+        "organization",
+        "year",
+        "doi",
+        "edition",
+        "address",
+    ),
+    "techreport": (
+        "author",
+        "title",
+        "institution",
+        "year",
+        "doi",
+        "type",
+        "number",
+        "address",
+    ),
+    "mastersthesis": ("author", "title", "school", "year", "doi"),
+    "phdthesis": ("author", "title", "school", "year", "doi"),
+    "jurthesis": ("author", "title", "school", "year", "doi"),
+    "periodical": (
+        "author",
+        "title",
+        "journal",
+        "year",
+        "doi",
+        "volume",
+        "pages",
+    ),
+    "unpublished": ("author", "title", "note", "url", "year"),
+    "misc": (
+        "author",
+        "title",
+        "howpublished",
+        "url",
+        "year",
+        "doi",
+        "note",
+    ),
+    "webpage": ("author", "title", "url", "year", "doi", "lastchecked"),
+    "electronic": ("author", "title", "url", "year", "doi", "urldate"),
+    "url": (
+        "author",
+        "title",
+        "url",
+        "year",
+        "doi",
+        "urldate",
+        "lastchecked",
+    ),
+    "glossdef": ("word", "definition", "short"),
 }
 
-#: Best-effort fallback whitelist for any entry type not covered by
-#: `_MINIMAL_FIELDS` (e.g. `book`, `misc`, `techreport`,
-#: `unpublished`, ...). Not tuned per type -- just enough for a minimal
-#: citation.
+# `conference` is BibTeX's legacy alias for `inproceedings`
+_MINIMAL_FIELDS["conference"] = _MINIMAL_FIELDS["inproceedings"]
+
+#: Best-effort fallback whitelist for any entry type without a
+#: whitelist of its own -- a type outside BibDesk's own table
+#: (`bibdeskparser.entrytypes.DOCUMENTED_TYPES`), such as a
+#: biblatex-only or a user-configured type. Not tuned per type -- just
+#: enough for a minimal citation.
 _MINIMAL_FALLBACK = ("author", "title", "year")
 
 #: The fields of a minimal `preprint="misc"` export of a
