@@ -322,6 +322,9 @@ class Entry(MutableMapping):
                 raise ValueError(
                     f"invalid {key} field: not parseable as names: {exc}"
                 ) from exc
+        # A URL or `bdsk-file` field holds verbatim data: no TeX
+        # encoding, and no macro heuristic.
+        verbatim = skip_texify(key)
         if isinstance(value, MacroString):
             # Force a bare macro reference, normalized to BibDesk's
             # canonical (lowercase) form -- matching how `@string`
@@ -331,14 +334,21 @@ class Entry(MutableMapping):
             rendered = normalize_macro_name(text)
         elif isinstance(value, ValueString):
             # Force a literal braced value.
-            rendered = "{" + (text if skip_texify(key) else texify(text)) + "}"
-        elif is_valid_macro_name(text, normalized=True):
+            rendered = "{" + (text if verbatim else texify(text)) + "}"
+        elif (
+            not verbatim
+            and "://" not in text
+            and is_valid_macro_name(text, normalized=True)
+        ):
             # A plain str that looks like a valid macro name is stored
             # as a bare macro reference (matching how BibDesk would read
             # it back). Wrap in ValueString to force literal text instead.
+            # A URL passes as a macro name (`:`, `/`, `.`, `-`, and `_`
+            # are all legal name characters), so a value carrying a
+            # scheme is excluded, whatever the field.
             rendered = text
         else:
-            rendered = "{" + (text if skip_texify(key) else texify(text)) + "}"
+            rendered = "{" + (text if verbatim else texify(text)) + "}"
         self._set_raw_field(key, rendered)
         self._touch()
 

@@ -203,6 +203,35 @@ def test_value_string_and_macro_string_export():
     )
 
 
+def test_url_is_never_a_macro_reference():
+    """A plain `str` assigned to a URL field is stored as literal text,
+    even though an ordinary URL is a valid macro name."""
+    entry = Entry("misc", "K")
+    entry["url"] = "https://example.com/software"
+    assert isinstance(entry["url"], ValueString)
+    assert entry["url"] == "https://example.com/software"
+    assert (
+        entry._entry.fields_dict["url"].value
+        == "{https://example.com/software}"
+    )
+    # ... but an explicit `MacroString` still stores a reference
+    entry["url"] = MacroString("mysite")
+    assert isinstance(entry["url"], MacroString)
+    assert entry._entry.fields_dict["url"].value == "mysite"
+
+
+def test_url_value_is_never_a_macro_reference():
+    """A value carrying a URL scheme is literal text in any field, not
+    just in the URL fields."""
+    entry = Entry("misc", "K")
+    entry["howpublished"] = "https://example.com/x"
+    assert isinstance(entry["howpublished"], ValueString)
+    assert (
+        entry._entry.fields_dict["howpublished"].value
+        == "{https://example.com/x}"
+    )
+
+
 def test_texify_roundtrip():
     """Setting a unicode value stores its TeX-encoded form; getting it
     back gives the original unicode."""

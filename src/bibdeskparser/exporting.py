@@ -15,8 +15,8 @@ independent parameters control the output:
   the snippet is self-contained; with `True`, each reference is
   replaced by the macro's (braced) value, resolved against `strings`
   plus the standard BibTeX month macros, and no `@string` definitions
-  are emitted. An unresolvable reference stays bare, with a
-  `UserWarning`.
+  are emitted. Either way, a reference that resolves against neither
+  `strings` nor the month macros stays bare, with a `UserWarning`.
 - `fields` (default `"minimal"`): which fields to include. `"minimal"`
   restricts each entry to a small, LaTeX-bibliography-oriented
   whitelist of fields per entry type, holding the type's required
@@ -397,6 +397,21 @@ def _is_macro_ref(key, value):
     )
 
 
+def _warn_undefined(referenced, strings):
+    """Warn about every macro name in `referenced` that `strings` (a
+    macro table including the standard month macros) does not define.
+
+    Such a macro is written out as a bare reference to nothing, which
+    makes the output neither self-contained nor valid BibTeX."""
+    undefined = sorted(referenced - set(strings))
+    if undefined:
+        warnings.warn(
+            f"undefined macro(s) kept as bare references: {undefined}",
+            UserWarning,
+            stacklevel=3,
+        )
+
+
 def _capitalized(name):
     """`name` with each hyphen-separated part capitalized, as used for
     field names in exports (`author` -> `Author`, `bdsk-file-1` ->
@@ -429,9 +444,10 @@ def _field_body(entry, field, unicode, expand_strings, strings, referenced):
     """The `"Name = value"` body (no trailing comma/newline) for one
     stored `field` of `entry`.
 
-    A bare macro reference that is kept (`expand_strings=False`) has
-    its normalized name added to the `referenced` set (for the
-    `@string` definitions block).
+    A bare macro reference that is kept -- because references are kept
+    (`expand_strings=False`) or because the macro is undefined -- has
+    its normalized name added to the `referenced` set, which drives
+    the `@string` block and `_warn_undefined`.
     """
     name = field.key.lower()
     value = field.value
@@ -447,16 +463,12 @@ def _field_body(entry, field, unicode, expand_strings, strings, referenced):
         return f"{label} = {{{_strip_braces(value)}}}"
     if _is_macro_ref(field.key, value):
         macro = normalize_macro_name(value)
-        if not expand_strings:
-            referenced.add(macro)
-            return f"{label} = {macro}"
-        resolved = strings.get(macro)
+        resolved = strings.get(macro) if expand_strings else None
         if resolved is None:
-            warnings.warn(
-                f"macro {macro!r} is undefined; keeping the bare " "reference",
-                UserWarning,
-                stacklevel=4,
-            )
+            # kept as a bare reference: either because the references
+            # are kept, or because the macro is undefined (which
+            # `_warn_undefined` reports for the export as a whole)
+            referenced.add(macro)
             return f"{label} = {macro}"
         if not unicode and not skip_texify(name):
             resolved = texify(resolved)
@@ -787,11 +799,10 @@ def export_entries(
       value (e.g. `library.strings`), the `@string` definitions of the
       exporting library. With `expand_strings=False`, definitions for
       the macros referenced by the selected fields are prepended to
-      the output (a referenced macro not found in `strings` is
-      silently skipped -- this is a best-effort self-containment
-      feature, not a validator); with `expand_strings=True`, the
-      mapping (extended by the standard month macros) resolves each
-      reference to its value.
+      the output; with `expand_strings=True`, the mapping (extended
+      by the standard month macros) resolves each reference to its
+      value. Either way, a reference the mapping does not define is
+      kept bare, with a `UserWarning`.
     * `unicode`: whether field values are written as Unicode text
       (`True`, default) or TeX-encoded as they would be written to
       the `.bib` file on disk (`False`); see the module docstring.
@@ -850,6 +861,7 @@ def export_entries(
         )
         rendered.append(text)
         has_bdsk = has_bdsk or entry_has_bdsk
+    _warn_undefined(referenced, all_strings)
     pieces = []
     if marker and not has_bdsk:
         options = PlainOptions(unicode, expand_strings, preprint)
