@@ -1,5 +1,6 @@
 """Tests for `bibdeskparser.exporting`."""
 
+import warnings
 from pathlib import Path
 
 import bibtexparser
@@ -268,10 +269,11 @@ def test_expand_strings_month_macro():
 
 
 def test_expand_strings_undefined_macro_warns():
-    """An undefined macro stays a bare reference, with a warning."""
+    """An undefined macro stays a bare reference, with a warning (the
+    same one the unexpanded path gives)."""
     entry = Entry("article", "Key2026", fields={"title": "T"})
     entry["journal"] = "nope"
-    with pytest.warns(UserWarning, match="'nope' is undefined"):
+    with pytest.warns(UserWarning, match=r"bare references: \['nope'\]"):
         text = export_entries([entry], expand_strings=True)
     assert "    Journal = nope,\n" in text
 
@@ -675,6 +677,21 @@ def test_no_string_block_without_strings(jpb_entry):
     text = export_entries([jpb_entry])
     assert "@string" not in text
     assert "    Journal = jpb,\n" in text
+
+
+def test_undefined_macro_warns(jpb_entry):
+    """A kept bare reference to a macro that `strings` does not define
+    warns: the output is neither self-contained nor valid BibTeX."""
+    with pytest.warns(UserWarning, match=r"bare references: \['jpb'\]"):
+        text = export_entries([jpb_entry])
+    assert "    Journal = jpb,\n" in text
+
+
+def test_defined_macro_does_not_warn(jpb_entry):
+    """A reference the `strings` mapping defines does not warn."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        export_entries([jpb_entry], strings={"jpb": "J. Phys. B"})
 
 
 def test_string_block_texified_when_not_unicode(jpb_entry):

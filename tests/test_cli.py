@@ -3172,6 +3172,16 @@ def test_set_field_macro(runner, bibfile):
     assert "invalid BibDesk macro name" in result.stderr
 
 
+def test_set_field_url(runner, bibfile):
+    """A URL VALUE is stored as literal text (it would otherwise pass
+    as a macro name, and the save would fail on the undefined macro)."""
+    url = "https://example.com/software"
+    _run(runner, "set_field", bibfile, "GoerzJPB2011", "url", url)
+    entry = _load(bibfile)["GoerzJPB2011"]
+    assert entry["url"] == url
+    assert isinstance(entry["url"], bibdeskparser.ValueString)
+
+
 def test_set_field_literal_and_macro_conflict(runner, bibfile):
     result = runner.invoke(
         main,

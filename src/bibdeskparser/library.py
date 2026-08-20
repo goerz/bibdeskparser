@@ -3185,8 +3185,9 @@ class Library(MutableMapping):
           are included, so the export is self-contained; with `True`,
           each reference is replaced by the macro's value (the
           standard BibTeX month macros `jan` ... `dec` also resolve),
-          and no `@string` definitions are emitted. An undefined
-          macro stays a bare reference, with a `UserWarning`.
+          and no `@string` definitions are emitted. Either way, an
+          undefined macro stays a bare reference, with a
+          `UserWarning`.
         * `fields`: `"minimal"` (default: only the fields needed to
           typeset a bibliography), `"full"` (every field except the
           `date-added`/`date-modified` bookkeeping fields, with

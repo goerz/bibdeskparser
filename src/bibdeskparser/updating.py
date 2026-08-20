@@ -32,6 +32,7 @@ from .exporting import (
     _export_fields,
     _render_entry_verbatim,
     _render_fields,
+    _warn_undefined,
 )
 from .macros import STANDARD_MACROS
 from .middleware import parse_stack, quiet_block_type_logging
@@ -226,6 +227,7 @@ def update_exported_file(
         )
         rendered[key] = entry_text.rstrip("\n")
 
+    _warn_undefined(referenced, all_strings)
     strings = _updated_strings(parsed, referenced, library_strings)
     string_pieces = []
     for name, value in strings.items():

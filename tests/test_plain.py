@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 import bibdeskparser.config as config
-from bibdeskparser import Entry, FormatConversionWarning, Library
+from bibdeskparser import Entry, FormatConversionWarning, Library, MacroString
 from bibdeskparser.plain import PlainOptions, format_marker, parse_marker
 
 REFS_BIB = Path(__file__).parent / "Refs" / "refs.bib"
@@ -537,6 +537,16 @@ def test_update_refreshes_from_library(paper, refs):
     text = paper.read_text(encoding="utf-8")
     assert "@string{pra = {Physical Review A}}" in text
     assert "local note" not in text
+
+
+def test_update_warns_on_undefined_macro(paper, refs):
+    """An update that keeps a bare reference to a macro defined by
+    neither the library nor the target file warns, as an export
+    does."""
+    refs["GrondPRA2009a"]["journal"] = MacroString("nosuch")
+    with pytest.warns(UserWarning, match=r"bare references: \['nosuch'\]"):
+        refs.export("GrondPRA2009a", update=paper)
+    assert "Journal = nosuch," in paper.read_text(encoding="utf-8")
 
 
 def test_update_appends_new_key(paper, refs):
