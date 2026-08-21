@@ -3,6 +3,8 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [v0.8.1] - 2026-08-21
 
 * Fixed: an `export` with the default minimal field selection no longer drops fields that the entry type requires. Every entry type BibDesk documents now has a field whitelist of its own, holding the type's required fields together with the optional ones that identify the work (a book's edition, a report's number) or locate it (a `url`, a `doi`): `book`, `inbook`, and `proceedings` keep `publisher`, `techreport` keeps `institution`, `booklet` keeps `howpublished`, `manual` keeps `organization`, `unpublished` keeps `note` and `url`, `webpage` keeps `url`, `periodical` keeps `journal`, `jurthesis` keeps `school`, `glossdef` keeps `word`/`definition`, and `conference` is exported like `inproceedings`. Previously only `article`, `inproceedings`, `incollection`, `mastersthesis`, and `phdthesis` had a whitelist and every other type fell back to `author`, `title`, `year`, so that a minimally exported `@book` carried no publisher and a `@techreport` no institution. A stored `doi` is now exported for every type, including the thesis types. The fallback applies only to entry types outside BibDesk's own table, i.e. biblatex-only types like `@online` and types added by a `bibdeskparser.toml`. [[#74], [#77]]
