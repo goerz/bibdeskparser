@@ -249,28 +249,33 @@ def test_keys_filter_group(runner, bibfile):
         "--group",
         "My Papers",
     )
-    assert result.output == ""
+    lib = _load(bibfile)
+    assert set(result.output.split()) == set(lib.groups["Diploma"]) | set(
+        lib.groups["My Papers"]
+    )
 
 
-def test_keys_filter_not_group(runner, bibfile):
-    all_keys = set(_load(bibfile))
-    result = _run(runner, "keys", bibfile, "--not-group", "Diploma")
-    not_diploma = result.output.splitlines()
-    result = _run(runner, "keys", bibfile, "--group", "Diploma")
-    diploma = result.output.splitlines()
-    assert set(not_diploma) == all_keys - set(diploma)
+def test_keys_filter_keyword(runner, bibfile):
+    lib = _load(bibfile)
+    result = _run(runner, "keys", bibfile, "--keyword", "OCT")
+    assert set(result.output.split()) == set(lib.keywords["OCT"])
+    # --group and --keyword name one collection, so they pool
+    result = _run(
+        runner, "keys", bibfile, "--keyword", "OCT", "--group", "Diploma"
+    )
+    assert set(result.output.split()) == set(lib.keywords["OCT"]) | set(
+        lib.groups["Diploma"]
+    )
 
 
 def test_keys_filter_group_unknown(runner, bibfile):
-    """An unknown group name is an error, not an empty result."""
+    """An unknown group or keyword is an error, not an empty result."""
     result = runner.invoke(main, ["keys", str(bibfile), "--group", "diploma"])
     assert result.exit_code != 0
     assert "unknown static group 'diploma'" in result.stderr
-    result = runner.invoke(
-        main, ["keys", str(bibfile), "--not-group", "No Such Group"]
-    )
+    result = runner.invoke(main, ["keys", str(bibfile), "--keyword", "oct"])
     assert result.exit_code != 0
-    assert "unknown static group 'No Such Group'" in result.stderr
+    assert "unknown keyword 'oct'" in result.stderr
 
 
 def test_keys_filter_by_attachment(runner, bibfile):
@@ -5156,3 +5161,67 @@ def test_semantic_without_the_extra(runner, bibfile, monkeypatch):
     result = runner.invoke(main, ["build_semantic_indexes", str(bibfile)])
     assert result.exit_code == 1
     assert result.stderr.strip() == ("Error: semantic indexing requires numpy")
+
+
+def test_semantic_score_group_and_keyword(runner, semantic_bib):
+    """--group and --keyword name a collection directly, and combine
+    with --key into their union."""
+    lib = _load(semantic_bib)
+    lib.groups["Trio"] = tuple(list(lib)[:3])
+    lib.save()
+    result = _run(
+        runner,
+        "semantic_score",
+        semantic_bib,
+        "--title",
+        "Optimal control of a quantum gate",
+        "--group",
+        "Trio",
+        "--keyword",
+        "OCT",
+        "--json",
+    )
+    data = json.loads(result.output)
+    expected = set(lib.groups["Trio"]) | set(lib.keywords["OCT"])
+    assert {item["key"] for item in data["nearest"]} <= expected
+    assert set(data["members"]) == {"q1", "median", "q3"}
+
+
+def test_semantic_score_unknown_group_and_keyword(runner, semantic_bib):
+    for option, value, message in (
+        ("--group", "No Such Group", "unknown static group"),
+        ("--keyword", "no-such-keyword", "unknown keyword"),
+    ):
+        result = runner.invoke(
+            main,
+            [
+                "semantic_score",
+                str(semantic_bib),
+                "--title",
+                "x",
+                option,
+                value,
+            ],
+        )
+        assert result.exit_code == 1, option
+        assert message in result.stderr, option
+
+
+def test_semantic_score_band_warning_only_with_json(runner, semantic_bib):
+    """The thin-band warning is shown when the band is, and not when
+    the command prints only the score."""
+    keys = list(_load(semantic_bib))[:2]
+    args = [
+        "semantic_score",
+        str(semantic_bib),
+        "--title",
+        "Optimal control of a quantum gate",
+        "--key",
+        " ".join(keys),
+    ]
+    plain = runner.invoke(main, args)
+    assert plain.exit_code == 0
+    assert "in-group band" not in plain.stderr
+    as_json = runner.invoke(main, args + ["--json"])
+    assert as_json.exit_code == 0
+    assert "in-group band" in as_json.stderr

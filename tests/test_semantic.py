@@ -521,3 +521,30 @@ def test_score_against_a_separate_index(scored):
     report = scored.semantic_score(_candidate("Gates"))
     assert 0.0 < report["score"] <= 100.0
     assert all(item["key"].startswith("Gates") for item in report["nearest"])
+
+
+def test_empty_collection_warns(scored):
+    """A collection the index holds no row for cannot be scored, and
+    the caller is told rather than handed a bare 0."""
+    scored["Loose2020"] = Entry(
+        "misc", "Loose2020", fields={"note": "no indexable text"}
+    )
+    scored.save()
+    with pytest.warns(semantic.EmptyCollectionWarning, match="no row"):
+        report = scored.semantic_score("anything", keys=["Loose2020"])
+    assert report["score"] == 0.0
+    assert report["nearest"] == []
+
+
+def test_small_collection_warns_about_the_band(scored):
+    """The in-group band from a handful of members is flagged, since
+    quartiles of that many numbers say little."""
+    few = [f"Gates{2000 + n}" for n in range(3)]
+    with pytest.warns(semantic.SmallCollectionWarning, match="only 3"):
+        report = scored.semantic_score(_candidate("Gates"), keys=few)
+    assert report["members"] is not None
+    # A collection large enough for quartiles is not flagged.
+    many = [f"Gates{2000 + n}" for n in range(12)]
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", semantic.SmallCollectionWarning)
+        scored.semantic_score(_candidate("Gates"), keys=many)

@@ -1552,7 +1552,7 @@ class Library(MutableMapping):
         has=None,
         missing=None,
         group=None,
-        not_group=None,
+        keyword=None,
         with_files=None,
     ):
         """Citation keys of the entries, as a `tuple`, optionally
@@ -1564,7 +1564,7 @@ class Library(MutableMapping):
             has=None,
             missing=None,
             group=None,
-            not_group=None,
+            keyword=None,
             with_files=None,
         )
         ```
@@ -1580,10 +1580,10 @@ class Library(MutableMapping):
           with a non-empty value.
         * `missing`: keep only entries where none of the given fields
           has a non-empty value.
-        * `group`: keep only entries that are members of every given
-          static group (see {attr}`groups`).
-        * `not_group`: keep only entries that are members of none of
-          the given static groups.
+        * `group`: keep only entries that are members of any of the
+          given static groups (see {attr}`groups`).
+        * `keyword`: keep only entries that carry any of the given
+          keywords (see {attr}`keywords`).
         * `with_files`: a tri-state filter on file attachments (the
           `bdsk-file-N` fields, see {attr}`Entry.files`). `None` (the
           default) does not filter; `True` keeps only entries with at
@@ -1595,8 +1595,18 @@ class Library(MutableMapping):
         when it saves a `.bib` file (see
         [Empty fields](bibdesk-empty-fields)).
 
-        Raises {exc}`KeyError` for a group name (in `group` or
-        `not_group`) that does not exist in the library.
+        `group` and `keyword` together name a *collection*: an entry
+        belongs to it if it is a member of any named group or carries
+        any named keyword, so `group=["A", "B"]` is the union of the
+        two groups and `group="A", keyword="K"` the union of the
+        group and the keyword. The remaining arguments then narrow
+        the collection, or the whole library when neither `group` nor
+        `keyword` is given. The same collection is what the `--group`
+        and `--keyword` options of the `semantic_score` command
+        select.
+
+        Raises {exc}`KeyError` for a `group` or `keyword` that no
+        entry of the library has.
 
         ```python
         >>> from bibdeskparser import Entry, Library
@@ -1617,8 +1627,9 @@ class Library(MutableMapping):
         >>> bib.groups["My Papers"] = ("Key2026",)
         >>> bib.keys(group="My Papers")
         ('Key2026',)
-        >>> bib.keys(not_group="My Papers")
-        ()
+        >>> bib.add_to_keyword("Control", "Key2026")
+        >>> bib.keys(keyword="Control")
+        ('Key2026',)
 
         ```
         """
@@ -1626,22 +1637,28 @@ class Library(MutableMapping):
         required = [(True, name) for name in _names(has)]
         required += [(False, name) for name in _names(missing)]
 
-        def _members(name):
-            if name not in self._group_data:
-                raise KeyError(name)
-            return set(self._group_data[name])
+        def _add(members, mapping, names):
+            """Add to `members` the keys carried by each of `names` in
+            `mapping`. An unknown name is an error, so that a typo
+            cannot silently select nothing."""
+            for name in _names(names):
+                if name not in mapping:
+                    raise KeyError(name)
+                members.update(mapping[name])
 
-        include = [_members(name) for name in _names(group)]
-        exclude = [_members(name) for name in _names(not_group)]
+        collection = None
+        if _names(group) or _names(keyword):
+            collection = set()
+            _add(collection, self._group_data, group)
+            # `self.keywords` recomputes its index on every access.
+            _add(collection, dict(self.keywords), keyword)
         result = []
         for key, entry in self._entries.items():
             if types and entry.entry_type.lower() not in types:
                 continue
             if with_files is not None and bool(entry.files) != with_files:
                 continue
-            if not all(key in members for members in include):
-                continue
-            if any(key in members for members in exclude):
+            if collection is not None and key not in collection:
                 continue
             if all(
                 _has_field(entry, name) is state for state, name in required

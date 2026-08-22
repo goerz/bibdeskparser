@@ -82,9 +82,12 @@ MATLAB:2014
 - `--type TYPE` -- keep only entries of this type (repeatable; an entry matches any listed type).
 - `--has FIELD` -- keep only entries where FIELD has a non-empty value (repeatable).
 - `--missing FIELD` -- keep only entries where FIELD is missing (repeatable). An empty field counts as missing, since BibDesk deletes empty fields on save (see [Empty fields](bibdesk-empty-fields)).
-- `--group NAME`/`--not-group NAME` -- keep only entries that are, or are not, members of the [static group](bibdesk-static-groups) NAME (repeatable). An unknown group name is an error.
+- `--group NAME` -- keep only entries in the [static group](bibdesk-static-groups) NAME (repeatable). An unknown group name is an error.
+- `--keyword NAME` -- keep only entries carrying the keyword NAME (repeatable). A keyword no entry carries is an error.
 - `--with-files`/`--without-files` -- keep only entries that have at least one attachment, or none. Default: no attachment filter.
 - `--json` -- print the keys as a JSON array of strings.
+
+`--group` and `--keyword` together name a collection: an entry belongs to it if it is in any named group or carries any named keyword. That is the same collection the identically named options of [`semantic_score`](cli-semantic-score) select. The other options narrow it, or narrow the whole library when neither is given.
 
 ```console
 $ bibdeskparser keys tests/Refs/refs.bib --type article --missing eprint
@@ -701,7 +704,7 @@ Only five of the ten entries the default `--limit` allows passed the match cut; 
 
 Score how relevant a candidate paper is to the library, or to a collection within it, via {py:meth}`~bibdeskparser.Library.semantic_score`. Give the candidate exactly one way: as an `ARXIV_ID` (its title and abstract are fetched from arXiv), as `--title` and `--abstract`, or on stdin with `--stdin`.
 
-The printed score is a percentile from 0 to 100, not a raw similarity: the share of the library's own papers that would score lower, had each of them arrived as this candidate did. An unrelated candidate scores near 0.
+The candidate is compared with every entry of the target by cosine similarity, and the mean of the `--k` highest of those is how close it is taken to be. That raw number means little on its own, since even unrelated text scores around 0.6 (see [Measuring proximity](semantic-indexing)), so the printed score is a percentile from 0 to 100: the share of the library's own papers that would score lower, had each of them arrived as this candidate did. An unrelated candidate scores near 0.
 
 **Options**
 
@@ -709,18 +712,22 @@ The printed score is a percentile from 0 to 100, not a raw similarity: the share
 - `--stdin` -- read the candidate's title and abstract from stdin.
 - `--index NAME` -- match against this index instead of the configured `score_index`.
 - `--key KEY` -- score against a collection instead of the whole library (repeatable; each value may list several whitespace-separated keys, so a command substitution over `search` output works).
-- `--k N` -- average the cosines of the N nearest entries (default 10, clamped to the size of the collection).
-- `--json` -- print the full report: `score`, `nearest` (the N closest entries with their raw cosines), and, with `--key`, `members` (the quartiles of the collection members' own percentiles).
+- `--group NAME` -- score against the members of the [static group](bibdesk-static-groups) NAME (repeatable).
+- `--keyword NAME` -- score against the entries carrying the keyword NAME (repeatable).
+- `--k N` -- how many of the target's nearest entries the score averages over (default 10), so that it measures a fit to a neighborhood rather than to one paper. Clamped to the size of the collection, so a collection of one gives the plain cosine. These are exactly the entries `--json` reports as `nearest`.
+- `--json` -- print the full report: `score`, `nearest` (the N closest entries with their raw cosines), and, for a collection, `members` (the quartiles of the collection members' own percentiles).
+
+`--key`, `--group`, and `--keyword` all name members of one collection, so giving several of them scores against their union, with duplicates removed. `--group` and `--keyword` mean the same there as on [`keys`](cli-keys). A collection the index holds no row for, and a band computed from fewer than five members, are both reported as warnings on stderr; the band warning appears only with `--json`, which is the only form that shows the band.
 
 <!-- notest -->
 ```console
 $ bibdeskparser semantic_score --title "..." --abstract "..."
 71.4
 $ bibdeskparser semantic_score --title "..." --abstract "..." \
-    --key "$(bibdeskparser search 'Coherent Control' --field keywords --match exact)"
+    --keyword "Coherent Control"
 82.7
 $ bibdeskparser semantic_score --title "..." --abstract "..." --json \
-    --key "$(bibdeskparser search 'Coherent Control' --field keywords --match exact)"
+    --keyword "Coherent Control"
 {
   "score": 82.7,
   "nearest": [
@@ -745,7 +752,13 @@ $ bibdeskparser semantic_score --title "..." --abstract "..." --json \
 }
 ```
 
-The candidate scores 82.7 against the "Coherent Control" group but only 71.4 against the whole library: a strong fit to one topic is diluted across all the others, which is why scoring per topic group is the intended use. The `members` band locates it between the group's median and upper quartile, so it would sit among those papers like a typical member.
+The candidate scores 82.7 against the "Coherent Control" keyword group but only 71.4 against the whole library: a strong fit to one topic is diluted across all the others, which is why scoring per topic group is the intended use. The `members` band locates it between the group's median and upper quartile, so it would sit among those papers like a typical member. For a collection that no keyword or group captures, `--key` takes an arbitrary key list, which composes with `search`:
+
+<!-- notest -->
+```console
+$ bibdeskparser semantic_score 2409.17398 --key "$(bibdeskparser search Krotov)"
+64.8
+```
 
 ## Entries
 

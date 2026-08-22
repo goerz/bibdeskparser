@@ -200,7 +200,7 @@ Any field name may be declared, but what a declaration does depends on the field
 * `doi`: {py:meth}`~bibdeskparser.Library.add_doi` maintains the group in the same way. In addition, the `check` command accepts an `article` without a `doi` if the entry is a member of the group.
 * Any other field (e.g. `author = "No Author"`): no command ever adds or removes entries automatically; marking is entirely manual, and the declaration provides the stale-marker audit above and names the convention.
 
-Manual marking and unmarking always works, for declared and undeclared groups alike: with the `add_to_group`/`remove_from_group` CLI commands, or by drag and drop in BibDesk. Likewise, `keys --group NAME`/`--not-group NAME` select by membership in any static group; the `keys` filters do not consult this table. Without the table, none of the automatic bookkeeping above happens.
+Manual marking and unmarking always works, for declared and undeclared groups alike: with the `add_to_group`/`remove_from_group` CLI commands, or by drag and drop in BibDesk. Likewise, `keys --group NAME` selects by membership in any static group; the `keys` filters do not consult this table. Without the table, none of the automatic bookkeeping above happens.
 
 Field names are lowercased; each field needs its own group, and group names must be non-empty (a shared group would make membership ambiguous between fields). The table is exposed as `Library.config.known_missing`, a `dict` mapping the field name to the group name. See [Empty fields](bibdesk-empty-fields) for why an empty field value cannot record this information.
 

@@ -972,32 +972,53 @@ def test_keys_filter_combined(bib):
 
 
 def test_keys_filter_group(bib):
-    """`group` keeps only members of every given static group,
-    `not_group` excludes the members of every given group; group
-    names match case-sensitively."""
-    assert bib.keys(group="Diploma") == (
+    """`group` keeps the members of any of the given static groups;
+    group names match case-sensitively."""
+    diploma = (
         "Tannor2007",
         "NielsenChuangCh10QEC",
         "Evans1983",
         "LapertPRA09",
     )
+    assert bib.keys(group="Diploma") == diploma
     assert bib.keys(group="Diploma", types="book") == ("Tannor2007",)
-    assert bib.keys(group=["Diploma", "My Papers"]) == ()
-    not_diploma = bib.keys(not_group="Diploma")
-    assert set(not_diploma) == set(bib.keys()) - set(bib.keys(group="Diploma"))
-    assert bib.keys(group="Diploma", not_group="Diploma") == ()
+    # several groups are alternatives, so the result is their union
+    union = bib.keys(group=["Diploma", "My Papers"])
+    assert set(union) == set(diploma) | set(bib.keys(group="My Papers"))
+    assert len(union) == len(set(union))
     # membership order is library order, not group order
     bib.groups["Reversed"] = ("NielsenChuangCh10QEC", "Tannor2007")
     assert bib.keys(group="Reversed") == ("Tannor2007", "NielsenChuangCh10QEC")
 
 
+def test_keys_filter_keyword(bib):
+    """`keyword` keeps the entries carrying any of the given
+    keywords, and pools with `group` into one collection."""
+    oct_keys = bib.keys(keyword="OCT")
+    assert set(oct_keys) == set(bib.keywords["OCT"])
+    both = bib.keys(keyword=["OCT", "Quantum Gates"])
+    assert set(both) == set(bib.keywords["OCT"]) | set(
+        bib.keywords["Quantum Gates"]
+    )
+    # `group` and `keyword` select a collection together, so they
+    # accumulate rather than narrowing each other.
+    pooled = bib.keys(keyword="OCT", group="Diploma")
+    assert set(pooled) == set(oct_keys) | set(bib.keys(group="Diploma"))
+    # the other filters do narrow that collection
+    assert set(bib.keys(keyword="OCT", group="Diploma", types="book")) == {
+        key for key in pooled if bib[key].entry_type == "book"
+    }
+
+
 def test_keys_filter_group_unknown(bib):
-    """An unknown group name raises `KeyError` instead of silently
-    matching nothing (or everything, for `not_group`)."""
+    """An unknown group or keyword raises `KeyError` instead of
+    silently matching nothing."""
     with pytest.raises(KeyError, match="diploma"):
         bib.keys(group="diploma")  # case-sensitive
     with pytest.raises(KeyError, match="No Such Group"):
-        bib.keys(not_group="No Such Group")
+        bib.keys(group="No Such Group")
+    with pytest.raises(KeyError, match="oct"):
+        bib.keys(keyword="oct")  # case-sensitive
 
 
 def test_keys_with_files_argument(bib):

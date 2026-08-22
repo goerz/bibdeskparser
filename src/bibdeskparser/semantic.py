@@ -23,6 +23,7 @@ import dataclasses
 import hashlib
 import json
 import re
+import warnings
 
 try:
     import numpy as np
@@ -45,7 +46,15 @@ __private__ = [
     "stale_keys",
     "search",
     "score",
+    "EmptyCollectionWarning",
+    "SmallCollectionWarning",
 ]
+
+#: Fewest members whose own percentiles still make quartiles worth
+#: reporting. Below this, the band is quartiles of a handful of
+#: numbers and says more about the sample than about the collection.
+_MIN_BAND_MEMBERS = 5
+
 
 #: The name of the built-in index, which always exists and cannot be
 #: redefined: its rows have the shape of an incoming candidate, which
@@ -95,6 +104,16 @@ _BATCH_SIZE = 16
 #: meaning within one query, so more digits would suggest a precision
 #: they do not have.
 _COSINE_DIGITS = 3
+
+
+class EmptyCollectionWarning(UserWarning):
+    """Scoring against a collection the index holds no row for. The
+    reported score is not meaningful."""
+
+
+class SmallCollectionWarning(UserWarning):
+    """The in-group band was computed from very few members, so its
+    quartiles carry little information."""
 
 
 # -- the embedding model ---------------------------------------------- #
@@ -599,6 +618,13 @@ def score(index, default_index, text, *, keys=None, k=10, embed=None):
         else [key for key in keys if key in positions]
     )
     target = index.matrix[[positions[key] for key in target_keys]]
+    if not target_keys:
+        warnings.warn(
+            f"semantic index {index.name!r} holds no row for any of the "
+            "given keys; the score is not meaningful",
+            EmptyCollectionWarning,
+            stacklevel=3,
+        )
     k = min(k, len(target_keys))
     candidate = _embed_documents([text], embed)[0]
     similarities = _similarities(target, candidate)
@@ -650,6 +676,13 @@ def _member_band(probe_keys, nulls, members):
     ]
     if not own:
         return None
+    if len(own) < _MIN_BAND_MEMBERS:
+        warnings.warn(
+            f"the in-group band comes from only {len(own)} member(s); "
+            "its quartiles say little about the collection",
+            SmallCollectionWarning,
+            stacklevel=4,
+        )
     q1, median, q3 = np.percentile(own, [25, 50, 75])
     return {
         "q1": round(float(q1), 1),

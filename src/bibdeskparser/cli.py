@@ -147,6 +147,23 @@ def _check_group(lib, name):
         raise click.ClickException(f"unknown static group {name!r}")
 
 
+def _is_band_warning(category):
+    """Whether `category` is the warning about a thin in-group band,
+    which is worth reporting only when the band itself is shown.
+
+    The import is lazy because `bibdeskparser.semantic` pulls in
+    `numpy`; by the time such a warning exists, it is loaded anyway."""
+    from . import semantic  # pylint: disable=import-outside-toplevel
+
+    return issubclass(category, semantic.SmallCollectionWarning)
+
+
+def _check_keyword_in(lib, name):
+    """Fail cleanly if no entry of `lib` carries the keyword `name`."""
+    if name not in lib.keywords:
+        raise click.ClickException(f"unknown keyword {name!r}")
+
+
 def _check_string(lib, name):
     """Fail cleanly if no `@string` macro `name` is defined in `lib`."""
     if name not in lib.strings:
@@ -554,20 +571,20 @@ def main(ctx):
     multiple=True,
     metavar="NAME",
     help=(
-        "Keep only entries that are members of the static group NAME "
-        "(repeatable, an entry must be in every given group). Group "
-        "names are case-sensitive; an unknown NAME is an error."
+        "Keep only entries in the static group NAME (repeatable, and "
+        "pooling with --keyword into one collection). Group names are "
+        "case-sensitive; an unknown NAME is an error."
     ),
 )
 @click.option(
-    "--not-group",
-    "not_group_names",
+    "--keyword",
+    "keyword_names",
     multiple=True,
     metavar="NAME",
     help=(
-        "Keep only entries that are not members of the static group "
-        "NAME (repeatable). Group names are case-sensitive; an "
-        "unknown NAME is an error."
+        "Keep only entries carrying the keyword NAME (repeatable, and "
+        "pooling with --group into one collection). Keywords are "
+        "case-sensitive; a NAME no entry carries is an error."
     ),
 )
 @click.option(
@@ -590,30 +607,40 @@ def keys(
     has_fields,
     missing_fields,
     group_names,
-    not_group_names,
+    keyword_names,
     with_files,
     as_json,
 ):
     """List citation keys, one per line.
 
     Without options, list every entry. Otherwise, an entry is listed
-    if it matches one of the --type values (if any) and satisfies
-    every --has, --missing, --group, --not-group, and
-    --with-files/--without-files filter. For any FIELD, exactly one of
-    --has and --missing holds (an empty field counts as missing, since
-    BibDesk deletes empty fields on save). Field names are
-    case-insensitive, group names case-sensitive.
+    if it satisfies every filter given.
+
+    --group and --keyword together name a collection: an entry
+    belongs to it if it is in any named group or carries any named
+    keyword, so --group A --keyword K lists the members of A together
+    with everything carrying K. That is the same collection the
+    --group and --keyword options of `semantic_score` select. The
+    remaining options narrow it, or narrow the whole library when
+    neither is given; --type likewise offers alternatives, while
+    --has, --missing, and --with-files/--without-files all have to
+    hold. For any FIELD, exactly one of --has and --missing holds (an
+    empty field counts as missing, since BibDesk deletes empty fields
+    on save). Field names are case-insensitive, group and keyword
+    names case-sensitive.
     """
     lib = Library(bibfile)
-    for name in (*group_names, *not_group_names):
+    for name in group_names:
         _check_group(lib, name)
+    for name in keyword_names:
+        _check_keyword_in(lib, name)
     data = list(
         lib.keys(
             types=types,
             has=has_fields,
             missing=missing_fields,
             group=group_names,
-            not_group=not_group_names,
+            keyword=keyword_names,
             with_files=with_files,
         )
     )
@@ -2211,9 +2238,10 @@ def semantic_search(bibfile, query, index_name, limit, hybrid, as_json):
         'bibdeskparser semantic_score --title "..." --abstract "..."',
         "bibdeskparser semantic_score 2409.17398  # from arXiv",
         "bibdeskparser semantic_score --stdin < candidate.txt",
-        "bibdeskparser semantic_score 2409.17398 --json \\\n"
-        "    --key \"$(bibdeskparser search 'Coherent Control' "
-        '--field keywords --match exact)"',
+        'bibdeskparser semantic_score 2409.17398 --group "My Papers"',
+        "bibdeskparser semantic_score 2409.17398 --keyword OCT --json",
+        "bibdeskparser semantic_score 2409.17398 \\\n"
+        '    --key "$(bibdeskparser search Krotov)"',
     ),
 )
 @click.argument("eprint", metavar="[ARXIV_ID]", required=False)
@@ -2252,10 +2280,32 @@ def semantic_search(bibfile, query, index_name, limit, hybrid, as_json):
     multiple=True,
     metavar="KEY",
     help=(
-        "Score against this collection of entries instead of the "
-        "whole library (repeatable; each value may list several "
-        "whitespace-separated keys, so a command substitution over "
-        "`search` output works)."
+        "Score against these entries instead of the whole library "
+        "(repeatable, and combining with --group and --keyword; each "
+        "value may list several whitespace-separated keys, so a "
+        "command substitution over `search` output works)."
+    ),
+)
+@click.option(
+    "--group",
+    "group_names",
+    multiple=True,
+    metavar="NAME",
+    help=(
+        "Score against the entries of the static group NAME "
+        "(repeatable, and combining with --key and --keyword). Group "
+        "names are case-sensitive; an unknown NAME is an error."
+    ),
+)
+@click.option(
+    "--keyword",
+    "keyword_names",
+    multiple=True,
+    metavar="NAME",
+    help=(
+        "Score against the entries carrying the keyword NAME "
+        "(repeatable, and combining with --key and --group). Keywords "
+        "are case-sensitive; a NAME no entry carries is an error."
     ),
 )
 @click.option(
@@ -2264,8 +2314,12 @@ def semantic_search(bibfile, query, index_name, limit, hybrid, as_json):
     default=10,
     show_default=True,
     help=(
-        "Average the cosines of this many nearest entries (clamped "
-        "to the size of the collection)."
+        "How many of the target's nearest entries the score averages "
+        "over, so that it measures a fit to a neighborhood rather "
+        "than to one paper. Clamped to the size of the collection, "
+        "so a collection of one gives the plain cosine. Lower values "
+        "react to a single close paper, higher ones ask for a "
+        "broader fit."
     ),
 )
 @_json_option
@@ -2280,6 +2334,8 @@ def semantic_score(
     read_stdin,
     index_name,
     citekeys,
+    group_names,
+    keyword_names,
     k,
     as_json,
 ):
@@ -2288,21 +2344,28 @@ def semantic_score(
     Give the candidate as an ARXIV_ID (fetched from arXiv), as
     --title and --abstract, or on stdin with --stdin; exactly one of
     the three. The candidate is matched against an index built by
-    `build_semantic_indexes`, restricted to a collection with --key. This
-    command modifies nothing.
+    `build_semantic_indexes`, over the whole library or over a
+    collection named with --group, --keyword, or --key. This command
+    modifies nothing.
 
-    Prints the score: not a raw similarity but a percentile from 0 to
-    100, the share of the library's own papers that score lower, had
-    each of them arrived as this candidate did. An unrelated
-    candidate scores near 0. With --json, the full report adds
-    'nearest' (the closest entries with their raw cosines) and, with
-    --key, 'members' (the quartiles of the collection members' own
-    percentiles) -- the band that says whether the candidate would
-    sit among those papers like one of their own.
+    The candidate is compared with every entry of the target by
+    cosine similarity, and the mean of the --k highest of those is
+    how close it is taken to be. That raw number means little on its
+    own, since even unrelated text scores around 0.6, so what gets
+    printed is a percentile from 0 to 100: the share of the library's
+    own papers that score lower, had each of them arrived as this
+    candidate did. An unrelated candidate scores near 0.
+
+    With --json, the full report adds 'nearest' (the --k entries the
+    mean was taken over, with their raw cosines) and, for a
+    collection, 'members' (the quartiles of the collection members'
+    own percentiles) -- the band that says whether the candidate
+    would sit among those papers like one of their own.
 
     Scoring per topic group is the intended use: a single
     whole-library score dilutes a strong fit to one topic across all
-    the others. Requires the bibdeskparser[semantic] extra.
+    the others, and gives no band to read it against. Requires the
+    bibdeskparser[semantic] extra.
     """
     given = [bool(eprint), bool(title or abstract), read_stdin]
     if sum(given) != 1:
@@ -2322,11 +2385,25 @@ def semantic_score(
         text = "\n\n".join(part for part in (title, abstract) if part)
     if not text.strip():
         raise click.UsageError("the candidate text is empty")
-    keys = [key for value in citekeys for key in value.split()] or None
     lib = Library(bibfile)
-    if keys is not None:
-        _check_keys(lib, keys)
-    report = lib.semantic_score(text, keys=keys, index=index_name, k=k)
+    selected = [key for value in citekeys for key in value.split()]
+    _check_keys(lib, selected)
+    for name in group_names:
+        _check_group(lib, name)
+        selected.extend(lib.groups[name])
+    for name in keyword_names:
+        _check_keyword_in(lib, name)
+        selected.extend(lib.keywords[name])
+    named = bool(citekeys or group_names or keyword_names)
+    # `dict` keeps the first occurrence of a key named more than once.
+    keys = list(dict.fromkeys(selected)) if named else None
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        report = lib.semantic_score(text, keys=keys, index=index_name, k=k)
+    for warning in caught:
+        if not as_json and _is_band_warning(warning.category):
+            continue  # the band itself is only shown with --json
+        click.echo(f"Warning: {warning.message}", err=True)
     _emit(report, as_json, str(report["score"]))
 
 
