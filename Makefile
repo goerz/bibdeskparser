@@ -124,6 +124,10 @@ upload: dist-check  ## package and upload a release to pypi.org
 release:  ## create a new version, package and upload it
 	$(UV) python scripts/release.py
 
+record-embeddings:  ## re-record tests/embeddings.npz from the real embedding model
+	BIBDESKPARSER_RECORD_EMBEDDINGS=1 $(UV) --with "fastembed>=0.7.4" \
+	    pytest -q tests/test_semantic.py tests/test_cli.py
+
 install:  ## install the `bibdeskparser` CLI as an editable uv tool (extras: INSTALL_EXTRAS)
 	@echo "INSTALL_EXTRAS: $(INSTALL_EXTRAS)"
 	uv tool install --editable "$(INSTALL_SOURCE)"

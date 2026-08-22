@@ -1,0 +1,1031 @@
+%% This BibTeX bibliography file was created using BibDesk.
+%% http://bibdesk.sourceforge.net/
+
+
+%% Created for Michael Goerz at 2026-08-22 17:05:05 -0400 
+
+
+%% Saved with string encoding Unicode (UTF-8) 
+
+@article{AbdelhafezPRA2019,
+	abstract = {We present a gradient-based optimal-control technique for open quantum systems that utilizes quantum trajectories to simulate the quantum dynamics during optimization. Using trajectories allows for optimizing open systems with less computational cost than the regular density matrix approaches in most realistic optimization problems. We introduce an improved-sampling algorithm which minimizes the number of trajectories needed per optimization iteration. Together with employing stochastic gradient descent techniques, this reduces the complexity of optimizing many realistic open quantum systems to the complexity encountered with closed systems. Our optimizer harnesses automatic differentiation to provide flexibility in optimization and to suit the different constraints and diverse parameter regimes of real-life experiments. We utilize the optimizer in a variety of applications to demonstrate how the use of quantum trajectories significantly reduces the computation complexity while achieving a multitude of simultaneous optimization targets. Demonstrated targets include high state-transfer fidelities despite dissipation, faster gate times and maximization of qubit-readout fidelity while maintaining the quantum non-demolition nature of the measurement and allowing for subsequent fast resonator reset.},
+	author = {Abdelhafez, Mohamed and Schuster, David I. and Koch, Jens},
+	journal = {Phys. Rev. A},
+	keywords = {SC Qubits},
+	title = {Gradient-based optimal control of open quantum systems using quantum trajectories and automatic differentiation},
+	year = {2019}}
+
+@article{AbdelhafezPRA2020,
+	abstract = {We employ quantum optimal control theory to realize quantum gates for two protected superconducting circuits: the heavy-fluxonium qubit and the 0-π qubit. Utilizing automatic differentiation facilitates the simultaneous inclusion of multiple optimization targets, allowing one to obtain high-fidelity gates with realistic pulse shapes. For both qubits, disjoint support of low-lying wave functions prevents direct population transfer between the computational-basis states. Instead, optimal control favors dynamics involving higher-lying levels, effectively lifting the protection for a fraction of the gate duration. For the 0-π qubit, offset-charge dependence of matrix elements among higher levels poses an additional challenge for gate protocols. To mitigate this issue, we randomize the offset charge during the optimization process, steering the system towards pulse shapes insensitive to charge variations. Closed-system fidelities obtained are 99% or higher, and show slight reductions in open-system simulations.},
+	author = {Abdelhafez, Mohamed and Baker, Brian and Gyenis, Andr{\'a}s and Mundada, Pranav S. and Houck, Andrew A. and Schuster, David I. and Koch, Jens},
+	journal = {Phys. Rev. A},
+	keywords = {SC Qubits},
+	title = {Universal gates for protected superconducting qubits using optimal control},
+	year = {2020}}
+
+@article{AlexanderQST2020,
+	abstract = {The quantum circuit model is an abstraction that hides the underlying physical implementation of gates and measurements on a quantum computer. For precise control of real quantum hardware, the ability to execute pulse and readout-level instructions is required. To that end, we introduce Qiskit Pulse, a pulse-level programming paradigm implemented as a module within Qiskit-Terra [1]. To demonstrate the capabilities of Qiskit Pulse, we calibrate both un-echoed and echoed variants of the cross-resonance entangling gate with a pair of qubits on an IBM Quantum system accessible through the cloud. We perform Hamiltonian characterization of both single and two-pulse variants of the cross-resonance entangling gate with varying amplitudes on a cloud-based IBM Quantum system. We then transform these calibrated sequences into a high-fidelity CNOT gate by applying pre and post local-rotations to the qubits, achieving average gate fidelities of F = 0.981 and F = 0.979 for the un-echoed and echoed respectively. This is comparable to the standard backend CNOT fidelity of FCX = 0.984. Furthermore, to illustrate how users can access their results at different levels of the readout chain, we build a custom discriminator to investigate qubit readout correlations. Qiskit Pulse allows users to explore advanced control schemes such as optimal control theory, dynamical decoupling, and error mitigation that are not available within the circuit model.},
+	author = {Alexander, Thomas and Kanazawa, Naoki and Egger, Daniel J. and Capelluto, Lauren and Wood, Christopher J. and Javadi-Abhari, Ali and McKay, David C.},
+	journal = {Quantum Sci. Technol.},
+	keywords = {SC Qubits},
+	title = {Qiskit pulse: programming quantum computers through the cloud with pulses},
+	year = {2020}}
+
+@article{AllmanPRL2014,
+	abstract = {We use a flux-biased radio frequency superconducting quantum interference device (rf SQUID) with an embedded flux-biased direct current SQUID to generate strong resonant and nonresonant tunable interactions between a phase qubit and a lumped-element resonator. The rf SQUID creates a tunable magnetic susceptibility between the qubit and resonator providing resonant coupling strengths from zero to near the ultrastrong coupling regime. By modulating the magnetic susceptibility, nonresonant parametric coupling achieves rates > 100 MHz. Nonlinearity of the magnetic susceptibility also leads to parametric coupling at the subharmonics of the qubit-resonator detuning.},
+	author = {Allman, M. S. and Whittaker, J. D. and Castellanos-Beltran, M. and Cicak, K. and da Silva, F. and DeFeo, M. P. and Lecocq, F. and Sirois, A. and Teufel, J. D. and Aumentado, J. and Simmonds, R. W.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {SC Qubits},
+	title = {Tunable Resonant and Nonresonant Interactions between a Phase Qubit and {$LC$} Resonator},
+	year = {2014}}
+
+@article{AndersenPRA2015,
+	abstract = {A superconducting quantum interference device (SQUID) inserted in a superconducting waveguide resonator imposes current and voltage boundary conditions that makes it suitable as a tuning element for the resonator modes. If such a SQUID element is subject to a periodically varying magnetic flux, the resonator modes acquire frequency sidebands. In this work we calculate the multifrequency eigenmodes of resonators coupled to periodically driven SQUIDs and we use the Lagrange formalism to propose a theory for their quantization. The elementary excitations of a multifrequency mode can couple resonantly to physical systems with different transition frequencies and this makes the resonator an efficient quantum bus for state transfer and coherent quantum operations in hybrid quantum systems. As an example of the application of our multifrequency modes, we determine their coupling to transmon qubits with different frequencies and we present a bichromatic scheme for entanglement and gate operations.},
+	author = {Andersen, Christian Kraglund and M{\o}lmer, Klaus},
+	journal = {Phys. Rev. A},
+	keywords = {SC Qubits},
+	title = {Multifrequency modes in superconducting resonators: Bridging frequency gaps in off-resonant couplings},
+	year = {2015}}
+
+@article{AnsariPRB2019,
+	abstract = {We present a theoretical description for circuits consisting of weak anharmonic qubits coupled to cavity multimodes. We obtain a unitary transformation that diagonalizes harmonic sector of the circuit. Weak anharmonicity does not alter the normal mode basis, however it can modify energy levels. We study two examples of a transmon and two transmons coupled to bus resonator, and we determine dressed frequencies and Kerr nonlinearities in closed form formulas. Our results are valid for arbitrary frequency detuning and coupling within and beyond dispersive regime.},
+	author = {Ansari, M. H.},
+	journal = {Phys. Rev. B},
+	keywords = {SC Qubits},
+	title = {Superconducting qubits beyond the dispersive regime},
+	year = {2019}}
+
+@article{AxlineNP2018,
+	abstract = {Coupling isolated quantum systems through propagating photons is a central theme in quantum science1,2, with the potential for groundbreaking applications such as distributed, fault-tolerant quantum computing3--5. To date, photons have been used widely to realize high-fidelity remote entanglement6--12 and state transfer13--15 by compensating for inefficiency with conditioning, a fundamentally probabilistic strategy that places limits on the rate of communication. In contrast, here we experimentally realize a long-standing proposal for deterministic, direct quantum state transfer                16              . Using efficient, parametrically controlled emission and absorption of microwave photons, we show on-demand, high-fidelity state transfer and entanglement between two isolated superconducting cavity quantum memories. The transfer rate is faster than the rate of photon loss in either memory, an essential requirement for complex networks. By transferring states in a multiphoton encoding, we further show that the use of cavity memories and state-independent transfer creates the striking opportunity to deterministically mitigate transmission loss with quantum error correction. Our results establish a compelling approach for deterministic quantum communication across networks, and will enable modular scaling of superconducting quantum circuits.},
+	author = {Axline, Christopher J. and Burkhart, Luke D. and Pfaff, Wolfgang and Zhang, Mengzhen and Chou, Kevin and Campagne-Ibarcq, Philippe and Reinhold, Philip and Frunzio, Luigi and Girvin, Steven M. and Jiang, Liang and Devoret, Michel H. and Schoelkopf, Robert J.},
+	journal = {Nat. Phys.},
+	keywords = {SC Qubits},
+	title = {On-demand quantum state transfer and entanglement between remote microwave cavity memories},
+	year = {2018}}
+
+@article{BaumPRXQ2021,
+	abstract = {Quantum computers promise tremendous impact across applications -- and have shown great strides in hardware engineering -- but remain notoriously error prone. Careful design of low-level controls has been shown to compensate for the processes which induce hardware errors, leveraging techniques from optimal and robust control. However, these techniques rely heavily on the availability of highly accurate and detailed physical models which generally only achieve sufficient representative fidelity for the most simple operations and generic noise modes. In this work, we use deep reinforcement learning to design a universal set of error-robust quantum logic gates on a superconducting quantum computer, without requiring knowledge of a specific Hamiltonian model of the system, its controls, or its underlying error processes. We experimentally demonstrate that a fully autonomous deep reinforcement learning agent can design single qubit gates up to 3× faster than default DRAG operations without additional leakage error, and exhibiting robustness against calibration drifts over weeks. We then show that ZX(-π/2) operations implemented using the cross-resonance interaction can outperform hardware default gates by over 2× and equivalently exhibit superior calibration-free performance up to 25 days post optimization using various metrics. We benchmark the performance of deep reinforcement learning derived gates against other black box optimization techniques, showing that deep reinforcement learning can achieve comparable or marginally superior performance, even with limited hardware access.},
+	author = {Baum, Yuval and Amico, Mirko and Howell, Sean and Hush, Michael R. and Liuzzi, Maggie and Mundada, Pranav S. and Merkh, Thomas and Carvalho, Andre R. R. and Biercuk, Michael J.},
+	journal = {PRX Quantum},
+	keywords = {SC Qubits},
+	title = {Experimental Deep Reinforcement Learning for Error-Robust Gate-Set Design on a Superconducting Quantum Computer},
+	year = {2021}}
+
+@article{BeaudoinPRA2011,
+	abstract = {Including qubit relaxation and dephasing, and cavity relaxation, we derive a master equation that takes into account the qubit-resonator coupling. Special attention is given to the ultrastrong coupling regime, where the failure of the quantum optical master equation is manifest. In this situation, our model predicts an asymmetry in the vacuum Rabi splitting that could be used to probe dephasing noise at unexplored frequencies. We also show how uctuations in the qubit frequency can cause sideband transitions, squeezing, and Casimir-like photon generation.},
+	author = {Beaudoin, F{\'e}lix and Gambetta, Jay M. and Blais, Alexandre},
+	journal = {Phys. Rev. A},
+	keywords = {SC Qubits},
+	title = {Dissipation and ultrastrong coupling in circuit QED},
+	year = {2011}}
+
+@unpublished{Berger2412.05230,
+	abstract = {Numerical gate design typically makes use of high-dimensional parameterizations enabling sophisticated, highly expressive control pulses. Developing efficient experimental calibration methods for such gates is a long-standing challenge in quantum control, as on-device calibration requires the optimization of noisy experimental data over high-dimensional parameter spaces. To improve the efficiency of calibrations, we present a systematic method for reducing the dimensionality of the parameter space traversed in gate calibration, starting from an arbitrary high-dimensional pulse representation. We use this approach to design and calibrate an Xπ/₂ gate robust against amplitude and detuning errors, as well as an Xπ/₂ gate robust against coherent errors due to a spectator qubit.},
+	author = {Berger, Emma and Maurya, Vivek and McIntyre, Z. M. and Wei, Ken Xuan and Haas, Holger and Puzzuoli, Daniel},
+	journal = {arXiv:2412.05230},
+	keywords = {SC Qubits},
+	title = {Dimensionality reduction for closed-loop quantum gate calibration},
+	year = {2024}}
+
+@article{BertetPRB2006,
+	abstract = {We propose a scheme to couple two superconducting charge or flux qubits biased at their symmetry points with unequal energy splittings. Modulating the coupling constant between two qubits at the sum or difference of their two frequencies allows to bring them into resonance in the rotating frame. Switching on and off the modulation amounts to switching on and off the coupling which can be realized at nanosecond speed. We discuss various physical implementations of this idea, and find that our scheme can lead to rapid operation of a two-qubit gate.},
+	author = {Bertet, P. and Harmans, C. J. P. M. and Mooij, J. E.},
+	journal = {Phys. Rev. B},
+	keywords = {SC Qubits},
+	title = {Parametric coupling for superconducting qubits},
+	year = {2006}}
+
+@article{BialczakNP2010,
+	abstract = {Quantum logic gates must perform properly when operating on their standard input basis states, as well as when operating on complex superpositions of these states. Experiments using superconducting qubits have validated the truth table for particular implementations of e.g. the controlled-NOT gate [1,2], but have not fully characterized gate operation for arbitrary superpositions of input states. Here we demonstrate the use of quantum process tomography (QPT) [3,4] to fully characterize the performance of a universal entangling gate between two superconducting quantum bits. Process tomography permits complete gate analysis, but requires precise preparation of arbitrary input states, control over the subsequent qubit interaction, and simultaneous single-shot measurement of the output states. We use QPT to measure the fidelity of the entangling gate and to quantify the decoherence mechanisms affecting the gate performance. In addition to demonstrating a promising fidelity, our entangling gate has a on/off ratio of 300, a level of adjustable coupling that will become a requirement for future high-fidelity devices. This is the first solid-state demonstration of QPT in a two-qubit system, as solid-state process tomography has previously only been demonstrated with single qubits [5,6].},
+	author = {Bialczak, R. C. and Ansmann, M. and Hofheinz, M. and Lucero, E. and Neeley, M. and O/'Connell, A. D. and Sank, D. and Wang, H. and Wenner, J. and Steffen, M. and Cleland, A. N. and Martinis, J. M.},
+	journal = {Nat. Phys.},
+	keywords = {SC Qubits},
+	title = {Quantum process tomography of a universal entangling gate implemented with Josephson phase qubits},
+	year = {2010}}
+
+@article{BialczakPRL2011,
+	abstract = {A major challenge in the field of quantum computing is the construction of scalable qubit coupling architectures. Here, we demonstrate a novel tunable coupling circuit that allows superconducting qubits to be coupled over long distances. We show that the interqubit coupling strength can be arbitrarily tuned over nanosecond time scales within a sequence that mimics actual use in an algorithm. The coupler has a measured on/off ratio of 1000. The design is self-contained and physically separate from the qubits, allowing the coupler to be used as a module to connect a variety of elements such as qubits, resonators, amplifiers, and readout circuitry over distances much larger than nearest-neighbor. Such design flexibility is likely to be useful for a scalable quantum computer.},
+	author = {Bialczak, R. C. and Ansmann, M. and Hofheinz, M. and Lenander, M. and Lucero, E. and Neeley, M. and O'Connell, A. D. and Sank, D. and Wang, H. and Weides, M. and Wenner, J. and Yamamoto, T. and Cleland, A. N. and Martinis, J. M.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {SC Qubits},
+	title = {Fast Tunable Coupler for Superconducting Qubits},
+	year = {2011}}
+
+@phdthesis{BishopPhD2010,
+	abstract = {Circuit Quantum Electrodynamics (cQED), the study of the interaction between superconducting circuits behaving as artificial atoms and 1-dimensional transmission-line resonators, has shown much promise for quantum information processing tasks. For the purposes of quantum computing it is usual to approximate the artificial atoms as 2-level qubits, and much effort has been expended on attempts to isolate these qubits from the environment and to invent ever more sophisticated control and measurement schemes. Rather than focussing on these technological aspects of the field, this thesis investigates the opportunities for using these carefully engineered systems for answering questions of fundamental physics.},
+	author = {Bishop, Lev S.},
+	keywords = {SC Qubits},
+	title = {Circuit Quantum Electrodynamics},
+	year = {2010}}
+
+@article{BlaisPRA2004,
+	abstract = {We propose a realizable architecture using one-dimensional transmission line resonators to reach the strong-coupling limit of cavity quantum electrodynamics in superconducting electrical circuits. The vacuum Rabi frequency for the coupling of cavity photons to quantized excitations of an adjacent electrical circuit (qubit) can easily exceed the damping rates of both the cavity and qubit. This architecture is attractive both as a macroscopic analog of atomic physics experiments and for quantum computing and control, since it provides strong inhibition of spontaneous emission, potentially leading to greatly enhanced qubit lifetimes, allows high-fidelity quantum nondemolition measurements of the state of multiple qubits, and has a natural mechanism for entanglement of qubits separated by centimeter distances. In addition it would allow production of microwave photon states of fundamental importance for quantum communication.},
+	author = {Blais, Alexandre and Huang, Ren-Shou and Wallraff, Andreas and Girvin, Steven M. and Schoelkopf, Robert J.},
+	journal = {Phys. Rev. A},
+	keywords = {SC Qubits},
+	title = {Cavity quantum electrodynamics for superconducting electrical circuits: An architecture for quantum computation},
+	year = {2004}}
+
+@article{BlaisPRA2007,
+	abstract = {We theoretically study single and two-qubit dynamics in the circuit QED architecture. We focus on the current experimental design [Wallraff et al., Nature (London) 431, 162 (2004); Schuster et al., Nature (London) 445, 515 (2007)] in which superconducting charge qubits are capacitively coupled to a single high-Q superconducting coplanar resonator. In this system, logical gates are realized by driving the resonator with microwave fields. Advantages of this architecture are that it allows for multiqubit gates between non-nearest qubits and for the realization of gates in parallel, opening the possibility of fault-tolerant quantum computation with superconduting circuits. In this paper, we focus on one- and two-qubit gates that do not require moving away from the charge-degeneracy ``sweet spot.'' This is advantageous as it helps to increase the qubit dephasing time and does not require modification of the original circuit QED. However, these gates can, in some cases, be slower than those that do not use this constraint. Five types of two-qubit gates are discussed, these include gates based on virtual photons, real excitation of the resonator, and a gate based on the geometric phase. We also point out the importance of selection rules when working at the charge degeneracy point.},
+	author = {Blais, Alexandre and Gambetta, Jay M. and Wallraff, Andreas and Schuster, David I. and Girvin, Steven M. and Devoret, Michel H. and Schoelkopf, Robert J.},
+	journal = {Phys. Rev. A},
+	keywords = {SC Qubits},
+	title = {Quantum-information processing with circuit quantum electrodynamics},
+	year = {2007}}
+
+@article{BlaisRMP2021,
+	abstract = {Quantum mechanical effects at the macroscopic level were first explored in Josephson junction-based superconducting circuits in the 1980's. In the last twenty years, the emergence of quantum information science has intensified research toward using these circuits as qubits in quantum information processors. The realization that superconducting qubits can be made to strongly and controllably interact with microwave photons, the quantized electromagnetic fields stored in superconducting circuits, led to the creation of the field of circuit quantum electrodynamics (QED), the topic of this review. While atomic cavity QED inspired many of the early developments of circuit QED, the latter has now become an independent and thriving field of research in its own right. Circuit QED allows the study and control of light-matter interaction at the quantum level in unprecedented detail. It also plays an essential role in all current approaches to quantum information processing with superconducting circuits. In addition, circuit QED enables the study of hybrid quantum systems interacting with microwave photons. Here, we review the coherent coupling of superconducting qubits to microwave photons in high-quality oscillators focussing on the physics of the Jaynes-Cummings model, its dispersive limit, and the different regimes of light-matter interaction in this system. We discuss coupling of superconducting circuits to their environment, which is necessary for coherent control and measurements in circuit QED, but which also invariably leads to decoherence. Dispersive qubit readout, a central ingredient in almost all circuit QED experiments, is also described. Following an introduction to these fundamental concepts that are at the heart of circuit QED, we discuss important use cases of these ideas in quantum information processing and in quantum optics.},
+	author = {Blais, Alexandre and Grimsmo, Arne L. and Girvin, Steven M. and Wallraff, Andreas},
+	journal = {Rev. Mod. Phys.},
+	keywords = {SC Qubits},
+	title = {Circuit quantum electrodynamics},
+	year = {2021}}
+
+@article{BoissonneaultPRA2012,
+	abstract = {We study the backaction of a driven nonlinear resonator on a multilevel superconducting qubit. Using unitary transformations on the multilevel Jaynes-Cummings Hamiltonian and quantum optics master equation, we derive an analytical model that goes beyond linear response theory. Within the limits of validity of the model, we obtain quantitative agreement with experimental and numerical data, both in the bifurcation and in the parametric amplification regimes of the nonlinear resonator.We show in particular that the measurement-induced dephasing rate of the qubit can be rather small at high drive power. This is in contrast to measurement with a linear resonator where this rate increases with the drive power. Finally, we show that, for typical parameters of circuit quantum electrodynamics, correctly describing measurement-induced dephasing requires a model going beyond linear response theory, such as the one presented here.},
+	author = {Boissonneault, Maxime and Doherty, A. C. and Ong, F. R. and Bertet, P. and Vion, D. and Esteve, Daniel and Blais, Alexandre},
+	journal = {Phys. Rev. A},
+	keywords = {SC Qubits},
+	title = {Back-action of a driven nonlinear resonator on a superconducting qubit},
+	year = {2012}}
+
+@article{BoissonneaultPRL2010,
+	abstract = {In dispersive readout schemes, qubit-induced nonlinearity typically limits the measurement fidelity by reducing the signal-to-noise ratio (SNR) when the measurement power is increased. Contrary to seeing the nonlinearity as a problem, here we propose to use it to our advantage in a regime where it can increase the SNR. We show analytically that such a regime exists if the qubit has a many-level structure. We also show how this physics can account for the high-fidelity avalanchelike measurement recently reported by Reed et al. [arXiv:1004.4323v1].},
+	author = {Boissonneault, Maxime and Gambetta, Jay M. and Blais, Alexandre},
+	journal = {Phys. Rev. Lett.},
+	keywords = {SC Qubits},
+	title = {Improved Superconducting Qubit Readout by Qubit-Induced Nonlinearities},
+	year = {2010}}
+
+@article{BoixoNP2014,
+	abstract = {Quantum technology is maturing to the point where quantum devices, such as quantum communication systems, quantum random number generators and quantum simulators may be built with capabilities exceeding classical computers. A quantum annealer, in particular, solves optimization problems by evolving a known initial configuration at non-zero temperature towards the ground state of a Hamiltonian encoding a given problem. Here, we present results from tests on a 108 qubit D-Wave One device based on superconducting flux qubits. By studying correlations we find that the device performance is inconsistent with classical annealing or that it is governed by classical spin dynamics. In contrast, we find that the device correlates well with simulated quantum annealing. We find further evidence for quantum annealing in the form of small-gap avoided level crossings characterizing the hard problems. To assess the computational power of the device we compare it against optimized classical algorithms.},
+	author = {Boixo, Sergio and R{\o}nnow, Troels F. and Isakov, Sergei V. and Wang, Zhihui and Wecker, David and Lidar, Daniel A. and Martinis, John M. and Troyer, Matthias},
+	journal = {Nat. Phys.},
+	keywords = {SC Qubits},
+	title = {Evidence for quantum annealing with more than one hundred qubits},
+	year = {2014}}
+
+@article{BouchiatPS1998,
+	abstract = {A metallic electrode connected to electron reservoirs by tunnel junctions has a series of charge states corresponding to the number of excess electrons in the electrode. In contrast with the charge state of an atomic or molecular ion, the charge states of such an "island" involve a macroscopic number of conduction electrons of the island. Island charge states bear some resemblance with the photon number states of the cavity in cavity QED, the phase conjugate to the number of electrons being analogous to the phase of the field in the cavity. For a normal island, charge states decay irreversibly into charge states of lower energies. However, the ground state of a superconducting island connected to superconducting reservoirs can be a coherent superposition of charge states differing by two electrons (i.e. a Cooper pair). We describe an experiment in which this Josephson effect involving only one Cooper pair is measured.},
+	author = {Bouchiat, V. and Vion, D. and Joyez, P. and Esteve, D. and Devoret, M. H.},
+	journal = {Phys. Scripta},
+	keywords = {SC Qubits},
+	title = {Quantum coherence with a single Cooper pair},
+	year = {1998}}
+
+@article{BurkardPRB2004,
+	abstract = {We present a multilevel quantum theory of decoherence for a general circuit realization of a superconducting qubit. Using electrical network graph theory, we derive a Hamiltonian for the circuit. The dissipative circuit elements (external impedances, shunt resistors) are described using the Caldeira-Leggett model. The master equation for the superconducting phases in the Born-Markov approximation is derived and brought into the Bloch-Redfield form in order to describe multilevel dissipative quantum dynamics of the circuit. The model takes into account leakage effects, i.e., transitions from the allowed qubit states to higher excited states of the system. As a special case, we truncate the Hilbert space and derive a two-level (Bloch) theory with characteristic relaxation (T₁) and decoherence (T₂) times. We apply our theory to the class of superconducting flux qubits; however, the formalism can be applied for both superconducting flux and charge qubits.},
+	author = {Burkard, Guido and Koch, Roger H. and DiVincenzo, David P.},
+	journal = {Phys. Rev. B},
+	keywords = {SC Qubits},
+	title = {Multilevel quantum description of decoherence in superconducting qubits},
+	year = {2004}}
+
+@article{CaldwellPRA2018,
+	abstract = {We describe and implement a family of entangling gates activated by radio-frequency flux modulation applied to a tunable transmon that is statically coupled to a neighboring transmon. The effect of this modulation is the resonant exchange of photons directly between levels of the two-transmon system, obviating the need for mediating qubits or resonator modes and allowing for the full utilization of all qubits in a scalable architecture. The resonance condition is selective in both the frequency and amplitude of modulation and thus alleviates frequency crowding. We demonstrate the use of three such resonances to produce entangling gates that enable universal quantum computation: one iSWAP gate and two distinct controlled-Z gates. We report interleaved randomized benchmarking results indicating gate error rates of 6% for the iSWAP (duration 135 ns) and 9% for the controlled-Z gates (durations 175 and 270 ns), limited largely by qubit coherence.},
+	author = {Caldwell, S. A. and Didier, Nicolas and Ryan, Colm A. and Sete, Eyob A. and Hudson, A. and Karalekas, Peter J. and Manenti, Riccardo and da Silva, M. P. and Sinclair, R. and Acala, E. and Alidoust, N. and Angeles, J. and Bestwick, A. and Block, M. and Bloom, B. and Bradley, A. and Bui, C. and Capelluto, Lauren and Chilcott, R. and Cordova, J. and Crossman, G. and Curtis, M. and Deshpande, S. and El Bouayadi, T. and Girshovich, D. and Hong, Sabrina and Kuang, K. and Lenihan, M. and Manning, T. and Marchenkov, A. and Marshall, J. and Maydra, R. and Mohan, Y. and O'Brien, W. and Osborn, C. and Otterbach, J. and Papageorge, A. and Paquette, J.-P. and Pelstring, M. and Polloreno, A. and Prawiroatmodjo, G. and Rawat, V. and Reagor, M. and Renzas, R. and Rubin, N. and Russell, D. and Rust, M. and Scarabelli, D. and Scheer, M. and Selvanayagam, M. and Smith, R. and Staley, A. and Suska, M. and Tezak, Nikolas and Thompson, D. C. and To, T.-W. and Vahidpour, M. and Vodrahalli, N. and Whyland, T. and Yadav, K. and Zeng, William J. and Rigetti, Chad},
+	journal = {Phys. Rev. Applied},
+	keywords = {SC Qubits},
+	title = {Parametrically Activated Entangling Gates Using Transmon Qubits},
+	year = {2018}}
+
+@article{CarvalhoPRA2021,
+	abstract = {We describe an experimental effort designing and deploying error-robust single-qubit operations using a cloud-based quantum computer and analog-layer programming access. We design numerically optimized pulses that implement target operations and exhibit robustness to various error processes including dephasing noise, instabilities in control amplitudes, and crosstalk. Pulse optimization is performed using a flexible optimization package incorporating a device model and physically relevant constraints (e.g., bandwidth limits on the transmission lines of the dilution refrigerator housing IBM Quantum hardware). We present techniques for conversion and calibration of physical Hamiltonian definitions to pulse waveforms programmed via Qiskit Pulse and compare performance against hardware default derivative removal by adiabatic gate (DRAG) pulses on a five-qubit device. Experimental measurements reveal default DRAG pulses exhibit coherent errors an order of magnitude larger than tabulated randomized-benchmarking measurements; solutions designed to be robust against these errors outperform hardware-default pulses for all qubits across multiple metrics. Experimental measurements demonstrate performance enhancements up to: about a 10 times single-qubit gate coherent-error reduction; about a 5 times average coherent-error reduction across a five-qubit system; about a 10 times increase in calibration window to one week of valid pulse calibration; about a 12 times reduction gate-error variability across qubits and over time; and up to about a 9 times reduction in single-qubit gate error (including crosstalk) in the presence of fully parallelized operations. Randomized benchmarking reveals error rates for Clifford gates constructed from optimized pulses consistent with tabulated T1 limits, and demonstrates a narrowing of the distribution of outcomes over randomizations associated with suppression of coherent errors.},
+	author = {Carvalho, Andre R. R. and Ball, Harrison and Biercuk, Michael J. and Hush, Michael R. and Thomsen, Felix},
+	journal = {Phys. Rev. Applied},
+	keywords = {SC Qubits},
+	title = {Error-Robust Quantum Logic Optimization Using a Cloud Quantum Computer Interface},
+	year = {2021}}
+
+@article{ChenPRL2014,
+	abstract = {We introduce a superconducting qubit architecture that combines high-coherence qubits and tunable qubit-qubit coupling. With the ability to set the coupling to zero, we demonstrate that this architecture is protected from the frequency crowding problems that arise from fixed coupling. More importantly, the coupling can be tuned dynamically with nanosecond resolution, making this architecture a versatile platform with applications ranging from quantum logic gates to quantum simulation. We illustrate the advantages of dynamical coupling by implementing a novel adiabatic controlled-z gate, with a speed approaching that of single-qubit gates. Integrating coherence and scalable control, the introduced qubit architecture provides a promising path towards large-scale quantum computation and simulation.},
+	author = {Chen, Yu and Neill, Charles and Roushan, Pedram and Leung, N. and Fang, M. and Barends, R. and Kelly, Julian and Campbell, B. and Chen, Z. and Chiaro, B. and Dunsworth, Andrew and Jeffrey, E. and Megrant, Anthony and Mutus, J. Y. and O'Malley, P. J. J. and Quintana, Chris M. and Sank, Daniel and Vainsencher, A. and Wenner, James and White, T. C. and Geller, Michael R. and Cleland, Andrew N. and Martinis, John M.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {SC Qubits},
+	title = {Qubit Architecture with High Coherence and Fast Tunable Coupling},
+	year = {2014}}
+
+@article{BaldwinQ2022,
+	abstract = {The quantum volume test is a full-system benchmark for quantum computers that is sensitive to qubit number, fidelity, connectivity, and other quantities believed to be important in building useful devices. The test was designed to produce a single-number measure of a quantum computer's general capability, but a complete understanding of its limitations and operational meaning is still missing. We explore the quantum volume test to better understand its design aspects, sensitivity to errors, passing criteria, and what passing implies about a quantum computer. We elucidate some transient behaviors the test exhibits for small qubit number including the ideal measurement output distributions and the efficacy of common compiler optimizations. We then present an efficient algorithm for estimating the expected heavy output probability under different error models and compiler optimization options, which predicts performance goals for future systems. Additionally, we explore the original confidence interval construction and show that it underachieves the desired coverage level for single shot experiments and overachieves for more typical number of shots. We propose a new confidence interval construction that reaches the specified coverage for typical number of shots and is more efficient in the number of circuits needed to pass the test. We demonstrate these savings with a QV=210 experimental dataset collected from Quantinuum System Model H1-1. Finally, we discuss what the quantum volume test implies about a quantum computer's practical or operational abilities especially in terms of quantum error correction.},
+	author = {Baldwin, Charles H. and Mayer, Karl and Brown, Natalie C. and Ryan-Anderson, Ciar{\'a}n and Hayes, David},
+	journal = {Quantum},
+	keywords = {Trapped Ion QC},
+	title = {Re-examining the quantum volume test: Ideal distributions, compiler optimizations, confidence intervals, and scalable resource estimations},
+	year = {2022}}
+
+@article{BentleyAQT2020,
+	abstract = {A class of entangling gates for trapped atomic ions is studied and the use of numeric optimization techniques to create a wide range of fast, error-robust gate constructions is demonstrated. A numeric optimization framework is introduced targeting maximally- and partially-entangling operations on ion pairs, multi-ion registers, multi-ion subsets of large registers, and parallel operations within a single register. Ions are assumed to be individually addressed, permitting optimization over amplitude- and phase-modulated controls. Calculations and simulations demonstrate that the inclusion of modulation of the difference phase for the bichromatic drive used in the M{\o}lmer--S{\o}rensen gate permits approximately time-optimal control across a range of gate configurations, and when suitably combined with analytic constraints can also provide robustness against key experimental sources of error. The impact of experimental constraints such as bounds on coupling rates or modulation band-limits on achievable performance is further demonstrated. Using a custom optimization engine based on TensorFlow, for optimizations on ion registers up to 20 ions, time-to-solution of order tens of minutes using a local-instance laptop is also demonstrated, allowing computational access to system-scales relevant to near-term trapped-ion devices.},
+	author = {Bentley, Christopher D. B. and Ball, Harrison and Biercuk, Michael J. and Carvalho, Andre R. R. and Hush, Michael R. and Slatyer, Harry J.},
+	journal = {Adv. Quantum Tech.},
+	keywords = {Trapped Ion QC},
+	title = {Numeric Optimization for Configurable, Parallel, Error‐Robust Entangling Gates in Large Ion Registers},
+	year = {2020}}
+
+@article{BergquistPRL1986,
+	abstract = {One of the experiments made possible by the trapping and cooling of a single atom is to observe the quantum jumps to a metastable state in the atom by monitoring the resonance fluorescence of a strong transition in which at least one of the states is coupled to the metastable state. When the atomic electron moves to the metastable state, the fluorescence from the strongly driven transition disappears. When the electron drops back into the strongly driven transition, the fluorescence abruptly returns. Statistical analysis of these random interruptions to the fluorescence signal implies photon antibunching in the emission of the weak photon.},
+	author = {Bergquist, J. C. and Hulet, Randall G. and Itano, Wayne M. and Wineland, David J.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Trapped Ion QC},
+	title = {Observation of Quantum Jumps in a Single Atom},
+	year = {1986}}
+
+@article{BlumelNPJQI2021,
+	abstract = {To achieve scalable quantum computing, improving entangling-gate fidelity and its implementation efficiency are of utmost importance. We present here a linear method to construct provably power-optimal entangling gates on an arbitrary pair of qubits on a trapped-ion quantum computer. This method leverages simultaneous modulation of amplitude, frequency, and phase of the beams that illuminate the ions and, unlike the state of the art, does not require any search in the parameter space. The linear method is extensible, enabling stabilization against external parameter fluctuations to an arbitrary order at a cost linear in the order. We implement and demonstrate the power-optimal, stabilized gate on a trapped-ion quantum computer.},
+	author = {Bl{\"u}mel, Reinhold and Grzesiak, Nikodem and Pisenti, Neal C. and Wright, Kenneth and Nam, Yunseong},
+	journal = {npj Quantum Inf},
+	keywords = {Trapped Ion QC},
+	title = {Power-optimal, stabilized entangling gate between trapped-ion qubits},
+	year = {2021}}
+
+@article{BruzewiczNPJQI2019,
+	abstract = {We demonstrate key multi-qubit quantum-logic primitives in a dual-species trapped-ion system based on ⁴⁰Ca ⁺ and ⁸⁸Sr ⁺ ions, using two optical qubits with quantum-logic-control frequencies in the red to near-infrared range. With all ionization, cooling, and control wavelengths in a wavelength band similar for the two species and centered in the visible, and with a favorable mass ratio for sympathetic cooling, this pair is a promising candidate for scalable quantum information processing. Same-species and dual-species two-qubit gates, based on the M{\o}lmer--S{\o}rensen interaction and performed in a cryogenic surface-electrode trap, are characterized via the fidelity of generated entangled states; we achieve fidelities of 98.8(2)% and 97.5(2)% in Ca ⁺--Ca ⁺ and Sr ⁺--Sr ⁺ gates, respectively. For a similar Ca ⁺--Sr ⁺ gate, we achieve a fidelity of 94.3(3)%, and carrying out a Sr ⁺--Sr ⁺ gate performed with a Ca ⁺ sympathetic cooling ion in a Sr ⁺--Ca ⁺--Sr ⁺ crystal configuration, we achieve a fidelity of 95.7(3)%. These primitives form a set of trapped-ion capabilities for logic with sympathetic cooling and ancilla readout or state transfer for general quantum computing and communication applications.},
+	author = {Bruzewicz, C. D. and McConnell, R. and Stuart, J. and Sage, J. M. and Chiaverini, J.},
+	journal = {npj Quantum Inf},
+	keywords = {Trapped Ion QC},
+	title = {Dual-species, multi-qubit logic primitives for {Ca}+/{Sr}+ trapped-ion crystals},
+	year = {2019}}
+
+@article{CampbellPRL2010,
+	abstract = {We demonstrate single-qubit operations on a trapped atom hyperfine qubit using a single ultrafast pulse from a mode-locked laser. We shape the pulse from the laser and perform a π rotation of the qubit in less than 50 ps with a population transfer exceeding 99% and negligible effects from spontaneous emission or ac Stark shifts. The gate time is significantly shorter than the period of atomic motion in the trap (Ω(Rabi)/ν(trap)>10(4)), demonstrating that this interaction takes place deep within the strong excitation regime.},
+	author = {Campbell, W. C. and Mizrahi, J. and Quraishi, Q. and Senko, C. and Hayes, D. and Hucul, D. and Matsukevich, D. N. and Maunz, P. and Monroe, C. R.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Trapped Ion QC},
+	title = {Ultrafast Gates for Single Atomic Qubits},
+	year = {2010}}
+
+@article{DuanRMP2010,
+	abstract = {Quantum computation and communication exploit the quantum properties of superposition and entanglement in order to perform tasks that may be impossible using classical means. In this Colloquium recent experimental and theoretical progress in the generation of entangled quantum networks based on the use of optical photons as carriers of information between fixed trapped atomic ion quantum memories are reviewed. Taken together, these quantum platforms offer a promising vision for the realization of a large-scale quantum network that could impact the future of communication and computation.},
+	author = {Duan, L.-M. and Monroe, C. R.},
+	journal = {Rev. Mod. Phys.},
+	keywords = {Trapped Ion QC},
+	title = {Quantum networks with trapped ions},
+	year = {2010}}
+
+@article{FurstNJP2014,
+	abstract = {We investigate the performance of different control
+techniques for ion transport in state-of-the-art segmented miniaturized
+ion traps. We employ numerical optimization of classical trajectories
+and quantum wavepacket propagation as well as analytical solutions
+derived from invariant based inverse engineering and geometric
+optimal control. We find that accurate shuttling can be performed
+with operation times below the trap oscillation period. The maximum
+speed is limited by the maximum acceleration that can be exerted on
+the ion. When using controls obtained from classical dynamics for
+wavepacket propagation, wavepacket squeezing is the only quantum
+effect that comes into play for a large range of trapping parameters.
+We show that this can be corrected by a compensating force derived
+from invariant based inverse engineering, without a significant
+increase in the operation time.},
+	author = {F{\"u}rst, H. A. and Goerz, M. H. and Poschinger, U. G. and Murphy, M. and Montangero, S. and Calarco, T. and Schmidt-Kaler, F. and Singer, K. and Koch, C. P.},
+	journal = {New J. Phys.},
+	keywords = {Trapped Ion QC},
+	title = {Controlling the transport of an ion: Classical and quantum mechanical solutions},
+	year = {2014}}
+
+@article{Garcia-RipollPRA2005,
+	abstract = {In this paper we develop a unified framework to study the coherent control of trapped ions subject to state-dependent forces. Taking different limits in our theory, we can reproduce previous designs of quantum gates and propose a different design of fast gates based on continuous laser beams. We demonstrate how to simulate Ising Hamiltonians in a many ions setup, and how to create highly entangled states and induce squeezing. Finally, in a detailed analysis we identify the physical limits of this technique and study the dependence of errors on the temperature.},
+	author = {Garc{\'\i}a-Ripoll, J. J. and Zoller, P. and Cirac, J. I.},
+	journal = {Phys. Rev. A},
+	keywords = {Trapped Ion QC},
+	title = {Coherent control of trapped ions using off-resonant lasers},
+	year = {2005}}
+
+@article{GrzesiakNC2020,
+	abstract = {Efficiently entangling pairs of qubits is essential to fully harness the power of quantum computing. Here, we devise an exact protocol that simultaneously entangles arbitrary pairs of qubits on a trapped-ion quantum computer. The protocol requires classical computational resources polynomial in the system size, and very little overhead in the quantum control compared to a single-pair case. We demonstrate an exponential improvement in both classical and quantum resources over the current state of the art. We implement the protocol on a software-defined trapped-ion quantum computer, where we reconfigure the quantum computer architecture on demand. Our protocol may also be extended to a wide variety of other quantum computing platforms.},
+	author = {Grzesiak, Nikodem and Bl{\"u}mel, Reinhold and Wright, Kenneth and Beck, Kristin M. and Pisenti, Neal C. and Li, Ming and Chaplin, Vandiver and Amini, Jason M. and Debnath, Shantanu and Chen, Jwo-Sy and Nam, Yunseong},
+	journal = {Nat. Commun.},
+	keywords = {Trapped Ion QC},
+	title = {Efficient arbitrary simultaneously entangling gates on a trapped-ion quantum computer},
+	year = {2020}}
+
+@article{HaffnerPR2008,
+	abstract = {Quantum computers hold the promise of solving certain computational tasks much more efficiently than classical computers. We review recent experimental advances towards a quantum computer with trapped ions. In particular, various implementations of qubits, quantum gates and some key experiments are discussed. Furthermore, we review some implementations of quantum algorithms such as a deterministic teleportation of quantum information and an error correction scheme.},
+	author = {H{\"a}ffner, H. and Roos, C. F. and Blatt, R.},
+	journal = {Phys. Rep.},
+	keywords = {Trapped Ion QC},
+	title = {Quantum computing with trapped ions},
+	year = {2008}}
+
+@article{HaljanPRA2005,
+	abstract = {A Moelmer-Soerensen entangling gate is realized for pairs of trapped ¹¹¹Cd⁺ ions using magnetic-field insensitive 'clock' states and an implementation offering reduced sensitivity to optical phase drifts. The gate is used to generate the complete set of four entangled states, which are reconstructed and evaluated with quantum-state tomography. An average target-state fidelity of 0.79 is achieved, limited by available laser power and technical noise. The tomographic reconstruction of entangled states demonstrates universal quantum control of two ion qubits, which through multiplexing can provide a route to scalable architectures for trapped-ion quantum computing.},
+	author = {Haljan, P. C. and Lee, P. J. and Brickman, K.-A. and Acton, M. and Deslauriers, L. and Monroe, C. R.},
+	journal = {Phys. Rev. A},
+	keywords = {Trapped Ion QC},
+	title = {Entanglement of trapped-ion clock states},
+	year = {2005}}
+
+@article{HayesPRL2010,
+	abstract = {We demonstrate the use of an optical frequency comb to coherently control and entangle atomic qubits. A train of off-resonant ultrafast laser pulses is used to efficiently and coherently transfer population between electronic and vibrational states of trapped atomic ions and implement an entangling quantum logic gate with high fidelity. This technique can be extended to the high field regime where operations can be performed faster than the trap frequency. This general approach can be applied to more complex quantum systems, such as large collections of interacting atoms or molecules.},
+	author = {Hayes, D. and Matsukevich, D. N. and Maunz, P. and Hucul, D. and Quraishi, Q. and Olmschenk, S. and Campbell, W. and Mizrahi, J. and Senko, C. and Monroe, C. R.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Trapped Ion QC},
+	title = {Entanglement of Atomic Qubits Using an Optical Frequency Comb},
+	year = {2010}}
+
+@article{HayesPRL2012,
+	abstract = {We demonstrate a simple pulse shaping technique designed to improve the fidelity of spin-dependent force operations commonly used to implement entangling gates in trapped ion systems. This extension of the M{\o}lmer-S{\o}rensen gate can theoretically suppress the effects of certain frequency and timing errors to any desired order and is demonstrated through Walsh modulation of a two qubit entangling gate on trapped atomic ions. The technique is applicable to any system of qubits coupled through collective harmonic oscillator modes.},
+	author = {Hayes, D. and Clark, S. M. and Debnath, S. and Hucul, D. and Inlek, I. V. and Lee, K. W. and Quraishi, Q. and Monroe, C. R.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Trapped Ion QC},
+	title = {Coherent Error Suppression in Multiqubit Entangling Gates},
+	year = {2012}}
+
+@article{HornNJP2018,
+	abstract = {Entanglement generation can be robust against certain types of noise in approaches that deliberately incorporate dissipation into the system dynamics. The presence of additional dissipation channels may, however, limit fidelity and speed of the process. Here we show how quantum optimal control techniques can be used to both speed up the entanglement generation and increase the fidelity in a realistic setup, whilst respecting typical experimental limitations. For the example of entangling two trapped ion qubits (Lin et al 2013 Nature 504 415), we find an improved fidelity by simply optimizing the polarization of the laser beams utilized in the experiment. More significantly, an alternate combination of transitions between internal states of the ions, when combined with optimized polarization, enables faster entanglement and decreases the error by an order of magnitude.},
+	author = {Horn, Karl P. and Reiter, Florentin and Lin, Yiheng and Leibfried, Dietrich and Koch, Christiane P.},
+	journal = {New J. Phys.},
+	keywords = {Trapped Ion QC},
+	title = {Quantum optimal control of the dissipative production of a maximally entangled state},
+	year = {2018}}
+
+@article{JamesAPB1998,
+	abstract = {The theory of interactions between lasers and cold trapped ions as it pertains to the design of Cirac-Zoller quantum computers is discussed. The mean positions of the trapped ions, the eigenvalues and eigenmodes of the ions' oscillations, the magnitude of the Rabi frequencies for both allowed and forbidden internal transitions of the ions, and the validity criterion for the required Hamiltonian are calculated. Energy level data for a variety of ion species are also present- ed.},
+	author = {James, D. F. V.},
+	journal = {Appl. Phys. B},
+	keywords = {Trapped Ion QC},
+	title = {Quantum dynamics of cold trapped ions with application to quantum computation},
+	year = {1998}}
+
+@article{KangPRA2021,
+	abstract = {Two-qubit gates in trapped-ion quantum computers are generated by applying spin-dependent forces that temporarily entangle the internal state of the ion with its motion. Laser pulses are carefully designed to generate a maximally entangling gate between the ions while minimizing any residual entanglement between the motion and the ion. The quality of the gates suffers when the actual experimental parameters differ from the ideal case. Here, we improve the robustness of frequency-modulated M{\o}lmer-S{\o}rensen gates to motional mode-frequency offsets by optimizing the average performance over a range of systematic errors using batch optimization. We then compare this method with frequency-modulated gates optimized for ideal parameters that include an analytic robustness condition. Numerical simulations show good performance up to 12 ions, and the method is experimentally demonstrated on a two-ion chain.},
+	author = {Kang, Mingyu and Liang, Qiyao and Zhang, Bichen and Huang, Shilin and Wang, Ye and Fang, Chao and Kim, Jungsang and Brown, Kenneth R.},
+	journal = {Phys. Rev. Applied},
+	keywords = {Trapped Ion QC},
+	title = {Batch Optimization of Frequency-Modulated Pulses for Robust Two-Qubit Gates in Ion Chains},
+	year = {2021}}
+
+@article{KirchhoffPRXQ2025,
+	abstract = {The M{\o}lmer-S{\o}rensen gate is a widely used entangling gate for ion platforms with inherent robustness to trap heating. The gate performance is limited by coherent errors, arising from the Lamb-Dicke (LD) approximation and sideband errors. Here, we provide explicit analytical formulas for errors up to fourth order in the LD parameter, by using the Magnus expansion to match numerical precision, and overcome significant orders-of-magnitude underestimation of errors by previous theory methods. We show that fourth-order Magnus expansion terms are unavoidable, being in fact leading order in LD, and are therefore critical to include for typical experimental fidelity ranges. We show how these errors can be dramatically reduced compared to previous theory by using analytical renormalization of the drive strength, by calibration of the Lamb-Dicke parameter, and by the use of smooth pulse shaping.},
+	author = {Kirchhoff, Susanna and Wilhelm, Frank K. and Motzoi, Felix},
+	journal = {PRX Quantum},
+	keywords = {Trapped Ion QC},
+	title = {Correction Formulas for the {M{\o}lmer-S{\o}rensen} Gate Under Strong Driving},
+	year = {2025}}
+
+@article{KirchmairPRA2009,
+	abstract = {In an experiment using the odd calcium isotope ⁴³Ca⁺, we combine the merits of a high-fidelity entangling operation on an optical transition (optical qubit) with the long coherence times of two ``clock'' states in the hyperfine ground state (hyperfine qubit) by mapping between these two qubits. For state initialization, state detection, global qubit rotations, and mapping operations, errors smaller than 1% are achieved, whereas the entangling gate adds errors of 2.3%. Based on these operations, we create Bell states with a fidelity of 96.9(3)% in the optical qubit and a fidelity of 96.7(3)% when mapped to the hyperfine states. In the latter case, the entanglement is preserved for 96(3)ms, exceeding the duration of a single gate operation by three orders of magnitude.},
+	author = {Kirchmair, G. and Benhelm, J. and Z{\"a}hringer, F. and Gerritsma, R. and Roos, C. F. and Blatt, R.},
+	journal = {Phys. Rev. A},
+	keywords = {Trapped Ion QC},
+	title = {High-fidelity entanglement of $^{43}\mathrm{Ca}^{+}$ hyperfine clock states},
+	year = {2009}}
+
+@article{LabaziewiczPRL2008,
+	abstract = {Dense arrays of trapped ions provide one way of scaling up ion trap quantum information processing. However, miniaturization of ion traps is currently limited by sharply increasing motional state decoherence at sub-100 mum ion-electrode distances. We characterize heating rates in cryogenically cooled surface-electrode traps, with characteristic sizes in the 75 to 150 mum range. Upon cooling to 6 K, the measured rates are suppressed by 7 orders of magnitude, 2 orders of magnitude below previously published data of similarly sized traps operated at room temperature. The observed noise depends strongly on the fabrication process, which suggests further improvements are possible.},
+	author = {Labaziewicz, Jaroslaw and Ge, Yufei and Antohi, Paul and Leibrandt, David R. and Brown, Kenneth R. and Chuang, Isaac L.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Trapped Ion QC},
+	title = {Suppression of Heating Rates in Cryogenic Surface-Electrode Ion Traps},
+	year = {2008}}
+
+@article{LabaziewiczPRL2008a,
+	abstract = {Electric field noise from fluctuating patch potentials is a significant problem for a broad range of precision experiments, including trapped ion quantum computation and single spin detection. Recent results demonstrated strong suppression of this noise by cryogenic cooling, suggesting an underlying thermal process. We present measurements characterizing the temperature and frequency dependence of the noise from 7 to 100 K, using a single Sr+ ion trapped 75 mum above the surface of a gold plated surface electrode ion trap. The noise amplitude is observed to have an approximate 1/f spectrum around 1 MHz, and grows rapidly with temperature as T;β for beta from 2 to 4. The data are consistent with microfabricated cantilever measurements of noncontact friction but do not extrapolate to the dc measurements with neutral atoms or contact potential probes.},
+	author = {Labaziewicz, Jaroslaw and Ge, Yufei and Leibrandt, David R. and Wang, Shannon X. and Shewmon, Ruth and Chuang, Isaac L.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Trapped Ion QC},
+	title = {Temperature Dependence of Electric Field Noise above Gold Surfaces},
+	year = {2008}}
+
+@article{LeeJOB2005,
+	abstract = {There are several known schemes for entangling trapped ion quantum bits for large-scale quantum computation. Most are based on an interaction between the ions and external optical fields, coupling internal qubit states of trapped ions to their Coulomb-coupled motion. In this paper, we examine the sensitivity of these motional gate schemes to phase fluctuations introduced through noisy external control fields, and suggest techniques for suppressing the resulting phase decoherence.},
+	author = {Lee, P. J. and Brickman, K.-A. and Deslauriers, L. and Haljan, P. C. and Duan, L.-M. and Monroe, C. R.},
+	journal = {J. Optics B},
+	keywords = {Trapped Ion QC},
+	title = {Phase control of trapped ion quantum gates},
+	year = {2005}}
+
+@article{LeibfriedRMP2003,
+	abstract = {Single trapped ions represent elementary quantum systems that are well isolated from the environment. They can be brought nearly to rest by laser cooling, and both their internal electronic states and external motion can be coupled to and manipulated by light fields. This makes them ideally suited for quantum-optical and quantum-dynamical studies under well-controlled conditions. Theoretical and experimental work on these topics is reviewed in the paper, with a focus on ions trapped in radio-frequency (Paul) traps.},
+	author = {Leibfried, D. and Blatt, R. and Monroe, C. R. and Wineland, D. J.},
+	journal = {Rev. Mod. Phys.},
+	keywords = {Trapped Ion QC},
+	title = {Quantum dynamics of single trapped ions},
+	year = {2003}}
+
+@article{LeungPRL2018,
+	abstract = {In an ion trap quantum computer, collective motional modes are used to entangle two or more qubits in order to execute multiqubit logical gates. Any residual entanglement between the internal and motional states of the ions results in loss of fidelity, especially when there are many spectator ions in the crystal. We propose using a frequency-modulated driving force to minimize such errors. In simulation, we obtained an optimized frequency-modulated 2-qubit gate that can suppress errors to less than 0.01% and is robust against frequency drifts over 1 kHz. Experimentally, we have obtained a 2-qubit gate fidelity of 98.3(4)%, a state-of-the-art result for 2-qubit gates with five ions.},
+	author = {Leung, Pak Hong and Landsman, Kevin A. and Figgatt, Caroline and Linke, Norbert M. and Monroe, Christopher R. and Brown, Kenneth R.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Trapped Ion QC},
+	title = {Robust 2-Qubit Gates in a Linear Ion Crystal Using a Frequency-Modulated Driving Force},
+	year = {2018}}
+
+@article{LoschnauerPRXQ2025,
+	abstract = {The central challenge of quantum computing is implementing high-fidelity quantum gates at scale. However, many existing approaches to qubit control suffer from a scale-performance trade-off, impeding progress towards the creation of useful devices. Here, we present a vision for an electronically controlled trapped-ion quantum computer that alleviates this bottleneck. Our architecture utilizes shared current-carrying traces and local tuning electrodes in a microfabricated chip to perform quantum gates with low noise and crosstalk regardless of device size. To verify our approach, we experimentally demonstrate low-noise site-selective single- and two-qubit gates in a seven-zone ion trap. We implement electronic single-qubit gates with fidelities ≥99.99912(8)% and demonstrate consistent performance with low crosstalk across the device. We also electronically generate two-qubit maximally entangled states with 99.97(1)% fidelity and long-term stable performance over continuous system operation. These state-of-the-art results highlight the potential of our all-electronic approach for coherent control of trapped-ion qubits in large-scale quantum computers.},
+	author = {L{\"o}schnauer, C. M. and Mosca Toba, J. and Hughes, A. C. and King, S. A. and Weber, M. A. and Srinivas, R. and Matt, R. and Nourshargh, R. and Allcock, D. T. C. and Ballance, C. J. and Matthiesen, C. and Malinowski, M. and Harty, T. P.},
+	journal = {PRX Quantum},
+	keywords = {Trapped Ion QC},
+	title = {Scalable, {High}-{Fidelity} {All}-{Electronic} {Control} of {Trapped}-{Ion} {Qubits}},
+	year = {2025}}
+
+@article{AbeQST2021,
+	abstract = {MAGIS-100 is a next-generation quantum sensor under construction at Fermilab that aims to explore fundamental physics with atom interferometry over a 100 m baseline. This novel detector will search for ultralight dark matter, test quantum mechanics in new regimes, and serve as a technology pathfinder for future gravitational wave detectors in a previously unexplored frequency band. It combines techniques demonstrated in state-of-the-art 10-meter-scale atom interferometers with the latest technological advances of the world's best atomic clocks. MAGIS-100 will provide a development platform for a future kilometer-scale detector that would be sufficiently sensitive to detect gravitational waves from known sources. Here we present the science case for the MAGIS concept, review the operating principles of the detector, describe the instrument design, and study the detector systematics.},
+	author = {Abe, Mahiro and Adamson, Philip and Borcean, Marcel and Bortoletto, Daniela and Bridges, Kieran and Carman, Samuel P. and Chattopadhyay, Swapan and Coleman, Jonathon and Curfman, Noah M. and DeRose, Kenneth and Deshpande, Tejas and Dimopoulos, Savas and Foot, Christopher J. and Frisch, Josef C. and Garber, Benjamin E. and Geer, Steve and Gibson, Valerie and Glick, Jonah and Graham, Peter W. and Hahn, Steve R. and Harnik, Roni and Hawkins, Leonie and Hindley, Sam and Hogan, Jason M. and Jiang, Yijun and Kasevich, Mark A. and Kellett, Ronald J. and Kiburg, Mandy and Kovachy, Tim and Lykken, Joseph D. and March-Russell, John and Mitchell, Jeremiah and Murphy, Martin and Nantel, Megan and Nobrega, Lucy E. and Plunkett, Robert K. and Rajendran, Surjeet and Rudolph, Jan and Sachdeva, Natasha and Safdari, Murtaza and Santucci, James K. and Schwartzman, Ariel G. and Shipsey, Ian and Swan, Hunter and Valerio, Linda R. and Vasonis, Arvydas and Wang, Yiping and Wilkason, Thomas},
+	journal = {Quantum Sci. Technol.},
+	keywords = {Atom Interferometry},
+	title = {Matter-wave Atomic Gradiometer Interferometric Sensor ({MAGIS-100})},
+	year = {2021}}
+
+@article{AltinNJP2013,
+	abstract = {We present a precision gravimeter based on coherent Bragg diffraction of freely falling cold atoms. Traditionally, atomic gravimeters have used stimulated Raman transitions to separate clouds in momentum space by driving transitions between two internal atomic states. Bragg interferometers utilize only a single internal state, and can therefore be less susceptible to environmental perturbations. Here we show that atoms extracted from a magneto-optical trap using an accelerating optical lattice are a suitable source for a Bragg atom interferometer, allowing efficient beamsplitting and subsequent separation of momentum states for detection. Despite the inherently multi-state nature of atom diffraction, we are able to build a Mach--Zehnder interferometer using Bragg scattering which achieves a sensitivity to the gravitational acceleration of Δg/g = 2.7 × 10−9 with an integration time of 1000 s. The device can also be converted to a gravity gradiometer by a simple modification of the light pulse sequence.},
+	author = {Altin, P. A. and Johnsson, M. T. and Negnevitsky, V. and Dennis, G. R. and Anderson, R. P. and Debs, J. E. and Szigeti, S. S. and Hardman, K. S. and Bennetts, S. and McDonald, G. D. and Turner, L. D. and Close, J. D. and Robins, N. P.},
+	journal = {New J. Phys.},
+	keywords = {Atom Interferometry},
+	title = {Precision atomic gravimeter based on {Bragg} diffraction},
+	year = {2013}}
+
+@article{BaudonJPB1999,
+	abstract = {Atomic interferometry was born recently, towards the end of the 1980s. Its development has been extremely fast, new techniques being pioneered independently and almost simultaneously in different laboratories all over the world. Nowadays, these techniques have reached a high level of sophistication, opening a wide area of fundamental and practical applications. In this paper the general architecture of interferometers in which matter waves are coherently manipulated is described. Various realizations of atom and molecule interferometers are reported, together with the major results obtained with each type of interferometer. Finally, new trends and perspectives are given. Whilst the techniques seem to be almost completely achieved, new developments are coming up, such as the use of new and non-ordinary sources. Forthcoming applications are numerous. They deal with the most fundamental aspects of quantum mechanics, with the metrology of fundamental constants, with the use of interferometers as very sensitive probes of external interactions and inertial effects, with atomic nanolithography, etc.},
+	author = {Baudon, J. and Mathevet, R. and Robert, J.},
+	journal = {J. Phys. B},
+	keywords = {Atom Interferometry},
+	title = {Atomic interferometry},
+	year = {1999}}
+
+@article{BordePLA1989,
+	abstract = {It is shown that the interaction geometry comprising four travelling laser waves which is used to obtain optical Ramsey fringes in atomic spectroscopy, is also well suited to build an atom interferometer based on the atomic recoil. Since two different internal states are associated with the two arms of the interferometer, the de Broglie phase, induced by rotation or acceleration, manifests itself as a frequency shift of the Ramsey fringes.},
+	author = {Bord{\'e}, C. J.},
+	journal = {Phys. Lett. A},
+	keywords = {Atom Interferometry},
+	title = {Atomic interferometry with internal state labelling},
+	year = {1989}}
+
+@article{BrifPRXQ2020,
+	abstract = {Recent progress in generating entangled spin states of neutral atoms provides opportunities to advance quantum sensing technology. In particular, entanglement can enhance the performance of accelerometers and gravimeters based on light-pulse atom interferometry. We study the effects of error sources that may limit the sensitivity of such devices, including errors in the preparation of the initial entangled state, imperfections in the laser pulses, momentum spread of the initial atomic wave packet, measurement errors, spontaneous emission, and atom loss. We determine that, for each of these errors, the expectation value of the parity operator Π has the general form, ⟨Π⟩ = Π₀ cos( N ϕ ), where ϕ is the interferometer phase and N is the number of atoms prepared in the maximally entangled Greenberger--Horne--Zeilinger state. Correspondingly, the minimum phase uncertainty has the general form, Δϕ = (Π₀ N)⁻¹. Each error manifests itself through a reduction of the amplitude of the parity oscillations, Π₀, below the ideal value of Π₀ = 1. For each of the errors, we derive an analytic result that expresses the dependence of Π₀ on error parameter(s) and N, and also obtain a simplified approximate expression valid when the error is small. Based on the performed analysis, entanglement-enhanced atom interferometry appears to be feasible with existing experimental capabilities.},
+	author = {Brif, Constantin and Ruzic, Brandon P. and Biedermann, Grant W.},
+	journal = {PRX Quantum},
+	keywords = {Atom Interferometry},
+	title = {Characterization of Errors in Interferometry with Entangled Atoms},
+	year = {2020}}
+
+@article{ChebotayevJOSAB1985,
+	abstract = {We consider the interference of atoms caused by the wave nature of their motion. Coherently interfering beams of particles may be obtained by using the diffraction of atoms from separated standing waves resonant with the transition between the ground and excited states of the atoms. Interference arises with and without spatial separation of the diffracted atomic beams. A problem concerning two-quantum perturbation of the wave function of an atom in the ground state by a standing-wave field has been solved. Both amplitude and phase perturbation are taken into account.},
+	author = {Chebotayev, V. P. and Kasantsev, A. P. and Yakovlev, V. P. and Dubetsky, B. Y.},
+	journal = {J. Opt. Soc. Am. B},
+	keywords = {Atom Interferometry},
+	title = {Interference of atoms in separated optical fields},
+	year = {1985}}
+
+@article{ChihPRR2021,
+	abstract = {We demonstrate the design of a matterwave interferometer to measure acceleration in one dimension with high precision. The system we base this on consists of ultracold atoms in an optical lattice potential created by interfering laser beams. Our approach uses reinforcement learning, a branch of machine learning, that generates the protocols needed to realize lattice-based analogs of optical components including a beam splitter, a mirror, and a recombiner. The performance of these components is evaluated by comparison with their optical analogs. The interferometer's sensitivity to acceleration is quantitatively evaluated using a Bayesian statistical approach. We find the sensitivity to surpass that of standard Bragg interferometry, demonstrating the future potential for this design methodology.},
+	author = {Chih, Liang-Ying and Holland, Murray},
+	journal = {Phys. Rev. Research},
+	keywords = {Atom Interferometry},
+	title = {Reinforcement-learning-based matter-wave interferometer in a shaken optical lattice},
+	year = {2021}}
+
+@article{ChiowPRL2011,
+	abstract = {We demonstrate atom interferometers utilizing a novel beam splitter based on sequential multiphoton Bragg diffractions. With this sequential Bragg large momentum transfer (SB-LMT) beam splitter, we achieve high contrast atom interferometers with momentum splittings of up to 102 photon recoil momenta (102@k). To our knowledge, this is the highest momentum splitting achieved in any atom interferometer, advancing the state-of-the-art by an order of magnitude. We also demonstrate strong noise correlation between two simultaneous SB-LMT interferometers, which alleviates the need for ultralow noise lasers and ultrastable inertial environments in some future applications. Our method is intrinsically scalable and can be used to dramatically increase the sensitivity of atom interferometers in a wide range of applications, including inertial sensing, measuring the fine structure constant, and detecting gravitational waves.},
+	author = {Chiow, Sheng-wey and Kovachy, Tim and Chien, Hui-Chun and Kasevich, Mark A.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Atom Interferometry},
+	title = {102 $\hbar k$ large area atom interferometers},
+	year = {2011}}
+
+@article{CroninRMP2009,
+	abstract = {Interference with atomic and molecular matter waves is a rich branch of atomic physics and quantum optics. It started with atom diffraction from crystal surfaces and the separated oscillatory fields technique used in atomic clocks. Atom interferometry is now reaching maturity as a powerful art with many applications in modern science. In this review we first describe the basic tools for coherent atom optics including diffraction by nanostructures and laser light, three-grating interferometers, and double wells on AtomChips. Then we review scientific advances in a broad range of fields that have resulted from the application of atom interferometers. These are grouped in three categories: (1) fundamental quantum science, (2) precision metrology and (3) atomic and molecular physics. Although some experiments with Bose Einstein condensates are included, the focus of the review is on linear matter wave optics, i.e. phenomena where each single atom interferes with itself.},
+	author = {Cronin, Alexander D. and Schmiedmayer, J{\"o}rg and Pritchard, David E.},
+	journal = {Rev. Mod. Phys.},
+	keywords = {Atom Interferometry},
+	title = {Optics and interferometry with atoms and molecules},
+	year = {2009}}
+
+@article{DashAVSQS2024,
+	abstract = {We investigate the possible realization of an ultracold-atom rotation sensor that is based on recently proposed tractor atom interferometry (TAI). An experimental design that includes the generation of a Laguerre--Gaussian-beam-based ``pinwheel'' optical lattice and multi-loop interferometric cycles is discussed. Numerical simulations of the proposed system demonstrate TAI rotation sensitivity comparable to that of contemporary matter-wave interferometers. We analyze a regime of TAI rotation sensors in which nonadiabatic effects may hinder the system's performance. We apply quantum optimal control to devise a methodology suitable to address this nonadiabaticity. Our studies are of interest for current efforts to realize compact and robust matter-wave rotation sensors, as well as for fundamental physics applications of TAI.},
+	author = {Dash, Bineet and Goerz, Michael H. and Duspayev, Alisher and Carrasco, Sebasti{\'a}n C. and Malinovsky, Vladimir S. and Raithel, Georg},
+	journal = {AVS Quantum Sci.},
+	keywords = {Atom Interferometry},
+	title = {Rotation sensing using tractor atom interferometry},
+	year = {2024}}
+
+@article{DelhuilleAPB2002,
+	abstract = {We have constructed an atom interferometer of the Mach--Zehnder type, operating with a supersonic beam of lithium. Atom diffraction uses Bragg diffraction on laser standing waves. With first-order diffraction, our apparatus has given a large signal and a very good fringe contrast (74%), which we believe to be the highest ever observed with thermal atom interferometers. This apparatus will be applied to high-sensitivity measurements.},
+	author = {Delhuille, R. and Champenois, C. and B{\"u}chner, M. and Jozefowski, L. and Rizzo, C. and Tr{\'e}nec, G. and Vigu{\'e}, J.},
+	journal = {Appl. Phys. B},
+	keywords = {Atom Interferometry},
+	title = {High-contrast {Mach}--{Zehnder} lithium-atom interferometer in the {Bragg} regime},
+	year = {2002}}
+
+@article{DickersonPRL2013,
+	abstract = {We show that light-pulse atom interferometry with atomic point sources and spatially resolved detection enables multiaxis (two rotation, one acceleration) precision inertial sensing at long interrogation times. Using this method, we demonstrate a light-pulse atom interferometer for 87Rb with 1.4 cm peak wave packet separation and a duration of 2T=2.3 s. The inferred acceleration sensitivity of each shot is 6.7×10(-12)g, which improves on previous limits by more than 2 orders of magnitude. We also measure Earth's rotation rate with a precision of 200 nrad/s.},
+	author = {Dickerson, Susannah M. and Hogan, Jason M. and Sugarbaker, Alex and Johnson, David M. S. and Kasevich, Mark A.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Atom Interferometry},
+	title = {Multiaxis Inertial Sensing with Long-Time Point Source Atom Interferometry},
+	year = {2013}}
+
+@article{DunningPRA2014,
+	abstract = {Atom interferometric sensors and quantum information processors must maintain coherence while the evolving quantum wave function is split, transformed, and recombined, but suffer from experimental inhomogeneities and uncertainties in the speeds and paths of these operations. Several error-correction techniques have been proposed to isolate the variable of interest. Here we apply composite pulse methods to velocity-sensitive Raman state manipulation in a freely expanding thermal atom cloud. We compare several established pulse sequences, and follow the state evolution within them. The agreement between measurements and simple predictions shows the underlying coherence of the atom ensemble, and the inversion infidelity in a ?80?K atom cloud is halved. Composite pulse techniques, especially if tailored for atom interferometric applications, should allow greater interferometer areas, larger atomic samples, and longer interaction times, and hence improve the sensitivity of quantum technologies from inertial sensing and clocks to quantum information processors and tests of fundamental physics.},
+	author = {Dunning, Alexander and Gregory, Rachel and Bateman, James and Cooper, Nathan and Himsworth, Matthew and Jones, Jonathan A. and Freegarde, Tim},
+	journal = {Phys. Rev. A},
+	keywords = {Atom Interferometry},
+	title = {Composite pulses for interferometry in a thermal cold atom cloud},
+	year = {2014}}
+
+@article{DuspayevPRA2021,
+	abstract = {We propose a tractor atom interferometer (TAI) based on three-dimensional (3D) confinement and transport of split atomic wavefunction components in potential wells that follow programmed paths. The paths are programmed to split and recombine atomic wavefunctions at well-defined space-time points, guaranteeing closure of the interferometer. Uninterrupted 3D confinement of the interfering wavefunction components in the tractor wells eliminates coherence loss due to wavepacket dispersion. Using Crank-Nicolson simulation of the time-dependent Schr{\"o}dinger equation, we compute the quantum evolution of scalar and spinor wavefunctions in several TAI sample scenarios. The interferometric phases extracted from the wavefunctions allow us to quantify gravimeter sensitivity, for the TAI scenarios studied. We show that spinor-TAI supports matter-wave beam splitters that are more robust against non-adiabatic effects than their scalar-TAI counterparts. We confirm the validity of semiclassical path-integral phases taken along the programmed paths of the TAI. Aspects for future experimental realizations of TAI are discussed.},
+	author = {Duspayev, A. and Raithel, G.},
+	journal = {Phys. Rev. A},
+	keywords = {Atom Interferometry},
+	title = {Tractor atom interferometry},
+	year = {2021}}
+
+@article{FeatonbyPRL1998,
+	abstract = {We demonstrate a novel type of cesium atom interferometer which uses a combination of a microwave ground state transition and momentum changing adiabatic transfer light pulses as the atom optical components. It is the first atom interferometer where the mechanism which forms the internal superposition plays no part in spatially splitting the atomic wave packets. The coherence length of the atom source is found by measuring the spatial correlation between the two interferometer arms. This allows us to determine the temperature of the atomic ensemble. [S0031-9007(98)06643-5]},
+	author = {Featonby, P. D. and Summy, G. S. and Webb, C. L. and Godun, R. M. and Oberthaler, M. K. and Wilson, A. C. and Foot, C. J. and Burnett, K.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Atom Interferometry},
+	title = {Separated-Path Ramsey Atom Interferometer},
+	year = {1998}}
+
+@article{FitzekSR2020,
+	abstract = {In this article, we introduce a universal simulation framework covering all regimes of matter-wave light-pulse elastic scattering. Applied to atom interferometry as a study case, this simulator solves the atom-light diffraction problem in the elastic case, i.e., when the internal state of the atoms remains unchanged. Taking this perspective, the light-pulse beam splitting is interpreted as a space and time-dependent external potential. In a shift from the usual approach based on a system of momentum-space ordinary differential equations, our position-space treatment is flexible and scales favourably for realistic cases where the light fields have an arbitrary complex spatial behaviour rather than being mere plane waves. Moreover, the solver architecture we developed is effortlessly extended to the problem class of trapped and interacting geometries, which has no simple formulation in the usual framework of momentum-space ordinary differential equations. We check the validity of our model by revisiting several case studies relevant to the precision atom interferometry community. We retrieve analytical solutions when they exist and extend the analysis to more complex parameter ranges in a cross-regime fashion. The flexibility of the approach, the insight it gives, its numerical scalability and accuracy make it an exquisite tool to design, understand and quantitatively analyse metrology-oriented matter-wave interferometry experiments.},
+	author = {Fitzek, Florian and Siem{\ss}, Jan-Niclas and Seckmeyer, Stefan and Ahlers, Holger and Rasel, Ernst M. and Hammerer, Klemens and Gaaloul, Naceur},
+	journal = {Sci. Rep.},
+	keywords = {Atom Interferometry},
+	title = {Universal atom interferometer simulation of elastic scattering processes},
+	year = {2020}}
+
+@article{GiltnerPRL1995,
+	abstract = {We have constructed an atom interferometer by Bragg deflecting a collimated beam of metastable neon atoms from three parallel standing waves. Interference fringes have been observed using atoms Bragg scattered at up to the third order, giving a maximum of 66k transverse momentum difference between the two arms of the interferometer. In the first order case we have achieved a fringe contrast of 62% and a peak to peak signal of 1700 atoms/s. We believe this to be the highest fringe contrast that has been achieved in atom interferometers.},
+	author = {Giltner, David M. and McGowan, Roger W. and Lee, Siu Au},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Atom Interferometry},
+	title = {Atom Interferometer Based on {Bragg} Scattering from Standing Light Waves},
+	year = {1995}}
+
+@article{GoerzA2023,
+	abstract = {The robustness of an atomic fountain interferometer with respect to variations in the initial velocity of the atoms and deviations from the optimal pulse amplitude is examined. We numerically simulate the dynamics of an interferometer in momentum space with a maximum separation of 20ℏk and map out the expected signal contrast depending on the variance of the initial velocity distribution and the value of the laser field amplitude. We show that an excitation scheme based on rapid adiabatic passage significantly enhances the expected signal contrast, compared to the commonly used scheme consisting of a series of π/2 and π pulses. We demonstrate further substantial increase of the robustness by using optimal control theory to identify splitting and swapping pulses that perform well on an ensemble average of pulse amplitudes and velocities. Our results demonstrate the ability of optimal control to significantly enhance future implementations of atomic fountain interferometry.},
+	author = {Goerz, Michael H. and Kasevich, Mark A. and Malinovsky, Vladimir S.},
+	journal = {Atoms},
+	keywords = {Atom Interferometry},
+	title = {Robust Optimized Pulse Schemes for Atomic Fountain Interferometry},
+	year = {2023}}
+
+@inproceedings{GoerzSPIE2021,
+	abstract = {We present an analysis of the robustness of existing analytic schemes for the implementation of an atomic fountain interferometer, and develop concepts for improving this robustness through the use of optimal control theory. For an interferometer operating in the Raman regime, we consider an implementation that manipulates the atomic momentum states with a series of Rabi pulses, and analyze how robust the population dynamics are with respect to variations in the effective pulse amplitude seen by the atoms in the atomic clouds, and variations in the initial velocity of the atoms relative to the rest frame. We then show that using rapid adiabatic passage to implement momentum transfer can significantly improve this robustness. Finally, we formulate the most general control conditions for an atomic fountain interferometer and design a functional that can be used for an ensemble optimization over the robustness landscape. We show preliminary results of optimizing the system using Krotov's method, suggesting that optimal control may be able to significantly enhance the robustness of atom interferometers.},
+	author = {Goerz, Michael H. and Kasevich, Mark A. and Malinovsky, Vladimir S.},
+	booktitle = {Proc. SPIE 11700, Optical and Quantum Sensing and Precision Metrology},
+	keywords = {Atom Interferometry},
+	title = {Quantum optimal control for atomic fountain interferometry},
+	year = {2021}}
+
+@article{HartmannPRA2020,
+	abstract = {We provide a comprehensive study of atomic Raman and Bragg diffraction when coupling to a pair of counter-propagating light gratings (double diffraction) or to a single one (single diffraction) and discuss the transition from one case to the other in a retro-reflective geometry as the Doppler detuning changes. In contrast to single diffraction, double Raman loses its advantage of high diffraction efficiency for short pulses and has to be performed in a Bragg-type regime. Moreover, the structure of double diffraction leads to further limitations for broad momentum distributions on the efficiency of mirror pulses, making the use of ultra-cold ensembles essential for high diffraction efficiency.},
+	author = {Hartmann, Sabrina and Jenewein, Jens and Giese, Enno and Abend, Sven and Roura, Albert and Rasel, Ernst M. and Schleich, Wolfgang P.},
+	journal = {Phys. Rev. A},
+	keywords = {Atom Interferometry},
+	title = {Regimes of atomic diffraction: {Raman} versus {Bragg} diffraction in retroreflective geometries},
+	year = {2020}}
+
+@article{KasevichAPB1992,
+	abstract = {Velocity sensitive stimulated Raman transitions have been used to measure the gravitational acceleration, g, of laser cooled sodium atoms in an atomic fountain geometry. By using an improved scheme to drive the Raman transitions, we have demonstrated a resolution of 3 x 10 -8 g after 2 x 10 3 seconds of integration time. In addition to presenting recent experimental results, we review the theory of stimulated Raman transitions as it applies to atom interferometers and discuss the prospects of an atom interferometer-based gravimeter with better than 10-1$\,^{\circ}$ g absolute accuracy.},
+	author = {Kasevich, M. A. and Chu, S.},
+	journal = {Appl. Phys. B},
+	keywords = {Atom Interferometry},
+	title = {Measurement of the gravitational acceleration of an atom with a light-pulse atom interferometer},
+	year = {1992}}
+
+@article{KasevichPRL1989,
+	abstract = {Laser-cooled sodium atoms pushed up on a vertical trajectory by radiation pressure are observed to turn around due to gravity. The relatively long time the atoms spent freely falling in this atomic fountain allowed the ground-state hyperfine splitting to be measured with a linewidth of 2 Hz. After a 1000-sec integration time, the center of the line was resolved to $\pm$10 mHz. The absolute splitting was measured to be 1 771 626 129(2) Hz.},
+	author = {Kasevich, Mark A. and Riis, Erling and Chu, Steven and DeVoe, Ralph G.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Atom Interferometry},
+	title = {{rf} spectroscopy in an atomic fountain},
+	year = {1989}}
+
+@article{KasevichPRL1991,
+	abstract = {Sodium atoms prepared in hyperfine ground-state 11 > are driven to the other ground-state hyperfine level 12> when two laser beams nearly resonant with an optical transition have a frequency difference equal to the ground-state hyperfine splitting. When the two laser beams are counterpropagating, conservation of momentum between the atom and the light field requires that the atom acquire a velocity kick ~22 ħk/m during the 11> and 12> transition (~6 cm/sec in our experiment). When the lasers are detuned far from the optical transition, spontaneous emission from the intermediate optical level becomes negligible, and the atom behaves as a two-level system coupled to a resonant rf driving field. We have created an interferometer by applying a π/2-π-π/2 Raman pulse sequence: a first π/2 pulse coherently splits the atomic wave packet by putting it in a superposition of states 11> and 12>, a second π pulse occurring a time Δt later redirects each wave packet and a final π/2 pulse recombines the wave packets at time 2Δt. We have observed wave packet interference for wave packet separations of 2.4 mm and, by using the interferometer as an accelerometer, have measured the atom's acceleration due to gravity to 3 parts in 106.},
+	author = {Kasevich, Mark A. and Chu, Steven},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Atom Interferometry},
+	title = {Atomic interferometry using stimulated {Raman} transitions},
+	year = {1991}}
+
+@article{KovachyN2015,
+	abstract = {The quantum superposition principle allows massive particles to be delocalized over distant positions. Though quantum mechanics has proved adept at describing the microscopic world, quantum superposition runs counter to intuitive conceptions of reality and locality when extended to the macroscopic scale, as exemplified by the thought experiment of Schr{\"o}dinger's cat. Matter-wave interferometers, which split and recombine wave packets in order to observe interference, provide a way to probe the superposition principle on macroscopic scales and explore the transition to classical physics. In such experiments, large wave-packet separation is impeded by the need for long interaction times and large momentum beam splitters, which cause susceptibility to dephasing and decoherence. Here we use light-pulse atom interferometry to realize quantum interference with wave packets separated by up to 54 centimetres on a timescale of 1 second. These results push quantum superposition into a new macroscopic regime, demonstrating that quantum superposition remains possible at the distances and timescales of everyday life. The sub-nanokelvin temperatures of the atoms and a compensation of transverse optical forces enable a large separation while maintaining an interference contrast of 28 per cent. In addition to testing the superposition principle in a new regime, large quantum superposition states are vital to exploring gravity with atom interferometers in greater detail.},
+	author = {Kovachy, T. and Asenbaum, P. and Overstreet, C. and Donnelly, C. A. and Dickerson, S. M. and Sugarbaker, A. and Hogan, J. M. and Kasevich, M. A.},
+	journal = {Nature},
+	keywords = {Atom Interferometry},
+	title = {Quantum superposition at the half-metre scale},
+	year = {2015}}
+
+@article{KovachyPRA2010,
+	abstract = {We provide an analytical description of the dynamics of an atom in an optical lattice using the method of perturbative adiabatic expansion. A precise understanding of the lattice-atom interaction is essential to taking full advantage of the promising applications that optical lattices offer in the field of atom interferometry. One such application is the implementation of large momentum transfer (LMT) beam splitters that can potentially provide multiple order of magnitude increases in momentum space separations over current technology. We also propose interferometer geometries where optical lattices are used as waveguides for the atoms throughout the duration of the interferometer sequence. Such a technique could simultaneously provide a multiple order of magnitude increase in sensitivity and a multiple order of magnitude decrease in interferometer size for many applications as compared to current state-of-the-art atom interferometers.},
+	author = {Kovachy, Tim and Hogan, Jason M. and Johnson, David M. S. and Kasevich, Mark A.},
+	journal = {Phys. Rev. A},
+	keywords = {Atom Interferometry},
+	title = {Optical lattices as waveguides and beam splitters for atom interferometry: {An} analytical treatment and proposal of applications},
+	year = {2010}}
+
+@article{AgarwalPRA1997,
+	abstract = {We consider a physical process that leads to the generation of atomic Schr{\"o}dinger cat states for a system of two level atoms. The effective interaction between atoms in a dispersive cavity leads to the superposition of atomic coherent states. We study in detail the quasidistributions for these states and demonstrate how the Schr{\"o}dinger cat states can lead to interesting interferences over the surface of a sphere.},
+	author = {Agarwal, G. and Puri, R. and Singh, R.},
+	journal = {Phys. Rev. A},
+	keywords = {Spin Squeezing},
+	title = {Atomic {Schr{\"o}dinger} cat states},
+	year = {1997}}
+
+@article{BlockNP2024,
+	abstract = {Spin squeezing is a form of entanglement that reshapes the quantum projection noise to improve measurement precision. Here, we provide numerical and analytic evidence for the following conjecture: any Hamiltonian exhibiting finite-temperature easy-plane ferromagnetism can be used to generate scalable spin squeezing, thereby enabling quantum-enhanced sensing. Our conjecture is guided by a connection between the quantum Fisher information of pure states and the spontaneous breaking of a continuous symmetry. We demonstrate that spin squeezing exhibits a phase diagram with a sharp transition between scalable squeezing and non-squeezing. This transition coincides with the equilibrium phase boundary for XY order at a finite temperature. In the scalable squeezing phase, we predict a sensitivity scaling that lies between the standard quantum limit and the scaling achieved in all-to-all coupled one-axis twisting models. A corollary of our conjecture is that short-ranged versions of two-axis twisting cannot yield scalable metrological gain. Our results provide insights into the landscape of Hamiltonians that can be used to generate metrologically useful quantum states. Generating highly squeezed states for quantum sensing requires precise entanglement properties, which makes it a hard task. Now a conjecture identifies a realistic regime of magnetic order at finite temperatures that enables scalable spin squeezing.},
+	author = {Block, Maxwell and Ye, Bingtian and Roberts, Brenden and Chern, Sabrina and Wu, Weijie and Wang, Zilin and Pollet, Lode and Davis, Emily J. and Halperin, Bertrand I. and Yao, Norman Y.},
+	journal = {Nat. Phys.},
+	keywords = {Spin Squeezing},
+	title = {Scalable spin squeezing from finite-temperature easy-plane magnetism},
+	year = {2024}}
+
+@article{BohnetNP2014,
+	abstract = {Fundamental quantum noise limits the precision of quantum-based detectors, for example limiting the ultimate precision of atomic clocks, which have applications in communication, navigation and tests of fundamental physics. Collective measurements of many quantum spins can project the ensemble into an entangled, spin-squeezed state with improved quantum-limited measurement resolution. However, measurement back-action has limited previous implementations of collective measurements to only modest observed enhancements in precision. Here, we experimentally demonstrate a collective measurement with reduced measurement back-action to produce and directly observe, with no background subtraction, a spin-squeezed state with phase resolution improved by a factor of 10.5(1.5) in variance, or 10.2(6) dB, compared to the initially unentangled ensemble of N = 4.8 × 105 87Rb atoms. The measurement uses a cavity-enhanced probe of an optical cycling transition, mitigating back-action associated with state-changing transitions induced by the probe. This work establishes collective measurements as a powerful technique for generating useful entanglement for precision measurements. The phase of a collection of spins is measured with a sensitivity ten times beyond the limit set by the quantum noise of an unentangled ensemble of 87Rb atoms. A cavity-enhanced probe of an optical cycling transition is employed to mitigate back-action associated with state-changing transitions induced by the probe.},
+	author = {Bohnet, J. G. and Cox, K. C. and Norcia, M. A. and Weiner, J. M. and Chen, Z. and Thompson, J. K.},
+	journal = {Nat. Photon.},
+	keywords = {Spin Squeezing},
+	title = {Reduced spin measurement back-action for a phase sensitivity ten times beyond the standard quantum limit},
+	year = {2014}}
+
+@article{BravermanNJP2018,
+	abstract = {Spin squeezing is a form of entanglement that can improve the stability of quantum sensors operating with multiple particles, by inducing inter-particle correlations that redistribute the quantum projection noise. Previous analyses of potential metrological gain when using spin squeezing were performed on theoretically ideal states, without incorporating experimental imperfections or inherent limitations which result in non-unitary quantum state evolution. Here, we show that potential gains in clock stability are substantially reduced when the spin squeezing is non-unitary, and derive analytic formulas for the clock performance as a function of squeezing, excess spin noise, and interferometer contrast. Our results highlight the importance of creating and employing nearly pure entangled states for improving atomic clocks.},
+	author = {Braverman, Boris and Kawasaki, Akio and Vuleti{\'c}, Vladan},
+	journal = {New J. Phys.},
+	keywords = {Spin Squeezing},
+	title = {Impact of non-unitary spin squeezing on atomic clock performance},
+	year = {2018}}
+
+@unpublished{Carrasco2602.06308,
+	abstract = {We propose a novel method for generating Schr{\"o}dinger-cat states -- defined as equal superpositions of arbitrary coherent states -- using a concise sequence of rapid twist-and-turn pulses. We demonstrate that the required shearing strength for the protocol, which scales linearly with time, decreases with increasing number of atoms (N) in proportion to 1/√(N). The resulting states exhibit optimal quantum Fisher information, making them ideal for surpassing the classical limit of phase sensitivity in quantum metrology applications. Notably, our protocol is compatible with a time-reversal strategy for quantum metrology, ensuring its practical viability. Furthermore, we demonstrate that the Heisenberg limit scaling remains intact even when reducing the twisting employed in tandem with the number of atoms, thereby mitigating realistic losses such as photon scattering.},
+	author = {Carrasco, Sebasti{\'a}n C. and Goerz, Michael H. and Li, Zeyang and Colombo, Simone and Vuleti{\'c}, Vladan and Schleich, Wolfgang P. and Malinovsky, Vladimir S.},
+	journal = {arXiv:2602.06308},
+	keywords = {Spin Squeezing},
+	title = {Time-reversal Interferometry Using Cat States with Scalable Entangling Resources},
+	year = {2026}}
+
+@article{CarrascoPRA2022,
+	abstract = {We propose a scheme for the generation of optimal squeezed states for Ramsey interferometry. The scheme consists of an alternating series of one-axis twisting pulses and rotations, both of which are straightforward to implement experimentally. The resulting states show a metrological gain proportional to the Heisenberg limit. We demonstrate that the Heisenberg scaling is maintained even when placing constraints on the amplitude of the pulses implementing the one-axis twisting and when taking into account realistic losses due to photon scattering.},
+	author = {Carrasco, Sebasti{\'a}n C. and Goerz, Michael H. and Li, Zeyang and Colombo, Simone and Vuleti{\'c}, Vladan and Malinovsky, Vladimir S.},
+	journal = {Phys. Rev. Applied},
+	keywords = {Spin Squeezing},
+	title = {Extreme Spin Squeezing via Optimized One-Axis Twisting and Rotations},
+	year = {2022}}
+
+@article{CarrascoPRL2024,
+	abstract = {Considering the unique energy level structure of the one-axis twisting Hamiltonian in combination with standard rotations, we propose the implementation of a rapid adiabatic passage scheme on the Dicke state basis. The method permits to drive Dicke states of the many-atom system into entangled states with maximum quantum Fisher information. The designed states allow us to overcome the classical limit of phase sensitivity in quantum metrology and sensing. We show how to generate superpositions of Dicke states, which maximize metrological gain for a Ramsey interferometric measurement. The proposed scheme is remarkably robust to variations of the driving field and has favorable time scaling, especially for a small to moderate (∼1000) number of atoms, where the total time does not depend on the number of atoms.},
+	author = {Carrasco, Sebasti{\'a}n C. and Goerz, Michael H. and Malinovskaya, Svetlana A. and Vuleti{\'c}, Vladan and Schleich, Wolfgang P. and Malinovsky, Vladimir S.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Spin Squeezing},
+	title = {Dicke State Generation and Extreme Spin Squeezing via Rapid Adiabatic Passage},
+	year = {2024}}
+
+@inproceedings{CarrascoQIM2021,
+	abstract = {We propose a novel pulse sequence that drives an ensemble of cold trapped atoms into an optimal squeezed state. These states have a fundamental precision scaling proportional to the inverse of the number of atoms.},
+	author = {Carrasco, Sebasti{\'a}n C. and Goerz, Michael H. and Vuleti{\'c}, Vladan and Malinovsky, Vladimir S.},
+	booktitle = {Quantum Information and Measurement VI 2021},
+	keywords = {Spin Squeezing},
+	title = {Optimally squeezed atomic states for quantum metrology},
+	year = {2021}}
+
+@article{DimitrovaPRL2020,
+	abstract = {In an optical lattice, entropy and mass transport by first-order tunneling are much faster than spin transport via superexchange. Here we show that adding a constant force (tilt) suppresses first-order tunneling, but not spin transport, realizing new features for spin Hamiltonians. Suppression of the superfluid transition can stabilize larger systems with faster spin dynamics. For the first time in a manybody spin system, we vary superexchange rates by over a factor of 100 and tune spin-spin interactions via the tilt. In a tilted lattice, defects are immobile and pure spin dynamics can be studied.},
+	author = {Dimitrova, Ivana and Jepsen, Niklas and Buyskikh, Anton and Venegas-Gomez, Araceli and Amato-Grill, Jesse and Daley, Andrew J. and Ketterle, Wolfgang},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Spin Squeezing},
+	title = {Enhanced Superexchange in a Tilted Mott Insulator},
+	year = {2020}}
+
+@article{EcknerN2023,
+	abstract = {Spin squeezing in an optical atomic clock based on arrays of neutral atoms is used to realize measurement performance below the standard quantum limit. Neutral-atom arrays trapped in optical potentials are a powerful platform for studying quantum physics, combining precise single-particle control and detection with a range of tunable entangling interactions. For example, these capabilities have been leveraged for state-of-the-art frequency metrology as well as microscopic studies of entangled many-particle states. Here we combine these applications to realize spin squeezing, a widely studied operation for producing metrologically useful entanglement, in an optical atomic clock based on a programmable array of interacting optical qubits. In this demonstration of Rydberg-mediated squeezing with a neutral-atom optical clock, we generate states that have almost four decibels of metrological gain. In addition, we perform a synchronous frequency comparison between independent squeezed states and observe a fractional-frequency stability of 1.087(1) × 10⁻¹⁵ at one-second averaging time, which is 1.94(1) decibels below the standard quantum limit and reaches a fractional precision at the 10⁻¹⁷ level during a half-hour measurement. We further use the programmable control afforded by optical tweezer arrays to apply local phase shifts to explore spin squeezing in measurements that operate beyond the relative coherence time with the optical local oscillator. The realization of this spin-squeezing protocol in a programmable atom-array clock will enable a wide range of quantum-information-inspired techniques for optimal phase estimation and Heisenberg-limited optical atomic clocks.},
+	author = {Eckner, William J. and Darkwah Oppong, Nelson and Cao, Alec and Young, Aaron W. and Milner, William R. and Robinson, John M. and Ye, Jun and Kaufman, Adam M.},
+	journal = {Nature},
+	keywords = {Spin Squeezing},
+	title = {Realizing spin squeezing with {Rydberg} interactions in an optical clock},
+	year = {2023}}
+
+@article{EscherNP2011,
+	abstract = {The estimation of parameters characterizing dynamical processes is central to science and technology. The estimation error changes with the number N of resources employed in the experiment (which could quantify, for instance, the number of probes or the probing energy). Typically, it scales as . Quantum strategies may improve the precision, for noiseless processes, by an extra factor . For noisy processes, it is not known in general if and when this improvement can be achieved. Here we propose a general framework for obtaining attainable and useful lower bounds for the ultimate limit of precision in noisy systems. We apply this bound to lossy optical interferometry and atomic spectroscopy in the presence of dephasing, showing that it captures the main features of the transition from the 1/N to the behaviour as N increases, independently of the initial state of the probes, and even with use of adaptive feedback.},
+	author = {Escher, B. M. and de Matos Filho, R. L. and Davidovich, L.},
+	journal = {Nat. Phys.},
+	keywords = {Spin Squeezing},
+	title = {General framework for estimating the ultimate precision limit in noisy quantum-enhanced metrology},
+	year = {2011}}
+
+@article{FedoseevPRL2025,
+	abstract = {We study light scattering of atomic wave packets in free space and discuss the results in terms of atomphoton entanglement and which-way information. Using ultracold atoms released from an optical lattice, we realize a Gedanken experiment which interferes single photons scattering off of Heisenberg uncertaintylimited wave packets. We unify the free-space and trapped-atom pictures by measuring the light scattered before and during wave packet expansion and show the coherence properties of the scattered light are independent of the presence of the trap. Therefore, recoilless scattering in a trap (M{\"o}ssbauer effect), the different frequency of sidebands, and the excitation of an excited harmonic oscillator state are not essential to the question of which fraction of light scattering is coherent or incoherent. Our experiment demonstrates the potential of using atomic Mott insulators to create single-atom wave packets for fundamental studies.},
+	author = {Fedoseev, Vitaly and Lin, Hanzhen and Lu, Yu-Kun and Lee, Yoo Kyung and Lyu, Jiahao and Ketterle, Wolfgang},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Spin Squeezing},
+	title = {Coherent and Incoherent Light Scattering by Single-Atom Wave Packets},
+	year = {2025}}
+
+@article{JepsenN2020,
+	abstract = {Simple models of interacting spins have an important role in physics. They capture the properties of many magnetic materials, but also extend to other systems, such as bosons and fermions in a lattice, gauge theories, high-temperature superconductors, quantum spin liquids, and systems with exotic particles such as anyons and Majorana fermions1,2. To study and compare these models, a versatile platform is needed. Realizing such systems has been a long-standing goal in the field of ultracold atoms. So far, spin transport has only been studied in systems with isotropic spin--spin interactions3--12. Here we realize the Heisenberg model describing spins on a lattice, with fully adjustable anisotropy of the nearest-neighbour spin--spin couplings (called the XXZ model). In this model we study spin transport far from equilibrium after quantum quenches from imprinted spin-helix patterns. When spins are coupled only along two of three possible orientations (the XX model), we find ballistic behaviour of spin dynamics, whereas for isotropic interactions (the XXX model), we find diffusive behaviour. More generally, for positive anisotropies, the dynamics ranges from anomalous superdiffusion to subdiffusion, whereas for negative anisotropies, we observe a crossover in the time domain from ballistic to diffusive transport. This behaviour is in contrast with expectations from the linear-response regime and raises new questions in understanding quantum many-body dynamics far away from equilibrium. Spin transport far from equilibrium is studied in a Heisenberg model with adjustable anisotropy realized with coupled ultracold 7Li atoms, and different dynamical regimes are found for positive and negative anisotropies.},
+	author = {Jepsen, Paul Niklas and Amato-Grill, Jesse and Dimitrova, Ivana and Ho, Wen Wei and Demler, Eugene and Ketterle, Wolfgang},
+	journal = {Nature},
+	keywords = {Spin Squeezing},
+	title = {Spin transport in a tunable {Heisenberg} model realized with ultracold atoms},
+	year = {2020}}
+
+@article{JepsenPRX2021,
+	abstract = {In Heisenberg models with exchange anisotropy, transverse spin components are not conserved and can decay not only by transport, but also by dephasing. Here, we utilize ultracold atoms to simulate the dynamics of 1D Heisenberg spin chains and observe fast, local spin decay controlled by the anisotropy. However, even for isotropic interactions, we observe dephasing due to a new effect: an effective magnetic field created by superexchange. If spatially uniform, it leads only to uniform spin precession and is, therefore, typically ignored. However, we show through experimental studies and extensive numerical simulations how this superexchange-generated field is relevant and leads to additional dephasing mechanisms over the exchange anisotropy: There is dephasing due to (i) inhomogeneity of the effective field from variations of lattice depth between chains; (ii) a twofold reduction of the field at the edges of finite chains; and (iii) fluctuations of the effective field due to the presence of mobile holes in the system. The latter is a new coupling mechanism between holes and magnons. All these dephasing mechanisms have not been observed before with ultracold atoms and illustrate basic properties of the underlying Hubbard model.},
+	author = {Jepsen, Paul Niklas and Ho, Wen Wei and Amato-Grill, Jesse and Dimitrova, Ivana and Demler, Eugene and Ketterle, Wolfgang},
+	journal = {Phys. Rev. X},
+	keywords = {Spin Squeezing},
+	title = {Transverse Spin Dynamics in the Anisotropic Heisenberg Model Realized with Ultracold Atoms},
+	year = {2021}}
+
+@article{KitagawaPRA1993,
+	abstract = {The basic concept of squeezed spin states is established and the principles for their generation are discussed. Two proposed mechanisms, referred to as one-axis twisting and two-axis countertwisting, are shown to reduce the standard quantum noise S/2 of the coherent S-spin state down to ---(S/3) and 2, respectively. Implementations of spin squeezing in interferometers are also discussed. 42. 50.Dv, 03.65.Bz},
+	author = {Kitagawa, Masahiro and Ueda, Masahito},
+	journal = {Phys. Rev. A},
+	keywords = {Spin Squeezing},
+	title = {Squeezed spin states},
+	year = {1993}}
+
+@article{LeePRL2025,
+	abstract = {Spin squeezing in a many-body system is a witness for entanglement and can enable measurement sensitivities beyond those achievable by only classical correlations. Here, working with ultracold ⁷Li atoms in an optical lattice, we demonstrate spin squeezing using short-range contact interactions in both one and three dimensions. In 1D, spin squeezing is shown to be insensitive to density fluctuations caused by holes. In 3D, however, we observe that holes strongly modify the squeezing dynamics, hindering the recently predicted emergence of scalable squeezing in 3D XXZ spin systems. By developing a new theoretical model to account for spin-density coupling, we obtain strong quantitative agreement with the observed squeezing dynamics, resulting in ≈2 dB at 7% hole fraction. Our observations highlight the importance of understanding spin-density coupling in the dynamics of many interacting spins and lay the groundwork for improved spin squeezing in systems with only short-range interactions.},
+	author = {Lee, Yoo Kyung and Block, Maxwell and Lin, Hanzhen and Fedoseev, Vitaly and Crowley, Philip J. D. and Yao, Norman Y. and Ketterle, Wolfgang},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Spin Squeezing},
+	title = {Observation of Spin Squeezing with Contact Interactions in One- and Three-Dimensional Easy-Plane Magnets},
+	year = {2025}}
+
+@inproceedings{LerouxIFCS2009,
+	abstract = {Spin squeezing, the generation of collective states of atomic ensembles with reduced spin noise by exploiting non-classical correlations between particles, is a promising approach to overcoming the standard quantum limit set by projection noise of independent atoms. We present two implementations of spin squeezing in ensembles of 87Rb confined within an optical resonator, and discuss some of the decoherence mechanisms, both technical and fundamental, that we encounter.},
+	author = {Leroux, Ian D. and Schleier-Smith, Monika H. and Vuleti{\'c}, Vladan},
+	booktitle = {Proceedings of the Joint Meeting of the European Frequency and Time Forum and the {IEEE} International Frequency Control Symposium ({EFTF}/{IFCS})},
+	keywords = {Spin Squeezing},
+	title = {Producing Squeezed Input States for an Atomic Clock Using an Optical Cavity},
+	year = {2009}}
+
+@article{LerouxPRL2010,
+	abstract = {We squeeze unconditionally the collective spin of a dilute ensemble of laser-cooled 87Rb atoms using their interaction with a driven optical resonator. The shape and size of the resulting spin uncertainty region are well described by a simple analytical model [M. H. Schleier-Smith, I. D. Leroux, and V. Vuleti{\'c}, arXiv:0911.3936 [Phys. Rev. A (to be published)]] through 2 orders of magnitude in the effective interaction strength, without free parameters. We deterministically generate states with up to 5.6(6) dB of metrologically relevant spin squeezing on the canonical 87Rb hyperfine clock transition.},
+	author = {Leroux, Ian D. and Schleier-Smith, Monika H. and Vuleti{\'c}, Vladan},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Spin Squeezing},
+	title = {Implementation of Cavity Squeezing of a Collective Atomic Spin},
+	year = {2010}}
+
+@article{Lewis-SwanPRL2018,
+	abstract = {Cavity QED is a promising avenue for the deterministic generation of entangled and spin-squeezed states for quantum metrology. One archetypal scheme generates squeezing via collective one-axis twisting interactions. However, we show that in implementations using optical transitions in long-lived atoms the achievable squeezing is fundamentally limited by collectively enhanced emission into the cavity mode which is generated in parallel with the cavity-mediated spin-spin interactions. We propose an alternative scheme which generates a squeezed state that is protected from collective emission, and investigate its sensitivity to realistic sources of experimental noise and imperfections.},
+	author = {Lewis-Swan, Robert J. and Norcia, Matthew A. and Cline, Julia R. K. and Thompson, James K. and Rey, Ana Maria},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Spin Squeezing},
+	title = {Robust Spin Squeezing via Photon-Mediated Interactions on an Optical Clock Transition},
+	year = {2018}}
+
+@article{LiS2026,
+	abstract = {In quantum metrology, entangled states of many-particle systems are investigated to enhance measurement precision of the most precise clocks and field sensors. Whereas single-parameter quantum metrology is well established, joint multiparameter estimation poses conceptual challenges and has been explored only theoretically. We experimentally demonstrated multiparameter quantum metrology with an array of entangled atomic ensembles. By splitting a spin-squeezed ensemble, we created an atomic sensor array featuring intersensor entanglement that can be flexibly configured to enhance measurement precision of multiple parameters jointly. Using an optimal estimation protocol, we achieved substantial gains over the standard quantum limit in key multiparameter estimation tasks, thus grounding the concept of quantum enhancement of field sensor arrays and imaging devices.},
+	author = {Li, Yifan and Joosten, Lex and Baamara, Youcef and Colciaghi, Paolo and Sinatra, Alice and Treutlein, Philipp and Zibold, Tilman},
+	journal = {Science},
+	keywords = {Spin Squeezing},
+	title = {Multiparameter estimation with an array of entangled atomic sensors},
+	year = {2026}}
+
+@article{LiuPRL2011,
+	abstract = {Squeezed spin states possess unique quantum correlation or entanglement and are significantly promising for advancing quantum information processing and quantum metrology. In recent back-to-back publications [C. Gross et al., Nature (London) 464, 1165 (2010) and Max F. Riedel et al., Nature (London) 464, 1170 (2010)], reduced spin fluctuations are observed leading to spin squeezing at -8.2 and -2.5 dB, respectively, in two-component atomic condensates exhibiting one-axis-twisting interactions. The noise reduction limit for the one-axis twisting scales as ∝1/N(2/3), which for a condensate with N∼10(3) atoms is about 100 times below the standard quantum limit. We present a scheme using repeated Rabi pulses capable of transforming the one-axis-twisting spin squeezing into the two-axis-twisting type, leading to Heisenberg limited noise reduction ∝1/N or an extra tenfold improvement for N∼10(3).},
+	author = {Liu, Y. C. and Xu, Z. F. and Jin, G. R. and You, L.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Spin Squeezing},
+	title = {Spin Squeezing: Transforming One-Axis Twisting into Two-Axis Twisting},
+	year = {2011}}
+
+@article{MaPR2011,
+	abstract = {This paper reviews quantum spin squeezing, which characterizes the sensitivity of a state with respect to SU(2) rotations, and is significant for both entanglement detection and high-precision metrology. We first present various definitions of spin squeezing parameters, explain their origin and properties for typical states, and then discuss spin-squeezed states produced with nonlinear twisting Hamiltonians. Afterward, we explain pairwise correlations and entanglement in spin-squeezed states, as well as the relations between spin squeezing and quantum Fisher information, where the latter plays a central role in quantum metrology. We also review the applications of spin squeezing for detecting quantum chaos and quantum phase transitions, as well as the influence of decoherence on spin squeezing. Finally, we review several experimental realizations of spin squeezing, as well as their corresponding theoretical backgrounds, including: producing spin-squeezed states via particle collisions in Bose--Einstein condensates, transferring photon squeezing to atomic ensembles, and generating spin squeezing via quantum non-demolition measurements.},
+	author = {Ma, Jian and Wang, Xiaoguang and Sun, Changpu P. and Nori, Franco},
+	journal = {Phys. Rep.},
+	keywords = {Spin Squeezing},
+	title = {Quantum spin squeezing},
+	year = {2011}}
+
+@article{MillerN2024,
+	abstract = {Polar molecules confined in an optical lattice are a versatile platform to explore spin-motion dynamics based on strong, long-range dipolar interactions1,2. The precise tunability3 of Ising and spin-exchange interactions with both microwave and d.c. electric fields makes the molecular system particularly suitable for engineering complex many-body dynamics4--6. Here we used Floquet engineering7 to realize new quantum many-body systems of polar molecules. Using a spin encoded in the two lowest rotational states of ultracold 40K87Rb molecules, we mutually validated XXZ spin models tuned by a Floquet microwave pulse sequence against those tuned by a d.c. electric field through observations of Ramsey contrast dynamics. This validation sets the stage for the realization of Hamiltonians inaccessible with static fields. In particular, we observed two-axis twisting8 mean-field dynamics, generated by a Floquet-engineered XYZ model using itinerant molecules in two-dimensional layers. In the future, Floquet-engineered Hamiltonians could generate entangled states for molecule-based precision measurement9 or could take advantage of the rich molecular structure for quantum simulation of multi-level systems10,11. A study demonstrates the application of Floquet Hamiltonian engineering to ultracold trapped polar molecules to realize interactions relevant to quantum metrology and many-body physics.},
+	author = {Miller, Calder and Carroll, Annette N. and Lin, Junyu and Hirzler, Henrik and Gao, Haoyang and Zhou, Hengyun and Lukin, Mikhail D. and Ye, Jun},
+	journal = {Nature},
+	keywords = {Spin Squeezing},
+	title = {Two-axis twisting using {Floquet}-engineered {XYZ} spin models with polar molecules},
+	year = {2024}}
+
+@article{PangNC2017,
+	abstract = {Quantum metrology has been studied for a wide range of systems with time-independent Hamiltonians. For systems with time-dependent Hamiltonians, however, due to the complexity of dynamics, little has been known about quantum metrology. Here we investigate quantum metrology with time-dependent Hamiltonians to bridge this gap. We obtain the optimal quantum Fisher information for parameters in time-dependent Hamiltonians, and show proper Hamiltonian control is generally necessary to optimize the Fisher information. We derive the optimal Hamiltonian control, which is generally adaptive, and the measurement scheme to attain the optimal Fisher information. In a minimal example of a qubit in a rotating magnetic field, we find a surprising result that the fundamental limit of T2 time scaling of quantum Fisher information can be broken with time-dependent Hamiltonians, which reaches T4 in estimating the rotation frequency of the field. We conclude by considering level crossings in the derivatives of the Hamiltonians, and point out additional control is necessary for that case.},
+	author = {Pang, Shengshi and Jordan, Andrew N.},
+	journal = {Nat. Commun.},
+	keywords = {Spin Squeezing},
+	title = {Optimal adaptive control for quantum metrology with time-dependent {Hamiltonians}},
+	year = {2017}}
+
+@article{PerlinPRL2020,
+	abstract = {We investigate many-body spin squeezing dynamics in an XXZ model with interactions that fall off with distance r as 1=rα in D ¼ 2 and 3 spatial dimensions. In stark contrast to the Ising model, we find a broad parameter regime where spin squeezing comparable to the infinite-range α ¼ 0 limit is achievable even when interactions are short ranged, α > D. A region of ``collective'' behavior in which optimal squeezing grows with system size extends all the way to the α → ∞ limit of nearest-neighbor interactions. Our predictions, made using the discrete truncated Wigner approximation, are testable in a variety of experimental cold atomic, molecular, and optical platforms.},
+	author = {Perlin, Michael A. and Qu, Chunlei and Rey, Ana Maria},
+	journal = {Phys. Rev. Lett.},
+	keywords = {Spin Squeezing},
+	title = {Spin Squeezing with Short-Range Spin-Exchange Interactions},
+	year = {2020}}
+
+@article{AbobeihN2019,
+	abstract = {Nuclear magnetic resonance (NMR) is a powerful method for determining the structure of molecules and proteins1. Whereas conventional NMR requires averaging over large ensembles, recent progress with single-spin quantum sensors2--9 has created the prospect of magnetic imaging of individual molecules10--13. As an initial step towards this goal, isolated nuclear spins and spin pairs have been mapped14--21. However, large clusters of interacting spins---such as those found in molecules---result in highly complex spectra. Imaging these complex systems is challenging because it requires high spectral resolution and efficient spatial reconstruction with sub-{\aa}ngstr{\"o}m precision. Here we realize such atomic-scale imaging using a single nitrogen vacancy centre as a quantum sensor, and demonstrate it on a model system of 27 coupled 13C nuclear spins in diamond. We present a multidimensional spectroscopy method that isolates individual nuclear--nuclear spin interactions with high spectral resolution (less than 80 millihertz) and high accuracy (2 millihertz). We show that these interactions encode the composition and inter-connectivity of the cluster, and develop methods to extract the three-dimensional structure of the cluster with sub-{\aa}ngstr{\"o}m resolution. Our results demonstrate a key capability towards magnetic imaging of individual molecules and other complex spin systems9--13. An individual electron is used as a quantum sensor to realize atomic-scale magnetic resonance imaging.},
+	author = {Abobeih, M. H. and Randall, J. and Bradley, C. E. and Bartling, H. P. and Bakker, M. A. and Degen, M. J. and Markham, M. and Twitchen, D. J. and Taminiau, T. H.},
+	journal = {Nature},
+	keywords = {NV-Centers},
+	title = {Atomic-scale imaging of a 27-nuclear-spin cluster using a quantum sensor},
+	year = {2019}}
+
+@unpublished{Aiello2605.00152,
+	abstract = {Precision measurements based on optically detected nuclear magnetic resonance offer exquisite sensitivity to absolute shifts in spin transition frequencies, with potential applications in fundamental physics experiments and inertial sensing. We investigate 13C nuclear spins in diamond as a candidate system for solid-state implementations, which hold the promise for high-fidelity readout of large numbers of coherent nuclear spins in millitesla or lower magnetic fields. We demonstrate a technique that allows for both optical polarization and readout of large ensembles of ~10¹⁶ polarized nuclear spins. Our method takes advantage of state-selective Landau-Zener transitions under microwave frequency sweeping, which bidirectionally transfer spin polarization between Nitrogen-Vacancy (NV) electron spins and remote 13C nuclear spins. Using natural isotopic abundance diamonds with nitrogen densities of ~0.5-10 ppm, we perform optically-detected 13C Ramsey spectroscopy and realize a nuclear-spin-dependent fluorescence contrast exceeding 0.5% peak-to-peak. We observe nuclear spin dephasing times T2*~2 ms that only modestly improve with homonuclear dipolar decoupling, indicating that they are limited by the longitudinal spin relaxation of nearby NV electron spins. We study the magnetic field dependence of the optical readout and find comparable contrast and dephasing times for magnetic fields in the range 8-20 mT. Our method can be interpreted as a type of repetitive readout, where each NV center optically reads out the spin state of ~100 nuclei before nuclear spins depolarize.},
+	author = {Aiello, Maxwell D. and Smits, Janis and Silani, Yaser and Berzins, Andris and Lidsky, David and Richards, Bryan A. and Perez, Amilcar Jeronimo and Ramanathan, Chandrasekhar and Carrasco, Sebasti{\'a}n C. and Chathanathil, Jabir and Goerz, Michael H. and Malinovsky, Vladimir S. and Budker, Dmitry and Lourette, Sean and Jarmola, Andrey and Acosta, Victor M.},
+	journal = {arXiv:2605.00152},
+	keywords = {NV-Centers},
+	title = {Optically detected nuclear magnetic resonance of carbon-13 in bulk diamond},
+	year = {2026}}
+
+@article{AjoyPNAS2018,
+	abstract = {Dynamic nuclear polarization (DNP) can lead to rapidly accelerated NMR spectroscopy and MRI imaging via significant magnetic resonance signal gains. We develop a technique of microwave frequency comb DNP that is especially suited to broad-spectrum electron radicals widely used for DNP in a variety of contexts. The frequency comb allows one to overcome the bottleneck set by slow electron sweeps, increasing the effective number of polarization transfer events and resulting in a multiplicative gain in DNP signal enhancement. We demonstrate the technique by increasing the DNP enhancement from 30 to 100 measured with respect to the thermal signal at 7T in powdered diamond with optically polarizable defect centers and discuss its applications more widely for a variety of DNP radicals.},
+	author = {Ajoy, A. and Nazaryan, R. and Liu, K. and Lv, X. and Safvati, B. and Wang, G. and Druga, E. and Reimer, J. A. and Suter, D. and Ramanathan, C. and Meriles, C. A. and Pines, A.},
+	journal = {Proc. Natl. Acad. Sci. U.S.A},
+	keywords = {NV-Centers},
+	title = {Enhanced dynamic nuclear polarization via swept microwave frequency combs},
+	year = {2018}}
+
+@article{AjoyRSI2019,
+	abstract = {We describe the construction of a fast field cycling device capable of sweeping a 4-order-of-magnitude range of magnetic fields, from ∼1 mT to 7 T, in under 700 ms, and which is further extendable to a 1 nT-7 T range. Central to this system is a high-speed sample shuttling mechanism between a superconducting magnet and a magnetic shield, with the capability to access arbitrary fields in between with high resolution. Our instrument serves as a versatile platform to harness the inherent dichotomy of spin dynamics on offer at low and high fields---in particular, the low anisotropy, fast spin manipulation, and rapid entanglement growth at low field as well as the long spin lifetimes, spin specific control, and efficient inductive measurement possible at high fields. Exploiting these complementary capabilities in a single device opens up applications in a host of problems in quantum control, sensing, and information storage, besides in nuclear hyperpolarization, relaxometry, and imaging. In particular, in this paper, we focus on the ability of the device to enable low-field hyperpolarization of 13C nuclei in diamond via optically pumped electronic spins associated with nitrogen vacancy defect centers.},
+	author = {Ajoy, A. and Lv, X. and Druga, E. and Liu, K. and Safvati, B. and Morabe, A. and Fenton, M. and Nazaryan, R. and Patel, S. and Sjolander, T. F. and Reimer, J. A. and Sakellariou, D. and Meriles, C. A. and Pines, A.},
+	journal = {Rev. Sci. Instr.},
+	keywords = {NV-Centers},
+	title = {Wide dynamic range magnetic field cycler: Harnessing quantum control at low and high fields},
+	year = {2019}}
+
+@article{AjoySA2018,
+	abstract = {Shining light on diamond particles makes them MRI-``bright,'' opening avenues for room temperature hyperpolarized liquids. Dynamic nuclear polarization via contact with electronic spins has emerged as an attractive route to enhance the sensitivity of nuclear magnetic resonance beyond the traditional limits imposed by magnetic field strength and temperature. Among the various alternative implementations, the use of nitrogen vacancy (NV) centers in diamond---a paramagnetic point defect whose spin can be optically polarized at room temperature---has attracted widespread attention, but applications have been hampered by the need to align the NV axis with the external magnetic field. We overcome this hurdle through the combined use of continuous optical illumination and a microwave sweep over a broad frequency range. As a proof of principle, we demonstrate our approach using powdered diamond with which we attain bulk 13C spin polarization in excess of 0.25% under ambient conditions. Remarkably, our technique acts efficiently on diamond crystals of all orientations and polarizes nuclear spins with a sign that depends exclusively on the direction of the microwave sweep. Our work paves the way toward the use of hyperpolarized diamond particles as imaging contrast agents for biosensing and, ultimately, for the hyperpolarization of nuclear spins in arbitrary liquids brought in contact with their surface.},
+	author = {Ajoy, Ashok and Liu, Kristina and Nazaryan, Raffi and Lv, Xudong and Zangara, Pablo R. and Safvati, Benjamin and Wang, Guoqing and Arnold, Daniel and Li, Grace and Lin, Arthur and Raghavan, Priyanka and Druga, Emanuel and Dhomkar, Siddharth and Pagliero, Daniela and Reimer, Jeffrey A. and Suter, Dieter and Meriles, Carlos A. and Pines, Alexander},
+	journal = {Sci. Adv.},
+	keywords = {NV-Centers},
+	title = {Orientation-independent room temperature optical $^{13}${C} hyperpolarization in powdered diamond},
+	year = {2018}}
+
+@article{BarryRMP2020,
+	abstract = {Solid-state spin systems including nitrogen-vacancy (NV) centers in diamond constitute an increasingly favored quantum sensing platform. However, present NV ensemble devices exhibit sensitivities orders of magnitude away from theoretical limits. The sensitivity shortfall both handicaps existing implementations and curtails the envisioned application space. This review analyzes present and proposed approaches to enhance the sensitivity of broadband ensemble-NV-diamond magnetometers. Improvements to the spin dephasing time, the readout fidelity, and the host diamond material properties are identified as the most promising avenues and are investigated extensively. Our analysis of sensitivity optimization establishes a foundation to stimulate development of new techniques for enhancing solid-state sensor performance.},
+	author = {Barry, John F. and Schloss, Jennifer M. and Bauch, Erik and Turner, Matthew J. and Hart, Connor A. and Pham, Linh M. and Walsworth, Ronald L.},
+	journal = {Rev. Mod. Phys.},
+	keywords = {NV-Centers},
+	title = {Sensitivity optimization for {NV}-diamond magnetometry},
+	year = {2020}}
+
+@article{BurglerNPJQI2023,
+	abstract = {Solid state spins have demonstrated significant potential in quantum sensing with applications including fundamental science, medical diagnostics and navigation. The quantum sensing schemes showing best performance under ambient conditions all utilize microwave or radio-frequency driving, which poses a significant limitation for miniaturization, energy efficiency, and non-invasiveness of quantum sensors. We overcome this limitation by demonstrating a purely optical approach to coherent quantum sensing. Our scheme involves the 15N nuclear spin of the Nitrogen-Vacancy (NV) center in diamond as a sensing resource, and exploits NV spin dynamics in oblique magnetic fields near the NV's excited state level anti-crossing to optically pump the nuclear spin into a quantum superposition state. We demonstrate all-optical free-induction decay measurements---the key protocol for low-frequency quantum sensing---both on single spins and spin ensembles. Our results pave the way for highly compact quantum sensors to be employed for magnetometry or gyroscopy applications in challenging environments.},
+	author = {B{\"u}rgler, B. and Sjolander, T. F. and Brinza, O. and Tallaire, A. and Achard, J. and Maletinsky, P.},
+	journal = {npj Quantum Inf},
+	keywords = {NV-Centers},
+	title = {All-optical nuclear quantum sensing using nitrogen-vacancy centers in diamond},
+	year = {2023}}
+
+@article{ChenOE2018,
+	abstract = {We show that the gravitational acceleration can be measured with the matter-wave Ramsey interferometry, by using a nitrogen-vacancy center coupled to a nano-mechanical resonator. We propose two experimental methods to realize the similar Hamiltonian, by using either a cantilever resonator or a trapped nanoparticle. The scheme is robust against the thermal noise, and could be realized at the temperature much higher than the quantum regime. The effects of decoherence on the interferometry fringe visibility is calculated, considering both the mechanical motional decay and dephasing of the nitrogen-vacancy center. In addition, we demonstrate that under the various sources of random and systematic noises, our gravimeter can be made on-chip and achieve a high measurement of precision. Under experimental feasible parameters, the proposed gravimeter could achieve 10-10 relative precision.},
+	author = {Chen, Xing-Yan and Yin, Zhang-Qi},
+	journal = {Opt. Express},
+	keywords = {NV-Centers},
+	title = {High-precision gravimeter based on a nano-mechanical resonator hybrid with an electron spin},
+	year = {2018}}
+
+@article{ChessariPRB2023,
+	abstract = {Dynamic nuclear polarization (DNP) is capable of boosting signals in nuclear magnetic resonance by orders of magnitude by creating out-of-equilibrium nuclear spin polarization. The diffusion of nuclear spin polarization in the vicinity of paramagnetic dopants is a crucial step for DNP and remains yet not well understood. In this Letter, we show that the polarization of the electron spin controls the rate of proton spin diffusion in a DNP sample at 1.2 K and 7 T; at increasingly high electron polarization, spin diffusion vanishes. We rationalize our results using a 2 nucleus - 1 electron model and Lindblad s Master equation, which generalizes preexisting models in the literature and qualitatively accounts for the experimental observed spin diffusion dynamics.},
+	author = {Chessari, Alessandro and Cousin, Samuel F. and Jannin, Sami and Stern, Quentin},
+	journal = {Phys. Rev. B},
+	keywords = {NV-Centers},
+	title = {Role of electron polarization in nuclear spin diffusion},
+	year = {2023}}
+
+@article{DohertyPR2013,
+	abstract = {The nitrogen-vacancy (NV) colour centre in diamond is an important physical system for emergent quantum technologies, including quantum metrology, information processing and communications, as well as for various nanotechnologies, such as biological and sub-diffraction limit imaging, and for tests of entanglement in quantum mechanics. Given this array of existing and potential applications and the almost 50 years of NV research, one would expect that the physics of the centre is well understood, however, the study of the NV centre has proved challenging, with many early assertions now believed false and many remaining issues yet to be resolved. This review represents the first time that the key empirical and ab initio results have been extracted from the extensive NV literature and assembled into one consistent picture of the current understanding of the centre. As a result, the key unresolved issues concerning the NV centre are identified and the possible avenues for their resolution are examined.},
+	author = {Doherty, Marcus W. and Manson, Neil B. and Delaney, Paul and Jelezko, Fedor and Wrachtrup, J{\"o}rg and Hollenberg, Lloyd C. L.},
+	journal = {Phys. Rep.},
+	keywords = {NV-Centers},
+	title = {The nitrogen-vacancy colour centre in diamond},
+	year = {2013}}
+
+@article{DohertyPRB2014,
+	abstract = {Significant attention has been recently focused on the realization of high precision nano-thermometry using the spin-resonance temperature shift of the negatively charged nitrogen-vacancy (NV-) center in diamond. However, the precise physical origins of the temperature shift is yet to be understood. Here, the shifts of the center's optical and spin resonances are observed and a model is developed that identifies the origin of each shift to be a combination of thermal expansion and electron-phonon interactions. Our results provide new insight into the center's vibronic properties and reveal implications for NV- thermometry.},
+	author = {Doherty, M. W. and Acosta, V. M. and Jarmola, A. and Barson, M. S. J. and Manson, N. B. and Budker, D. and Hollenberg, L. C. L.},
+	journal = {Phys. Rev. B},
+	keywords = {NV-Centers},
+	title = {Temperature shifts of the resonances of the {NV$^-$} center in diamond},
+	year = {2014}}
+
+@article{DoldeNC2014,
+	abstract = {Precise control of quantum systems is of fundamental importance in quantum information processing, quantum metrology and high-resolution spectroscopy. When scaling up quantum registers, several challenges arise: individual addressing of qubits while suppressing cross-talk, entangling distant nodes and decoupling unwanted interactions. Here we experimentally demonstrate optimal control of a prototype spin qubit system consisting of two proximal nitrogen-vacancy centres in diamond. Using engineered microwave pulses, we demonstrate single electron spin operations with a fidelity F≈0.99. With additional dynamical decoupling techniques, we further realize high-quality, on-demand entangled states between two electron spins with F>0.82, mostly limited by the coherence time and imperfect initialization. Crosstalk in a crowded spectrum and unwanted dipolar couplings are simultaneously eliminated to a high extent. Finally, by high-fidelity entanglement swapping to nuclear spin quantum memory, we demonstrate nuclear spin entanglement over a length scale of 25 nm. This experiment underlines the importance of optimal control for scalable room temperature spin-based quantum information devices.},
+	author = {Dolde, Florian and Bergholm, Ville and Wang, Ya and Jakobi, Ingmar and Naydenov, Boris and Pezzagna, S{\'e}bastien and Meijer, Jan and Jelezko, Fedor and Neumann, Philipp and Schulte-Herbr{\"u}ggen, Thomas and Biamonte, Jacob and Wrachtrup, J{\"o}rg},
+	journal = {Nat. Commun.},
+	keywords = {NV-Centers},
+	title = {High-fidelity spin entanglement using optimal control},
+	year = {2014}}
+
+@article{DuRMP2024,
+	abstract = {Single-molecule technology stands as a powerful tool, enabling the characterization of intricate structural and dynamic information that would otherwise remain concealed within the averaged behaviors of numerous molecules. This technology finds extensive application across diverse fields including physics, chemistry, biology, and medicine. Quantum sensing, particularly leveraging nitrogen-vacancy (NV) centers within diamond structures, presents a promising avenue for single-molecule magnetic resonance, offering prospects for sensing and imaging technology at the single-molecule level. Notably, while significant strides have been made in single-molecule scale magnetic resonance using NV centers over the past two decades, current approaches still exhibit limitations in magnetic sensitivity, spectral resolution, and spatial resolution. Particularly, the full reconstruction of three-dimensional positions of nuclear spins within single molecules remains an unattained goal. This review provides a comprehensive overview of the current state-of-the-art in single-molecule scale magnetic resonance, encompassing an analysis of various relevant techniques involving NV centers. Additionally, it explores the optimization of technical parameters associated with these methods. This detailed analysis serves as a foundation for the development of new technologies and the exploration of potential applications.},
+	author = {Du, Jiangfeng F. and Shi, Fazhan and Kong, Xi and Jelezko, Fedor and Wrachtrup, J{\"o}rg},
+	journal = {Rev. Mod. Phys.},
+	keywords = {NV-Centers},
+	title = {Single-molecule scale magnetic resonance spectroscopy using quantum diamond sensors},
+	year = {2024}}
+
+@article{EillsCR2023,
+	abstract = {Magnetic resonance techniques are successfully utilized in a broad range of scientific disciplines and in various practical applications, with medical magnetic resonance imaging being the most widely known example. Currently, both fundamental and applied magnetic resonance are enjoying a major boost owing to the rapidly developing field of spin hyperpolarization. Hyperpolarization techniques are able to enhance signal intensities in magnetic resonance by several orders of magnitude, and thus to largely overcome its major disadvantage of relatively low sensitivity. This provides new impetus for existing applications of magnetic resonance and opens the gates to exciting new possibilities. In this review, we provide a unified picture of the many methods and techniques that fall under the umbrella term ``hyperpolarization'' but are currently seldom perceived as integral parts of the same field. Specifically, before delving into the individual techniques, we provide a detailed analysis of the underlying principles of spin hyperpolarization. We attempt to uncover and classify the origins of hyperpolarization, to establish its sources and the specific mechanisms that enable the flow of polarization from a source to the target spins. We then give a more detailed analysis of individual hyperpolarization techniques: the mechanisms by which they work, fundamental and technical requirements, characteristic applications, unresolved issues, and possible future directions. We are seeing a continuous growth of activity in the field of spin hyperpolarization, and we expect the field to flourish as new and improved hyperpolarization techniques are implemented. Some key areas for development are in prolonging polarization lifetimes, making hyperpolarization techniques more generally applicable to chemical/biological systems, reducing the technical and equipment requirements, and creating more efficient excitation and detection schemes. We hope this review will facilitate the sharing of knowledge between subfields within the broad topic of hyperpolarization, to help overcome existing challenges in magnetic resonance and enable novel applications.},
+	author = {Eills, James and Budker, Dmitry and Cavagnero, Silvia and Chekmenev, Eduard Y. and Elliott, Stuart J. and Jannin, Sami and Lesage, Anne and Matysik, J{\"o}rg and Meersmann, Thomas and Prisner, Thomas F. and Reimer, Jeffrey A. and Yang, Hanming and Koptyug, Igor V.},
+	journal = {Chem. Rev.},
+	keywords = {NV-Centers},
+	title = {Spin Hyperpolarization in Modern Magnetic Resonance},
+	year = {2023}}
+
+@article{FischerPRB2013,
+	abstract = {We report polarization of a dense nuclear-spin ensemble in diamond and its dependence on magnetic field and temperature. The polarization method is based on the transfer of electron spin polarization of negatively charged nitrogen vacancy color centers to the nuclear spins via the excited-state level anti-crossing of the center. We polarize 90% of the 14N nuclear spins within the NV centers, and 70% of the proximal 13C nuclear spins with hyperfine interaction strength of 13-14 MHz. Magnetic-field dependence of the polarization reveals sharp decrease in polarization at specific field values corresponding to cross-relaxation with substitutional nitrogen centers, while temperature dependence of the polarization reveals that high polarization persists down to 50 K. This work enables polarization of the 13C in bulk diamond, which is of interest in applications of nuclear magnetic resonance, in quantum memories of hybrid quantum devices, and in sensing.},
+	author = {Fischer, Ran and Jarmola, Andrey and Kehayias, Pauli and Budker, Dmitry},
+	journal = {Phys. Rev. B},
+	keywords = {NV-Centers},
+	title = {Optical polarization of nuclear ensembles in diamond},
+	year = {2013}}
+
+@article{FrankNPJQI2017,
+	abstract = {Fully autonomous precise control of qubits is crucial for quantum information processing, quantum communication, and quantum sensing applications. It requires minimal human intervention on the ability to model, to predict, and to anticipate the quantum dynamics, as well as to precisely control and calibrate single qubit operations. Here, we demonstrate single qubit autonomous calibrations via closed-loop optimisations of electron spin quantum operations in diamond. The operations are examined by quantum state and process tomographic measurements at room temperature, and their performances against systematic errors are iteratively rectified by an optimal pulse engineering algorithm. We achieve an autonomous calibrated fidelity up to 1.00 on a time scale of minutes for a spin population inversion and up to 0.98 on a time scale of hours for a single qubit π/2 π 2 -rotation within the experimental error of 2%. These results manifest a full potential for versatile quantum technologies.},
+	author = {Frank, Florian and Unden, Thomas and Zoller, Jonathan and Said, Ressa S. and Calarco, Tommaso and Montangero, Simone and Naydenov, Boris and Jelezko, Fedor},
+	journal = {npj Quantum Inf},
+	keywords = {NV-Centers},
+	title = {Autonomous calibration of single spin qubit operations},
+	year = {2017}}
+
+@article{FuAVSQS2020,
+	abstract = {State-of-the-art magnetic field measurements performed in shielded environments under carefully controlled conditions rarely reflect the realities of those applications envisioned in the introductions of peer-reviewed publications. Nevertheless, significant advances in magnetometer sensitivity have been accompanied by serious attempts to bring these magnetometers into the challenging working environments in which they are often required. This review discusses the ways in which various (predominantly optically pumped) magnetometer technologies have been adapted for use in a wide range of noisy and physically demanding environments.},
+	author = {Fu, Kai-Mei C. and Iwata, Geoffrey Z. and Wickenbrock, Arne and Budker, Dmitry},
+	journal = {AVS Quantum Sci.},
+	keywords = {NV-Centers},
+	title = {Sensitive magnetometry in challenging environments},
+	year = {2020}}
+
+@article{GaliN2019,
+	abstract = {The nitrogen-vacancy (NV) center in diamond is a solid-state defect qubit with favorable coherence time up to room temperature, which could be harnessed in several quantum-enhanced sensor and quantum communication applications, and has a potential in quantum simulation and computing. The quantum control largely depends on the intricate details about the electronic structure and states of the NV center, the radiative and nonradiative rates between these states, and the coupling of these states to external spins, electric, magnetic, and strain fields, and temperature. This review shows how first-principles calculations contributed to understanding the properties of the NV center and briefly discusses the issues to be solved toward the full ab initio description of solid-state defect qubits.},
+	author = {Gali, {\'A}d{\'a}m},
+	journal = {Nanophotonics},
+	keywords = {NV-Centers},
+	title = {Ab initio theory of the nitrogen-vacancy center in diamond},
+	year = {2019}}
+
+@article{GoerzPRA2015,
+	abstract = {The difficulty of an optimization task in quantum
+information science depends on the proper mathematical expression of the
+physical target. Here we demonstrate the power of optimization
+functionals targeting an arbitrary perfect two-qubit entangler,
+creating a maximally-entangled state out of some initial product state.
+For two quantum information platforms of current interest, nitrogen
+vacancy centers in diamond and superconducting Josephson junctions,
+we show that an arbitrary perfect entangler can be reached faster and
+with higher fidelity than specific two-qubit gates or local
+equivalence classes of two-qubit gates. Our results are obtained with
+two independent optimization approaches, underlining the crucial role
+of the optimization target.},
+	author = {Goerz, Michael H. and Gualdi, Giulia and Reich, Daniel M. and Koch, Christiane P. and Motzoi, Felix and Whaley, K. Birgitta and Vala, Ji{\v r}{\'\i} and M{\"u}ller, Matthias M. and Montangero, Simone and Calarco, Tommaso},
+	journal = {Phys. Rev. A},
+	keywords = {NV-Centers},
+	title = {Optimizing for an arbitrary perfect entangler. {II. Application}},
+	year = {2015}}
+
+@article{GonzalezPRB2022,
+	abstract = {Nonequilibrium dynamics is a paramount scenario for studying quantum systems. The emer-gence of new features with no equilibrium counterpart, such as dynamical quantum phase transition (DQPT), has attracted wide attention. In this work, we depart from the well known Ising model and showcase an experimentally accessible configuration of a negatively charged Nitrogen-Vacancy center that interacts with nearby Carbon-13 nuclear spins. We provide new insights into this system in the context of DQPT. We show that nuclear spins undergo DQPT by appropriately choosing the relation between the transverse and longitudinal components of an external magnetic field. Fur-thermore, we can steer the DQPT via a time-dependent longitudinal magnetic field and apply this control to enhance the estimation of the coupling strength between the nuclear spins. Moreover, we propose a novel quenched dynamics that originates from the rotation of the central electron spin, which controls the DQPT relying on the anisotropy of the hyperfine coupling.},
+	author = {Gonz{\'a}lez, Francisco J. and Norambuena, Ariel and Coto, Ra{\'u}l},
+	journal = {Phys. Rev. B},
+	keywords = {NV-Centers},
+	title = {Dynamical quantum phase transition in diamond: Applications in quantum metrology},
+	year = {2022}}
+
+@article{HartPRA2021,
+	abstract = {We introduce a double quantum (DQ) 4-Ramsey measurement protocol that enables wide-field magnetic imaging using nitrogen vacancy (NV) centers in diamond, with enhanced homogeneity of the magnetic sensitivity relative to conventional single quantum (SQ) techniques. In a demonstration experiment employing a 1 micron thick NV layer in a macroscopic diamond chip, the DQ 4-Ramsey protocol provides volume-normalized DC magnetic sensitivity of η^V=38nTHz⁻¹/²μm³/² across a 125 μm × 125 μm field of view, with about 5× less spatial variation in sensitivity across the field of view compared to a SQ measurement. The DQ 4-Ramsey protocol employs microwave-phase alternation across four consecutive Ramsey (4-Ramsey) measurements to isolate the desired DQ magnetic signal from any residual SQ signal induced by MW pulse errors. The improved robustness and magnetic sensitivity homogeneity of the DQ 4-Ramsey protocol enable imaging of dynamic, broadband magnetic sources such as integrated circuits and electrically-active cells.},
+	author = {Hart, Connor A. and Schloss, Jennifer M. and Turner, Matthew J. and Scheidegger, Patrick J. and Bauch, Erik and Walsworth, Ronald L.},
+	journal = {Phys. Rev. Applied},
+	keywords = {NV-Centers},
+	title = {{N}-{V}-Diamond Magnetic Microscopy Using a Double Quantum 4-{Ramsey} Protocol},
+	year = {2021}}
+
+@article{HenshawPNAS2019,
+	abstract = {Optical spin pumping of color centers promises to revolutionize the practice of nuclear magnetic resonance via efficient dynamic nuclear polarization protocols. Significant progress has been attained with systems such as the nitrogen-vacancy (NV) center in diamond, but extreme spectral broadening and nuclear spin-lattice relaxation from coexisting paramagnetic defects are hurdles still difficult to circumvent. The present technique addresses both issues through the implementation of magnetic-field-sweep--induced NV cross-relaxation with ancilla point defects, here acting as proxies to mediate the transfer of polarization to the nuclear spin ensemble. The governing spin dynamics is robust to field misalignment and ideally suited for shallow NVs, indirectly coupled to outside nuclei through paramagnetic defects at the diamond surface.},
+	author = {Henshaw, Jacob and Pagliero, Daniela and Zangara, Pablo R. and Franzoni, Mar{\'\i}a B. and Ajoy, Ashok and Acosta, Rodolfo H. and Reimer, Jeffrey A. and Pines, Alexander and Meriles, Carlos A.},
+	journal = {Proc. Natl. Acad. Sci. U.S.A},
+	keywords = {NV-Centers},
+	title = {Carbon-13 dynamic nuclear polarization in diamond via a microwave-free integrated cross effect},
+	year = {2019}}
+
+@article{HodgesPRA2013,
+	abstract = {Frequency standards based on atomic states, such as Rb or Cs vapors, or single-trapped ions, are the most precise measures of time. Here we propose and analyze a precision oscillator approach based upon spins in a solid-state system, in particular, the nitrogen-vacancy defect in single-crystal diamond. We show that this system can have stability approaching portable atomic standards and is readily incorporable as a chip-scale device. Using a pulsed spin-echo technique, we anticipate an Allan deviation of σy=10⁻⁷τ⁻¹/² limited by thermally-induced strain variations; in the absence of such thermal fluctuations, the system is limited by spin dephasing and harbors an Allan deviation nearing ∼10⁻¹²τ⁻¹/². Potential improvements based upon advanced diamond material processing, temperature stabilization, and nanophotonic engineering are discussed.},
+	author = {Hodges, J. S. and Yao, N. Y. and Maclaurin, D. and Rastogi, C. and Lukin, M. D. and Englund, D. R.},
+	journal = {Phys. Rev. A},
+	keywords = {NV-Centers},
+	title = {Timekeeping with electron spin states in diamond},
+	year = {2013}}
+
+@article{JacquesPRL2009,
+	abstract = {We report a versatile method to polarize single nuclear spins in diamond, based on optical pumping of a single nitrogen-vacancy (NV) defect and mediated by a level anticrossing in its excited state. A nuclear-spin polarization higher than 98% is achieved at room temperature for the 15N nuclear spin associated with the NV center, corresponding to microK effective nuclear-spin temperature. We then show simultaneous initialization of two nuclear spins in the vicinity of a NV defect. Such robust control of nuclear-spin states is a key ingredient for further scaling up of nuclear-spin based quantum registers in diamond.},
+	author = {Jacques, V. and Neumann, P. and Beck, J. and Markham, M. and Twitchen, D. and Meijer, J. and Kaiser, F. and Balasubramanian, G. and Jelezko, F. and Wrachtrup, J.},
+	journal = {Phys. Rev. Lett.},
+	keywords = {NV-Centers},
+	title = {Dynamic Polarization of Single Nuclear Spins by Optical Pumping of Nitrogen-Vacancy Color Centers in Diamond at Room Temperature},
+	year = {2009}}
+
+@article{JarmolaPRR2020,
+	abstract = {Nuclear spin ensembles in diamond are promising candidates for quantum sensing applications, including rotation sensing. Here we perform a characterization of the optically detected nuclear-spin transitions associated with the 14N nuclear spin within diamond nitrogen vacancy (NV) centers. We observe nuclear-spin-dependent fluorescence with the contrast of optically detected 14N nuclear Rabi oscillations comparable to that of the NV electron spin. Using Ramsey spectroscopy, we investigate the temperature and magnetic-field dependence of the nuclear spin transitions in the 77.5-420 K and 350-675 G range, respectively. The nuclear quadrupole coupling constant Q was found to vary with temperature T yielding d|Q|/dT=-35.0(2) Hz/K at T=297 K. The temperature and magnetic field dependencies reported here are important for quantum sensing applications such as rotation sensing and potentially for applications in quantum information processing.},
+	author = {Jarmola, A. and Fescenko, I. and Acosta, V. M. and Doherty, M. W. and Fatemi, F. K. and Ivanov, T. G. and Budker, D. and Malinovsky, V. S.},
+	journal = {Phys. Rev. Research},
+	keywords = {NV-Centers},
+	title = {Robust optical readout and characterization of nuclear spin transitions in nitrogen-vacancy ensembles in diamond},
+	year = {2020}}

@@ -3186,13 +3186,22 @@ class Library(MutableMapping):
         """The text the index source `name` contributes for `entry`,
         or `None` if it contributes nothing.
 
-        A source names an `[assets]` class -- whose file content is
-        read as-is, the one place the package looks inside an asset --
-        or an entry field, whose value is taken as plain text (macros
-        expanded, TeX markup and protective braces removed). A name
-        that is neither is a configuration error.
+        A source names an **entry** `[assets]` class -- whose file
+        content is read as-is, the one place the package looks inside
+        an asset -- or an entry field, whose value is taken as plain
+        text (macros expanded, TeX markup and protective braces
+        removed). A name that is neither, or that names a library
+        asset (one text for the whole library, which would contribute
+        the same words to every row), is a configuration error.
         """
         if name in active.assets:
+            cls = _compile_asset_pattern(name, active.assets[name])
+            if cls is not None and not cls.per_entry:
+                raise ValueError(
+                    f"invalid semantic index source {name!r}: a library "
+                    "asset is one text for the whole library, so it "
+                    "cannot contribute to a per-entry row"
+                )
             rel = self.asset(name, entry.key, check_that_file_exists=False)
             if rel is None:
                 return None
@@ -3230,10 +3239,16 @@ class Library(MutableMapping):
                 rows.append((key, text, used))
         return rows
 
-    def _load_semantic_index(self, name):
+    def _load_semantic_index(self, name, check_stale=True):
         """The built index `name`, warning about the keys it is out of
         date for. Raises `ValueError` if `name` is not defined, or not
-        built from the sources it is currently defined with."""
+        built from the sources it is currently defined with.
+
+        The staleness check walks every entry's source text, which for
+        a file-backed source means reading every asset file, so
+        `check_stale=False` skips it where the caller is not querying
+        the index but only borrowing its rows.
+        """
         semantic = _semantic_backend()
         definitions = self._semantic_definitions()
         if name not in definitions:
@@ -3247,7 +3262,11 @@ class Library(MutableMapping):
                 f"semantic index {name!r} is not built for its current "
                 "sources; run build_semantic_indexes()"
             )
-        stale = semantic.stale_keys(index, self._semantic_rows(index.sources))
+        stale = (
+            semantic.stale_keys(index, self._semantic_rows(index.sources))
+            if check_stale
+            else []
+        )
         if stale:
             listed = ", ".join(stale[:5])
             more = "" if len(stale) <= 5 else f", ... ({len(stale)} total)"
@@ -3311,13 +3330,14 @@ class Library(MutableMapping):
         abstract share no word with it. `index` names the index to
         query, defaulting to `config.semantic.search_index`; an index
         that is not defined or not built raises {exc}`ValueError`
-        naming {meth}`build_semantic_indexes`.
+        naming {meth}`build_semantic_indexes`. An entry deleted since
+        the index was built keeps its row there, but is not returned.
 
-        At most `limit` entries are returned, and only those that
-        count as matches: since even unrelated text pairs score around
-        0.5 to 0.7, the cut is not an absolute cosine but an
-        outlier criterion over the whole distribution of cosines for
-        this query. A query unrelated to the library therefore returns
+        At most `limit` entries are returned (at least 1), and only
+        those that count as matches: since even unrelated text pairs
+        score around 0.5 to 0.7, the cut is not an absolute cosine but
+        an outlier criterion over the whole distribution of cosines
+        for this query. A query unrelated to the library therefore returns
         an empty list rather than the ten least unrelated entries, and
         a shorter list than `limit` is normal.
 
@@ -3339,6 +3359,8 @@ class Library(MutableMapping):
         with their stored vectors, and warned about.
         """
         semantic = _semantic_backend()
+        if limit < 1:
+            raise ValueError(f"limit must be at least 1, not {limit}")
         name = index or active.semantic.search_index
         loaded = self._load_semantic_index(name)
         lexical = None
@@ -3349,6 +3371,9 @@ class Library(MutableMapping):
             for key, score in semantic.search(
                 loaded, query, lexical=lexical, limit=limit
             )
+            # An index built before an entry was deleted still holds
+            # its row; it ranks, but there is no entry to return.
+            if key in self._entries
         ]
 
     def semantic_score(self, text, *, keys=None, index=None, k=10):
@@ -3360,9 +3385,10 @@ class Library(MutableMapping):
         The candidate is matched against `index` (defaulting to
         `config.semantic.score_index`), restricted to the citation
         `keys` of a collection if given; a key that index has no row
-        for is skipped. The raw measure is the mean of the `k` highest
-        cosine similarities, clamped to the size of the collection, so
-        a single key yields the plain cosine.
+        for is skipped, and a key named more than once counts once.
+        The raw measure is the mean of the `k` highest cosine
+        similarities (`k` at least 1), clamped to the size of the
+        collection, so a single key yields the plain cosine.
 
         Returns `{"score": percentile, "nearest": [{"key": ...,
         "cosine": ...}, ...]}`, and with `keys` also `"members"`. The
@@ -3370,7 +3396,10 @@ class Library(MutableMapping):
         high band, near 0.6 even for unrelated text) but a percentile
         from 0 to 100: the share of the library's own papers that
         score lower, had each of them arrived as this candidate did.
-        An unrelated candidate scores near 0. `"nearest"` lists the
+        An unrelated candidate scores near 0. It is `None`, with a
+        warning, when the `default` index holds no row carrying both a
+        title and an abstract, since there is then nothing to
+        calibrate against. `"nearest"` lists the
         `k` closest entries of the target with their raw cosines --
         exactly the neighbors the raw measure averages.
 
@@ -3394,17 +3423,25 @@ class Library(MutableMapping):
         built.
         """
         semantic = _semantic_backend()
+        if k < 1:
+            raise ValueError(f"k must be at least 1, not {k}")
         name = index or active.semantic.score_index
         target = self._load_semantic_index(name)
         if name == semantic.DEFAULT_INDEX:
             default = target
         else:
-            default = self._load_semantic_index(semantic.DEFAULT_INDEX)
+            # Only its probe rows are wanted, so skip the second scan.
+            default = self._load_semantic_index(
+                semantic.DEFAULT_INDEX, check_stale=False
+            )
         if keys is not None:
             keys = list(keys)
             for key in keys:
                 if key not in self._entries:
                     raise KeyError(key)
+        # The candidate is normalized the way an indexed abstract is,
+        # so that TeX markup in it does not shift its register.
+        text = _detex(text, "markdown", drop_braces=True)
         return semantic.score(target, default, text, keys=keys, k=k)
 
     def render(self, *keys, format="markdown", style="default"):

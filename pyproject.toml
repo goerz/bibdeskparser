@@ -40,7 +40,7 @@ bibdeskparser = "bibdeskparser.cli:main"
 
 [project.optional-dependencies]
 macos = ["pyobjc-framework-Cocoa>=8; sys_platform == 'darwin'"]
-semantic = ["fastembed>=0.7", "numpy>=1.24"]
+semantic = ["fastembed>=0.7.4", "numpy>=1.24"]
 
 [project.urls]
 Homepage = "https://github.com/goerz/bibdeskparser"

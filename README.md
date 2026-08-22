@@ -82,12 +82,7 @@ uv tool install bibdeskparser
 > `bib import 10.22331/q-2022-12-07-871`.
 
 
-The optional `semantic` extra adds embedding indexes over the library,
-which give you search by meaning rather than by matching text, and a
-calibrated relevance score for a new paper (see [Semantic
-Indexing][semantic]). It pulls in a small local embedding model that
-runs on the CPU. Name the extra in square brackets, in whichever of the
-three commands above you use:
+The optional `semantic` extra adds embedding indexes over the library, which give you search by meaning rather than by matching text, and a calibrated relevance score for a new paper (see [Semantic Indexing][semantic]). It pulls in a small local embedding model that runs on the CPU. Name the extra in square brackets, in whichever of the three commands above you use:
 
 ```
 pip install "bibdeskparser[semantic]"

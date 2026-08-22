@@ -111,6 +111,22 @@ The command-line examples in the documentation are tested as well. The doctest c
 
 The pages under test are listed in `PAGES` at the top of `tests/test_doc_console.py`; a new documentation page with `console` examples must be registered there.
 
+### Recorded embedding vectors
+
+The [semantic indexing](https://goerz.github.io/bibdeskparser/semantic.html) tests run the whole pipeline -- chunking, batching, the match cut, the calibration -- against vectors recorded from the real `BAAI/bge-small-en-v1.5`, replayed from `tests/embeddings.npz` by `tests/embeddings.py`. The geometry under test is therefore the model's own, while `make test` stays offline and needs neither `fastembed` nor a model download; `fastembed` is deliberately not a development dependency. A synthetic stand-in would not do: its token counter would not truncate at the model's input length and its cosines would not form the compressed band that the match cut and the calibration are built around, so both would be exercised on numbers no library ever produces.
+
+A text the recording does not hold fails the test that needed it, naming the text. Re-record after changing a fixture's text, the query prefix, the model, the batch size, or the chunking:
+
+~~~ console
+make record-embeddings
+~~~
+
+That pulls `fastembed` in for the run only, downloads the model on first use, embeds what the recording is missing, and rewrites `tests/embeddings.npz` in place. Review the resulting diff the way you would any other test data: a re-recording that grows by more texts than the change accounts for means a fixture drifted.
+
+The statistical parts of the feature -- the match cut that decides which cosines count as matches, and the calibration that turns a similarity into a percentile -- only mean anything on a corpus with a realistic cosine distribution, so they are tested against one. `tests/topics.bib` holds 125 published papers, 25 for each of five topics (superconducting qubits, trapped ions, atom interferometry, spin squeezing, NV centers) that share a field but not a subject; each entry carries its topic as its only keyword and has a title and an abstract. `tests/topics_candidates.bib` holds one further paper per topic, deliberately outside the corpus so that scoring it does not turn up the paper itself at a cosine of 1.0.
+
+Extending the corpus means keeping those properties: a paper belongs to exactly one of the five topics, so that a keyword is usable as the expected answer, and the candidates stay out of `topics.bib`. Any change to either file needs `make record-embeddings` afterwards.
+
 Code Style
 ----------
 

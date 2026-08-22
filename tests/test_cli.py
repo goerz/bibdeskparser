@@ -1,6 +1,7 @@
 """Tests for the `bibdeskparser` command-line interface."""
 
 import json
+import re
 import shutil
 import sys
 import warnings
@@ -5055,27 +5056,27 @@ def test_export_preprint_unpublished(runner, bibfile):
 # -- semantic indexing --------------------------------------------------- #
 
 
-@pytest.fixture(name="semantic_bib")
-def fixture_semantic_bib(bibfile, monkeypatch):
-    """A library with its indexes built against the stub embedder of
-    `tests/test_semantic.py`, so that no test loads a model."""
+@pytest.fixture(name="recorded_embedder")
+def fixture_recorded_embedder(monkeypatch):
+    """Make the semantic commands run against the recorded vectors of
+    `tests/embeddings.py` instead of loading the real model."""
     # pylint: disable-next=import-outside-toplevel
-    from test_semantic import StubEmbedder
+    from embeddings import Embedder
 
-    monkeypatch.setattr(
-        bibdeskparser.semantic, "embedder", lambda: StubEmbedder()
-    )
+    embed = Embedder()
+    monkeypatch.setattr(bibdeskparser.semantic, "embedder", lambda: embed)
+    return embed
+
+
+@pytest.fixture(name="semantic_bib")
+def fixture_semantic_bib(bibfile, recorded_embedder):
+    """A library with its indexes built, ready for the read-only
+    semantic commands."""
     Library(bibfile).build_semantic_indexes()
     return bibfile
 
 
-def test_build_semantic_indexes(runner, bibfile, monkeypatch):
-    # pylint: disable-next=import-outside-toplevel
-    from test_semantic import StubEmbedder
-
-    monkeypatch.setattr(
-        bibdeskparser.semantic, "embedder", lambda: StubEmbedder()
-    )
+def test_build_semantic_indexes(runner, bibfile, recorded_embedder):
     result = _run(runner, "build_semantic_indexes", bibfile)
     assert result.output.splitlines() == [
         f"default: {len(_load(bibfile))} embedded, 0 pruned, 0 unchanged"
@@ -5085,24 +5086,28 @@ def test_build_semantic_indexes(runner, bibfile, monkeypatch):
     assert json.loads(result.output)["default"]["embedded"] == []
 
 
+#: A query narrow enough to stand out from a library that is entirely
+#: about quantum control (see `test_semantic_search`).
+NARROW_QUERY = "krotov gradient ascent pulse engineering"
+
+
 def test_semantic_search(runner, semantic_bib):
-    result = _run(
-        runner, "semantic_search", semantic_bib, "optimal control landscape"
-    )
+    result = _run(runner, "semantic_search", semantic_bib, NARROW_QUERY)
     assert result.output.splitlines()
     result = _run(
         runner,
         "semantic_search",
         semantic_bib,
-        "optimal control landscape",
+        NARROW_QUERY,
         "--limit",
         "3",
         "--no-hybrid",
         "--json",
     )
     data = json.loads(result.output)
-    assert len(data) <= 3
+    assert 0 < len(data) <= 3
     assert set(data[0]) == {"key", "cosine"}
+    assert all(0.0 < item["cosine"] <= 1.0 for item in data)
 
 
 def test_semantic_search_unbuilt_index(runner, semantic_bib):
@@ -5161,6 +5166,60 @@ def test_semantic_without_the_extra(runner, bibfile, monkeypatch):
     result = runner.invoke(main, ["build_semantic_indexes", str(bibfile)])
     assert result.exit_code == 1
     assert result.stderr.strip() == ("Error: semantic indexing requires numpy")
+
+
+def test_import_error_elsewhere_keeps_its_traceback(
+    runner, bibfile, monkeypatch
+):
+    """Only the semantic commands report an `ImportError` as a clean
+    one-liner. Anywhere else it means a broken installation, and
+    hiding the traceback would make that indistinguishable from an
+    extra that was never installed."""
+
+    def broken(self, *args, **kwargs):
+        raise ImportError("cannot load onnxruntime")
+
+    monkeypatch.setattr(bibdeskparser.Library, "keys", broken)
+    result = runner.invoke(main, ["keys", str(bibfile)])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, ImportError)
+
+
+def test_semantic_score_skips_stale_group_members(
+    runner, semantic_bib, recorded_embedder
+):
+    """A static group carries on listing an entry whose block was
+    deleted from the .bib file elsewhere, in BibDesk or an editor.
+    The collection to score against is the members still there."""
+    lib = _load(semantic_bib)
+    # Members carrying an abstract, so that all of the surviving ones
+    # can serve as probes and the band needs no apology.
+    members = list(lib.keys(has="abstract"))[:8]
+    lib.groups["Octet"] = tuple(members)
+    lib.save()
+    text, count = re.subn(
+        r"^@\w+\{" + re.escape(members[0]) + r",.*?(?=^@|\Z)",
+        "",
+        semantic_bib.read_text(encoding="utf-8"),
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    assert count == 1
+    semantic_bib.write_text(text, encoding="utf-8")
+    lib = _load(semantic_bib)
+    assert members[0] not in lib and members[0] in lib.groups["Octet"]
+    lib.build_semantic_indexes()
+    result = _run(
+        runner,
+        "semantic_score",
+        semantic_bib,
+        "--title",
+        "Optimal control of a quantum gate",
+        "--group",
+        "Octet",
+        "--json",
+    )
+    data = json.loads(result.output)
+    assert {item["key"] for item in data["nearest"]} <= set(members[1:])
 
 
 def test_semantic_score_group_and_keyword(runner, semantic_bib):

@@ -48,6 +48,7 @@ __private__ = [
     "score",
     "EmptyCollectionWarning",
     "SmallCollectionWarning",
+    "UncalibratedWarning",
 ]
 
 #: Fewest members whose own percentiles still make quartiles worth
@@ -75,6 +76,12 @@ _MODEL_NAME = "BAAI/bge-small-en-v1.5"
 _QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
 #: The model's input length in tokens. A longer text is chunked.
+#: The tokenizer truncates at this length, so a count *equal* to the
+#: budget is what a text of exactly 512 tokens and a text of 5000 both
+#: report; only a count strictly below it establishes that the text
+#: survives whole. {func}`_chunks` therefore splits at equality too,
+#: at the cost of splitting a text that happens to fill the budget
+#: exactly.
 _TOKEN_BUDGET = 512
 
 #: Scale factor turning a median absolute deviation into an estimate of
@@ -83,7 +90,10 @@ _MAD_SCALE = 1.4826
 
 #: How many outlier-resistant standard deviations above the median of
 #: the cosine distribution an entry must score to count as a match.
-_MATCH_CUT = 3.5
+#: Chosen by measurement on a multi-topic bibliography, where the
+#: entries a topical query ought to return run down to about 2.5 while
+#: a query from another field entirely does not reach 2.2.
+_MATCH_CUT = 2.5
 
 #: The rank offset of reciprocal rank fusion (Cormack, Clarke, and
 #: Büttcher, SIGIR 2009), large enough that adjacent ranks are near
@@ -114,6 +124,12 @@ class EmptyCollectionWarning(UserWarning):
 class SmallCollectionWarning(UserWarning):
     """The in-group band was computed from very few members, so its
     quartiles carry little information."""
+
+
+class UncalibratedWarning(UserWarning):
+    """Scoring with no probes to calibrate against, because no row of
+    the `default` index carries both a title and an abstract. The
+    reported score is `None`."""
 
 
 # -- the embedding model ---------------------------------------------- #
@@ -290,6 +306,12 @@ _SPLITTERS = (
 )
 
 
+def _fits(text, embed):
+    """Whether `text` reaches the model's input whole (see
+    `_TOKEN_BUDGET`)."""
+    return embed.count_tokens(text) < _TOKEN_BUDGET
+
+
 def _chunks(text, embed, level=0):
     """`text` as a list of pieces that each fit `_TOKEN_BUDGET`.
 
@@ -302,7 +324,7 @@ def _chunks(text, embed, level=0):
     in separate chunks is combined by the arithmetic mean of
     {func}`_embed_documents`, which is the cruder of the two.
     """
-    if embed.count_tokens(text) <= _TOKEN_BUDGET:
+    if _fits(text, embed):
         return [text]
     if level >= len(_SPLITTERS):
         # Nothing left to split on; the model truncates the tail.
@@ -315,7 +337,7 @@ def _chunks(text, embed, level=0):
     buffer = ""
     for piece in pieces:
         candidate = f"{buffer}{joiner}{piece}" if buffer else piece
-        if buffer and embed.count_tokens(candidate) > _TOKEN_BUDGET:
+        if buffer and not _fits(candidate, embed):
             packed.append(buffer)
             buffer = piece
         else:
@@ -521,6 +543,9 @@ def _match_cut(cosines):
     tolerate up to half the values being outliers, so the matches
     cannot raise the center or widen the spread enough to hide
     themselves.
+
+    A bulk has to be there to be located, so a library of a handful of
+    entries cannot be told apart from its own outliers this way.
     """
     median = np.median(cosines)
     deviation = _MAD_SCALE * np.median(np.abs(cosines - median))
@@ -564,7 +589,14 @@ def search(index, query, *, lexical=None, limit=10, embed=None):
         key=lambda key: (-cosines[key], key),
     )[:limit]
     ranked = matched if lexical is None else _fuse([matched, lexical], cosines)
-    return [(key, _rounded(cosines.get(key))) for key in ranked[:limit]]
+    # Only a matched key gets a cosine: a key the lexical leg alone
+    # ranked has one too, but it is a below-cut cosine, and reporting
+    # it would present a non-match as a match.
+    reported = set(matched)
+    return [
+        (key, _rounded(cosines[key]) if key in reported else None)
+        for key in ranked[:limit]
+    ]
 
 
 # -- relevance scoring ------------------------------------------------- #
@@ -582,9 +614,10 @@ def _top_k_mean(similarities, k):
 
 def _percentile(value, distribution):
     """`value` as a percentile of `distribution` (an array): the
-    percentage of the distribution that falls below it."""
+    percentage of the distribution that falls below it, or `None` if
+    the distribution is empty, where no percentile exists."""
     if len(distribution) == 0:
-        return 0.0
+        return None
     return round(100.0 * float(np.mean(distribution < value)), 1)
 
 
@@ -612,10 +645,13 @@ def score(index, default_index, text, *, keys=None, k=10, embed=None):
     """
     embed = embed or embedder()
     positions = {key: row for row, key in enumerate(index.keys)}
+    # `dict` keeps the first occurrence of a key named more than once.
+    # A duplicate row would be double-counted by the top-k mean and
+    # would leave a self-similarity of 1.0 in the null distribution.
     target_keys = (
         index.keys
         if keys is None
-        else [key for key in keys if key in positions]
+        else [key for key in dict.fromkeys(keys) if key in positions]
     )
     target = index.matrix[[positions[key] for key in target_keys]]
     if not target_keys:
@@ -629,6 +665,14 @@ def score(index, default_index, text, *, keys=None, k=10, embed=None):
     candidate = _embed_documents([text], embed)[0]
     similarities = _similarities(target, candidate)
     probe_keys, probe_matrix = _probes(default_index)
+    if not probe_keys:
+        warnings.warn(
+            f"semantic index {default_index.name!r} holds no row with "
+            "both a title and an abstract, so there is nothing to "
+            "calibrate against; the score is not meaningful",
+            UncalibratedWarning,
+            stacklevel=3,
+        )
     nulls = _null_distribution(
         probe_keys, probe_matrix, target, target_keys, k
     )

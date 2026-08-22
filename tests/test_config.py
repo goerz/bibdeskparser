@@ -1085,6 +1085,11 @@ def test_semantic_validation(tmp_path):
     _write(tmp_path, '[semantic.indexes]\ntwice = ["title", "title"]\n')
     with pytest.raises(ValueError, match="repeats a source"):
         config.active.load(bib_dir=tmp_path)
+    # An index is a pair of files named after it, so the name has to
+    # stay inside the index directory.
+    _write(tmp_path, '[semantic.indexes]\n"../escape" = "title"\n')
+    with pytest.raises(ValueError, match="not a usable index name"):
+        config.active.load(bib_dir=tmp_path)
     _write(tmp_path, '[semantic]\nsearch_index = "nowhere"\n')
     with pytest.raises(ValueError, match="does not define"):
         config.active.load(bib_dir=tmp_path)

@@ -28,6 +28,7 @@ discovery rules.
 """
 
 import os
+import re
 import warnings
 from pathlib import Path
 
@@ -802,6 +803,10 @@ def _str_or_none(path):
     return None if path is None else str(path)
 
 
+#: What an index may be named: the name becomes a filename.
+_INDEX_NAME_RE = re.compile(r"[A-Za-z0-9_-]+")
+
+
 def _index_sources(name, sources):
     """Validate one `[semantic.indexes]` definition: the index `name`
     and its `sources` (a source name or a list of them). Returns the
@@ -810,6 +815,13 @@ def _index_sources(name, sources):
         raise ValueError(
             "[semantic.indexes] cannot redefine the built-in index "
             "'default'"
+        )
+    if not _INDEX_NAME_RE.fullmatch(name):
+        # An index is a pair of files named after it, so a name has to
+        # stay a single path component.
+        raise ValueError(
+            f"[semantic.indexes] {name!r} is not a usable index name: "
+            "use letters, digits, hyphens, and underscores"
         )
     listed = [sources] if isinstance(sources, str) else sources
     if (

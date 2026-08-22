@@ -96,15 +96,12 @@ __private__ = [
 
 # Exceptions raised by the `Library` API for invalid user input; the
 # CLI converts these into clean one-line error messages (exit code 1).
-# `ImportError` is among them because the methods behind an optional
-# extra raise it with a message naming the extra to install.
 _API_ERRORS = (
     KeyError,
     ValueError,
     FileNotFoundError,
     FileExistsError,
     StaleFileError,
-    ImportError,
 )
 
 
@@ -262,6 +259,25 @@ class _NewBibCommand(_BibCommand):
     """A `_BibCommand` whose bibfile need not exist yet (`create`)."""
 
     bibfile_must_exist = False
+
+
+class _SemanticCommand(_BibCommand):
+    """A `_BibCommand` behind the `bibdeskparser[semantic]` extra.
+
+    Adds `ImportError` to the exceptions reported as a clean one-line
+    message, so that a missing extra names the install command
+    instead of ending in a traceback. Only these commands do so: an
+    `ImportError` from anywhere else -- a broken `onnxruntime` under
+    an installed `fastembed`, a damaged `requests` -- keeps its
+    traceback, which is what distinguishes a broken installation from
+    an absent extra.
+    """
+
+    def invoke(self, ctx):
+        try:
+            return super().invoke(ctx)
+        except ImportError as exc:
+            raise click.ClickException(str(exc)) from exc
 
 
 class _ConfigCommand(_BibCommand):
@@ -2120,7 +2136,7 @@ def eval_format_spec(bibfile, citekey, format_spec, filename, as_json):
 
 @main.command(
     name="build_semantic_indexes",
-    cls=_BibCommand,
+    cls=_SemanticCommand,
     short_help="Build or refresh the library's embedding indexes.",
     epilog=_examples(
         "bibdeskparser build_semantic_indexes",
@@ -2164,7 +2180,7 @@ def build_semantic_indexes(bibfile, as_json):
 
 @main.command(
     name="semantic_search",
-    cls=_BibCommand,
+    cls=_SemanticCommand,
     short_help="List the keys of entries most relevant to QUERY.",
     epilog=_examples(
         'bibdeskparser semantic_search "robust two-qubit gates"',
@@ -2232,7 +2248,7 @@ def semantic_search(bibfile, query, index_name, limit, hybrid, as_json):
 
 @main.command(
     name="semantic_score",
-    cls=_BibCommand,
+    cls=_SemanticCommand,
     short_help="Score a candidate paper's relevance to the library.",
     epilog=_examples(
         'bibdeskparser semantic_score --title "..." --abstract "..."',
@@ -2390,13 +2406,14 @@ def semantic_score(
     _check_keys(lib, selected)
     for name in group_names:
         _check_group(lib, name)
-        selected.extend(lib.groups[name])
     for name in keyword_names:
         _check_keyword_in(lib, name)
-        selected.extend(lib.keywords[name])
-    named = bool(citekeys or group_names or keyword_names)
-    # `dict` keeps the first occurrence of a key named more than once.
-    keys = list(dict.fromkeys(selected)) if named else None
+    if group_names or keyword_names:
+        # `Library.keys` is the same union `--group`/`--keyword`
+        # document, and it drops members a static group still lists
+        # after the entry itself was deleted.
+        selected.extend(lib.keys(group=group_names, keyword=keyword_names))
+    keys = selected if (citekeys or group_names or keyword_names) else None
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         report = lib.semantic_score(text, keys=keys, index=index_name, k=k)
@@ -2404,7 +2421,8 @@ def semantic_score(
         if not as_json and _is_band_warning(warning.category):
             continue  # the band itself is only shown with --json
         click.echo(f"Warning: {warning.message}", err=True)
-    _emit(report, as_json, str(report["score"]))
+    plain = "n/a" if report["score"] is None else str(report["score"])
+    _emit(report, as_json, plain)
 
 
 # -- mutating commands -------------------------------------------------- #

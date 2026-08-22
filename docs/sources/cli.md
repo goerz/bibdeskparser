@@ -662,14 +662,14 @@ summary: 11 embedded, 1 pruned, 922 unchanged
 
 List the keys of the entries most relevant to `QUERY`, best first, one per line, via {py:meth}`~bibdeskparser.Library.semantic_search`. Where [`search`](cli-search) matches the characters of the query against field values, this ranks entries by meaning, so a phrase finds relevant entries that share no word with it. It reads an index built by [`build_semantic_indexes`](cli-build-semantic-indexes); an index that is not defined or not built is an error.
 
-Only entries that stand out from the library's background similarity are listed, so an unrelated query prints nothing and fewer than `--limit` keys is normal. The two search commands complement each other: `search` is exhaustive and deterministic over a query's literal text, `semantic_search` a truncated ranking by meaning.
+Only entries that stand out from the library's background similarity are listed, so an unrelated query prints nothing and fewer than `--limit` keys is normal. An entry deleted since the index was built is left out. The two search commands complement each other: `search` is exhaustive and deterministic over a query's literal text, `semantic_search` a truncated ranking by meaning.
 
 **Options**
 
 - `--index NAME` -- query this index instead of the configured `search_index`.
-- `--limit N` -- print at most N keys (default 10).
+- `--limit N` -- print at most N keys (default 10, minimum 1).
 - `--no-hybrid` -- rank by cosine alone, instead of merging the semantic and lexical rankings (the default, which is what keeps exact technical terms working).
-- `--json` -- print a list of `{"key": ..., "cosine": ...}` objects. The cosine is comparable only within one query, and is `null` for an entry that only the lexical leg found.
+- `--json` -- print a list of `{"key": ..., "cosine": ...}` objects. The cosine is comparable only within one query, and is `null` for every entry that only the lexical leg found, whether or not the index holds a row for it.
 
 <!-- notest -->
 ```console
@@ -714,10 +714,12 @@ The candidate is compared with every entry of the target by cosine similarity, a
 - `--key KEY` -- score against a collection instead of the whole library (repeatable; each value may list several whitespace-separated keys, so a command substitution over `search` output works).
 - `--group NAME` -- score against the members of the [static group](bibdesk-static-groups) NAME (repeatable).
 - `--keyword NAME` -- score against the entries carrying the keyword NAME (repeatable).
-- `--k N` -- how many of the target's nearest entries the score averages over (default 10), so that it measures a fit to a neighborhood rather than to one paper. Clamped to the size of the collection, so a collection of one gives the plain cosine. These are exactly the entries `--json` reports as `nearest`.
+- `--k N` -- how many of the target's nearest entries the score averages over (default 10, minimum 1), so that it measures a fit to a neighborhood rather than to one paper. Clamped to the size of the collection, so a collection of one gives the plain cosine. These are exactly the entries `--json` reports as `nearest`.
 - `--json` -- print the full report: `score`, `nearest` (the N closest entries with their raw cosines), and, for a collection, `members` (the quartiles of the collection members' own percentiles).
 
-`--key`, `--group`, and `--keyword` all name members of one collection, so giving several of them scores against their union, with duplicates removed. `--group` and `--keyword` mean the same there as on [`keys`](cli-keys). A collection the index holds no row for, and a band computed from fewer than five members, are both reported as warnings on stderr; the band warning appears only with `--json`, which is the only form that shows the band.
+`--key`, `--group`, and `--keyword` all name members of one collection, so giving several of them scores against their union, with duplicates removed. `--group` and `--keyword` mean the same there as on [`keys`](cli-keys), including that a static group listing an entry the library no longer has contributes only the members that are still there.
+
+Three situations are reported as warnings on stderr: a collection the index holds no row for, a band computed from fewer than five members, and a `default` index with no row carrying both a title and an abstract, which leaves nothing to calibrate against. The band warning appears only with `--json`, the only form that shows the band. In the third case there is no percentile to print, so the score is `n/a` in plain output and `null` with `--json`.
 
 <!-- notest -->
 ```console
