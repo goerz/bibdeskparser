@@ -5160,12 +5160,30 @@ def test_semantic_without_the_extra(runner, bibfile, monkeypatch):
     one-line error the lazy import raises, not a traceback."""
 
     def missing():
-        raise ImportError("semantic indexing requires numpy")
+        raise bibdeskparser.library._MissingExtraError(
+            "semantic indexing requires numpy"
+        )
 
     monkeypatch.setattr(bibdeskparser.library, "_semantic_backend", missing)
     result = runner.invoke(main, ["build_semantic_indexes", str(bibfile)])
     assert result.exit_code == 1
     assert result.stderr.strip() == ("Error: semantic indexing requires numpy")
+
+
+def test_semantic_with_a_broken_install(runner, bibfile, monkeypatch):
+    """A dependency of the extra that is installed but broken is not
+    an absent extra. Reporting it as one would tell its owner to
+    install what they have, and would drop the traceback that says
+    which import actually failed."""
+
+    def broken():
+        raise ImportError("No module named 'onnxruntime'", name="onnxruntime")
+
+    monkeypatch.setattr(bibdeskparser.library, "_semantic_backend", broken)
+    result = runner.invoke(main, ["build_semantic_indexes", str(bibfile)])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, ImportError)
+    assert "install" not in (result.stderr or "")
 
 
 def test_import_error_elsewhere_keeps_its_traceback(

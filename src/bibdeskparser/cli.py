@@ -26,6 +26,7 @@ import click
 from . import __version__, config
 from .checks import collect_problems
 from .editing import strings_bib_text
+from .extras import _MissingExtraError
 from .library import Library, StaleFileError, _MissingFileWarning
 from .macros import MacroString, ValueString
 from .texmap import skip_texify, texify
@@ -264,19 +265,18 @@ class _NewBibCommand(_BibCommand):
 class _SemanticCommand(_BibCommand):
     """A `_BibCommand` behind the `bibdeskparser[semantic]` extra.
 
-    Adds `ImportError` to the exceptions reported as a clean one-line
-    message, so that a missing extra names the install command
-    instead of ending in a traceback. Only these commands do so: an
-    `ImportError` from anywhere else -- a broken `onnxruntime` under
-    an installed `fastembed`, a damaged `requests` -- keeps its
-    traceback, which is what distinguishes a broken installation from
-    an absent extra.
+    Adds `_MissingExtraError` to the exceptions reported as a clean
+    one-line message, so that an extra that was never installed names
+    the install command instead of ending in a traceback. Every other
+    `ImportError` -- a broken `onnxruntime` under an installed
+    `fastembed`, a damaged `requests` -- keeps its traceback, which is
+    what identifies a damaged installation as one.
     """
 
     def invoke(self, ctx):
         try:
             return super().invoke(ctx)
-        except ImportError as exc:
+        except _MissingExtraError as exc:
             raise click.ClickException(str(exc)) from exc
 
 

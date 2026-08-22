@@ -27,26 +27,9 @@ import re
 import warnings
 import zipfile
 
+import numpy as np
 
-def _is_missing(exc, module):
-    """Whether `exc` reports `module` itself as absent, rather than
-    something that failed while `module` was being imported.
-
-    The difference is the difference between an extra that was never
-    installed and an installation that is broken, and only the first
-    is fixed by installing the extra."""
-    name = getattr(exc, "name", None)
-    return name == module or (name or "").startswith(f"{module}.")
-
-
-try:
-    import numpy as np
-except ImportError as _exc:  # pragma: no cover - depends on the install
-    if not _is_missing(_exc, "numpy"):
-        raise
-    raise ImportError(
-        "semantic indexing requires numpy; install bibdeskparser[semantic]"
-    ) from _exc
+from .extras import _is_missing, _MissingExtraError
 
 __all__ = []
 
@@ -58,6 +41,7 @@ __private__ = [
     "embedder",
     "row_text",
     "build_indexes",
+    "fingerprint_of",
     "load_index",
     "stale_keys",
     "search",
@@ -90,6 +74,15 @@ _MODEL_NAME = "BAAI/bge-small-en-v1.5"
 #: search query (and only there). `fastembed` does not apply it, so
 #: {meth}`_Embedder.embed_query` prepends it explicitly.
 _QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+
+#: Identifies the arithmetic between the model and a stored vector:
+#: how an over-long text is split, and how the pieces are pooled back
+#: into one row. The model fingerprint cannot see any of that, so a
+#: change to {func}`_chunks` or {func}`_embed_documents` that alters
+#: the vectors has to be recorded by raising this, which rebuilds
+#: every index rather than refreshing vectors from two pipelines into
+#: one matrix.
+_PIPELINE_VERSION = 1
 
 #: The model's input length in tokens. A longer text is chunked.
 #: The tokenizer truncates at this length, so a count *equal* to the
@@ -173,7 +166,7 @@ class _Embedder:
             # already have would send them in a circle.
             if not _is_missing(exc, "fastembed"):
                 raise
-            raise ImportError(
+            raise _MissingExtraError(
                 "semantic indexing requires fastembed; install "
                 "bibdeskparser[semantic]"
             ) from exc
@@ -425,10 +418,23 @@ def _paths(index_dir, name):
 
 def _fingerprint(sources, embed):
     """Everything that determines the vectors of an index over
-    `sources`: the source list plus the model's own fingerprint.
-    Vectors from different fingerprints are never mixed; a mismatch
-    rebuilds the index as a whole."""
-    return {"sources": list(sources), **embed.fingerprint}
+    `sources`: the source list, the model's own fingerprint, and the
+    pipeline between the two. Vectors from different fingerprints are
+    never mixed; a mismatch rebuilds the index as a whole, and
+    querying one that does not match is refused."""
+    return {
+        "sources": list(sources),
+        **embed.fingerprint,
+        "pipeline": _PIPELINE_VERSION,
+        "budget": _TOKEN_BUDGET,
+    }
+
+
+def fingerprint_of(sources, embed=None):
+    """The fingerprint an index over `sources` carries when it is
+    built now. A stored index whose fingerprint differs was produced
+    by something else and cannot be queried with today's vectors."""
+    return _fingerprint(sources, embed or embedder())
 
 
 def load_index(index_dir, name):
@@ -443,11 +449,17 @@ def load_index(index_dir, name):
             manifest = json.load(manifest_file)
         with np.load(matrix_path) as data:
             matrix = data["matrix"]
+            stored_keys = [str(key) for key in data["keys"]]
     except (OSError, ValueError, KeyError, zipfile.BadZipFile):
         return None
     records = manifest.get("entries", {})
     fingerprint = manifest.get("fingerprint", {})
-    if len(records) != len(matrix):
+    # The two files are one artifact written in two steps, so an
+    # interruption between them can pair a new matrix with the old
+    # manifest. Row counts alone would not notice when the count is
+    # unchanged, and every vector would then belong to the wrong
+    # entry; the matrix carries its own key list to be checked against.
+    if list(records) != stored_keys:
         return None
     return _Index(
         name=name,
@@ -469,7 +481,7 @@ def _save_index(index, index_dir):
     index_dir.mkdir(parents=True, exist_ok=True)
     partial = matrix_path.with_name(matrix_path.name + ".partial")
     with open(partial, "wb") as matrix_file:
-        np.savez(matrix_file, matrix=index.matrix)
+        np.savez(matrix_file, matrix=index.matrix, keys=np.asarray(index.keys))
     os.replace(partial, matrix_path)
     manifest = {"fingerprint": index.fingerprint, "entries": index.records}
     partial = manifest_path.with_name(manifest_path.name + ".partial")
@@ -633,10 +645,14 @@ def search(index, query, *, lexical=None, limit=10, embed=None):
     similarities = _similarities(index.matrix, embed.embed_query(query))
     cosines = dict(zip(index.keys, similarities.tolist()))
     cut = _match_cut(similarities)
+    # Not truncated to `limit` before fusion: a match just past the
+    # cutoff that the lexical leg also ranks highly is exactly what
+    # reciprocal rank fusion exists to promote, and dropping it here
+    # would hide it from the vote. The limit applies to the outcome.
     matched = sorted(
         (key for key in index.keys if cosines[key] > cut),
         key=lambda key: (-cosines[key], key),
-    )[:limit]
+    )
     ranked = matched if lexical is None else _fuse([matched, lexical], cosines)
     # Only a matched key gets a cosine: a key the lexical leg alone
     # ranked has one too, but it is a below-cut cosine, and reporting
@@ -670,21 +686,27 @@ def _percentile(value, distribution):
     return round(100.0 * float(np.mean(distribution < value)), 1)
 
 
-def _probes(default_index):
+def _probes(default_index, known):
     """The `(keys, matrix)` of the calibration probes: the rows of the
     default index that carry both title and abstract. A title-only row
     is not shaped like an incoming candidate, so it would not be
-    scored the way a candidate is."""
+    scored the way a candidate is, and a row left behind by an entry
+    the library no longer has is not one of "the library's own
+    papers", which is what the percentile is a percentile of. `known`
+    is the citation keys the library holds now."""
     rows = [
         position
         for position, key in enumerate(default_index.keys)
         if tuple(default_index.records[key]["sources"]) == DEFAULT_SOURCES
+        and key in known
     ]
     keys = [default_index.keys[row] for row in rows]
     return keys, default_index.matrix[rows]
 
 
-def score(index, default_index, text, *, keys, collection, k=10, embed=None):
+def score(
+    index, default_index, text, *, keys, collection, known, k=10, embed=None
+):
     """Score the candidate `text` against `index`.
 
     The target is the rows `index` holds for the citation `keys`, in
@@ -693,7 +715,8 @@ def score(index, default_index, text, *, keys, collection, k=10, embed=None):
     library, or a collection within it). `collection` says which of
     the two it was, since only a collection gets a `members` band.
     `default_index` supplies the probes that calibrate the raw measure
-    into a percentile. Returns the dict described by
+    into a percentile, restricted to `known`, the citation keys the
+    library holds now. Returns the dict described by
     {meth}`bibdeskparser.Library.semantic_score`.
     """
     embed = embed or embedder()
@@ -713,7 +736,7 @@ def score(index, default_index, text, *, keys, collection, k=10, embed=None):
     k = min(k, len(target_keys))
     candidate = _embed_documents([text], embed)[0]
     similarities = _similarities(target, candidate)
-    probe_keys, probe_matrix = _probes(default_index)
+    probe_keys, probe_matrix = _probes(default_index, known)
     if not probe_keys:
         warnings.warn(
             f"semantic index {default_index.name!r} holds no row with "

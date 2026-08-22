@@ -69,6 +69,29 @@ class _Cassette:
             )
         if self.recording and not self.fingerprint:
             _ = self.model  # for the fingerprint of a fresh recording
+        elif not self.recording:
+            self._check_identity()
+
+    def _check_identity(self):
+        """Refuse to replay vectors the current settings would not
+        have produced.
+
+        A cassette key is the text and what was asked of it, which
+        cannot see which model answered or how the texts were
+        batched. Without this, changing `_MODEL_NAME` or `_BATCH_SIZE`
+        would quietly replay the old geometry and the suite would go
+        on passing against a model it no longer uses.
+        """
+        expected = {
+            "model": semantic._MODEL_NAME,
+            "batch": semantic._BATCH_SIZE,
+        }
+        actual = {key: self.fingerprint.get(key) for key in expected}
+        if actual != expected:
+            raise RuntimeError(
+                f"{CASSETTE} was recorded with {actual} but the package "
+                f"now asks for {expected}; run 'make record-embeddings'"
+            )
 
     @property
     def model(self):

@@ -37,6 +37,7 @@ from .docinfo import (
 )
 from .entry import Entry, _strip_enclosing
 from .exporting import export_entries
+from .extras import _is_missing, _MissingExtraError
 from .groups import (
     is_groups_comment,
     is_static_groups_comment,
@@ -231,11 +232,20 @@ def _semantic_backend():
     It is kept out of the module-level imports because it pulls in
     `numpy` (and, when embedding, `fastembed`), which only the
     `bibdeskparser[semantic]` extra installs; without the extra, the
-    import raises an {exc}`ImportError` naming it. Every method that
-    needs the module opens with `semantic = _semantic_backend()`.
+    import raises {exc}`_MissingExtraError` naming it. An import that
+    fails for any other reason keeps its own exception, since that is
+    a damaged installation rather than an absent extra. Every method
+    that needs the module opens with `semantic = _semantic_backend()`.
     """
-    from . import semantic  # pylint: disable=import-outside-toplevel
-
+    try:
+        from . import semantic  # pylint: disable=import-outside-toplevel
+    except ImportError as exc:
+        if not _is_missing(exc, "numpy"):
+            raise
+        raise _MissingExtraError(
+            "semantic indexing requires numpy; install "
+            "bibdeskparser[semantic]"
+        ) from exc
     return semantic
 
 
@@ -3260,15 +3270,17 @@ class Library(MutableMapping):
                 rows.append((key, text, used))
         return rows
 
-    def _load_semantic_index(self, name, check_stale=True):
+    def _load_semantic_index(self, name):
         """The built index `name`, warning about the keys it is out of
-        date for. Raises `ValueError` if `name` is not defined, or not
-        built from the sources it is currently defined with.
+        date for.
 
-        The staleness check walks every entry's source text, which for
-        a file-backed source means reading every asset file, so
-        `check_stale=False` skips it where the caller is not querying
-        the index but only borrowing its rows.
+        Raises `ValueError` if `name` is not defined, or if what is
+        stored for it was not produced by what is configured now. The
+        whole fingerprint is compared, not just the source list: a
+        query is embedded with the model of the moment, and
+        multiplying that vector against a matrix some other model
+        wrote is silently wrong wherever the two agree on the number
+        of dimensions.
         """
         semantic = _semantic_backend()
         definitions = self._semantic_definitions()
@@ -3278,16 +3290,13 @@ class Library(MutableMapping):
                 f"undefined semantic index {name!r} (defined: {defined})"
             )
         index = semantic.load_index(self._semantic_index_dir(), name)
-        if index is None or index.sources != definitions[name]:
+        wanted = semantic.fingerprint_of(definitions[name])
+        if index is None or index.fingerprint != wanted:
             raise ValueError(
                 f"semantic index {name!r} is not built for its current "
-                "sources; run build_semantic_indexes()"
+                "sources and model; run build_semantic_indexes()"
             )
-        stale = (
-            semantic.stale_keys(index, self._semantic_rows(index.sources))
-            if check_stale
-            else []
-        )
+        stale = semantic.stale_keys(index, self._semantic_rows(index.sources))
         if stale:
             listed = ", ".join(stale[:5])
             more = "" if len(stale) <= 5 else f", ... ({len(stale)} total)"
@@ -3453,10 +3462,10 @@ class Library(MutableMapping):
         if name == semantic.DEFAULT_INDEX:
             default = target
         else:
-            # Only its probe rows are wanted, so skip the second scan.
-            default = self._load_semantic_index(
-                semantic.DEFAULT_INDEX, check_stale=False
-            )
+            # Loaded like any other index, staleness check included:
+            # its rows are the calibration, so text that has changed
+            # under them moves the reported percentile.
+            default = self._load_semantic_index(semantic.DEFAULT_INDEX)
         collection = keys is not None
         if collection:
             keys = list(keys)
@@ -3474,7 +3483,13 @@ class Library(MutableMapping):
         # so that TeX markup in it does not shift its register.
         text = _detex(text, "markdown", drop_braces=True)
         return semantic.score(
-            target, default, text, keys=keys, collection=collection, k=k
+            target,
+            default,
+            text,
+            keys=keys,
+            collection=collection,
+            known=self._entries.keys(),
+            k=k,
         )
 
     def render(self, *keys, format="markdown", style="default"):

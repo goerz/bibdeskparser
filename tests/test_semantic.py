@@ -345,6 +345,43 @@ def test_the_index_files_are_replaced_atomically(bib):
     assert (_index_dir(bib) / "default.npz").read_bytes() == before
 
 
+def test_a_matrix_paired_with_the_wrong_manifest_is_rejected(bib):
+    """The two files are one artifact written in two steps, so an
+    interruption between them can leave a new matrix beside the old
+    manifest. Equal row counts would not notice, and every vector
+    would then belong to the wrong entry."""
+    bib.build_semantic_indexes()
+    matrix_path = _index_dir(bib) / "default.npz"
+    with np.load(matrix_path) as data:
+        matrix, keys = data["matrix"], list(data["keys"])
+    # The manifest of a library with the same number of entries under
+    # different keys, which is what a reordering rebuild would leave.
+    manifest_path = _index_dir(bib) / "default.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["entries"] = {
+        f"Other{number}": record
+        for number, record in enumerate(manifest["entries"].values())
+    }
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    assert len(manifest["entries"]) == len(matrix) == len(keys)
+    assert semantic.load_index(_index_dir(bib), "default") is None
+
+
+def test_an_index_from_another_model_is_not_queried(bib, monkeypatch):
+    """A query is embedded with the model of the moment. Multiplying
+    that vector against a matrix some other model wrote is silently
+    wrong wherever the two agree on the number of dimensions, so a
+    stored fingerprint that is not the current one is refused."""
+    bib.build_semantic_indexes()
+    assert bib.semantic_search("quantum control")
+    monkeypatch.setattr(semantic, "_PIPELINE_VERSION", 99)
+    with pytest.raises(ValueError, match="sources and model"):
+        bib.semantic_search("quantum control")
+    # And a rebuild is what fixes it, as the message says.
+    bib.build_semantic_indexes()
+    assert _manifest(bib)["fingerprint"]["pipeline"] == 99
+
+
 def test_index_dir_is_configurable(bib, tmp_path):
     """`index_dir` overrides the location derived from the .bib
     path."""
@@ -538,6 +575,26 @@ def test_an_empty_index_still_fuses_the_lexical_leg(toy):
     assert toy.semantic_search("Tannor", index="empty", hybrid=False) == []
     hybrid = toy.semantic_search("Tannor", index="empty", hybrid=True)
     assert hybrid == [(toy["Tannor2007"], None)]
+
+
+def test_fusion_sees_the_whole_semantic_leg(toy):
+    """`limit` applies to the outcome, not to the semantic leg on its
+    way into the fusion. An entry both legs rank is what reciprocal
+    rank fusion exists to promote, and truncating the semantic side
+    first would hide it from the vote."""
+    query = "neutral atoms blockade gates"
+    full = toy.semantic_search(query, hybrid=False)
+    assert len(full) > 1
+    demoted = full[-1][0].key
+    lexical = [entry.key for entry in toy.search(query)]
+    assert demoted in lexical
+    index = semantic.load_index(_index_dir(toy), "default")
+    # With a limit of one, the last semantic match is out of the
+    # semantic top-1 but still ranks, because the lexical leg has it.
+    fused = semantic.search(index, query, lexical=lexical, limit=1)
+    assert len(fused) == 1
+    ranked = semantic.search(index, query, lexical=lexical, limit=len(toy))
+    assert demoted in [key for key, _ in ranked]
 
 
 def test_search_rejects_a_limit_below_one(toy):
@@ -741,16 +798,23 @@ def test_score_without_probes_is_none(tmp_path):
 
 def test_probes_exclude_title_only_rows(scored):
     """Only rows shaped like an incoming candidate calibrate: a
-    title-only entry is not among the probes."""
+    title-only entry is not among the probes, and neither is a row
+    left behind by an entry the library no longer has. The score is a
+    percentile among the library's own papers, and neither of those
+    is one."""
     scored["NoAbstract2026"] = Entry(
         "article", "NoAbstract2026", fields={"title": "no abstract here"}
     )
     scored.save()
     scored.build_semantic_indexes()
     index = semantic.load_index(_index_dir(scored), "default")
-    probe_keys, probe_matrix = semantic._probes(index)
+    probe_keys, probe_matrix = semantic._probes(index, set(scored))
     assert "NoAbstract2026" not in probe_keys
     assert len(probe_keys) == len(probe_matrix) == len(scored) - 1
+    gone = probe_keys[0]
+    kept, _ = semantic._probes(index, set(scored) - {gone})
+    assert gone not in kept
+    assert len(kept) == len(probe_keys) - 1
 
 
 def test_score_against_a_separate_index(scored):
