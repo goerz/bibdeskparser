@@ -784,10 +784,19 @@ class Semantic:
     def indexes(self, value):
         if not isinstance(value, dict):
             raise ValueError("[semantic.indexes] must be a table")
-        self._indexes = {
+        indexes = {
             name: _index_sources(name, sources)
             for name, sources in value.items()
         }
+        folded = {}
+        for name in indexes:
+            clash = folded.setdefault(name.lower(), name)
+            if clash != name:
+                raise ValueError(
+                    f"[semantic.indexes] {name!r} and {clash!r} differ "
+                    "only in case, so they name the same index files"
+                )
+        self._indexes = indexes
 
     def __repr__(self):
         return (
@@ -811,7 +820,10 @@ def _index_sources(name, sources):
     """Validate one `[semantic.indexes]` definition: the index `name`
     and its `sources` (a source name or a list of them). Returns the
     normalized list."""
-    if name == "default":
+    if name.lower() == "default":
+        # An index is a pair of files named after it, and the
+        # filesystem BibDesk runs on is case-insensitive, so `Default`
+        # and `default` are the same two files.
         raise ValueError(
             "[semantic.indexes] cannot redefine the built-in index "
             "'default'"
@@ -867,6 +879,11 @@ def _parse_semantic(raw):
     settings.indexes = table.get("indexes", {})
     for key in ("search_index", "score_index"):
         value = table.get(key, "default")
+        if not isinstance(value, str):
+            raise ValueError(
+                f"[semantic] {key} must be an index name, not "
+                f"{type(value).__name__}: {value!r}"
+            )
         if value != "default" and value not in settings.indexes:
             raise ValueError(
                 f"[semantic] {key} names an index that "

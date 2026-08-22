@@ -829,3 +829,44 @@ def test_add_add_preprint_skips_arxiv_entry(monkeypatch):
     lib = Library()
     key = lib.add("2205.15044", add_preprint=True)
     assert lib[key]["eprint"] == "2205.15044"
+
+
+#: Long enough prose to pass the abstract validation.
+SUMMARY = (
+    "We optimize a two-qubit entangling gate between neutral atoms "
+    "held in optical tweezers and driven through the Rydberg "
+    "blockade, and report the fidelity we reach. The measured value "
+    "is limited by residual atomic motion and by laser phase noise, "
+    "both of which we characterize across the accessible parameter "
+    "range. A numerical model of the excitation dynamics reproduces "
+    "the populations we observe, and indicates which of the two "
+    "limits would repay further engineering effort first."
+)
+
+
+def test_preprint_text_uses_the_shared_client(monkeypatch):
+    """The module keeps one `arxiv.Client` so that its rate limiting
+    spans a whole batch. A throwaway client carries the same delay but
+    starts its own clock, so back-to-back lookups would not wait for
+    each other."""
+    used = []
+
+    class FakeClient:
+        def results(self, search):
+            used.append(search)
+            return iter([SimpleNamespace(title="A Title", summary=SUMMARY)])
+
+    shared = FakeClient()
+    monkeypatch.setattr(preprints, "_client", lambda: shared)
+    monkeypatch.setattr(
+        preprints.arxiv, "Client", _forbidden_client, raising=True
+    )
+    text = preprints.preprint_text("2205.15044")
+    assert text == f"A Title\n\n{SUMMARY}"
+    assert len(used) == 1
+
+
+def _forbidden_client(*args, **kwargs):
+    """Stand-in for `arxiv.Client` that fails if anything builds a
+    client of its own."""
+    raise AssertionError("preprints must go through the shared client")

@@ -99,7 +99,7 @@ def preprint_text(eprint):
     into the one string that {meth}`bibdeskparser.Library.semantic_score`
     scores. Raises {exc}`ValueError` if arXiv has no such paper."""
     search = arxiv.Search(id_list=[normalize_eprint(eprint)])
-    results = list(arxiv.Client().results(search))
+    results = list(_client().results(search))
     if not results:
         raise ValueError(f"arXiv has no preprint {eprint!r}")
     result = results[0]

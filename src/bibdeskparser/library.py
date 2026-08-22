@@ -3186,13 +3186,17 @@ class Library(MutableMapping):
         """The text the index source `name` contributes for `entry`,
         or `None` if it contributes nothing.
 
-        A source names an **entry** `[assets]` class -- whose file
-        content is read as-is, the one place the package looks inside
-        an asset -- or an entry field, whose value is taken as plain
-        text (macros expanded, TeX markup and protective braces
-        removed). A name that is neither, or that names a library
-        asset (one text for the whole library, which would contribute
-        the same words to every row), is a configuration error.
+        A source names a file-valued **entry** `[assets]` class --
+        whose content is read as-is, the one place the package looks
+        inside an asset -- or an entry field, whose value is taken as
+        plain text (macros expanded, TeX markup and protective braces
+        removed). Three kinds of name are a configuration error: one
+        that is neither, a library asset (one text for the whole
+        library, which would contribute the same words to every row),
+        and a directory-valued class (which holds no text at all). A
+        file that is not UTF-8 text is skipped with a warning naming
+        it and its entry, since one such file should not abort a
+        whole build.
         """
         if name in active.assets:
             cls = _compile_asset_pattern(name, active.assets[name])
@@ -3202,12 +3206,29 @@ class Library(MutableMapping):
                     "asset is one text for the whole library, so it "
                     "cannot contribute to a per-entry row"
                 )
+            if cls is not None and cls.is_dir:
+                raise ValueError(
+                    f"invalid semantic index source {name!r}: a "
+                    "directory-valued asset class resolves to a "
+                    "directory, which holds no text to embed"
+                )
             rel = self.asset(name, entry.key, check_that_file_exists=False)
             if rel is None:
                 return None
             try:
                 return (base_dir / rel).read_text(encoding="utf-8")
             except OSError:
+                return None
+            except UnicodeDecodeError:
+                # One unreadable file must not abort a whole build, and
+                # the bare codec error would name neither the file nor
+                # the entry it belongs to.
+                warnings.warn(
+                    f"{entry.key}: semantic index source {name!r} is "
+                    f"not UTF-8 text and is skipped: {base_dir / rel}",
+                    UserWarning,
+                    stacklevel=4,
+                )
                 return None
         if not active.is_known_field(name):
             raise ValueError(
@@ -3385,7 +3406,9 @@ class Library(MutableMapping):
         The candidate is matched against `index` (defaulting to
         `config.semantic.score_index`), restricted to the citation
         `keys` of a collection if given; a key that index has no row
-        for is skipped, and a key named more than once counts once.
+        for is skipped, a key named more than once counts once, and a
+        row left behind by an entry the library no longer has is left
+        out of both the measure and `"nearest"`.
         The raw measure is the mean of the `k` highest cosine
         similarities (`k` at least 1), clamped to the size of the
         collection, so a single key yields the plain cosine.
@@ -3434,15 +3457,25 @@ class Library(MutableMapping):
             default = self._load_semantic_index(
                 semantic.DEFAULT_INDEX, check_stale=False
             )
-        if keys is not None:
+        collection = keys is not None
+        if collection:
             keys = list(keys)
             for key in keys:
                 if key not in self._entries:
                     raise KeyError(key)
+        else:
+            # The whole library means the entries it has now. An index
+            # built before an entry was deleted still holds that
+            # entry's row, which would otherwise enter the top-k mean
+            # and be named in `nearest`, where no other command can
+            # resolve it.
+            keys = list(self._entries)
         # The candidate is normalized the way an indexed abstract is,
         # so that TeX markup in it does not shift its register.
         text = _detex(text, "markdown", drop_braces=True)
-        return semantic.score(target, default, text, keys=keys, k=k)
+        return semantic.score(
+            target, default, text, keys=keys, collection=collection, k=k
+        )
 
     def render(self, *keys, format="markdown", style="default"):
         # pylint: disable=redefined-builtin

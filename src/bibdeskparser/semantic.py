@@ -22,12 +22,28 @@ first use, in {func}`embedder`.
 import dataclasses
 import hashlib
 import json
+import os
 import re
 import warnings
+import zipfile
+
+
+def _is_missing(exc, module):
+    """Whether `exc` reports `module` itself as absent, rather than
+    something that failed while `module` was being imported.
+
+    The difference is the difference between an extra that was never
+    installed and an installation that is broken, and only the first
+    is fixed by installing the extra."""
+    name = getattr(exc, "name", None)
+    return name == module or (name or "").startswith(f"{module}.")
+
 
 try:
     import numpy as np
 except ImportError as _exc:  # pragma: no cover - depends on the install
+    if not _is_missing(_exc, "numpy"):
+        raise
     raise ImportError(
         "semantic indexing requires numpy; install bibdeskparser[semantic]"
     ) from _exc
@@ -150,6 +166,13 @@ class _Embedder:
             # pylint: disable-next=import-outside-toplevel
             from fastembed import TextEmbedding
         except ImportError as exc:
+            # Only `fastembed` itself being absent means the extra was
+            # never installed. An import that fails inside it -- a
+            # broken `onnxruntime`, most likely -- is a damaged
+            # installation, and telling its owner to install what they
+            # already have would send them in a circle.
+            if not _is_missing(exc, "fastembed"):
+                raise
             raise ImportError(
                 "semantic indexing requires fastembed; install "
                 "bibdeskparser[semantic]"
@@ -410,15 +433,17 @@ def _fingerprint(sources, embed):
 
 def load_index(index_dir, name):
     """The stored index `name` from `index_dir`, or `None` if it has
-    not been built (or its two files disagree, which a rebuild
-    fixes)."""
+    not been built, is damaged, or its two files disagree. Every one
+    of those is something a rebuild fixes, so none of them is an
+    error here: an index that cannot be read is one that has to be
+    built again."""
     matrix_path, manifest_path = _paths(index_dir, name)
     try:
         with open(manifest_path, encoding="utf-8") as manifest_file:
             manifest = json.load(manifest_file)
         with np.load(matrix_path) as data:
             matrix = data["matrix"]
-    except (OSError, ValueError, KeyError):
+    except (OSError, ValueError, KeyError, zipfile.BadZipFile):
         return None
     records = manifest.get("entries", {})
     fingerprint = manifest.get("fingerprint", {})
@@ -435,14 +460,23 @@ def load_index(index_dir, name):
 
 
 def _save_index(index, index_dir):
-    """Write `index` to `index_dir` as its `.npz`/`.json` pair."""
+    """Write `index` to `index_dir` as its `.npz`/`.json` pair.
+
+    Each file is written beside its destination and renamed onto it,
+    so an interrupted build leaves the previous index intact rather
+    than a half-written one that nothing can read."""
     matrix_path, manifest_path = _paths(index_dir, index.name)
     index_dir.mkdir(parents=True, exist_ok=True)
-    np.savez(matrix_path, matrix=index.matrix)
+    partial = matrix_path.with_name(matrix_path.name + ".partial")
+    with open(partial, "wb") as matrix_file:
+        np.savez(matrix_file, matrix=index.matrix)
+    os.replace(partial, matrix_path)
     manifest = {"fingerprint": index.fingerprint, "entries": index.records}
-    with open(manifest_path, "w", encoding="utf-8") as manifest_file:
+    partial = manifest_path.with_name(manifest_path.name + ".partial")
+    with open(partial, "w", encoding="utf-8") as manifest_file:
         json.dump(manifest, manifest_file, indent=1, ensure_ascii=False)
         manifest_file.write("\n")
+    os.replace(partial, manifest_path)
 
 
 def build_indexes(index_dir, definitions, rows, embed=None, progress=None):
@@ -548,7 +582,18 @@ def _match_cut(cosines):
     entries cannot be told apart from its own outliers this way.
     """
     median = np.median(cosines)
-    deviation = _MAD_SCALE * np.median(np.abs(cosines - median))
+    deviation = _MAD_SCALE * float(np.median(np.abs(cosines - median)))
+    if deviation == 0.0:
+        # Half the cosines or more are identical, which happens when a
+        # source repeats boilerplate across entries. The MAD cannot
+        # measure a spread that half the sample does not have, and a
+        # cut at the bare median would call every value above it a
+        # match. The standard deviation still sees the rest of the
+        # distribution; being inflated by the very values in question,
+        # it errs toward admitting nothing.
+        deviation = float(np.std(cosines))
+    if deviation == 0.0:
+        return float("inf")  # every row identical: nothing stands out
     return float(median + _MATCH_CUT * deviation)
 
 
@@ -580,7 +625,11 @@ def search(index, query, *, lexical=None, limit=10, embed=None):
     """
     embed = embed or embedder()
     if not index.keys:
-        return []
+        # Nothing to rank semantically, but the lexical leg still has
+        # an answer, and an index covering no entry yet is exactly the
+        # case where it is the only one.
+        lexical = lexical or []
+        return [(key, None) for key in lexical[:limit]]
     similarities = _similarities(index.matrix, embed.embed_query(query))
     cosines = dict(zip(index.keys, similarities.tolist()))
     cut = _match_cut(similarities)
@@ -635,12 +684,16 @@ def _probes(default_index):
     return keys, default_index.matrix[rows]
 
 
-def score(index, default_index, text, *, keys=None, k=10, embed=None):
+def score(index, default_index, text, *, keys, collection, k=10, embed=None):
     """Score the candidate `text` against `index`.
 
-    The target is the whole index, or the rows of the citation `keys`
-    it holds. `default_index` supplies the probes that calibrate the
-    raw measure into a percentile. Returns the dict described by
+    The target is the rows `index` holds for the citation `keys`, in
+    the order given; a key it has no row for is skipped, and `keys`
+    is where the caller decides what the target is at all (the whole
+    library, or a collection within it). `collection` says which of
+    the two it was, since only a collection gets a `members` band.
+    `default_index` supplies the probes that calibrate the raw measure
+    into a percentile. Returns the dict described by
     {meth}`bibdeskparser.Library.semantic_score`.
     """
     embed = embed or embedder()
@@ -648,11 +701,7 @@ def score(index, default_index, text, *, keys=None, k=10, embed=None):
     # `dict` keeps the first occurrence of a key named more than once.
     # A duplicate row would be double-counted by the top-k mean and
     # would leave a self-similarity of 1.0 in the null distribution.
-    target_keys = (
-        index.keys
-        if keys is None
-        else [key for key in dict.fromkeys(keys) if key in positions]
-    )
+    target_keys = [key for key in dict.fromkeys(keys) if key in positions]
     target = index.matrix[[positions[key] for key in target_keys]]
     if not target_keys:
         warnings.warn(
@@ -686,7 +735,7 @@ def score(index, default_index, text, *, keys=None, k=10, embed=None):
             for row in np.argsort(-similarities)[:k]
         ],
     }
-    if keys is not None:
+    if collection:
         result["members"] = _member_band(probe_keys, nulls, set(target_keys))
     return result
 

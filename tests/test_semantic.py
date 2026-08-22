@@ -9,6 +9,7 @@ extra installed. A fixture whose text changes needs `make
 record-embeddings`.
 """
 
+import builtins
 import json
 import shutil
 import warnings
@@ -261,6 +262,35 @@ def test_asset_class_shadows_a_field(bib, tmp_path):
     assert text == "from the asset file"
 
 
+def test_directory_asset_is_not_a_source(bib, tmp_path):
+    """A directory-valued asset class resolves to a directory, which
+    holds no text. Reading one raises `IsADirectoryError`, which is an
+    `OSError` and would otherwise read as "this entry has nothing",
+    building an empty index that every query then answers with
+    silence."""
+    config.active.assets = {"notes": "notes/%f{Cite Key}/"}
+    config.active.semantic.indexes = {"notes": "notes"}
+    (tmp_path / "notes" / "GoerzQ2022").mkdir(parents=True)
+    with pytest.raises(ValueError, match="directory-valued asset class"):
+        bib.build_semantic_indexes()
+
+
+def test_undecodable_asset_is_skipped_with_a_warning(bib, tmp_path):
+    """A source file that is not UTF-8 is skipped, naming itself and
+    its entry. Letting the decode error out would abort the whole
+    build, and every later query with it, over one file that the
+    error message does not even identify."""
+    config.active.assets = {"summary": "%f{Cite Key}_summary.md"}
+    config.active.semantic.indexes = {"summary": "summary"}
+    (tmp_path / "GoerzQ2022_summary.md").write_bytes(
+        "caf\xe9 r\xe9sum\xe9".encode("latin-1")
+    )
+    (tmp_path / "KochEPJQT2022_summary.md").write_text("readable text")
+    with pytest.warns(UserWarning, match="GoerzQ2022.*not UTF-8"):
+        report = bib.build_semantic_indexes()
+    assert report["summary"]["embedded"] == ["KochEPJQT2022"]
+
+
 def test_library_asset_is_not_a_source(bib, tmp_path):
     """A library asset is one text for the whole library, so it would
     contribute the same words to every row."""
@@ -277,6 +307,42 @@ def test_unknown_source_is_an_error(bib):
     config.active.semantic.indexes = {"bogus": ["nonsense"]}
     with pytest.raises(ValueError, match="invalid semantic index source"):
         bib.build_semantic_indexes()
+
+
+def test_a_damaged_index_is_rebuilt(bib):
+    """A build interrupted before its matrix file was complete leaves
+    something no reader can open. That has to read as "not built",
+    since otherwise the rebuild named by every other error message
+    would be the one command that cannot run."""
+    bib.build_semantic_indexes()
+    matrix = _index_dir(bib) / "default.npz"
+    matrix.write_bytes(matrix.read_bytes()[:200])
+    assert semantic.load_index(_index_dir(bib), "default") is None
+    report = bib.build_semantic_indexes()["default"]
+    assert len(report["embedded"]) == len(bib)
+    assert semantic.load_index(_index_dir(bib), "default") is not None
+
+
+def test_the_index_files_are_replaced_atomically(bib):
+    """Each file is written beside its destination and renamed onto
+    it, so an interrupted write cannot truncate the index that is
+    already there."""
+    bib.build_semantic_indexes()
+    before = (_index_dir(bib) / "default.npz").read_bytes()
+    calls = []
+
+    def interrupted(*args, **kwargs):
+        calls.append(args)
+        raise KeyboardInterrupt
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(semantic.np, "savez", interrupted)
+        bib["GoerzQ2022"]["abstract"] = "something else entirely"
+        bib.save()
+        with pytest.raises(KeyboardInterrupt):
+            bib.build_semantic_indexes()
+    assert calls
+    assert (_index_dir(bib) / "default.npz").read_bytes() == before
 
 
 def test_index_dir_is_configurable(bib, tmp_path):
@@ -349,6 +415,38 @@ def test_oversized_paragraph_is_split_at_words(embedder):
     chunks = semantic._chunks(text, embedder)
     assert len(chunks) > 1
     assert " ".join(chunks) == text
+
+
+def test_a_broken_install_is_not_a_missing_extra(monkeypatch):
+    """`fastembed` importing something that is itself broken must not
+    be reported as `fastembed` being absent, or its owner is told to
+    install what they already have, in a loop."""
+
+    def broken(name, *args, **kwargs):
+        if name == "fastembed":
+            raise ImportError(
+                "No module named 'onnxruntime'", name="onnxruntime"
+            )
+        return original(name, *args, **kwargs)
+
+    original = builtins.__import__
+    monkeypatch.setattr(builtins, "__import__", broken)
+    with pytest.raises(ImportError, match="onnxruntime"):
+        semantic._Embedder()
+    # `fastembed` itself missing still names the extra to install.
+    monkeypatch.setattr(
+        builtins,
+        "__import__",
+        lambda name, *a, **k: (
+            (_ for _ in ()).throw(
+                ImportError("No module named 'fastembed'", name="fastembed")
+            )
+            if name == "fastembed"
+            else original(name, *a, **k)
+        ),
+    )
+    with pytest.raises(ImportError, match=r"bibdeskparser\[semantic\]"):
+        semantic._Embedder()
 
 
 # -- semantic search --------------------------------------------------- #
@@ -428,6 +526,20 @@ def test_deleted_entries_drop_out_of_the_ranking(toy):
     assert key not in [entry.key for entry, _ in results]
 
 
+def test_an_empty_index_still_fuses_the_lexical_leg(toy):
+    """An index no entry is covered by builds with zero rows, which
+    is the one case where the lexical leg is the only one that can
+    answer. Returning nothing there would contradict the rule that an
+    entry only `search` finds can still rank."""
+    # No entry of the toy library carries an abstract.
+    config.active.semantic.indexes = {"empty": ["abstract"]}
+    toy.build_semantic_indexes()
+    assert _manifest(toy, "empty")["entries"] == {}
+    assert toy.semantic_search("Tannor", index="empty", hybrid=False) == []
+    hybrid = toy.semantic_search("Tannor", index="empty", hybrid=True)
+    assert hybrid == [(toy["Tannor2007"], None)]
+
+
 def test_search_rejects_a_limit_below_one(toy):
     """A limit of zero would ask for the best nothing."""
     with pytest.raises(ValueError, match="limit must be at least 1"):
@@ -469,6 +581,19 @@ def test_search_rejects_an_undefined_index(toy):
     """An index name that no definition covers is an error."""
     with pytest.raises(ValueError, match="undefined semantic index"):
         toy.semantic_search("gates", index="nonexistent")
+
+
+def test_identical_rows_do_not_make_everything_a_match(toy):
+    """Half the cosines or more can be identical, which a source
+    repeating boilerplate across entries produces. The median absolute
+    deviation is then 0, and a cut at the bare median would call
+    every value above it a match."""
+    cosines = np.array([0.55] * 6 + [0.56, 0.57, 0.58, 0.60])
+    cut = semantic._match_cut(cosines)
+    assert cut > 0.55
+    assert int((cosines > cut).sum()) < 4
+    # With no spread at all, nothing can stand out from anything.
+    assert semantic._match_cut(np.full(8, 0.55)) == float("inf")
 
 
 def test_stale_entries_are_warned_about(toy):
@@ -549,6 +674,24 @@ def test_score_clamps_k_to_the_collection(scored):
     one = scored.keys(keyword="Spin Squeezing")[0]
     report = scored.semantic_score(_candidate("Spin Squeezing"), keys=[one])
     assert [item["key"] for item in report["nearest"]] == [one]
+
+
+def test_score_leaves_out_deleted_entries(scored):
+    """Scoring against the whole library means the entries it has
+    now. A row left behind by a deleted entry would otherwise enter
+    the top-k mean and be named in `nearest`, where every other
+    command rejects it as an unknown key."""
+    topic = "NV-Centers"
+    before = scored.semantic_score(_candidate(topic), k=3)
+    gone = before["nearest"][0]["key"]
+    del scored[gone]
+    scored.save()
+    with pytest.warns(UserWarning, match=gone):
+        after = scored.semantic_score(_candidate(topic), k=3)
+    named = [item["key"] for item in after["nearest"]]
+    assert gone not in named
+    assert all(key in scored for key in named)
+    assert after["score"] != before["score"]
 
 
 def test_score_rejects_an_unknown_key(scored):

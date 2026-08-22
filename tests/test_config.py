@@ -1086,9 +1086,24 @@ def test_semantic_validation(tmp_path):
     with pytest.raises(ValueError, match="repeats a source"):
         config.active.load(bib_dir=tmp_path)
     # An index is a pair of files named after it, so the name has to
-    # stay inside the index directory.
+    # stay inside the index directory, and two names that a
+    # case-insensitive filesystem cannot tell apart are one index.
     _write(tmp_path, '[semantic.indexes]\n"../escape" = "title"\n')
     with pytest.raises(ValueError, match="not a usable index name"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[semantic.indexes]\nDefault = "title"\n')
+    with pytest.raises(ValueError, match="cannot redefine"):
+        config.active.load(bib_dir=tmp_path)
+    _write(
+        tmp_path,
+        '[semantic.indexes]\nsummary = "title"\nSummary = "abstract"\n',
+    )
+    with pytest.raises(ValueError, match="differ only in case"):
+        config.active.load(bib_dir=tmp_path)
+    # A list, mirroring the [semantic.indexes] syntax, is a mistake
+    # worth a message rather than an unhashable-type traceback.
+    _write(tmp_path, '[semantic]\nsearch_index = ["summary"]\n')
+    with pytest.raises(ValueError, match="must be an index name"):
         config.active.load(bib_dir=tmp_path)
     _write(tmp_path, '[semantic]\nsearch_index = "nowhere"\n')
     with pytest.raises(ValueError, match="does not define"):
