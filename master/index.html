@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to BibDeskParser’s documentation! &mdash; BibDeskParser 0.8.1 documentation</title>
+  <title>Welcome to BibDeskParser’s documentation! &mdash; BibDeskParser 0.8.1+dev (12a3ae9) documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=ec16d22d"></script>
+      <script src="_static/documentation_options.js?v=869ab1f8"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -38,7 +38,7 @@
   </a>
 
   <div class="version">
-    v0.8.1
+    v0.8.1+dev
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -64,6 +64,7 @@
 <li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assets.html">External Assets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="semantic.html">Semantic Indexing</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -215,6 +216,18 @@
 <li class="toctree-l2"><a class="reference internal" href="assets.html#semantics">Semantics</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="semantic.html">Semantic Indexing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="semantic.html#text-as-coordinates">Text as coordinates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantic.html#measuring-proximity">Measuring proximity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantic.html#the-asymmetry-between-queries-and-documents">The asymmetry between queries and documents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantic.html#the-contents-of-an-index">The contents of an index</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantic.html#which-similarities-carry-information">Which similarities carry information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantic.html#combining-two-rankings">Combining two rankings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantic.html#calibrating-a-similarity-into-a-readable-score">Calibrating a similarity into a readable score</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantic.html#limits-of-the-method">Limits of the method</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantic.html#stored-artifacts-and-rebuilding">Stored artifacts and rebuilding</a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
@@ -257,6 +270,7 @@
 <li class="toctree-l2"><a class="reference internal" href="config.html#the-add-and-add-abstract-tables-fetching-defaults">The <code class="docutils literal notranslate"><span class="pre">[add]</span></code> and <code class="docutils literal notranslate"><span class="pre">[add_abstract]</span></code> tables: fetching defaults</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#the-rekey-and-delete-tables-file-lifecycle-defaults">The <code class="docutils literal notranslate"><span class="pre">[rekey]</span></code> and <code class="docutils literal notranslate"><span class="pre">[delete]</span></code> tables: file lifecycle defaults</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#the-known-missing-table-known-missing-groups">The <code class="docutils literal notranslate"><span class="pre">[known_missing]</span></code> table: known-missing groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="config.html#the-semantic-table-embedding-indexes">The <code class="docutils literal notranslate"><span class="pre">[semantic]</span></code> table: embedding indexes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#the-initials-table-acronym-exceptions">The <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> table: acronym exceptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#the-journal-macros-table-journal-name-to-macro-mappings">The <code class="docutils literal notranslate"><span class="pre">[journal_macros]</span></code> table: journal-name-to-macro mappings</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html#the-preprint-archives-table-recognized-preprint-servers">The <code class="docutils literal notranslate"><span class="pre">[preprint_archives]</span></code> table: recognized preprint servers</a></li>
@@ -284,6 +298,7 @@
 <li class="toctree-l2"><a class="reference internal" href="cli.html#creating-a-library">Creating a library</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cli.html#inspecting">Inspecting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cli.html#rendering-and-exporting">Rendering and exporting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html#semantic-indexing">Semantic indexing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cli.html#entries">Entries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cli.html#adding-entries">Adding entries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cli.html#abstracts-preprints-and-dois">Abstracts, preprints, and DOIs</a></li>
@@ -325,6 +340,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#unreleased">Unreleased</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changelog.html#v0-8-1-2026-08-21">v0.8.1 - 2026-08-21</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changelog.html#v0-8-0-2026-08-03">v0.8.0 - 2026-08-03</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changelog.html#v0-7-0-2026-07-28">v0.7.0 - 2026-07-28</a></li>
@@ -359,7 +375,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 21, 2026.
+      <span class="lastupdated">Last updated on Aug 23, 2026.
       </span></p>
   </div>
 

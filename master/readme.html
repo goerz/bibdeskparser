@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; BibDeskParser 0.8.1 documentation</title>
+  <title>Introduction &mdash; BibDeskParser 0.8.1+dev (12a3ae9) documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=ec16d22d"></script>
+      <script src="_static/documentation_options.js?v=869ab1f8"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.8.1
+    v0.8.1+dev
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -65,6 +65,7 @@
 <li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assets.html">External Assets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="semantic.html">Semantic Indexing</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -181,6 +182,12 @@ shorter symlink for <code class="docutils literal notranslate"><span class="pre"
 with a <code class="docutils literal notranslate"><span class="pre">default_bib_file</span></code> so that you can write
 <code class="docutils literal notranslate"><span class="pre">bib</span> <span class="pre">import</span> <span class="pre">10.22331/q-2022-12-07-871</span></code>.</p>
 </div></blockquote>
+<p>The optional <code class="docutils literal notranslate"><span class="pre">semantic</span></code> extra adds embedding indexes over the library, which give you search by meaning rather than by matching text, and a calibrated relevance score for a new paper (see <a class="reference internal" href="semantic.html"><span class="std std-doc">Semantic Indexing</span></a>). It pulls in a small local embedding model that runs on the CPU. Name the extra in square brackets, in whichever of the three commands above you use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s2">"bibdeskparser[semantic]"</span>
+<span class="n">uv</span> <span class="n">add</span> <span class="s2">"bibdeskparser[semantic]"</span>
+<span class="n">uv</span> <span class="n">tool</span> <span class="n">install</span> <span class="s2">"bibdeskparser[semantic]"</span>
+</pre></div>
+</div>
 <p>To install the latest development version from <a class="reference external" href="https://github.com/goerz/bibdeskparser">Github</a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">goerz</span><span class="o">/</span><span class="n">bibdeskparser</span><span class="o">.</span><span class="n">git</span><span class="nd">@master</span><span class="c1">#egg=bibdeskparser</span>
 </pre></div>
@@ -238,7 +245,7 @@ in Python or <code class="docutils literal notranslate"><span class="pre">bibdes
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">install</span>
 </pre></div>
 </div>
-<p>Use <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">uninstall</span></code> to remove it again.</p>
+<p>This includes the <code class="docutils literal notranslate"><span class="pre">semantic</span></code> extra by default, plus <code class="docutils literal notranslate"><span class="pre">macos</span></code> when run on macOS; override with e.g. <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">INSTALL_EXTRAS=</span> <span class="pre">install</span></code> for a plain install with no extras. Use <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">uninstall</span></code> to remove it again.</p>
 </section>
 
 
@@ -253,7 +260,7 @@ in Python or <code class="docutils literal notranslate"><span class="pre">bibdes
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 21, 2026.
+      <span class="lastupdated">Last updated on Aug 23, 2026.
       </span></p>
   </div>
 

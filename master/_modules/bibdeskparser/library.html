@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>bibdeskparser.library &mdash; BibDeskParser 0.8.1 documentation</title>
+  <title>bibdeskparser.library &mdash; BibDeskParser 0.8.1+dev (12a3ae9) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=ec16d22d"></script>
+      <script src="../../_static/documentation_options.js?v=869ab1f8"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -36,7 +36,7 @@
   </a>
 
   <div class="version">
-    v0.8.1
+    v0.8.1+dev
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -62,6 +62,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../bibdesk_format.html">BibDesk's .bib Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../preprints.html">Preprints</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../assets.html">External Assets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../semantic.html">Semantic Indexing</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -174,6 +175,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.entry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">_strip_enclosing</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exporting</span><span class="w"> </span><span class="kn">import</span> <span class="n">export_entries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.extras</span><span class="w"> </span><span class="kn">import</span> <span class="n">_is_missing</span><span class="p">,</span> <span class="n">_MissingExtraError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.groups</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">is_groups_comment</span><span class="p">,</span>
     <span class="n">is_static_groups_comment</span><span class="p">,</span>
@@ -191,7 +193,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_stack</span><span class="p">,</span> <span class="n">quiet_block_type_logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.plain</span><span class="w"> </span><span class="kn">import</span> <span class="n">database_content</span><span class="p">,</span> <span class="n">leading_marker</span><span class="p">,</span> <span class="n">resolve_plain_options</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.render</span><span class="w"> </span><span class="kn">import</span> <span class="n">render_entries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.render</span><span class="w"> </span><span class="kn">import</span> <span class="n">_detex</span><span class="p">,</span> <span class="n">render_entries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.search</span><span class="w"> </span><span class="kn">import</span> <span class="n">search_entries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.updating</span><span class="w"> </span><span class="kn">import</span> <span class="n">update_exported_file</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.writer</span><span class="w"> </span><span class="kn">import</span> <span class="n">bibdesk_field_order</span><span class="p">,</span> <span class="n">render_library</span><span class="p">,</span> <span class="n">render_plain_library</span>
@@ -366,6 +368,29 @@
             <span class="n">resolved</span> <span class="o">=</span> <span class="n">strings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
             <span class="n">expanded</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">ValueString</span><span class="p">(</span><span class="n">resolved</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">expanded</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_semantic_backend</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""The `bibdeskparser.semantic` module, imported on first use.</span>
+
+<span class="sd">    It is kept out of the module-level imports because it pulls in</span>
+<span class="sd">    `numpy` (and, when embedding, `fastembed`), which only the</span>
+<span class="sd">    `bibdeskparser[semantic]` extra installs; without the extra, the</span>
+<span class="sd">    import raises {exc}`_MissingExtraError` naming it. An import that</span>
+<span class="sd">    fails for any other reason keeps its own exception, since that is</span>
+<span class="sd">    a damaged installation rather than an absent extra. Every method</span>
+<span class="sd">    that needs the module opens with `semantic = _semantic_backend()`.</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">semantic</span>  <span class="c1"># pylint: disable=import-outside-toplevel</span>
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_missing</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="s2">"numpy"</span><span class="p">):</span>
+            <span class="k">raise</span>
+        <span class="k">raise</span> <span class="n">_MissingExtraError</span><span class="p">(</span>
+            <span class="s2">"semantic indexing requires numpy; install "</span>
+            <span class="s2">"bibdeskparser[semantic]"</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+    <span class="k">return</span> <span class="n">semantic</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_has_field</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
@@ -846,6 +871,12 @@
 <span class="sd">      because they duplicate an earlier entry (read-only).</span>
 <span class="sd">    - {meth}`search`: full-text search over the entries, returning the</span>
 <span class="sd">      matches best first.</span>
+<span class="sd">    - {meth}`build_semantic_indexes`, {meth}`semantic_search`, and</span>
+<span class="sd">      {meth}`semantic_score`: embedding indexes over the library's</span>
+<span class="sd">      text and the two things they enable -- search by meaning rather</span>
+<span class="sd">      than by characters, and a calibrated relevance score for a</span>
+<span class="sd">      candidate paper. They require the `bibdeskparser[semantic]`</span>
+<span class="sd">      extra; see [Semantic Indexing](semantic-indexing).</span>
 <span class="sd">    - {meth}`rekey`: rename an entry ({attr}`Entry.key` itself is</span>
 <span class="sd">      read-only), either to an explicitly given key or to one generated</span>
 <span class="sd">      from an auto-key format in BibDesk's</span>
@@ -1694,7 +1725,7 @@
         <span class="n">has</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">missing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">not_group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">keyword</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">with_files</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Citation keys of the entries, as a `tuple`, optionally</span>
@@ -1706,7 +1737,7 @@
 <span class="sd">            has=None,</span>
 <span class="sd">            missing=None,</span>
 <span class="sd">            group=None,</span>
-<span class="sd">            not_group=None,</span>
+<span class="sd">            keyword=None,</span>
 <span class="sd">            with_files=None,</span>
 <span class="sd">        )</span>
 <span class="sd">        ```</span>
@@ -1722,10 +1753,10 @@
 <span class="sd">          with a non-empty value.</span>
 <span class="sd">        * `missing`: keep only entries where none of the given fields</span>
 <span class="sd">          has a non-empty value.</span>
-<span class="sd">        * `group`: keep only entries that are members of every given</span>
-<span class="sd">          static group (see {attr}`groups`).</span>
-<span class="sd">        * `not_group`: keep only entries that are members of none of</span>
-<span class="sd">          the given static groups.</span>
+<span class="sd">        * `group`: keep only entries that are members of any of the</span>
+<span class="sd">          given static groups (see {attr}`groups`).</span>
+<span class="sd">        * `keyword`: keep only entries that carry any of the given</span>
+<span class="sd">          keywords (see {attr}`keywords`).</span>
 <span class="sd">        * `with_files`: a tri-state filter on file attachments (the</span>
 <span class="sd">          `bdsk-file-N` fields, see {attr}`Entry.files`). `None` (the</span>
 <span class="sd">          default) does not filter; `True` keeps only entries with at</span>
@@ -1737,8 +1768,18 @@
 <span class="sd">        when it saves a `.bib` file (see</span>
 <span class="sd">        [Empty fields](bibdesk-empty-fields)).</span>
 
-<span class="sd">        Raises {exc}`KeyError` for a group name (in `group` or</span>
-<span class="sd">        `not_group`) that does not exist in the library.</span>
+<span class="sd">        `group` and `keyword` together name a *collection*: an entry</span>
+<span class="sd">        belongs to it if it is a member of any named group or carries</span>
+<span class="sd">        any named keyword, so `group=["A", "B"]` is the union of the</span>
+<span class="sd">        two groups and `group="A", keyword="K"` the union of the</span>
+<span class="sd">        group and the keyword. The remaining arguments then narrow</span>
+<span class="sd">        the collection, or the whole library when neither `group` nor</span>
+<span class="sd">        `keyword` is given. The same collection is what the `--group`</span>
+<span class="sd">        and `--keyword` options of the `semantic_score` command</span>
+<span class="sd">        select.</span>
+
+<span class="sd">        Raises {exc}`KeyError` for a `group` or `keyword` that no</span>
+<span class="sd">        entry of the library has.</span>
 
 <span class="sd">        ```python</span>
 <span class="sd">        &gt;&gt;&gt; from bibdeskparser import Entry, Library</span>
@@ -1759,8 +1800,9 @@
 <span class="sd">        &gt;&gt;&gt; bib.groups["My Papers"] = ("Key2026",)</span>
 <span class="sd">        &gt;&gt;&gt; bib.keys(group="My Papers")</span>
 <span class="sd">        ('Key2026',)</span>
-<span class="sd">        &gt;&gt;&gt; bib.keys(not_group="My Papers")</span>
-<span class="sd">        ()</span>
+<span class="sd">        &gt;&gt;&gt; bib.add_to_keyword("Control", "Key2026")</span>
+<span class="sd">        &gt;&gt;&gt; bib.keys(keyword="Control")</span>
+<span class="sd">        ('Key2026',)</span>
 
 <span class="sd">        ```</span>
 <span class="sd">        """</span>
@@ -1768,22 +1810,28 @@
         <span class="n">required</span> <span class="o">=</span> <span class="p">[(</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">(</span><span class="n">has</span><span class="p">)]</span>
         <span class="n">required</span> <span class="o">+=</span> <span class="p">[(</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">(</span><span class="n">missing</span><span class="p">)]</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">_members</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_data</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-            <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_group_data</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_add</span><span class="p">(</span><span class="n">members</span><span class="p">,</span> <span class="n">mapping</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">"""Add to `members` the keys carried by each of `names` in</span>
+<span class="sd">            `mapping`. An unknown name is an error, so that a typo</span>
+<span class="sd">            cannot silently select nothing."""</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">members</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">mapping</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
 
-        <span class="n">include</span> <span class="o">=</span> <span class="p">[</span><span class="n">_members</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">(</span><span class="n">group</span><span class="p">)]</span>
-        <span class="n">exclude</span> <span class="o">=</span> <span class="p">[</span><span class="n">_members</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">(</span><span class="n">not_group</span><span class="p">)]</span>
+        <span class="n">collection</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">_names</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_names</span><span class="p">(</span><span class="n">keyword</span><span class="p">):</span>
+            <span class="n">collection</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="n">_add</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_data</span><span class="p">,</span> <span class="n">group</span><span class="p">)</span>
+            <span class="c1"># `self.keywords` recomputes its index on every access.</span>
+            <span class="n">_add</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keywords</span><span class="p">),</span> <span class="n">keyword</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">types</span> <span class="ow">and</span> <span class="n">entry</span><span class="o">.</span><span class="n">entry_type</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">types</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="k">if</span> <span class="n">with_files</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">bool</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">files</span><span class="p">)</span> <span class="o">!=</span> <span class="n">with_files</span><span class="p">:</span>
                 <span class="k">continue</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">key</span> <span class="ow">in</span> <span class="n">members</span> <span class="k">for</span> <span class="n">members</span> <span class="ow">in</span> <span class="n">include</span><span class="p">):</span>
-                <span class="k">continue</span>
-            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">key</span> <span class="ow">in</span> <span class="n">members</span> <span class="k">for</span> <span class="n">members</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">collection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">collection</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="k">if</span> <span class="nb">all</span><span class="p">(</span>
                 <span class="n">_has_field</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="n">state</span> <span class="k">for</span> <span class="n">state</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">required</span>
@@ -3329,6 +3377,336 @@
         <span class="p">)</span></div>
 
 
+    <span class="c1"># -- semantic indexing ------------------------------------------- #</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_semantic_index_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""The directory holding the semantic indexes, as an absolute</span>
+<span class="sd">        `Path`: `config.semantic.index_dir`, or the `.bib` path with</span>
+<span class="sd">        its extension replaced by `.semantic`."""</span>
+        <span class="n">configured</span> <span class="o">=</span> <span class="n">active</span><span class="o">.</span><span class="n">semantic</span><span class="o">.</span><span class="n">index_dir</span>
+        <span class="k">if</span> <span class="n">configured</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_path</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span><span class="si">}</span><span class="s2">.semantic"</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auto_file_location_dir</span><span class="p">(</span><span class="n">configured</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_semantic_definitions</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">"""`{name: sources}` over the built-in default index and every</span>
+<span class="sd">        index the `[semantic.indexes]` configuration defines."""</span>
+        <span class="n">semantic</span> <span class="o">=</span> <span class="n">_semantic_backend</span><span class="p">()</span>
+        <span class="n">definitions</span> <span class="o">=</span> <span class="p">{</span><span class="n">semantic</span><span class="o">.</span><span class="n">DEFAULT_INDEX</span><span class="p">:</span> <span class="n">semantic</span><span class="o">.</span><span class="n">DEFAULT_SOURCES</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">sources</span> <span class="ow">in</span> <span class="n">active</span><span class="o">.</span><span class="n">semantic</span><span class="o">.</span><span class="n">indexes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">definitions</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">definitions</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_semantic_source_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">strings</span><span class="p">,</span> <span class="n">base_dir</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""The text the index source `name` contributes for `entry`,</span>
+<span class="sd">        or `None` if it contributes nothing.</span>
+
+<span class="sd">        A source names a file-valued **entry** `[assets]` class --</span>
+<span class="sd">        whose content is read as-is, the one place the package looks</span>
+<span class="sd">        inside an asset -- or an entry field, whose value is taken as</span>
+<span class="sd">        plain text (macros expanded, TeX markup and protective braces</span>
+<span class="sd">        removed). Three kinds of name are a configuration error: one</span>
+<span class="sd">        that is neither, a library asset (one text for the whole</span>
+<span class="sd">        library, which would contribute the same words to every row),</span>
+<span class="sd">        and a directory-valued class (which holds no text at all). A</span>
+<span class="sd">        file that is not UTF-8 text is skipped with a warning naming</span>
+<span class="sd">        it and its entry, since one such file should not abort a</span>
+<span class="sd">        whole build.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">active</span><span class="o">.</span><span class="n">assets</span><span class="p">:</span>
+            <span class="bp">cls</span> <span class="o">=</span> <span class="n">_compile_asset_pattern</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">active</span><span class="o">.</span><span class="n">assets</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+            <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">per_entry</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"invalid semantic index source </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: a library "</span>
+                    <span class="s2">"asset is one text for the whole library, so it "</span>
+                    <span class="s2">"cannot contribute to a per-entry row"</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">cls</span><span class="o">.</span><span class="n">is_dir</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"invalid semantic index source </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: a "</span>
+                    <span class="s2">"directory-valued asset class resolves to a "</span>
+                    <span class="s2">"directory, which holds no text to embed"</span>
+                <span class="p">)</span>
+            <span class="n">rel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">asset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">check_that_file_exists</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">rel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">base_dir</span> <span class="o">/</span> <span class="n">rel</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+                <span class="c1"># One unreadable file must not abort a whole build, and</span>
+                <span class="c1"># the bare codec error would name neither the file nor</span>
+                <span class="c1"># the entry it belongs to.</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2">: semantic index source </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is "</span>
+                    <span class="sa">f</span><span class="s2">"not UTF-8 text and is skipped: </span><span class="si">{</span><span class="n">base_dir</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">rel</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="ne">UserWarning</span><span class="p">,</span>
+                    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">active</span><span class="o">.</span><span class="n">is_known_field</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"invalid semantic index source </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: neither an "</span>
+                <span class="s2">"[assets] class nor a known field"</span>
+            <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">MacroString</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">strings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">_detex</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="s2">"markdown"</span><span class="p">,</span> <span class="n">drop_braces</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_semantic_rows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sources</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""The `(key, text, used)` triples of an index over `sources`,</span>
+<span class="sd">        in library order, skipping entries no source contributes to."""</span>
+        <span class="n">semantic</span> <span class="o">=</span> <span class="n">_semantic_backend</span><span class="p">()</span>
+        <span class="n">strings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_strings</span><span class="p">()</span>
+        <span class="n">base_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_files_base_dir</span><span class="p">()</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">source_text</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_semantic_source_text</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">strings</span><span class="p">,</span> <span class="n">base_dir</span><span class="p">)</span>
+
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">text</span><span class="p">,</span> <span class="n">used</span> <span class="o">=</span> <span class="n">semantic</span><span class="o">.</span><span class="n">row_text</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">source_text</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">used</span><span class="p">:</span>
+                <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">used</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">rows</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_semantic_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""The built index `name`, warning about the keys it is out of</span>
+<span class="sd">        date for.</span>
+
+<span class="sd">        Raises `ValueError` if `name` is not defined, or if what is</span>
+<span class="sd">        stored for it was not produced by what is configured now. The</span>
+<span class="sd">        whole fingerprint is compared, not just the source list: a</span>
+<span class="sd">        query is embedded with the model of the moment, and</span>
+<span class="sd">        multiplying that vector against a matrix some other model</span>
+<span class="sd">        wrote is silently wrong wherever the two agree on the number</span>
+<span class="sd">        of dimensions.</span>
+<span class="sd">        """</span>
+        <span class="n">semantic</span> <span class="o">=</span> <span class="n">_semantic_backend</span><span class="p">()</span>
+        <span class="n">definitions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_semantic_definitions</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">definitions</span><span class="p">:</span>
+            <span class="n">defined</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">definitions</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"undefined semantic index </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> (defined: </span><span class="si">{</span><span class="n">defined</span><span class="si">}</span><span class="s2">)"</span>
+            <span class="p">)</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">semantic</span><span class="o">.</span><span class="n">load_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_semantic_index_dir</span><span class="p">(),</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">wanted</span> <span class="o">=</span> <span class="n">semantic</span><span class="o">.</span><span class="n">fingerprint_of</span><span class="p">(</span><span class="n">definitions</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">index</span><span class="o">.</span><span class="n">fingerprint</span> <span class="o">!=</span> <span class="n">wanted</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"semantic index </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is not built for its current "</span>
+                <span class="s2">"sources and model; run build_semantic_indexes()"</span>
+            <span class="p">)</span>
+        <span class="n">stale</span> <span class="o">=</span> <span class="n">semantic</span><span class="o">.</span><span class="n">stale_keys</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_semantic_rows</span><span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">sources</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">stale</span><span class="p">:</span>
+            <span class="n">listed</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">stale</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+            <span class="n">more</span> <span class="o">=</span> <span class="s2">""</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stale</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">5</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">", ... (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">stale</span><span class="p">)</span><span class="si">}</span><span class="s2"> total)"</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"semantic index </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is out of date for </span><span class="si">{</span><span class="n">listed</span><span class="si">}</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">more</span><span class="si">}</span><span class="s2">; run build_semantic_indexes()"</span><span class="p">,</span>
+                <span class="ne">UserWarning</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">index</span>
+
+<div class="viewcode-block" id="Library.build_semantic_indexes">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.build_semantic_indexes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_semantic_indexes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Build or refresh the library's embedding indexes; see</span>
+<span class="sd">        [Semantic Indexing](semantic-indexing).</span>
+
+<span class="sd">        Every index is (re)built: the built-in `default` index over</span>
+<span class="sd">        title and abstract, plus each index the `[semantic.indexes]`</span>
+<span class="sd">        [configuration](configuration) defines. The files are written</span>
+<span class="sd">        into the index directory next to the `.bib` file (see</span>
+<span class="sd">        `config.semantic.index_dir`); the `.bib` file itself is never</span>
+<span class="sd">        touched, and neither is anything else on disk.</span>
+
+<span class="sd">        Refreshing is per key: an entry whose source text is unchanged</span>
+<span class="sd">        keeps its stored vector, a changed or new entry is re-embedded,</span>
+<span class="sd">        and an entry the library no longer has is dropped. Changing an</span>
+<span class="sd">        index definition, the embedding model, or the `fastembed`</span>
+<span class="sd">        release changes the index fingerprint and rebuilds that index</span>
+<span class="sd">        as a whole, so vectors from different models are never mixed.</span>
+
+<span class="sd">        Returns a report keyed by index name, each value a dict</span>
+<span class="sd">        `{"embedded": [keys], "pruned": [keys], "unchanged": count}`.</span>
+
+<span class="sd">        Embedding a full library takes tens of seconds, so `progress`</span>
+<span class="sd">        allows the caller to report it. It is called once per index,</span>
+<span class="sd">        in build order, as `progress(name, total)` with the number of</span>
+<span class="sd">        entries that index has to embed, and returns either `None` or</span>
+<span class="sd">        a callable that is then invoked with the number of entries</span>
+<span class="sd">        finished since the previous call. The `build_semantic_indexes`</span>
+<span class="sd">        command uses it to draw a progress bar.</span>
+
+<span class="sd">        Requires the `bibdeskparser[semantic]` extra, and a library</span>
+<span class="sd">        with a file path. The first run downloads the embedding model</span>
+<span class="sd">        (about 130 MB) into a local cache; every later run is offline.</span>
+<span class="sd">        """</span>
+        <span class="n">semantic</span> <span class="o">=</span> <span class="n">_semantic_backend</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">semantic</span><span class="o">.</span><span class="n">build_indexes</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_semantic_index_dir</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_semantic_definitions</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_semantic_rows</span><span class="p">,</span>
+            <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Library.semantic_search">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.semantic_search">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">semantic_search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">hybrid</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Return the entries most relevant to `query`, best first, as</span>
+<span class="sd">        a list of `(Entry, cosine)` pairs; see</span>
+<span class="sd">        [Semantic Indexing](semantic-indexing).</span>
+
+<span class="sd">        Unlike {meth}`search`, which matches the query's characters,</span>
+<span class="sd">        this ranks entries by the meaning of the text an index holds</span>
+<span class="sd">        for them, so a phrase finds relevant entries whose title and</span>
+<span class="sd">        abstract share no word with it. `index` names the index to</span>
+<span class="sd">        query, defaulting to `config.semantic.search_index`; an index</span>
+<span class="sd">        that is not defined or not built raises {exc}`ValueError`</span>
+<span class="sd">        naming {meth}`build_semantic_indexes`. An entry deleted since</span>
+<span class="sd">        the index was built keeps its row there, but is not returned.</span>
+
+<span class="sd">        At most `limit` entries are returned (at least 1), and only</span>
+<span class="sd">        those that count as matches: since even unrelated text pairs</span>
+<span class="sd">        score around 0.5 to 0.7, the cut is not an absolute cosine but</span>
+<span class="sd">        an outlier criterion over the whole distribution of cosines</span>
+<span class="sd">        for this query. A query unrelated to the library therefore returns</span>
+<span class="sd">        an empty list rather than the ten least unrelated entries, and</span>
+<span class="sd">        a shorter list than `limit` is normal.</span>
+
+<span class="sd">        With `hybrid` (the default), the semantic ranking is merged</span>
+<span class="sd">        with the lexical ranking of {meth}`search` by reciprocal rank</span>
+<span class="sd">        fusion, which is what keeps exact technical terms working. The</span>
+<span class="sd">        fused order is thus not monotonic in the reported cosine, and</span>
+<span class="sd">        an entry only the lexical leg finds (including one the index</span>
+<span class="sd">        omits) can rank; its cosine is then `None`. With</span>
+<span class="sd">        `hybrid=False`, the order is by cosine alone.</span>
+
+<span class="sd">        The `cosine` is the query-entry cosine similarity, rounded to</span>
+<span class="sd">        three decimals. It is comparable only within one query: it is</span>
+<span class="sd">        not a percentage, and values from different queries say</span>
+<span class="sd">        nothing about each other.</span>
+
+<span class="sd">        Requires the `bibdeskparser[semantic]` extra. Entries whose</span>
+<span class="sd">        source text has changed since the index was built are ranked</span>
+<span class="sd">        with their stored vectors, and warned about.</span>
+<span class="sd">        """</span>
+        <span class="n">semantic</span> <span class="o">=</span> <span class="n">_semantic_backend</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">limit</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"limit must be at least 1, not </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">index</span> <span class="ow">or</span> <span class="n">active</span><span class="o">.</span><span class="n">semantic</span><span class="o">.</span><span class="n">search_index</span>
+        <span class="n">loaded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_semantic_index</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">lexical</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">hybrid</span><span class="p">:</span>
+            <span class="n">lexical</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">score</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">semantic</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+                <span class="n">loaded</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">lexical</span><span class="o">=</span><span class="n">lexical</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
+            <span class="p">)</span>
+            <span class="c1"># An index built before an entry was deleted still holds</span>
+            <span class="c1"># its row; it ranks, but there is no entry to return.</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Library.semantic_score">
+<a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.semantic_score">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">semantic_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Score the candidate `text` -- the title and abstract of a</span>
+<span class="sd">        new paper, as one string -- for its relevance to the library</span>
+<span class="sd">        or to a collection within it; see</span>
+<span class="sd">        [Semantic Indexing](semantic-indexing).</span>
+
+<span class="sd">        The candidate is matched against `index` (defaulting to</span>
+<span class="sd">        `config.semantic.score_index`), restricted to the citation</span>
+<span class="sd">        `keys` of a collection if given; a key that index has no row</span>
+<span class="sd">        for is skipped, a key named more than once counts once, and a</span>
+<span class="sd">        row left behind by an entry the library no longer has is left</span>
+<span class="sd">        out of both the measure and `"nearest"`.</span>
+<span class="sd">        The raw measure is the mean of the `k` highest cosine</span>
+<span class="sd">        similarities (`k` at least 1), clamped to the size of the</span>
+<span class="sd">        collection, so a single key yields the plain cosine.</span>
+
+<span class="sd">        Returns `{"score": percentile, "nearest": [{"key": ...,</span>
+<span class="sd">        "cosine": ...}, ...]}`, and with `keys` also `"members"`. The</span>
+<span class="sd">        `"score"` is not a raw cosine (which would sit in a narrow</span>
+<span class="sd">        high band, near 0.6 even for unrelated text) but a percentile</span>
+<span class="sd">        from 0 to 100: the share of the library's own papers that</span>
+<span class="sd">        score lower, had each of them arrived as this candidate did.</span>
+<span class="sd">        An unrelated candidate scores near 0. It is `None`, with a</span>
+<span class="sd">        warning, when the `default` index holds no row carrying both a</span>
+<span class="sd">        title and an abstract, since there is then nothing to</span>
+<span class="sd">        calibrate against. `"nearest"` lists the</span>
+<span class="sd">        `k` closest entries of the target with their raw cosines --</span>
+<span class="sd">        exactly the neighbors the raw measure averages.</span>
+
+<span class="sd">        With `keys`, `"members"` holds the quartiles `{"q1":,</span>
+<span class="sd">        "median":, "q3":}` of the collection members' own percentiles</span>
+<span class="sd">        under the same measure (`None` if none of them can serve as a</span>
+<span class="sd">        probe). That band is what turns a percentile into "would sit</span>
+<span class="sd">        among these papers like one of their own": at or above the</span>
+<span class="sd">        median the candidate is a typical member, below the first</span>
+<span class="sd">        quartile it is weaker than any actual member.</span>
+
+<span class="sd">        Percentiles are comparable across collections and indexes;</span>
+<span class="sd">        raw cosines are not. Both measure topical proximity, which is</span>
+<span class="sd">        not the same as whether the candidate *extends* the work it</span>
+<span class="sd">        resembles -- that judgment is not something a cosine can</span>
+<span class="sd">        deliver.</span>
+
+<span class="sd">        Requires the `bibdeskparser[semantic]` extra. Raises</span>
+<span class="sd">        {exc}`KeyError` for an unknown citation key and</span>
+<span class="sd">        {exc}`ValueError` for an index that is not defined or not</span>
+<span class="sd">        built.</span>
+<span class="sd">        """</span>
+        <span class="n">semantic</span> <span class="o">=</span> <span class="n">_semantic_backend</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"k must be at least 1, not </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">index</span> <span class="ow">or</span> <span class="n">active</span><span class="o">.</span><span class="n">semantic</span><span class="o">.</span><span class="n">score_index</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_semantic_index</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">semantic</span><span class="o">.</span><span class="n">DEFAULT_INDEX</span><span class="p">:</span>
+            <span class="n">default</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Loaded like any other index, staleness check included:</span>
+            <span class="c1"># its rows are the calibration, so text that has changed</span>
+            <span class="c1"># under them moves the reported percentile.</span>
+            <span class="n">default</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_semantic_index</span><span class="p">(</span><span class="n">semantic</span><span class="o">.</span><span class="n">DEFAULT_INDEX</span><span class="p">)</span>
+        <span class="n">collection</span> <span class="o">=</span> <span class="n">keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">collection</span><span class="p">:</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># The whole library means the entries it has now. An index</span>
+            <span class="c1"># built before an entry was deleted still holds that</span>
+            <span class="c1"># entry's row, which would otherwise enter the top-k mean</span>
+            <span class="c1"># and be named in `nearest`, where no other command can</span>
+            <span class="c1"># resolve it.</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
+        <span class="c1"># The candidate is normalized the way an indexed abstract is,</span>
+        <span class="c1"># so that TeX markup in it does not shift its register.</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">_detex</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="s2">"markdown"</span><span class="p">,</span> <span class="n">drop_braces</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">semantic</span><span class="o">.</span><span class="n">score</span><span class="p">(</span>
+            <span class="n">target</span><span class="p">,</span>
+            <span class="n">default</span><span class="p">,</span>
+            <span class="n">text</span><span class="p">,</span>
+            <span class="n">keys</span><span class="o">=</span><span class="n">keys</span><span class="p">,</span>
+            <span class="n">collection</span><span class="o">=</span><span class="n">collection</span><span class="p">,</span>
+            <span class="n">known</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="Library.render">
 <a class="viewcode-back" href="../../apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.render">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">keys</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">"markdown"</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"default"</span><span class="p">):</span>
@@ -4156,7 +4534,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 21, 2026.
+      <span class="lastupdated">Last updated on Aug 23, 2026.
       </span></p>
   </div>
 

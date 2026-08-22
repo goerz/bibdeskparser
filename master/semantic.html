@@ -1,0 +1,315 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Semantic Indexing &mdash; BibDeskParser 0.8.1+dev (12a3ae9) documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=869ab1f8"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/docs-versions-menu.js?v=2187e224"></script>
+      <script>window.MathJax = {"tex": {"macros": {"Re": "\\operatorname{Re}", "Im": "\\operatorname{Im}", "Real": "\\mathbb{R}", "Complex": "\\mathbb{C}", "Integer": "\\mathbb{N}"}}, "options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Bib Entry Types" href="bib_entry_types.html" />
+    <link rel="prev" title="External Assets" href="assets.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+  <a href="index.html" class="icon icon-home">
+    BibDeskParser
+  </a>
+
+  <div class="version">
+    v0.8.1+dev
+  </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#usage">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#development">Development</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">How-to Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="howto.html">How-to Guides</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Explanation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="assets.html">External Assets</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Semantic Indexing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#text-as-coordinates">Text as coordinates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#measuring-proximity">Measuring proximity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-asymmetry-between-queries-and-documents">The asymmetry between queries and documents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-contents-of-an-index">The contents of an index</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#long-texts-and-chunking">Long texts and chunking</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#which-similarities-carry-information">Which similarities carry information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#combining-two-rankings">Combining two rankings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#calibrating-a-similarity-into-a-readable-score">Calibrating a similarity into a readable score</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#reading-a-score">Reading a score</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#limits-of-the-method">Limits of the method</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#stored-artifacts-and-rebuilding">Stored artifacts and rebuilding</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="bib_entry_types.html">Bib Entry Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifiers.html">Format Specifiers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html">Package API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">BibDeskParser</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Semantic Indexing</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="semantic-indexing">
+<span id="id1"></span><h1>Semantic Indexing<a class="headerlink" href="#semantic-indexing" title="Link to this heading"></a></h1>
+<p>Machine learning methods for representing text, in particular the transformer-based <em>embedding models</em> developed over the past decade, make it possible to compare two passages by what they are about rather than by the words they happen to contain. BibDeskParser applies such a model to a BibDesk library: text (like the abstract, or a summary) belonging to each entry is mapped to a point in a high-dimensional space, so that questions of “relevance” become questions of the proximity of two “embedding vectors”. This enables searching for entries in a library about a given topic description, independent of particular words appearing in papers. It also makes it possible to decide whether a newly posted preprint is similar to existing groups of papers in the library, and would add to the existing literature.</p>
+<p>This page describes the machinery in the order in which it is applied: how text becomes a vector, how proximity between vectors is measured, how the package decides which of the resulting distances carry information, and what the reported numbers do and do not establish.</p>
+<p>The feature requires the optional <code class="docutils literal notranslate"><span class="pre">semantic</span></code> extra, named in square brackets alongside the package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="s2">"bibdeskparser[semantic]"</span>
+<span class="n">uv</span> <span class="n">add</span> <span class="s2">"bibdeskparser[semantic]"</span>
+<span class="n">uv</span> <span class="n">tool</span> <span class="n">install</span> <span class="s2">"bibdeskparser[semantic]"</span>
+</pre></div>
+</div>
+<p>A bare installation is unaffected and retains exactly the feature set it had. Three commands are provided: <a class="reference internal" href="cli.html#cli-build-semantic-indexes"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">build_semantic_indexes</span></code></span></a> builds the vectors, while <a class="reference internal" href="cli.html#cli-semantic-search"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">semantic_search</span></code></span></a> and <a class="reference internal" href="cli.html#cli-semantic-score"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">semantic_score</span></code></span></a> use them. The corresponding Python methods are <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.build_semantic_indexes" title="bibdeskparser.Library.build_semantic_indexes"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_semantic_indexes()</span></code></a>, <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.semantic_search" title="bibdeskparser.Library.semantic_search"><code class="xref py py-meth docutils literal notranslate"><span class="pre">semantic_search()</span></code></a>, and <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.semantic_score" title="bibdeskparser.Library.semantic_score"><code class="xref py py-meth docutils literal notranslate"><span class="pre">semantic_score()</span></code></a>.</p>
+<section id="text-as-coordinates">
+<h2>Text as coordinates<a class="headerlink" href="#text-as-coordinates" title="Link to this heading"></a></h2>
+<p>An <em>embedding model</em> is a function from a multiline string to a short vector of floats. The model used here, <code class="docutils literal notranslate"><span class="pre">BAAI/bge-small-en-v1.5</span></code>, returns 384 floats for any input, so that every abstract, every summary, and every search phrase becomes a point in a 384-dimensional space. The model is trained on a large collection of text pairs known in advance to belong together, such as a question and the passage answering it, or a sentence and its paraphrase, under an objective that pulls the two members of a pair together and separates unrelated texts. Over enough such pairs, the arrangement that emerges is one in which proximity reflects meaning rather than spelling, which is why a query and a document can lie close together without sharing a single word.</p>
+<p>The 384 numbers are best understood as coordinates rather than as named features. No individual component corresponds to “quantum optics”; the information is distributed over all of them, and no interpretation of any one of them is required.</p>
+<p>The model is evaluated on the CPU through <a class="reference external" href="https://github.com/qdrant/fastembed">fastembed</a>, with no GPU, no server process, and no PyTorch installation. The first use downloads about 130 MB of model files into a local cache, after which the package requires no network access. Embedding a thousand entries takes roughly a minute on a laptop, and a single query well under a second.</p>
+<p>The model used here was originally trained on generic English text, and is not specialized to the usual academic context of a bibliographic library. It is used exactly as distributed, without any fitting step, which is what makes the feature inexpensive and reproducible.</p>
+</section>
+<section id="measuring-proximity">
+<h2>Measuring proximity<a class="headerlink" href="#measuring-proximity" title="Link to this heading"></a></h2>
+<p>Every vector the model produces is scaled to unit length. For two unit vectors <span class="math notranslate nohighlight">\(u\)</span> and <span class="math notranslate nohighlight">\(v\)</span>, the dot product between the vectors is directly the cosine of the angle between them, equal to 1 for identical directions and 0 for perpendicular ones. Similarity is thus an angle, and the length of a text has already been divided out.</p>
+<p>This makes retrieval inexpensive. An index is a matrix <span class="math notranslate nohighlight">\(M\)</span> holding one row per entry, so the similarity of a query vector <span class="math notranslate nohighlight">\(v\)</span> to every entry at once is the single matrix-vector product <span class="math notranslate nohighlight">\(M v\)</span>. For a thousand entries that amounts to a thousand dot products of 384 terms each, a few milliseconds in NumPy. Approximate nearest-neighbor structures and vector databases begin to repay their complexity only somewhere above a hundred thousand vectors, so the package stores a plain array and multiplies.</p>
+<p>Although a cosine can in principle take any value between <span class="math notranslate nohighlight">\(-1\)</span> and <span class="math notranslate nohighlight">\(1\)</span>, the vectors of a contrastively trained model do not spread over the whole sphere. They occupy a comparatively narrow cone, and two entirely unrelated pieces of English prose therefore score somewhere between 0.5 and 0.7. Negative values do not generally occur. Two texts as unrelated as a sourdough recipe and a set of municipal drainage bylaws still score above 0.4. A cosine of 0.68 does not mean “68 percent relevant” and is not by itself evidence of anything. Absolute values carry no meaning, and values obtained for different queries are not comparable with one another. Only the ordering within a single comparison, together with the size of the gaps, is informative. The two statistical procedures described below exist in order to convert that ordering into an actionable quantity.</p>
+</section>
+<section id="the-asymmetry-between-queries-and-documents">
+<h2>The asymmetry between queries and documents<a class="headerlink" href="#the-asymmetry-between-queries-and-documents" title="Link to this heading"></a></h2>
+<p>A three-word search phrase and a two-hundred-word abstract are different kinds of text, and a model that treats them alike will place the phrase among other short phrases rather than among the documents it ought to retrieve. The <code class="docutils literal notranslate"><span class="pre">bge</span></code> model family is trained to account for this asymmetry: documents are embedded as they stand, while a search query is first prefixed with the fixed instruction <code class="docutils literal notranslate"><span class="pre">Represent</span> <span class="pre">this</span> <span class="pre">sentence</span> <span class="pre">for</span> <span class="pre">searching</span> <span class="pre">relevant</span> <span class="pre">passages:</span> </code>, which the model saw on the query side throughout training. The prefix marks the text as a question and places it where its answers lie.</p>
+<p>The package applies the prefix itself, in <code class="docutils literal notranslate"><span class="pre">embed_query</span></code>, and only when embedding a search phrase. Relevance scoring compares one paper against other papers, a document-to-document comparison, so the candidate’s text (e.g., title and abstract) is embedded without it.</p>
+</section>
+<section id="the-contents-of-an-index">
+<h2>The contents of an index<a class="headerlink" href="#the-contents-of-an-index" title="Link to this heading"></a></h2>
+<p>BibDeskParser supports any number of named “indexes”, where each index is a matrix with an embedding vector in each row, for each entry of the library. Everything that search and scoring do afterwards is arithmetic on that matrix. What distinguishes one index from another is which text gets assembled. A library may hold several indexes over the same entries, one built from titles and abstracts, another from long summaries kept in companion files. Each is a separate matrix, and any one call works against exactly one of them, named in the call or taken from the <code class="docutils literal notranslate"><span class="pre">search_index</span></code> and <code class="docutils literal notranslate"><span class="pre">score_index</span></code> settings.</p>
+<p>Indexes are defined in the <a class="reference internal" href="config.html#config-semantic"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">bibdeskparser.toml</span></code> configuration</span></a>, under <code class="docutils literal notranslate"><span class="pre">[semantic.indexes]</span></code>. Each entry of that table gives an index a name and an ordered list of <em>sources</em>:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[semantic.indexes]</span>
+<span class="n">summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"summary"</span><span class="p">]</span>
+<span class="n">annotated</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"title"</span><span class="p">,</span><span class="w"> </span><span class="s2">"abstract"</span><span class="p">,</span><span class="w"> </span><span class="s2">"note"</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A source names a place to take text from, and is evaluated separately for every entry. It is either an entry field, such as <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">abstract</span></code>, or <code class="docutils literal notranslate"><span class="pre">note</span></code>, whose value is then used directly, or an <a class="reference internal" href="assets.html#external-assets"><span class="std std-ref">entry asset class</span></a>, in which case the content of that entry’s companion file is read from disk. Asset classes are declared in the <code class="docutils literal notranslate"><span class="pre">[assets]</span></code> table of the same configuration file; should a name be declared as both, the asset takes precedence. Three kinds of name are a configuration error, reported when the index is built: one that is neither a field nor an asset class, a <em>library</em> asset class, which is one text for the whole library and would contribute the same words to every row, and a <em>directory</em>-valued asset class, which resolves to a directory and so holds no text at all. A file that is not UTF-8 text is skipped with a warning naming it and its entry, since one such file should not abort a whole build.</p>
+<p>An index name becomes a filename, so it is restricted to letters, digits, hyphens, and underscores, and two names differing only in case are rejected as one, because the filesystem BibDesk runs on does not tell them apart.</p>
+<p>The texts that the sources yield are joined in the order listed, separated by a blank line, and embedded as a single text. A source for which an entry has nothing is skipped. An entry that none of the sources covers has no text at all and is left out of that index; it can still be found through the lexical leg of a hybrid search. Beside the matrix, a manifest records which sources actually contributed for each entry. That record is what relevance scoring uses to pick out the entries whose row was built from both a title and an abstract.</p>
+<p>One index exists without being configured at all. It is named <code class="docutils literal notranslate"><span class="pre">default</span></code> and is equivalent to <code class="docutils literal notranslate"><span class="pre">[&quot;title&quot;,</span> <span class="pre">&quot;abstract&quot;]</span></code>. The name is reserved and the index cannot be redefined, because its rows have precisely the shape of an incoming candidate paper, which is what allows relevance scoring to calibrate against them (see below). Since every entry has a title, this index covers the whole library, with entries lacking an abstract appearing as title-only rows.</p>
+<p>Combining a nearly universal source with a sparse one, as in <code class="docutils literal notranslate"><span class="pre">[&quot;title&quot;,</span> <span class="pre">&quot;summary&quot;]</span></code>, yields rows of very different lengths and registers. For an index used for searching this is a reasonable trade for coverage. For an index used as the target of relevance scoring, sources of matching coverage are preferable, in practice a single one, so that the raw similarities remain comparable from row to row.</p>
+<section id="long-texts-and-chunking">
+<h3>Long texts and chunking<a class="headerlink" href="#long-texts-and-chunking" title="Link to this heading"></a></h3>
+<p>The model accepts at most 512 <em>tokens</em>. A token is approximately a word or a fragment of one, so 512 tokens correspond to a few hundred words: a title and abstract fit comfortably, whereas a 500-word summary runs to roughly 650 to 800 tokens and does not. Text beyond the limit would simply be discarded.</p>
+<p>The package therefore divides an over-long text into chunks that individually fit, embeds them separately, and combines the chunk vectors into a single entry vector by averaging them component by component and rescaling the result to unit length. The average of several unit vectors points, loosely speaking, in their common direction, which is what makes it a reasonable summary of the pieces.</p>
+<p>Texts are handed to the model in batches rather than one at a time, and every sequence in a batch is padded to the length of the longest one in it. A batch that mixes a one-word title with a 300-word abstract therefore spends most of its effort on padding, which is why the batch is kept small: on the example database, batches of 16 embed about a third faster than batches of 256. The batch size also perturbs the vectors in the fourth decimal, through the order in which floating-point sums are accumulated, so it is recorded in the index fingerprint and a change to it rebuilds. The perturbation is some four orders of magnitude below the cosine gaps that separate entries, so it cannot reorder a ranking.</p>
+<p>Division proceeds from the most meaningful boundary to the least: at markdown headings first, then at blank lines between paragraphs, and, only as a last resort, between individual words. At each level the pieces are packed back together greedily, each chunk filled as close to the 512-token budget as it will go, stopping just below it: the tokenizer truncates at 512, so a count of exactly 512 is what a text of 512 tokens and a text of 5000 both report, and only a count below that establishes that a piece survives whole. The packing is deliberate. Text that ends up within one chunk is combined by the model itself, which reads it in context, whereas text distributed over several chunks is combined only by the arithmetic average applied afterwards. Fuller chunks leave more of the combination to the model, and they also cause the entry vector to reflect how much text each part contributes rather than the number of sections the text happens to be divided into.</p>
+</section>
+</section>
+<section id="which-similarities-carry-information">
+<h2>Which similarities carry information<a class="headerlink" href="#which-similarities-carry-information" title="Link to this heading"></a></h2>
+<p>Given a query, a cosine is available for every entry. Which of them should count as matches?</p>
+<p>A fixed threshold is not a workable criterion, because the background level is not fixed: it depends on the query, and it already lies between 0.5 and 0.7 for texts with nothing in common. What does hold for any particular query is that only a small fraction of the library is about what that query asks for. Most of the <span class="math notranslate nohighlight">\(N\)</span> cosines are therefore contributed by entries irrelevant to it, and those form a compact bulk, spread only by incidental vocabulary overlap. The few entries that are actually relevant, if any, appear above that bulk as a thin tail.</p>
+<p>The package accordingly locates the bulk from the numbers themselves. Write <span class="math notranslate nohighlight">\(s_1, \dots, s_N\)</span> for the cosines and <span class="math notranslate nohighlight">\(\tilde{s}\)</span> for their median. The width of the bulk is estimated by the <em>median absolute deviation</em>,</p>
+<div class="math notranslate nohighlight">
+\[\mathrm{MAD} = \operatorname{median}_i \left| s_i - \tilde{s} \right|,\]</div>
+<p>which is the median distance of the values from their own center. For normally distributed data the MAD is smaller than the standard deviation by a fixed factor, since half of a normal distribution’s mass lies within <span class="math notranslate nohighlight">\(0.6745\,\sigma\)</span> of the mean. Multiplying by <span class="math notranslate nohighlight">\(1/0.6745 = 1.4826\)</span> therefore converts the MAD into an estimate of <span class="math notranslate nohighlight">\(\sigma\)</span> on the familiar scale. An entry counts as a match when</p>
+<div class="math notranslate nohighlight">
+\[s_i &gt; \tilde{s} + 2.5 \times 1.4826 \times \mathrm{MAD},\]</div>
+<p>that is, when it lies more than two and a half estimated standard deviations above the center of the bulk.</p>
+<p>The value is calibrated against measurement rather than against the normal distribution. On a 125-paper bibliography spanning five topics, the entries a topical query ought to return run from <span class="math notranslate nohighlight">\(3.9\sigma\)</span> down to about <span class="math notranslate nohighlight">\(2.5\sigma\)</span>, while queries from other fields altogether reach only <span class="math notranslate nohighlight">\(1.9\sigma\)</span> and <span class="math notranslate nohighlight">\(2.1\sigma\)</span>. A cut at 2.5 admits the matches and still rejects the unrelated queries; a cut at 3.5 sits above almost all of the signal and returns nothing for most real queries. The margin below the cut is a few tenths of a <span class="math notranslate nohighlight">\(\sigma\)</span>, so an occasional unrelated entry does get through, which is the price of a criterion that answers at all.</p>
+<p>The normal figure for a one-sided <span class="math notranslate nohighlight">\(2.5\sigma\)</span> cut, about one value in 161, overstates the accidents to expect, because the bulk has thinner tails than a normal distribution: those 125 unrelated cosines peaked at <span class="math notranslate nohighlight">\(1.9\sigma\)</span> and <span class="math notranslate nohighlight">\(2.1\sigma\)</span> where a normal bulk of that size would be expected to reach <span class="math notranslate nohighlight">\(2.7\sigma\)</span>.</p>
+<p>The criterion needs a bulk to locate, so it needs a library. On a handful of entries the median and the MAD are estimated from a handful of numbers, and an ordinary above-median cosine clears any threshold; a library of that size is better served by reading all of it. A bulk with no spread at all is the other degenerate case, and it arises whenever a source repeats boilerplate over half the library or more: the MAD is then exactly 0 and a cut at the bare median would admit everything above it. The standard deviation still sees the rest of the distribution and stands in for the MAD there, erring toward admitting nothing because the very values in question inflate it. Where every row is identical, nothing can stand out from anything and no entry matches.</p>
+<p>The use of the median and the MAD in place of the mean and the standard deviation is the essential point of the construction. The latter two are displaced by the very values the procedure is meant to isolate: a handful of strong matches raises the mean and inflates the standard deviation, which raises the threshold, which may in turn conceal the matches responsible. The median and the MAD are unaffected until more than half the sample consists of outliers, so the matches cannot suppress themselves. The reasoning is the same as that behind quoting a median for a measurement series containing a few extreme readings.</p>
+<p>As an illustration, suppose the bulk has median 0.55 and an estimated width of 0.025. The cut then lies near <span class="math notranslate nohighlight">\(0.55 + 2.5 \times 0.025 = 0.61\)</span>, so that a handful of entries scoring between 0.65 and 0.73 pass while the remainder of the library does not.</p>
+<p>Two consequences follow. A query unrelated to the library is all bulk and no tail, so nothing passes and the result is empty; this is the correct answer, obtained at no additional cost from numbers already computed. The <code class="docutils literal notranslate"><span class="pre">limit</span></code> is a maximum only: three results in response to a request for ten means that only three entries stood out.</p>
+<p>The one weak point is a query so broad that a sizeable fraction of the library really is related to it. Those entries widen the bulk themselves, and only the strongest few remain clear of it. This is acceptable, since such a query does not discriminate to begin with, and the lexical ranking described next still orders whatever the cut discards.</p>
+</section>
+<section id="combining-two-rankings">
+<h2>Combining two rankings<a class="headerlink" href="#combining-two-rankings" title="Link to this heading"></a></h2>
+<p>Character matching and vector similarity fail under different circumstances, which is what makes their combination worthwhile. Domain-specific queries are rich in exact terms, for which matching the characters is precisely right and for which an embedding may blur the term into its neighborhood. A query phrased in the reader’s own words, conversely, finds nothing lexically and everything semantically. Searching with <code class="docutils literal notranslate"><span class="pre">hybrid=True</span></code>, the default, performs both and merges the results.</p>
+<p>The two rankings cannot simply be added: one yields cosines in a compressed band, the other the <code class="docutils literal notranslate"><span class="pre">(rung,</span> <span class="pre">fine)</span></code> score of <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.search" title="bibdeskparser.Library.search"><code class="xref py py-meth docutils literal notranslate"><span class="pre">search()</span></code></a>, and the scales bear no relation to each other. <em>Reciprocal rank fusion</em> avoids the problem by discarding the scores and retaining only the positions. An entry appearing at rank <span class="math notranslate nohighlight">\(r\)</span> in one of the rankings receives from it a contribution</p>
+<div class="math notranslate nohighlight">
+\[\frac{1}{60 + r}\]</div>
+<p>to its fused score, and the contributions of the two rankings are summed. Sorting by that sum gives the final order.</p>
+<p>The constant 60 is what causes the procedure to behave as a consensus vote. Since <span class="math notranslate nohighlight">\(1/61 = 0.0164\)</span> and <span class="math notranslate nohighlight">\(1/62 = 0.0161\)</span> are nearly equal, ranking first rather than second within one ranking is worth very little, whereas appearing in both rankings at all is worth a great deal: an entry ranked third semantically and fifth lexically scores <span class="math notranslate nohighlight">\(1/63 + 1/65 = 0.0313\)</span>, comfortably above an entry ranked first semantically and absent lexically at <span class="math notranslate nohighlight">\(0.0164\)</span>. A plain <span class="math notranslate nohighlight">\(1/r\)</span> would reverse this and render the leading entry of each ranking nearly unbeatable. The value originates in the paper that introduced the method (Cormack, Clarke, and Büttcher, SIGIR 2009) and has been used unchanged since.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">limit</span></code> applies to what comes out, not to either ranking on its way in: an entry just past it semantically that the lexical leg also ranks highly is precisely the consensus the method is built to promote. The remaining behavior follows from the formula. An entry found by only the lexical ranking still appears, whether the index omits it entirely or holds a row whose cosine the match cut rejected. Its reported cosine is <code class="docutils literal notranslate"><span class="pre">null</span></code> in both cases: a below-cut cosine is a number the procedure has just declined to treat as a match, and printing it would present a non-match as one. A query with no semantic matches reduces to the plain lexical order. And the fused order need not decrease monotonically in the reported cosine, since the cosine is not what determined the sorting.</p>
+</section>
+<section id="calibrating-a-similarity-into-a-readable-score">
+<h2>Calibrating a similarity into a readable score<a class="headerlink" href="#calibrating-a-similarity-into-a-readable-score" title="Link to this heading"></a></h2>
+<p>Relevance scoring meets the same difficulty as search, in a sharper form. A candidate paper’s raw similarity to the entries it is compared against falls somewhere in the compressed band between 0.5 and 0.7, from which no reader can determine whether the candidate belongs.</p>
+<p>Scoring always runs against a <em>target</em>, which is either the whole library or a <em>collection</em> within it. A collection is named by a static group, by a keyword, or as an explicit list of citation keys, and naming several of those pools their members into one. The choice changes what the resulting number means, for a reason that only becomes visible once the number is defined.</p>
+<p>The raw measure is straightforward. The candidate’s title and abstract are embedded as a single document, the cosine to every entry of the target set is computed, and the mean of the <span class="math notranslate nohighlight">\(k\)</span> largest of these is the raw value. Using the top <span class="math notranslate nohighlight">\(k\)</span> rather than a single centroid matters: averaging the vectors of a multi-topic library first would produce a direction describing nothing in particular. Using several neighbors rather than only the nearest prevents a single fortunate match from determining the result. So the measure asks how close the candidate is to a neighborhood of the target, and <span class="math notranslate nohighlight">\(k\)</span> sets how wide that neighborhood is: it defaults to 10, is clamped to the size of the collection so that a collection of one reduces to the plain cosine, and is adjustable per call. Those same <span class="math notranslate nohighlight">\(k\)</span> entries are what the report lists as <code class="docutils literal notranslate"><span class="pre">nearest</span></code>, so the neighbors behind any score can be read off it.</p>
+<p>The substance of the method is what the raw value is compared against. A measurement in an experiment is meaningless without a control, and the same applies here; the control is constructed from data already at hand. The <em>probes</em> are the library’s own papers, specifically those rows of the <code class="docutils literal notranslate"><span class="pre">default</span></code> index that carry both a title and an abstract, since those are the rows shaped like an incoming candidate. Each probe is then scored by exactly the procedure just applied to the candidate: the same target set, the same <span class="math notranslate nohighlight">\(k\)</span>, and the probe’s own row removed from the target side so that it cannot match itself. Each probe thereby answers the question of what that paper would have scored had it arrived on the same day as a fresh preprint.</p>
+<p>Those probe values together constitute the null distribution, and the candidate’s reported score is its percentile within that distribution: the percentage of the library’s own papers scoring lower. An unrelated candidate scores near 0. A score of 82.7 states that the candidate lies topically closer to the target than 82.7 percent of the library’s papers would have.</p>
+<p>A library in which no entry carries an abstract has no probes at all, and a percentile of an empty distribution does not exist. The score is then <code class="docutils literal notranslate"><span class="pre">None</span></code> rather than 0, with a warning, since a 0 there would be indistinguishable from a candidate the library has nothing to do with.</p>
+<p>Calibration of this kind is exact rather than approximate. Suppose the target index holds long summaries while the candidate consists of a short title and abstract. Every raw cosine is depressed by that mismatch of register. The probes, however, are title-and-abstract rows as well, and they are scored against the same summaries, so their values are depressed by the same amount. The distortion cancels in the ranking and the percentile survives it. This is why percentiles are comparable across different collections and different indexes while raw cosines are not.</p>
+<p>The cost is a single matrix product over roughly a thousand probe vectors, a few milliseconds. Nothing is precomputed and nothing is stored, so the calibration cannot fall out of step with the index it is computed from.</p>
+<section id="reading-a-score">
+<h3>Reading a score<a class="headerlink" href="#reading-a-score" title="Link to this heading"></a></h3>
+<p>Percentiles against the whole library are a weak signal by construction. Every library paper is scored against the library, so their percentiles are distributed uniformly between 0 and 100 however coherent the library may be. A whole-library score is therefore useful as a rejection gate, since a candidate near 0 has no bearing on the library’s subject matter, and as a duplicate check, since a score near 100 accompanied by a nearest-neighbor cosine near 1.0 indicates that the paper is already present. A middling value such as 71 says little.</p>
+<p>Scoring against a topic group is considerably more informative, because a single whole-library number dilutes a strong fit to one topic across every other topic in the library. Whenever the target is a collection rather than the whole library, the report adds the <code class="docutils literal notranslate"><span class="pre">members</span></code> band: the quartiles of the collection members’ own percentiles, computed exactly as the candidate’s. The band is what turns a percentile into a statement about membership:</p>
+<ul class="simple">
+<li><p>At or above the group’s median, the candidate scores like a typical member.</p></li>
+<li><p>At or above the first quartile, it scores like a weaker but legitimate member.</p></li>
+<li><p>Below the first quartile, it is topically adjacent yet weaker than any actual member of the group.</p></li>
+</ul>
+<p>The absolute position of the band varies considerably between groups. A tight, well-defined topic may have all its members above 92, while a diffuse one spans 40 to 90. The criterion is therefore the candidate’s position relative to <em>that group’s</em> band, never a fixed percentile.</p>
+</section>
+</section>
+<section id="limits-of-the-method">
+<h2>Limits of the method<a class="headerlink" href="#limits-of-the-method" title="Link to this heading"></a></h2>
+<p>Cosine similarity measures topical proximity and nothing else. It cannot establish whether a candidate paper extends the work it resembles, contradicts it, or merely overlaps with it, since a direction of that kind is not encoded in an angle between two vectors. Reading the nearest-neighbor list and forming that judgment remains the responsibility of a human reader or an agent; the task of the package ends with producing a number that means the same thing on every occasion.</p>
+<p>A second limit is less obvious. The model was trained on generic English by people who had never seen the library it is applied to, so “similar” means similar in a general sense, which need not coincide with the sense in which a particular library treats two papers as related. This is what keeps the feature free of any training step, of any stored model of a user’s preferences, and of any per-user state, and it is also what bounds it. Should the percentiles begin to misclassify papers of interest, the established remedy is to fit a small linear model on top of these same frozen vectors, taking a topic group’s own members as positive examples and the remainder of the library as negatives. That is a separate feature and is not implemented here; the zero-shot percentile is to be tried first, and found insufficient, before anything of the kind is warranted.</p>
+</section>
+<section id="stored-artifacts-and-rebuilding">
+<h2>Stored artifacts and rebuilding<a class="headerlink" href="#stored-artifacts-and-rebuilding" title="Link to this heading"></a></h2>
+<p>Each index writes two files into the index directory, which defaults to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> path with its extension replaced by <code class="docutils literal notranslate"><span class="pre">.semantic</span></code> (so <code class="docutils literal notranslate"><span class="pre">refs.semantic/</span></code> beside <code class="docutils literal notranslate"><span class="pre">refs.bib</span></code>) and is configurable as <a class="reference internal" href="config.html#config-semantic"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">index_dir</span></code></span></a>. For an index named <code class="docutils literal notranslate"><span class="pre">default</span></code> they are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">default.npz</span></code>, the matrix of unit vectors, one row per citation key, together with the citation keys themselves in row order. For a thousand entries it occupies about 1.5 MB.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">default.json</span></code>, the manifest, recording for each key the sources that actually contributed and a hash of the embedded text, together with the index <em>fingerprint</em>: the source list, the model, the model file, the vector dimension, the batch size, the <code class="docutils literal notranslate"><span class="pre">fastembed</span></code> version, the token budget, and a version number for the chunking and pooling arithmetic that the model’s own identity cannot see.</p></li>
+</ul>
+<p>The two files are one artifact written in two steps, so the loader checks that the keys stored beside the matrix are the manifest’s keys. An interruption between the two writes would otherwise be able to leave a new matrix beside an old manifest with the same number of rows, and every vector would belong to the wrong entry.</p>
+<p>The directory holds derived data that <code class="docutils literal notranslate"><span class="pre">build_semantic_indexes</span></code> owns and rewrites at will. It is deliberately not declared as an <code class="docutils literal notranslate"><span class="pre">[assets]</span></code> class, since those describe files produced elsewhere that the package only reads, and the missing-asset audit would report every index not yet built.</p>
+<p>Each file is written beside its destination and renamed onto it, so an interrupted build leaves the index that was already there rather than a half-written one. An index that cannot be read at all, however it came to be that way, counts as one that has not been built, which is what allows the rebuild that every other error message recommends to be the command that repairs it.</p>
+<p>Refreshing is precise and proceeds per entry. A key whose text hashes to the stored value retains its vector, a changed or new key is re-embedded, and a key the library no longer holds is dropped, which is also what prevents a <a class="reference internal" href="cli.html#cli-rekey"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">rekey</span></code></span></a> from leaving a stray row behind. A change to the fingerprint, whether a different source list, a different model, a different <code class="docutils literal notranslate"><span class="pre">fastembed</span></code> release, or a change to the chunking, rebuilds that index as a whole, so that vectors produced by different pipelines are never mixed within one matrix. Querying such an index is refused outright rather than warned about, since a search embeds its query with the model of the moment and multiplying that vector against a matrix something else wrote is silently wrong wherever the two agree on the number of dimensions. Including the source list in the fingerprint is what allows an edited index definition to register as a single rebuild rather than as a thousand individual hash mismatches.</p>
+<p>Searching or scoring with an index whose <em>text</em> has fallen behind the library still works, using the stored vectors, and warns while naming the keys concerned. A row belonging to an entry that has since been deleted is the one case that cannot be honored that way. There is no entry to return for it and no other command would accept its citation key, so search passes over it, and scoring leaves it out of the neighborhood it averages, of the neighbors it reports, and of the probes it calibrates against, since a paper the library no longer holds is not one of the library’s own papers. Reproducibility rests on the computation graph being a frozen artifact: a pinned <code class="docutils literal notranslate"><span class="pre">fastembed</span></code> release produces identical vectors from run to run, and differences between machines amount to floating-point noise in the last place, far too small to reorder a ranking.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="assets.html" class="btn btn-neutral float-left" title="External Assets" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="bib_entry_types.html" class="btn btn-neutral float-right" title="Bib Entry Types" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Michael Goerz.
+      <span class="lastupdated">Last updated on Aug 23, 2026.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contributing &mdash; BibDeskParser 0.8.1 documentation</title>
+  <title>Contributing &mdash; BibDeskParser 0.8.1+dev (12a3ae9) documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=ec16d22d"></script>
+      <script src="_static/documentation_options.js?v=869ab1f8"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.8.1
+    v0.8.1+dev
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -65,6 +65,7 @@
 <li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assets.html">External Assets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="semantic.html">Semantic Indexing</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -83,7 +84,10 @@
 <li class="toctree-l2"><a class="reference internal" href="#branching-model">Branching Model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#commit-messages">Commit Messages</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#pull-request-description">Pull Request Description</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#recorded-embedding-vectors">Recorded embedding vectors</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#code-style">Code Style</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#changelog">Changelog</a></li>
@@ -236,6 +240,17 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
 <li><p>An HTML comment <code class="docutils literal notranslate"><span class="pre">&lt;!--</span> <span class="pre">notest</span> <span class="pre">--&gt;</span></code> on the line directly above a fence excludes that block; the comment is invisible in the rendered documentation. Use it for purely illustrative examples, e.g. ones referencing files that do not exist outside the reader’s setting.</p></li>
 </ul>
 <p>The pages under test are listed in <code class="docutils literal notranslate"><span class="pre">PAGES</span></code> at the top of <code class="docutils literal notranslate"><span class="pre">tests/test_doc_console.py</span></code>; a new documentation page with <code class="docutils literal notranslate"><span class="pre">console</span></code> examples must be registered there.</p>
+<section id="recorded-embedding-vectors">
+<h3>Recorded embedding vectors<a class="headerlink" href="#recorded-embedding-vectors" title="Link to this heading"></a></h3>
+<p>The <a class="reference external" href="https://goerz.github.io/bibdeskparser/semantic.html">semantic indexing</a> tests run the whole pipeline – chunking, batching, the match cut, the calibration – against vectors recorded from the real <code class="docutils literal notranslate"><span class="pre">BAAI/bge-small-en-v1.5</span></code>, replayed from <code class="docutils literal notranslate"><span class="pre">tests/embeddings.npz</span></code> by <code class="docutils literal notranslate"><span class="pre">tests/embeddings.py</span></code>. The geometry under test is therefore the model’s own, while <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code> stays offline and needs neither <code class="docutils literal notranslate"><span class="pre">fastembed</span></code> nor a model download; <code class="docutils literal notranslate"><span class="pre">fastembed</span></code> is deliberately not a development dependency. A synthetic stand-in would not do: its token counter would not truncate at the model’s input length and its cosines would not form the compressed band that the match cut and the calibration are built around, so both would be exercised on numbers no library ever produces.</p>
+<p>A text the recording does not hold fails the test that needed it, naming the text. Re-record after changing a fixture’s text, the query prefix, the model, the batch size, or the chunking:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">make record-embeddings</span>
+</pre></div>
+</div>
+<p>That pulls <code class="docutils literal notranslate"><span class="pre">fastembed</span></code> in for the run only, downloads the model on first use, embeds what the recording is missing, and rewrites <code class="docutils literal notranslate"><span class="pre">tests/embeddings.npz</span></code> in place. Review the resulting diff the way you would any other test data: a re-recording that grows by more texts than the change accounts for means a fixture drifted.</p>
+<p>The statistical parts of the feature – the match cut that decides which cosines count as matches, and the calibration that turns a similarity into a percentile – only mean anything on a corpus with a realistic cosine distribution, so they are tested against one. <code class="docutils literal notranslate"><span class="pre">tests/topics.bib</span></code> holds 125 published papers, 25 for each of five topics (superconducting qubits, trapped ions, atom interferometry, spin squeezing, NV centers) that share a field but not a subject; each entry carries its topic as its only keyword and has a title and an abstract. <code class="docutils literal notranslate"><span class="pre">tests/topics_candidates.bib</span></code> holds one further paper per topic, deliberately outside the corpus so that scoring it does not turn up the paper itself at a cosine of 1.0.</p>
+<p>Extending the corpus means keeping those properties: a paper belongs to exactly one of the five topics, so that a keyword is usable as the expected answer, and the candidates stay out of <code class="docutils literal notranslate"><span class="pre">topics.bib</span></code>. Any change to either file needs <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">record-embeddings</span></code> afterwards.</p>
+</section>
 </section>
 <section id="code-style">
 <h2>Code Style<a class="headerlink" href="#code-style" title="Link to this heading"></a></h2>
@@ -306,7 +321,7 @@ git<span class="w"> </span>branch<span class="w"> </span>-D<span class="w"> </sp
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 21, 2026.
+      <span class="lastupdated">Last updated on Aug 23, 2026.
       </span></p>
   </div>
 

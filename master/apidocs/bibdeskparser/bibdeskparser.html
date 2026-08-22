@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Package API &mdash; BibDeskParser 0.8.1 documentation</title>
+  <title>Package API &mdash; BibDeskParser 0.8.1+dev (12a3ae9) documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=ec16d22d"></script>
+      <script src="../../_static/documentation_options.js?v=869ab1f8"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.8.1
+    v0.8.1+dev
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -65,6 +65,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../bibdesk_format.html">BibDesk's .bib Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../preprints.html">Preprints</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../assets.html">External Assets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../semantic.html">Semantic Indexing</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -489,6 +490,12 @@ fields.</p></li>
 because they duplicate an earlier entry (read-only).</p></li>
 <li><p><a class="reference internal" href="#bibdeskparser.Library.search" title="bibdeskparser.Library.search"><code class="xref py py-meth docutils literal notranslate"><span class="pre">search()</span></code></a>: full-text search over the entries, returning the
 matches best first.</p></li>
+<li><p><a class="reference internal" href="#bibdeskparser.Library.build_semantic_indexes" title="bibdeskparser.Library.build_semantic_indexes"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_semantic_indexes()</span></code></a>, <a class="reference internal" href="#bibdeskparser.Library.semantic_search" title="bibdeskparser.Library.semantic_search"><code class="xref py py-meth docutils literal notranslate"><span class="pre">semantic_search()</span></code></a>, and
+<a class="reference internal" href="#bibdeskparser.Library.semantic_score" title="bibdeskparser.Library.semantic_score"><code class="xref py py-meth docutils literal notranslate"><span class="pre">semantic_score()</span></code></a>: embedding indexes over the library’s
+text and the two things they enable – search by meaning rather
+than by characters, and a calibrated relevance score for a
+candidate paper. They require the <code class="docutils literal notranslate"><span class="pre">bibdeskparser[semantic]</span></code>
+extra; see <a class="reference internal" href="../../semantic.html#semantic-indexing"><span class="std std-ref">Semantic Indexing</span></a>.</p></li>
 <li><p><a class="reference internal" href="#bibdeskparser.Library.rekey" title="bibdeskparser.Library.rekey"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rekey()</span></code></a>: rename an entry (<a class="reference internal" href="#bibdeskparser.Entry.key" title="bibdeskparser.Entry.key"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Entry.key</span></code></a> itself is
 read-only), either to an explicitly given key or to one generated
 from an auto-key format in BibDesk’s
@@ -1077,6 +1084,37 @@ when its path is a file. A class that does not resolve is
 omitted.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="bibdeskparser.Library.build_semantic_indexes">
+<span class="sig-name descname"><span class="pre">build_semantic_indexes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.build_semantic_indexes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.build_semantic_indexes" title="Link to this definition"></a></dt>
+<dd><p>Build or refresh the library’s embedding indexes; see
+<a class="reference internal" href="../../semantic.html#semantic-indexing"><span class="std std-ref">Semantic Indexing</span></a>.</p>
+<p>Every index is (re)built: the built-in <code class="docutils literal notranslate"><span class="pre">default</span></code> index over
+title and abstract, plus each index the <code class="docutils literal notranslate"><span class="pre">[semantic.indexes]</span></code>
+<a class="reference internal" href="../../config.html#configuration"><span class="std std-ref">configuration</span></a> defines. The files are written
+into the index directory next to the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file (see
+<code class="docutils literal notranslate"><span class="pre">config.semantic.index_dir</span></code>); the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file itself is never
+touched, and neither is anything else on disk.</p>
+<p>Refreshing is per key: an entry whose source text is unchanged
+keeps its stored vector, a changed or new entry is re-embedded,
+and an entry the library no longer has is dropped. Changing an
+index definition, the embedding model, or the <code class="docutils literal notranslate"><span class="pre">fastembed</span></code>
+release changes the index fingerprint and rebuilds that index
+as a whole, so vectors from different models are never mixed.</p>
+<p>Returns a report keyed by index name, each value a dict
+<code class="docutils literal notranslate"><span class="pre">{&quot;embedded&quot;:</span> <span class="pre">[keys],</span> <span class="pre">&quot;pruned&quot;:</span> <span class="pre">[keys],</span> <span class="pre">&quot;unchanged&quot;:</span> <span class="pre">count}</span></code>.</p>
+<p>Embedding a full library takes tens of seconds, so <code class="docutils literal notranslate"><span class="pre">progress</span></code>
+allows the caller to report it. It is called once per index,
+in build order, as <code class="docutils literal notranslate"><span class="pre">progress(name,</span> <span class="pre">total)</span></code> with the number of
+entries that index has to embed, and returns either <code class="docutils literal notranslate"><span class="pre">None</span></code> or
+a callable that is then invoked with the number of entries
+finished since the previous call. The <code class="docutils literal notranslate"><span class="pre">build_semantic_indexes</span></code>
+command uses it to draw a progress bar.</p>
+<p>Requires the <code class="docutils literal notranslate"><span class="pre">bibdeskparser[semantic]</span></code> extra, and a library
+with a file path. The first run downloads the embedding model
+(about 130 MB) into a local cache; every later run is offline.</p>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="bibdeskparser.Library.config">
 <span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#bibdeskparser.Library.config" title="Link to this definition"></a></dt>
@@ -1495,7 +1533,7 @@ database format, with a <a class="reference internal" href="#bibdeskparser.Forma
 
 <dl class="py method">
 <dt class="sig sig-object py" id="bibdeskparser.Library.keys">
-<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">not_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.keys" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keyword</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.keys" title="Link to this definition"></a></dt>
 <dd><p>Citation keys of the entries, as a <code class="docutils literal notranslate"><span class="pre">tuple</span></code>, optionally
 filtered.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">keys</span> <span class="o">=</span> <span class="n">library</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span>
@@ -1503,7 +1541,7 @@ filtered.</p>
     <span class="n">has</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">missing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">not_group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">keyword</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">with_files</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
@@ -1519,10 +1557,10 @@ is one of the given types.</p></li>
 with a non-empty value.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">missing</span></code>: keep only entries where none of the given fields
 has a non-empty value.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">group</span></code>: keep only entries that are members of every given
-static group (see <a class="reference internal" href="#bibdeskparser.Library.groups" title="bibdeskparser.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">not_group</span></code>: keep only entries that are members of none of
-the given static groups.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">group</span></code>: keep only entries that are members of any of the
+given static groups (see <a class="reference internal" href="#bibdeskparser.Library.groups" title="bibdeskparser.Library.groups"><code class="xref py py-attr docutils literal notranslate"><span class="pre">groups</span></code></a>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">keyword</span></code>: keep only entries that carry any of the given
+keywords (see <a class="reference internal" href="#bibdeskparser.Library.keywords" title="bibdeskparser.Library.keywords"><code class="xref py py-attr docutils literal notranslate"><span class="pre">keywords</span></code></a>).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">with_files</span></code>: a tri-state filter on file attachments (the
 <code class="docutils literal notranslate"><span class="pre">bdsk-file-N</span></code> fields, see <a class="reference internal" href="#bibdeskparser.Entry.files" title="bibdeskparser.Entry.files"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Entry.files</span></code></a>). <code class="docutils literal notranslate"><span class="pre">None</span></code> (the
 default) does not filter; <code class="docutils literal notranslate"><span class="pre">True</span></code> keeps only entries with at
@@ -1533,8 +1571,17 @@ field that is defined with an empty (or whitespace-only)
 value counts as missing, since BibDesk deletes empty fields
 when it saves a <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file (see
 <a class="reference internal" href="../../bibdesk_format.html#bibdesk-empty-fields"><span class="std std-ref">Empty fields</span></a>).</p>
-<p>Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> for a group name (in <code class="docutils literal notranslate"><span class="pre">group</span></code> or
-<code class="docutils literal notranslate"><span class="pre">not_group</span></code>) that does not exist in the library.</p>
+<p><code class="docutils literal notranslate"><span class="pre">group</span></code> and <code class="docutils literal notranslate"><span class="pre">keyword</span></code> together name a <em>collection</em>: an entry
+belongs to it if it is a member of any named group or carries
+any named keyword, so <code class="docutils literal notranslate"><span class="pre">group=[&quot;A&quot;,</span> <span class="pre">&quot;B&quot;]</span></code> is the union of the
+two groups and <code class="docutils literal notranslate"><span class="pre">group=&quot;A&quot;,</span> <span class="pre">keyword=&quot;K&quot;</span></code> the union of the
+group and the keyword. The remaining arguments then narrow
+the collection, or the whole library when neither <code class="docutils literal notranslate"><span class="pre">group</span></code> nor
+<code class="docutils literal notranslate"><span class="pre">keyword</span></code> is given. The same collection is what the <code class="docutils literal notranslate"><span class="pre">--group</span></code>
+and <code class="docutils literal notranslate"><span class="pre">--keyword</span></code> options of the <code class="docutils literal notranslate"><span class="pre">semantic_score</span></code> command
+select.</p>
+<p>Raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> for a <code class="docutils literal notranslate"><span class="pre">group</span></code> or <code class="docutils literal notranslate"><span class="pre">keyword</span></code> that no
+entry of the library has.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">bibdeskparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entry</span><span class="p">,</span> <span class="n">Library</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span> <span class="o">=</span> <span class="n">Library</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="p">[</span><span class="s2">"Key2026"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">(</span>
@@ -1553,8 +1600,9 @@ when it saves a <code class="docutils literal notranslate"><span class="pre">.bi
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">"My Papers"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"Key2026"</span><span class="p">,)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">group</span><span class="o">=</span><span class="s2">"My Papers"</span><span class="p">)</span>
 <span class="go">('Key2026',)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">not_group</span><span class="o">=</span><span class="s2">"My Papers"</span><span class="p">)</span>
-<span class="go">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">add_to_keyword</span><span class="p">(</span><span class="s2">"Control"</span><span class="p">,</span> <span class="s2">"Key2026"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bib</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">keyword</span><span class="o">=</span><span class="s2">"Control"</span><span class="p">)</span>
+<span class="go">('Key2026',)</span>
 
 </pre></div>
 </div>
@@ -1949,6 +1997,87 @@ ties keep the library’s entry order.</p>
 </div>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="bibdeskparser.Library.semantic_score">
+<span class="sig-name descname"><span class="pre">semantic_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.semantic_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.semantic_score" title="Link to this definition"></a></dt>
+<dd><p>Score the candidate <code class="docutils literal notranslate"><span class="pre">text</span></code> – the title and abstract of a
+new paper, as one string – for its relevance to the library
+or to a collection within it; see
+<a class="reference internal" href="../../semantic.html#semantic-indexing"><span class="std std-ref">Semantic Indexing</span></a>.</p>
+<p>The candidate is matched against <code class="docutils literal notranslate"><span class="pre">index</span></code> (defaulting to
+<code class="docutils literal notranslate"><span class="pre">config.semantic.score_index</span></code>), restricted to the citation
+<code class="docutils literal notranslate"><span class="pre">keys</span></code> of a collection if given; a key that index has no row
+for is skipped, a key named more than once counts once, and a
+row left behind by an entry the library no longer has is left
+out of both the measure and <code class="docutils literal notranslate"><span class="pre">&quot;nearest&quot;</span></code>.
+The raw measure is the mean of the <code class="docutils literal notranslate"><span class="pre">k</span></code> highest cosine
+similarities (<code class="docutils literal notranslate"><span class="pre">k</span></code> at least 1), clamped to the size of the
+collection, so a single key yields the plain cosine.</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">{&quot;score&quot;:</span> <span class="pre">percentile,</span> <span class="pre">&quot;nearest&quot;:</span> <span class="pre">[{&quot;key&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;cosine&quot;:</span> <span class="pre">...},</span> <span class="pre">...]}</span></code>, and with <code class="docutils literal notranslate"><span class="pre">keys</span></code> also <code class="docutils literal notranslate"><span class="pre">&quot;members&quot;</span></code>. The
+<code class="docutils literal notranslate"><span class="pre">&quot;score&quot;</span></code> is not a raw cosine (which would sit in a narrow
+high band, near 0.6 even for unrelated text) but a percentile
+from 0 to 100: the share of the library’s own papers that
+score lower, had each of them arrived as this candidate did.
+An unrelated candidate scores near 0. It is <code class="docutils literal notranslate"><span class="pre">None</span></code>, with a
+warning, when the <code class="docutils literal notranslate"><span class="pre">default</span></code> index holds no row carrying both a
+title and an abstract, since there is then nothing to
+calibrate against. <code class="docutils literal notranslate"><span class="pre">&quot;nearest&quot;</span></code> lists the
+<code class="docutils literal notranslate"><span class="pre">k</span></code> closest entries of the target with their raw cosines –
+exactly the neighbors the raw measure averages.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">keys</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;members&quot;</span></code> holds the quartiles <code class="docutils literal notranslate"><span class="pre">{&quot;q1&quot;:,</span> <span class="pre">&quot;median&quot;:,</span> <span class="pre">&quot;q3&quot;:}</span></code> of the collection members’ own percentiles
+under the same measure (<code class="docutils literal notranslate"><span class="pre">None</span></code> if none of them can serve as a
+probe). That band is what turns a percentile into “would sit
+among these papers like one of their own”: at or above the
+median the candidate is a typical member, below the first
+quartile it is weaker than any actual member.</p>
+<p>Percentiles are comparable across collections and indexes;
+raw cosines are not. Both measure topical proximity, which is
+not the same as whether the candidate <em>extends</em> the work it
+resembles – that judgment is not something a cosine can
+deliver.</p>
+<p>Requires the <code class="docutils literal notranslate"><span class="pre">bibdeskparser[semantic]</span></code> extra. Raises
+<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> for an unknown citation key and
+<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> for an index that is not defined or not
+built.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bibdeskparser.Library.semantic_search">
+<span class="sig-name descname"><span class="pre">semantic_search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hybrid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/bibdeskparser/library.html#Library.semantic_search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bibdeskparser.Library.semantic_search" title="Link to this definition"></a></dt>
+<dd><p>Return the entries most relevant to <code class="docutils literal notranslate"><span class="pre">query</span></code>, best first, as
+a list of <code class="docutils literal notranslate"><span class="pre">(Entry,</span> <span class="pre">cosine)</span></code> pairs; see
+<a class="reference internal" href="../../semantic.html#semantic-indexing"><span class="std std-ref">Semantic Indexing</span></a>.</p>
+<p>Unlike <a class="reference internal" href="#bibdeskparser.Library.search" title="bibdeskparser.Library.search"><code class="xref py py-meth docutils literal notranslate"><span class="pre">search()</span></code></a>, which matches the query’s characters,
+this ranks entries by the meaning of the text an index holds
+for them, so a phrase finds relevant entries whose title and
+abstract share no word with it. <code class="docutils literal notranslate"><span class="pre">index</span></code> names the index to
+query, defaulting to <code class="docutils literal notranslate"><span class="pre">config.semantic.search_index</span></code>; an index
+that is not defined or not built raises <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a>
+naming <a class="reference internal" href="#bibdeskparser.Library.build_semantic_indexes" title="bibdeskparser.Library.build_semantic_indexes"><code class="xref py py-meth docutils literal notranslate"><span class="pre">build_semantic_indexes()</span></code></a>. An entry deleted since
+the index was built keeps its row there, but is not returned.</p>
+<p>At most <code class="docutils literal notranslate"><span class="pre">limit</span></code> entries are returned (at least 1), and only
+those that count as matches: since even unrelated text pairs
+score around 0.5 to 0.7, the cut is not an absolute cosine but
+an outlier criterion over the whole distribution of cosines
+for this query. A query unrelated to the library therefore returns
+an empty list rather than the ten least unrelated entries, and
+a shorter list than <code class="docutils literal notranslate"><span class="pre">limit</span></code> is normal.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">hybrid</span></code> (the default), the semantic ranking is merged
+with the lexical ranking of <a class="reference internal" href="#bibdeskparser.Library.search" title="bibdeskparser.Library.search"><code class="xref py py-meth docutils literal notranslate"><span class="pre">search()</span></code></a> by reciprocal rank
+fusion, which is what keeps exact technical terms working. The
+fused order is thus not monotonic in the reported cosine, and
+an entry only the lexical leg finds (including one the index
+omits) can rank; its cosine is then <code class="docutils literal notranslate"><span class="pre">None</span></code>. With
+<code class="docutils literal notranslate"><span class="pre">hybrid=False</span></code>, the order is by cosine alone.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">cosine</span></code> is the query-entry cosine similarity, rounded to
+three decimals. It is comparable only within one query: it is
+not a percentage, and values from different queries say
+nothing about each other.</p>
+<p>Requires the <code class="docutils literal notranslate"><span class="pre">bibdeskparser[semantic]</span></code> extra. Entries whose
+source text has changed since the index was built are ranked
+with their stored vectors, and warned about.</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="bibdeskparser.Library.strings">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">strings</span></span><a class="headerlink" href="#bibdeskparser.Library.strings" title="Link to this definition"></a></dt>
@@ -2121,7 +2250,7 @@ of the stored values (<code class="docutils literal notranslate"><span class="pr
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 21, 2026.
+      <span class="lastupdated">Last updated on Aug 23, 2026.
       </span></p>
   </div>
 

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configuration &mdash; BibDeskParser 0.8.1 documentation</title>
+  <title>Configuration &mdash; BibDeskParser 0.8.1+dev (12a3ae9) documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=ec16d22d"></script>
+      <script src="_static/documentation_options.js?v=869ab1f8"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.8.1
+    v0.8.1+dev
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -65,6 +65,7 @@
 <li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assets.html">External Assets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="semantic.html">Semantic Indexing</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
@@ -82,6 +83,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#the-add-and-add-abstract-tables-fetching-defaults">The <code class="docutils literal notranslate"><span class="pre">[add]</span></code> and <code class="docutils literal notranslate"><span class="pre">[add_abstract]</span></code> tables: fetching defaults</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#the-rekey-and-delete-tables-file-lifecycle-defaults">The <code class="docutils literal notranslate"><span class="pre">[rekey]</span></code> and <code class="docutils literal notranslate"><span class="pre">[delete]</span></code> tables: file lifecycle defaults</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#the-known-missing-table-known-missing-groups">The <code class="docutils literal notranslate"><span class="pre">[known_missing]</span></code> table: known-missing groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-semantic-table-embedding-indexes">The <code class="docutils literal notranslate"><span class="pre">[semantic]</span></code> table: embedding indexes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#the-initials-table-acronym-exceptions">The <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> table: acronym exceptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#the-journal-macros-table-journal-name-to-macro-mappings">The <code class="docutils literal notranslate"><span class="pre">[journal_macros]</span></code> table: journal-name-to-macro mappings</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#the-preprint-archives-table-recognized-preprint-servers">The <code class="docutils literal notranslate"><span class="pre">[preprint_archives]</span></code> table: recognized preprint servers</a></li>
@@ -317,8 +319,30 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">doi</span></code>: <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.add_doi" title="bibdeskparser.Library.add_doi"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_doi()</span></code></a> maintains the group in the same way. In addition, the <code class="docutils literal notranslate"><span class="pre">check</span></code> command accepts an <code class="docutils literal notranslate"><span class="pre">article</span></code> without a <code class="docutils literal notranslate"><span class="pre">doi</span></code> if the entry is a member of the group.</p></li>
 <li><p>Any other field (e.g. <code class="docutils literal notranslate"><span class="pre">author</span> <span class="pre">=</span> <span class="pre">&quot;No</span> <span class="pre">Author&quot;</span></code>): no command ever adds or removes entries automatically; marking is entirely manual, and the declaration provides the stale-marker audit above and names the convention.</p></li>
 </ul>
-<p>Manual marking and unmarking always works, for declared and undeclared groups alike: with the <code class="docutils literal notranslate"><span class="pre">add_to_group</span></code>/<code class="docutils literal notranslate"><span class="pre">remove_from_group</span></code> CLI commands, or by drag and drop in BibDesk. Likewise, <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--group</span> <span class="pre">NAME</span></code>/<code class="docutils literal notranslate"><span class="pre">--not-group</span> <span class="pre">NAME</span></code> select by membership in any static group; the <code class="docutils literal notranslate"><span class="pre">keys</span></code> filters do not consult this table. Without the table, none of the automatic bookkeeping above happens.</p>
+<p>Manual marking and unmarking always works, for declared and undeclared groups alike: with the <code class="docutils literal notranslate"><span class="pre">add_to_group</span></code>/<code class="docutils literal notranslate"><span class="pre">remove_from_group</span></code> CLI commands, or by drag and drop in BibDesk. Likewise, <code class="docutils literal notranslate"><span class="pre">keys</span> <span class="pre">--group</span> <span class="pre">NAME</span></code> selects by membership in any static group; the <code class="docutils literal notranslate"><span class="pre">keys</span></code> filters do not consult this table. Without the table, none of the automatic bookkeeping above happens.</p>
 <p>Field names are lowercased; each field needs its own group, and group names must be non-empty (a shared group would make membership ambiguous between fields). The table is exposed as <code class="docutils literal notranslate"><span class="pre">Library.config.known_missing</span></code>, a <code class="docutils literal notranslate"><span class="pre">dict</span></code> mapping the field name to the group name. See <a class="reference internal" href="bibdesk_format.html#bibdesk-empty-fields"><span class="std std-ref">Empty fields</span></a> for why an empty field value cannot record this information.</p>
+</section>
+<section id="the-semantic-table-embedding-indexes">
+<span id="config-semantic"></span><h2>The <code class="docutils literal notranslate"><span class="pre">[semantic]</span></code> table: embedding indexes<a class="headerlink" href="#the-semantic-table-embedding-indexes" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">[semantic]</span></code> table configures the embedding indexes behind <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.semantic_search" title="bibdeskparser.Library.semantic_search"><code class="xref py py-meth docutils literal notranslate"><span class="pre">semantic_search()</span></code></a> and <a class="reference internal" href="apidocs/bibdeskparser/bibdeskparser.html#bibdeskparser.Library.semantic_score" title="bibdeskparser.Library.semantic_score"><code class="xref py py-meth docutils literal notranslate"><span class="pre">semantic_score()</span></code></a> (CLI: <a class="reference internal" href="cli.html#cli-build-semantic-indexes"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">build_semantic_indexes</span></code></span></a>, <a class="reference internal" href="cli.html#cli-semantic-search"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">semantic_search</span></code></span></a>, <a class="reference internal" href="cli.html#cli-semantic-score"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">semantic_score</span></code></span></a>); see <a class="reference internal" href="semantic.html#semantic-indexing"><span class="std std-ref">Semantic Indexing</span></a> for what an index is and how it is used. The whole feature needs the <code class="docutils literal notranslate"><span class="pre">bibdeskparser[semantic]</span></code> extra; without the table, the built-in <code class="docutils literal notranslate"><span class="pre">default</span></code> index over title and abstract is the only one, which is enough for both methods.</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[semantic]</span>
+<span class="n">index_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"refs.semantic"</span><span class="w">  </span><span class="c1"># where the built indexes are stored</span>
+<span class="n">search_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"default"</span><span class="w">     </span><span class="c1"># what semantic_search queries</span>
+<span class="n">score_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"default"</span><span class="w">      </span><span class="c1"># what semantic_score matches against</span>
+
+<span class="k">[semantic.indexes]</span>
+<span class="n">summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"summary"</span><span class="p">]</span><span class="w">        </span><span class="c1"># one additional index, over an asset class</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">index_dir</span></code> (default: the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> path with its extension replaced by <code class="docutils literal notranslate"><span class="pre">.semantic</span></code>, so <code class="docutils literal notranslate"><span class="pre">refs.semantic/</span></code> for <code class="docutils literal notranslate"><span class="pre">refs.bib</span></code>): the directory the built indexes are written to. A relative path is interpreted against the directory containing the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file; <code class="docutils literal notranslate"><span class="pre">~</span></code> and <code class="docutils literal notranslate"><span class="pre">$VAR</span></code> are expanded, the same path handling as <code class="docutils literal notranslate"><span class="pre">location</span></code> in <code class="docutils literal notranslate"><span class="pre">[auto_file]</span></code>. The directory holds derived data that <code class="docutils literal notranslate"><span class="pre">build_semantic_indexes</span></code> owns and rewrites; it is deliberately not an <code class="docutils literal notranslate"><span class="pre">[assets]</span></code> class, since those describe files the package never writes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">search_index</span></code> (default <code class="docutils literal notranslate"><span class="pre">&quot;default&quot;</span></code>): the index <code class="docutils literal notranslate"><span class="pre">semantic_search</span></code> queries when the call names none.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">score_index</span></code> (default <code class="docutils literal notranslate"><span class="pre">&quot;default&quot;</span></code>): the index <code class="docutils literal notranslate"><span class="pre">semantic_score</span></code> matches a candidate against when the call names none. Prefer an index whose sources have uniform coverage here, since a mixture of long and short rows makes the raw similarities less comparable across entries.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[semantic.indexes]</span></code>: additional indexes, each an ordered list of sources. A source names an entry field or a file-valued entry <code class="docutils literal notranslate"><span class="pre">[assets]</span></code> class, and an asset class shadows a field of the same name; a name that is neither, that names a library asset (one text for the whole library, which would contribute the same words to every row), or that names a directory-valued class (which holds no text), is reported as an error when the index is built. A bare string is shorthand for a one-element list. The elements are joined with a blank line in list order, a source an entry has nothing for is skipped, and an entry no source covers is left out of that index. The table is empty by default; the entry shown is the summary index of a library whose <code class="docutils literal notranslate"><span class="pre">[assets]</span></code> declares a <code class="docutils literal notranslate"><span class="pre">summary</span></code> class.</p></li>
+</ul>
+<p>The name <code class="docutils literal notranslate"><span class="pre">default</span></code> is reserved for the built-in index, which is equivalent to <code class="docutils literal notranslate"><span class="pre">[&quot;title&quot;,</span> <span class="pre">&quot;abstract&quot;]</span></code> and cannot be redefined: its rows have the shape of an incoming candidate paper, which is what lets <code class="docutils literal notranslate"><span class="pre">semantic_score</span></code> use them to calibrate. Index names become file names inside <code class="docutils literal notranslate"><span class="pre">index_dir</span></code>, so they are restricted to letters, digits, hyphens, and underscores, and two names differing only in case are rejected as one.</p>
+<p>Nothing else is configurable. The embedding model and the statistical procedures of search and scoring are fixed, so that a score means the same thing in every library; per-call choices (which index, how many results, whether to fuse with lexical search) are method arguments and command-line options.</p>
+<p>The table is exposed as <code class="docutils literal notranslate"><span class="pre">Library.config.semantic</span></code>, with <code class="docutils literal notranslate"><span class="pre">index_dir</span></code>, <code class="docutils literal notranslate"><span class="pre">search_index</span></code>, <code class="docutils literal notranslate"><span class="pre">score_index</span></code>, and <code class="docutils literal notranslate"><span class="pre">indexes</span></code> attributes; <code class="docutils literal notranslate"><span class="pre">indexes</span></code> always presents lists, normalizing the string shorthand on assignment.</p>
 </section>
 <section id="the-initials-table-acronym-exceptions">
 <h2>The <code class="docutils literal notranslate"><span class="pre">[initials]</span></code> table: acronym exceptions<a class="headerlink" href="#the-initials-table-acronym-exceptions" title="Link to this heading"></a></h2>
@@ -457,6 +481,13 @@
 <span class="n">eprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"No Eprint"</span>
 <span class="n">doi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"No DOI"</span>
 
+<span class="k">[semantic]</span><span class="w">                   </span><span class="c1"># embedding indexes (the [semantic] extra)</span>
+<span class="n">search_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"summary"</span><span class="w">     </span><span class="c1"># richer text than title plus abstract</span>
+<span class="n">score_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"summary"</span>
+
+<span class="k">[semantic.indexes]</span>
+<span class="n">summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"summary"</span><span class="p">]</span><span class="w">        </span><span class="c1"># an index over the summary asset files</span>
+
 <span class="k">[initials.journal]</span><span class="w">                   </span><span class="c1"># acronym exceptions for %c{journal}</span>
 <span class="s2">"AIP Advances"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"AIPA"</span>
 <span class="s2">"AVS Quantum Sci."</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"AVSQS"</span>
@@ -515,7 +546,7 @@
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 21, 2026.
+      <span class="lastupdated">Last updated on Aug 23, 2026.
       </span></p>
   </div>
 

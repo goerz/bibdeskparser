@@ -200,9 +200,36 @@ Any field name may be declared, but what a declaration does depends on the field
 * `doi`: {py:meth}`~bibdeskparser.Library.add_doi` maintains the group in the same way. In addition, the `check` command accepts an `article` without a `doi` if the entry is a member of the group.
 * Any other field (e.g. `author = "No Author"`): no command ever adds or removes entries automatically; marking is entirely manual, and the declaration provides the stale-marker audit above and names the convention.
 
-Manual marking and unmarking always works, for declared and undeclared groups alike: with the `add_to_group`/`remove_from_group` CLI commands, or by drag and drop in BibDesk. Likewise, `keys --group NAME`/`--not-group NAME` select by membership in any static group; the `keys` filters do not consult this table. Without the table, none of the automatic bookkeeping above happens.
+Manual marking and unmarking always works, for declared and undeclared groups alike: with the `add_to_group`/`remove_from_group` CLI commands, or by drag and drop in BibDesk. Likewise, `keys --group NAME` selects by membership in any static group; the `keys` filters do not consult this table. Without the table, none of the automatic bookkeeping above happens.
 
 Field names are lowercased; each field needs its own group, and group names must be non-empty (a shared group would make membership ambiguous between fields). The table is exposed as `Library.config.known_missing`, a `dict` mapping the field name to the group name. See [Empty fields](bibdesk-empty-fields) for why an empty field value cannot record this information.
+
+(config-semantic)=
+
+## The `[semantic]` table: embedding indexes
+
+The `[semantic]` table configures the embedding indexes behind {py:meth}`~bibdeskparser.Library.semantic_search` and {py:meth}`~bibdeskparser.Library.semantic_score` (CLI: [`build_semantic_indexes`](cli-build-semantic-indexes), [`semantic_search`](cli-semantic-search), [`semantic_score`](cli-semantic-score)); see [Semantic Indexing](semantic-indexing) for what an index is and how it is used. The whole feature needs the `bibdeskparser[semantic]` extra; without the table, the built-in `default` index over title and abstract is the only one, which is enough for both methods.
+
+```toml
+[semantic]
+index_dir = "refs.semantic"  # where the built indexes are stored
+search_index = "default"     # what semantic_search queries
+score_index = "default"      # what semantic_score matches against
+
+[semantic.indexes]
+summary = ["summary"]        # one additional index, over an asset class
+```
+
+* `index_dir` (default: the `.bib` path with its extension replaced by `.semantic`, so `refs.semantic/` for `refs.bib`): the directory the built indexes are written to. A relative path is interpreted against the directory containing the `.bib` file; `~` and `$VAR` are expanded, the same path handling as `location` in `[auto_file]`. The directory holds derived data that `build_semantic_indexes` owns and rewrites; it is deliberately not an `[assets]` class, since those describe files the package never writes.
+* `search_index` (default `"default"`): the index `semantic_search` queries when the call names none.
+* `score_index` (default `"default"`): the index `semantic_score` matches a candidate against when the call names none. Prefer an index whose sources have uniform coverage here, since a mixture of long and short rows makes the raw similarities less comparable across entries.
+* `[semantic.indexes]`: additional indexes, each an ordered list of sources. A source names an entry field or a file-valued entry `[assets]` class, and an asset class shadows a field of the same name; a name that is neither, that names a library asset (one text for the whole library, which would contribute the same words to every row), or that names a directory-valued class (which holds no text), is reported as an error when the index is built. A bare string is shorthand for a one-element list. The elements are joined with a blank line in list order, a source an entry has nothing for is skipped, and an entry no source covers is left out of that index. The table is empty by default; the entry shown is the summary index of a library whose `[assets]` declares a `summary` class.
+
+The name `default` is reserved for the built-in index, which is equivalent to `["title", "abstract"]` and cannot be redefined: its rows have the shape of an incoming candidate paper, which is what lets `semantic_score` use them to calibrate. Index names become file names inside `index_dir`, so they are restricted to letters, digits, hyphens, and underscores, and two names differing only in case are rejected as one.
+
+Nothing else is configurable. The embedding model and the statistical procedures of search and scoring are fixed, so that a score means the same thing in every library; per-call choices (which index, how many results, whether to fuse with lexical search) are method arguments and command-line options.
+
+The table is exposed as `Library.config.semantic`, with `index_dir`, `search_index`, `score_index`, and `indexes` attributes; `indexes` always presents lists, normalizing the string shorthand on assignment.
 
 ## The `[initials]` table: acronym exceptions
 
@@ -372,6 +399,13 @@ remove_attachments = false   # also delete attached files from disk
 abstract = "No Abstract"
 eprint = "No Eprint"
 doi = "No DOI"
+
+[semantic]                   # embedding indexes (the [semantic] extra)
+search_index = "summary"     # richer text than title plus abstract
+score_index = "summary"
+
+[semantic.indexes]
+summary = ["summary"]        # an index over the summary asset files
 
 [initials.journal]                   # acronym exceptions for %c{journal}
 "AIP Advances" = "AIPA"

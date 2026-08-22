@@ -755,7 +755,7 @@ D. J. Tannor. \href{https://uscibooks.aip.org/books/introduction-to-quantum-mech
 
 `bibdeskparser` ships no dedicated AI integration, because it does not need one: the {ref}`command-line tool <cli>` *is* the integration surface. Any agent that can run shell commands, such as [Claude Code](https://claude.com/claude-code), can inspect and edit your BibDesk library by calling `bibdeskparser`. Each invocation is a one-shot process that loads the `.bib` file, does its work, and exits, so there is no server to run and nothing to keep alive.
 
-**1. Put the tool on `PATH`.** Install the package into an environment the agent can reach (see [Installation](readme)); the simplest way is `uv tool install bibdeskparser`. Verify that `bibdeskparser` runs from a plain shell:
+**1. Put the tool on `PATH`.** Install the package into an environment the agent can reach (see [Installation](readme)); the simplest way is `uv tool install bibdeskparser`, or `uv tool install "bibdeskparser[semantic]"` to also give the agent the [semantic indexing](semantic-indexing) commands. Verify that `bibdeskparser` runs from a plain shell:
 
 ```console
 $ bibdeskparser --version

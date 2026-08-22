@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How-to Guides &mdash; BibDeskParser 0.8.1 documentation</title>
+  <title>How-to Guides &mdash; BibDeskParser 0.8.1+dev (12a3ae9) documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
@@ -16,7 +16,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=ec16d22d"></script>
+      <script src="_static/documentation_options.js?v=869ab1f8"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -39,7 +39,7 @@
   </a>
 
   <div class="version">
-    v0.8.1
+    v0.8.1+dev
   </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -89,6 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="bibdesk_format.html">BibDesk's .bib Format</a></li>
 <li class="toctree-l1"><a class="reference internal" href="preprints.html">Preprints</a></li>
 <li class="toctree-l1"><a class="reference internal" href="assets.html">External Assets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="semantic.html">Semantic Indexing</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul>
@@ -818,7 +819,7 @@ feature). See <a class="reference internal" href="#howto-auto-file"><span class=
 <section id="how-to-give-an-ai-coding-agent-access-to-your-library">
 <span id="howto-ai"></span><h2>How to give an AI coding agent access to your library<a class="headerlink" href="#how-to-give-an-ai-coding-agent-access-to-your-library" title="Link to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> ships no dedicated AI integration, because it does not need one: the <a class="reference internal" href="cli.html#cli"><span class="std std-ref">command-line tool</span></a> <em>is</em> the integration surface. Any agent that can run shell commands, such as <a class="reference external" href="https://claude.com/claude-code">Claude Code</a>, can inspect and edit your BibDesk library by calling <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code>. Each invocation is a one-shot process that loads the <code class="docutils literal notranslate"><span class="pre">.bib</span></code> file, does its work, and exits, so there is no server to run and nothing to keep alive.</p>
-<p><strong>1. Put the tool on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</strong> Install the package into an environment the agent can reach (see <a class="reference internal" href="readme.html"><span class="doc std std-doc">Installation</span></a>); the simplest way is <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">tool</span> <span class="pre">install</span> <span class="pre">bibdeskparser</span></code>. Verify that <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> runs from a plain shell:</p>
+<p><strong>1. Put the tool on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</strong> Install the package into an environment the agent can reach (see <a class="reference internal" href="readme.html"><span class="doc std std-doc">Installation</span></a>); the simplest way is <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">tool</span> <span class="pre">install</span> <span class="pre">bibdeskparser</span></code>, or <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">tool</span> <span class="pre">install</span> <span class="pre">&quot;bibdeskparser[semantic]&quot;</span></code> to also give the agent the <a class="reference internal" href="semantic.html#semantic-indexing"><span class="std std-ref">semantic indexing</span></a> commands. Verify that <code class="docutils literal notranslate"><span class="pre">bibdeskparser</span></code> runs from a plain shell:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bibdeskparser<span class="w"> </span>--version
 </pre></div>
 </div>
@@ -930,7 +931,7 @@ through <span class="sb">`edit --stdin`</span>.
 
   <div role="contentinfo">
     <p>&#169; Copyright 2026, Michael Goerz.
-      <span class="lastupdated">Last updated on Aug 21, 2026.
+      <span class="lastupdated">Last updated on Aug 23, 2026.
       </span></p>
   </div>
 
