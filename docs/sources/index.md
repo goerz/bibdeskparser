@@ -31,6 +31,7 @@ howto
 BibDesk's .bib Format <bibdesk_format>
 preprints
 External Assets <assets>
+Semantic Indexing <semantic>
 ```
 
 ```{toctree}

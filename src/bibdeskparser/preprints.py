@@ -30,6 +30,7 @@ from difflib import SequenceMatcher
 
 import arxiv
 
+from .abstracttext import cleaned_abstract
 from .asciifold import fold_to_ascii
 from .identifiers import _RX_ARXIV_ID, _normalize_doi
 from .texmap import detexify
@@ -42,6 +43,7 @@ __private__ = [
     "PreprintResult",
     "find_preprint",
     "normalize_eprint",
+    "preprint_text",
 ]
 
 
@@ -90,6 +92,22 @@ def normalize_eprint(eprint):
     if not _RX_ARXIV_ID.match(value):
         raise ValueError(f"not a valid arXiv identifier: {eprint!r}")
     return _RX_VERSION.sub("", value)
+
+
+def preprint_text(eprint):
+    """The title and abstract of the arXiv preprint `eprint`, joined
+    into the one string that {meth}`bibdeskparser.Library.semantic_score`
+    scores. Raises {exc}`ValueError` if arXiv has no such paper."""
+    search = arxiv.Search(id_list=[normalize_eprint(eprint)])
+    results = list(_client().results(search))
+    if not results:
+        raise ValueError(f"arXiv has no preprint {eprint!r}")
+    result = results[0]
+    return "\n\n".join(
+        part
+        for part in (result.title, cleaned_abstract(result.summary))
+        if part
+    )
 
 
 def _short_id(result):

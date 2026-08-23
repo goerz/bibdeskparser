@@ -37,6 +37,7 @@ from .docinfo import (
 )
 from .entry import Entry, _strip_enclosing
 from .exporting import export_entries
+from .extras import _is_missing, _MissingExtraError
 from .groups import (
     is_groups_comment,
     is_static_groups_comment,
@@ -54,7 +55,7 @@ from .macros import (
 )
 from .middleware import parse_stack, quiet_block_type_logging
 from .plain import database_content, leading_marker, resolve_plain_options
-from .render import render_entries
+from .render import _detex, render_entries
 from .search import search_entries
 from .updating import update_exported_file
 from .writer import bibdesk_field_order, render_library, render_plain_library
@@ -223,6 +224,29 @@ def _expand_macros(entry, strings):
             resolved = strings.get(str(value), str(value))
             expanded[key] = ValueString(resolved)
     return expanded
+
+
+def _semantic_backend():
+    """The `bibdeskparser.semantic` module, imported on first use.
+
+    It is kept out of the module-level imports because it pulls in
+    `numpy` (and, when embedding, `fastembed`), which only the
+    `bibdeskparser[semantic]` extra installs; without the extra, the
+    import raises {exc}`_MissingExtraError` naming it. An import that
+    fails for any other reason keeps its own exception, since that is
+    a damaged installation rather than an absent extra. Every method
+    that needs the module opens with `semantic = _semantic_backend()`.
+    """
+    try:
+        from . import semantic  # pylint: disable=import-outside-toplevel
+    except ImportError as exc:
+        if not _is_missing(exc, "numpy"):
+            raise
+        raise _MissingExtraError(
+            "semantic indexing requires numpy; install "
+            "bibdeskparser[semantic]"
+        ) from exc
+    return semantic
 
 
 def _has_field(entry, name):
@@ -701,6 +725,12 @@ class Library(MutableMapping):
       because they duplicate an earlier entry (read-only).
     - {meth}`search`: full-text search over the entries, returning the
       matches best first.
+    - {meth}`build_semantic_indexes`, {meth}`semantic_search`, and
+      {meth}`semantic_score`: embedding indexes over the library's
+      text and the two things they enable -- search by meaning rather
+      than by characters, and a calibrated relevance score for a
+      candidate paper. They require the `bibdeskparser[semantic]`
+      extra; see [Semantic Indexing](semantic-indexing).
     - {meth}`rekey`: rename an entry ({attr}`Entry.key` itself is
       read-only), either to an explicitly given key or to one generated
       from an auto-key format in BibDesk's
@@ -1532,7 +1562,7 @@ class Library(MutableMapping):
         has=None,
         missing=None,
         group=None,
-        not_group=None,
+        keyword=None,
         with_files=None,
     ):
         """Citation keys of the entries, as a `tuple`, optionally
@@ -1544,7 +1574,7 @@ class Library(MutableMapping):
             has=None,
             missing=None,
             group=None,
-            not_group=None,
+            keyword=None,
             with_files=None,
         )
         ```
@@ -1560,10 +1590,10 @@ class Library(MutableMapping):
           with a non-empty value.
         * `missing`: keep only entries where none of the given fields
           has a non-empty value.
-        * `group`: keep only entries that are members of every given
-          static group (see {attr}`groups`).
-        * `not_group`: keep only entries that are members of none of
-          the given static groups.
+        * `group`: keep only entries that are members of any of the
+          given static groups (see {attr}`groups`).
+        * `keyword`: keep only entries that carry any of the given
+          keywords (see {attr}`keywords`).
         * `with_files`: a tri-state filter on file attachments (the
           `bdsk-file-N` fields, see {attr}`Entry.files`). `None` (the
           default) does not filter; `True` keeps only entries with at
@@ -1575,8 +1605,18 @@ class Library(MutableMapping):
         when it saves a `.bib` file (see
         [Empty fields](bibdesk-empty-fields)).
 
-        Raises {exc}`KeyError` for a group name (in `group` or
-        `not_group`) that does not exist in the library.
+        `group` and `keyword` together name a *collection*: an entry
+        belongs to it if it is a member of any named group or carries
+        any named keyword, so `group=["A", "B"]` is the union of the
+        two groups and `group="A", keyword="K"` the union of the
+        group and the keyword. The remaining arguments then narrow
+        the collection, or the whole library when neither `group` nor
+        `keyword` is given. The same collection is what the `--group`
+        and `--keyword` options of the `semantic_score` command
+        select.
+
+        Raises {exc}`KeyError` for a `group` or `keyword` that no
+        entry of the library has.
 
         ```python
         >>> from bibdeskparser import Entry, Library
@@ -1597,8 +1637,9 @@ class Library(MutableMapping):
         >>> bib.groups["My Papers"] = ("Key2026",)
         >>> bib.keys(group="My Papers")
         ('Key2026',)
-        >>> bib.keys(not_group="My Papers")
-        ()
+        >>> bib.add_to_keyword("Control", "Key2026")
+        >>> bib.keys(keyword="Control")
+        ('Key2026',)
 
         ```
         """
@@ -1606,22 +1647,28 @@ class Library(MutableMapping):
         required = [(True, name) for name in _names(has)]
         required += [(False, name) for name in _names(missing)]
 
-        def _members(name):
-            if name not in self._group_data:
-                raise KeyError(name)
-            return set(self._group_data[name])
+        def _add(members, mapping, names):
+            """Add to `members` the keys carried by each of `names` in
+            `mapping`. An unknown name is an error, so that a typo
+            cannot silently select nothing."""
+            for name in _names(names):
+                if name not in mapping:
+                    raise KeyError(name)
+                members.update(mapping[name])
 
-        include = [_members(name) for name in _names(group)]
-        exclude = [_members(name) for name in _names(not_group)]
+        collection = None
+        if _names(group) or _names(keyword):
+            collection = set()
+            _add(collection, self._group_data, group)
+            # `self.keywords` recomputes its index on every access.
+            _add(collection, dict(self.keywords), keyword)
         result = []
         for key, entry in self._entries.items():
             if types and entry.entry_type.lower() not in types:
                 continue
             if with_files is not None and bool(entry.files) != with_files:
                 continue
-            if not all(key in members for members in include):
-                continue
-            if any(key in members for members in exclude):
+            if collection is not None and key not in collection:
                 continue
             if all(
                 _has_field(entry, name) is state for state, name in required
@@ -3122,6 +3169,327 @@ class Library(MutableMapping):
             strings=self._all_strings(),
             fields=fields,
             match=match,
+        )
+
+    # -- semantic indexing ------------------------------------------- #
+
+    def _semantic_index_dir(self):
+        """The directory holding the semantic indexes, as an absolute
+        `Path`: `config.semantic.index_dir`, or the `.bib` path with
+        its extension replaced by `.semantic`."""
+        configured = active.semantic.index_dir
+        if configured is None:
+            return self._files_base_dir() / f"{Path(self._path).stem}.semantic"
+        return self._auto_file_location_dir(configured)
+
+    @staticmethod
+    def _semantic_definitions():
+        """`{name: sources}` over the built-in default index and every
+        index the `[semantic.indexes]` configuration defines."""
+        semantic = _semantic_backend()
+        definitions = {semantic.DEFAULT_INDEX: semantic.DEFAULT_SOURCES}
+        for name, sources in active.semantic.indexes.items():
+            definitions[name] = tuple(sources)
+        return definitions
+
+    def _semantic_source_text(self, entry, name, strings, base_dir):
+        """The text the index source `name` contributes for `entry`,
+        or `None` if it contributes nothing.
+
+        A source names a file-valued **entry** `[assets]` class --
+        whose content is read as-is, the one place the package looks
+        inside an asset -- or an entry field, whose value is taken as
+        plain text (macros expanded, TeX markup and protective braces
+        removed). Three kinds of name are a configuration error: one
+        that is neither, a library asset (one text for the whole
+        library, which would contribute the same words to every row),
+        and a directory-valued class (which holds no text at all). A
+        file that is not UTF-8 text is skipped with a warning naming
+        it and its entry, since one such file should not abort a
+        whole build.
+        """
+        if name in active.assets:
+            cls = _compile_asset_pattern(name, active.assets[name])
+            if cls is not None and not cls.per_entry:
+                raise ValueError(
+                    f"invalid semantic index source {name!r}: a library "
+                    "asset is one text for the whole library, so it "
+                    "cannot contribute to a per-entry row"
+                )
+            if cls is not None and cls.is_dir:
+                raise ValueError(
+                    f"invalid semantic index source {name!r}: a "
+                    "directory-valued asset class resolves to a "
+                    "directory, which holds no text to embed"
+                )
+            rel = self.asset(name, entry.key, check_that_file_exists=False)
+            if rel is None:
+                return None
+            try:
+                return (base_dir / rel).read_text(encoding="utf-8")
+            except OSError:
+                return None
+            except UnicodeDecodeError:
+                # One unreadable file must not abort a whole build, and
+                # the bare codec error would name neither the file nor
+                # the entry it belongs to.
+                warnings.warn(
+                    f"{entry.key}: semantic index source {name!r} is "
+                    f"not UTF-8 text and is skipped: {base_dir / rel}",
+                    UserWarning,
+                    stacklevel=4,
+                )
+                return None
+        if not active.is_known_field(name):
+            raise ValueError(
+                f"invalid semantic index source {name!r}: neither an "
+                "[assets] class nor a known field"
+            )
+        try:
+            value = entry[name]
+        except KeyError:
+            return None
+        if isinstance(value, MacroString):
+            value = strings.get(str(value), str(value))
+        return _detex(str(value), "markdown", drop_braces=True)
+
+    def _semantic_rows(self, sources):
+        """The `(key, text, used)` triples of an index over `sources`,
+        in library order, skipping entries no source contributes to."""
+        semantic = _semantic_backend()
+        strings = self._all_strings()
+        base_dir = self._files_base_dir()
+
+        def source_text(entry, name):
+            return self._semantic_source_text(entry, name, strings, base_dir)
+
+        rows = []
+        for key, entry in self._entries.items():
+            text, used = semantic.row_text(entry, sources, source_text)
+            if used:
+                rows.append((key, text, used))
+        return rows
+
+    def _load_semantic_index(self, name):
+        """The built index `name`, warning about the keys it is out of
+        date for.
+
+        Raises `ValueError` if `name` is not defined, or if what is
+        stored for it was not produced by what is configured now. The
+        whole fingerprint is compared, not just the source list: a
+        query is embedded with the model of the moment, and
+        multiplying that vector against a matrix some other model
+        wrote is silently wrong wherever the two agree on the number
+        of dimensions.
+        """
+        semantic = _semantic_backend()
+        definitions = self._semantic_definitions()
+        if name not in definitions:
+            defined = ", ".join(repr(key) for key in definitions)
+            raise ValueError(
+                f"undefined semantic index {name!r} (defined: {defined})"
+            )
+        index = semantic.load_index(self._semantic_index_dir(), name)
+        wanted = semantic.fingerprint_of(definitions[name])
+        if index is None or index.fingerprint != wanted:
+            raise ValueError(
+                f"semantic index {name!r} is not built for its current "
+                "sources and model; run build_semantic_indexes()"
+            )
+        stale = semantic.stale_keys(index, self._semantic_rows(index.sources))
+        if stale:
+            listed = ", ".join(stale[:5])
+            more = "" if len(stale) <= 5 else f", ... ({len(stale)} total)"
+            warnings.warn(
+                f"semantic index {name!r} is out of date for {listed}"
+                f"{more}; run build_semantic_indexes()",
+                UserWarning,
+                stacklevel=3,
+            )
+        return index
+
+    def build_semantic_indexes(self, progress=None):
+        """Build or refresh the library's embedding indexes; see
+        [Semantic Indexing](semantic-indexing).
+
+        Every index is (re)built: the built-in `default` index over
+        title and abstract, plus each index the `[semantic.indexes]`
+        [configuration](configuration) defines. The files are written
+        into the index directory next to the `.bib` file (see
+        `config.semantic.index_dir`); the `.bib` file itself is never
+        touched, and neither is anything else on disk.
+
+        Refreshing is per key: an entry whose source text is unchanged
+        keeps its stored vector, a changed or new entry is re-embedded,
+        and an entry the library no longer has is dropped. Changing an
+        index definition, the embedding model, or the `fastembed`
+        release changes the index fingerprint and rebuilds that index
+        as a whole, so vectors from different models are never mixed.
+
+        Returns a report keyed by index name, each value a dict
+        `{"embedded": [keys], "pruned": [keys], "unchanged": count}`.
+
+        Embedding a full library takes tens of seconds, so `progress`
+        allows the caller to report it. It is called once per index,
+        in build order, as `progress(name, total)` with the number of
+        entries that index has to embed, and returns either `None` or
+        a callable that is then invoked with the number of entries
+        finished since the previous call. The `build_semantic_indexes`
+        command uses it to draw a progress bar.
+
+        Requires the `bibdeskparser[semantic]` extra, and a library
+        with a file path. The first run downloads the embedding model
+        (about 130 MB) into a local cache; every later run is offline.
+        """
+        semantic = _semantic_backend()
+        return semantic.build_indexes(
+            self._semantic_index_dir(),
+            self._semantic_definitions(),
+            self._semantic_rows,
+            progress=progress,
+        )
+
+    def semantic_search(self, query, *, index=None, limit=10, hybrid=True):
+        """Return the entries most relevant to `query`, best first, as
+        a list of `(Entry, cosine)` pairs; see
+        [Semantic Indexing](semantic-indexing).
+
+        Unlike {meth}`search`, which matches the query's characters,
+        this ranks entries by the meaning of the text an index holds
+        for them, so a phrase finds relevant entries whose title and
+        abstract share no word with it. `index` names the index to
+        query, defaulting to `config.semantic.search_index`; an index
+        that is not defined or not built raises {exc}`ValueError`
+        naming {meth}`build_semantic_indexes`. An entry deleted since
+        the index was built keeps its row there, but is not returned.
+
+        At most `limit` entries are returned (at least 1), and only
+        those that count as matches: since even unrelated text pairs
+        score around 0.5 to 0.7, the cut is not an absolute cosine but
+        an outlier criterion over the whole distribution of cosines
+        for this query. A query unrelated to the library therefore returns
+        an empty list rather than the ten least unrelated entries, and
+        a shorter list than `limit` is normal.
+
+        With `hybrid` (the default), the semantic ranking is merged
+        with the lexical ranking of {meth}`search` by reciprocal rank
+        fusion, which is what keeps exact technical terms working. The
+        fused order is thus not monotonic in the reported cosine, and
+        an entry only the lexical leg finds (including one the index
+        omits) can rank; its cosine is then `None`. With
+        `hybrid=False`, the order is by cosine alone.
+
+        The `cosine` is the query-entry cosine similarity, rounded to
+        three decimals. It is comparable only within one query: it is
+        not a percentage, and values from different queries say
+        nothing about each other.
+
+        Requires the `bibdeskparser[semantic]` extra. Entries whose
+        source text has changed since the index was built are ranked
+        with their stored vectors, and warned about.
+        """
+        semantic = _semantic_backend()
+        if limit < 1:
+            raise ValueError(f"limit must be at least 1, not {limit}")
+        name = index or active.semantic.search_index
+        loaded = self._load_semantic_index(name)
+        lexical = None
+        if hybrid:
+            lexical = [entry.key for entry in self.search(query)]
+        return [
+            (self._entries[key], score)
+            for key, score in semantic.search(
+                loaded, query, lexical=lexical, limit=limit
+            )
+            # An index built before an entry was deleted still holds
+            # its row; it ranks, but there is no entry to return.
+            if key in self._entries
+        ]
+
+    def semantic_score(self, text, *, keys=None, index=None, k=10):
+        """Score the candidate `text` -- the title and abstract of a
+        new paper, as one string -- for its relevance to the library
+        or to a collection within it; see
+        [Semantic Indexing](semantic-indexing).
+
+        The candidate is matched against `index` (defaulting to
+        `config.semantic.score_index`), restricted to the citation
+        `keys` of a collection if given; a key that index has no row
+        for is skipped, a key named more than once counts once, and a
+        row left behind by an entry the library no longer has is left
+        out of both the measure and `"nearest"`.
+        The raw measure is the mean of the `k` highest cosine
+        similarities (`k` at least 1), clamped to the size of the
+        collection, so a single key yields the plain cosine.
+
+        Returns `{"score": percentile, "nearest": [{"key": ...,
+        "cosine": ...}, ...]}`, and with `keys` also `"members"`. The
+        `"score"` is not a raw cosine (which would sit in a narrow
+        high band, near 0.6 even for unrelated text) but a percentile
+        from 0 to 100: the share of the library's own papers that
+        score lower, had each of them arrived as this candidate did.
+        An unrelated candidate scores near 0. It is `None`, with a
+        warning, when the `default` index holds no row carrying both a
+        title and an abstract, since there is then nothing to
+        calibrate against. `"nearest"` lists the
+        `k` closest entries of the target with their raw cosines --
+        exactly the neighbors the raw measure averages.
+
+        With `keys`, `"members"` holds the quartiles `{"q1":,
+        "median":, "q3":}` of the collection members' own percentiles
+        under the same measure (`None` if none of them can serve as a
+        probe). That band is what turns a percentile into "would sit
+        among these papers like one of their own": at or above the
+        median the candidate is a typical member, below the first
+        quartile it is weaker than any actual member.
+
+        Percentiles are comparable across collections and indexes;
+        raw cosines are not. Both measure topical proximity, which is
+        not the same as whether the candidate *extends* the work it
+        resembles -- that judgment is not something a cosine can
+        deliver.
+
+        Requires the `bibdeskparser[semantic]` extra. Raises
+        {exc}`KeyError` for an unknown citation key and
+        {exc}`ValueError` for an index that is not defined or not
+        built.
+        """
+        semantic = _semantic_backend()
+        if k < 1:
+            raise ValueError(f"k must be at least 1, not {k}")
+        name = index or active.semantic.score_index
+        target = self._load_semantic_index(name)
+        if name == semantic.DEFAULT_INDEX:
+            default = target
+        else:
+            # Loaded like any other index, staleness check included:
+            # its rows are the calibration, so text that has changed
+            # under them moves the reported percentile.
+            default = self._load_semantic_index(semantic.DEFAULT_INDEX)
+        collection = keys is not None
+        if collection:
+            keys = list(keys)
+            for key in keys:
+                if key not in self._entries:
+                    raise KeyError(key)
+        else:
+            # The whole library means the entries it has now. An index
+            # built before an entry was deleted still holds that
+            # entry's row, which would otherwise enter the top-k mean
+            # and be named in `nearest`, where no other command can
+            # resolve it.
+            keys = list(self._entries)
+        # The candidate is normalized the way an indexed abstract is,
+        # so that TeX markup in it does not shift its register.
+        text = _detex(text, "markdown", drop_braces=True)
+        return semantic.score(
+            target,
+            default,
+            text,
+            keys=keys,
+            collection=collection,
+            known=self._entries.keys(),
+            k=k,
         )
 
     def render(self, *keys, format="markdown", style="default"):

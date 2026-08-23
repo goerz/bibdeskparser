@@ -1032,3 +1032,111 @@ def test_config_toml_round_trips(tmp_path):
     assert reloaded.auto_file.format_spec == "%f{Cite Key}%u0%e"
     assert reloaded.known_missing == {"eprint": "No Eprint"}
     assert str(reloaded.default_bib_file).endswith("refs.bib")
+
+
+# -- the [semantic] table ---------------------------------------------- #
+
+
+def test_semantic_defaults():
+    """Without a `[semantic]` table, the built-in defaults hold."""
+    assert config.active.semantic.index_dir is None
+    assert config.active.semantic.search_index == "default"
+    assert config.active.semantic.score_index == "default"
+    assert config.active.semantic.indexes == {}
+
+
+def test_semantic_table(tmp_path):
+    """A full `[semantic]` table is read, with the string shorthand of
+    a one-source index normalized to a list."""
+    _write(
+        tmp_path,
+        "[semantic]\n"
+        'index_dir = "~/vectors"\n'
+        'search_index = "summary"\n'
+        'score_index = "summary"\n\n'
+        "[semantic.indexes]\n"
+        'summary = "summary"\n'
+        'both = ["title", "summary"]\n',
+    )
+    config.active.load(bib_dir=tmp_path)
+    semantic = config.active.semantic
+    assert semantic.index_dir == Path.home() / "vectors"
+    assert semantic.search_index == "summary"
+    assert semantic.score_index == "summary"
+    assert semantic.indexes == {
+        "summary": ["summary"],
+        "both": ["title", "summary"],
+    }
+    assert "index_dir=" in repr(semantic)
+
+
+def test_semantic_validation(tmp_path):
+    """Malformed `[semantic]` values are rejected, and an unknown key
+    warns."""
+    _write(tmp_path, "semantic = 1\n")
+    with pytest.raises(ValueError, match=r"\[semantic\] must be a table"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[semantic.indexes]\ndefault = "title"\n')
+    with pytest.raises(ValueError, match="cannot redefine"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[semantic.indexes]\nempty = []\n")
+    with pytest.raises(ValueError, match="non-empty list of source names"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[semantic.indexes]\ntwice = ["title", "title"]\n')
+    with pytest.raises(ValueError, match="repeats a source"):
+        config.active.load(bib_dir=tmp_path)
+    # An index is a pair of files named after it, so the name has to
+    # stay inside the index directory, and two names that a
+    # case-insensitive filesystem cannot tell apart are one index.
+    _write(tmp_path, '[semantic.indexes]\n"../escape" = "title"\n')
+    with pytest.raises(ValueError, match="not a usable index name"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[semantic.indexes]\nDefault = "title"\n')
+    with pytest.raises(ValueError, match="cannot redefine"):
+        config.active.load(bib_dir=tmp_path)
+    _write(
+        tmp_path,
+        '[semantic.indexes]\nsummary = "title"\nSummary = "abstract"\n',
+    )
+    with pytest.raises(ValueError, match="differ only in case"):
+        config.active.load(bib_dir=tmp_path)
+    # A list, mirroring the [semantic.indexes] syntax, is a mistake
+    # worth a message rather than an unhashable-type traceback.
+    _write(tmp_path, '[semantic]\nsearch_index = ["summary"]\n')
+    with pytest.raises(ValueError, match="must be an index name"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, '[semantic]\nsearch_index = "nowhere"\n')
+    with pytest.raises(ValueError, match="does not define"):
+        config.active.load(bib_dir=tmp_path)
+    _write(tmp_path, "[semantic]\nnonsense = 1\n")
+    with pytest.warns(UserWarning, match=r"unknown key\(s\) in \[semantic\]"):
+        config.active.load(bib_dir=tmp_path)
+
+
+def test_semantic_index_dir_assignment():
+    """Assigning `index_dir` expands `~`/`$VAR` and rejects an empty
+    value."""
+    config.active.semantic.index_dir = "$HOME/vectors"
+    assert config.active.semantic.index_dir == Path.home() / "vectors"
+    config.active.semantic.index_dir = None
+    assert config.active.semantic.index_dir is None
+    with pytest.raises(ValueError, match="must be a non-empty path"):
+        config.active.semantic.index_dir = ""
+
+
+def test_semantic_round_trips_through_the_dump(tmp_path):
+    """The TOML dump re-parses into the same `[semantic]` state."""
+    _write(
+        tmp_path,
+        '[semantic]\nsearch_index = "summary"\n\n'
+        '[semantic.indexes]\nsummary = "summary"\n',
+    )
+    config.active.load(bib_dir=tmp_path)
+    text = config._config_toml(config.active, include_types=False)
+    reloaded_dir = tmp_path / "reloaded"
+    reloaded_dir.mkdir()
+    _write(reloaded_dir, text)
+    reloaded = config.Config()
+    reloaded.load(bib_dir=reloaded_dir)
+    assert reloaded.semantic.search_index == "summary"
+    assert reloaded.semantic.indexes == {"summary": ["summary"]}

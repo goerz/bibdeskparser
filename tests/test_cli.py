@@ -1,6 +1,7 @@
 """Tests for the `bibdeskparser` command-line interface."""
 
 import json
+import re
 import shutil
 import sys
 import warnings
@@ -116,9 +117,10 @@ def _load(bibfile):
         return Library(bibfile)
 
 
-def _run(runner, *args):
+def _run(runner, *args, input=None):
     """Invoke the CLI with `args`, asserting success."""
-    result = runner.invoke(main, [str(arg) for arg in args])
+    # pylint: disable-next=redefined-builtin
+    result = runner.invoke(main, [str(arg) for arg in args], input=input)
     assert result.exit_code == 0, result.output + result.stderr
     return result
 
@@ -248,28 +250,33 @@ def test_keys_filter_group(runner, bibfile):
         "--group",
         "My Papers",
     )
-    assert result.output == ""
+    lib = _load(bibfile)
+    assert set(result.output.split()) == set(lib.groups["Diploma"]) | set(
+        lib.groups["My Papers"]
+    )
 
 
-def test_keys_filter_not_group(runner, bibfile):
-    all_keys = set(_load(bibfile))
-    result = _run(runner, "keys", bibfile, "--not-group", "Diploma")
-    not_diploma = result.output.splitlines()
-    result = _run(runner, "keys", bibfile, "--group", "Diploma")
-    diploma = result.output.splitlines()
-    assert set(not_diploma) == all_keys - set(diploma)
+def test_keys_filter_keyword(runner, bibfile):
+    lib = _load(bibfile)
+    result = _run(runner, "keys", bibfile, "--keyword", "OCT")
+    assert set(result.output.split()) == set(lib.keywords["OCT"])
+    # --group and --keyword name one collection, so they pool
+    result = _run(
+        runner, "keys", bibfile, "--keyword", "OCT", "--group", "Diploma"
+    )
+    assert set(result.output.split()) == set(lib.keywords["OCT"]) | set(
+        lib.groups["Diploma"]
+    )
 
 
 def test_keys_filter_group_unknown(runner, bibfile):
-    """An unknown group name is an error, not an empty result."""
+    """An unknown group or keyword is an error, not an empty result."""
     result = runner.invoke(main, ["keys", str(bibfile), "--group", "diploma"])
     assert result.exit_code != 0
     assert "unknown static group 'diploma'" in result.stderr
-    result = runner.invoke(
-        main, ["keys", str(bibfile), "--not-group", "No Such Group"]
-    )
+    result = runner.invoke(main, ["keys", str(bibfile), "--keyword", "oct"])
     assert result.exit_code != 0
-    assert "unknown static group 'No Such Group'" in result.stderr
+    assert "unknown keyword 'oct'" in result.stderr
 
 
 def test_keys_filter_by_attachment(runner, bibfile):
@@ -5044,3 +5051,254 @@ def test_export_preprint_unpublished(runner, bibfile):
     assert "Eprint = {hal-00640217}," in result.output
     assert "Archive = {https://hal.science}," in result.output
     assert "Journal" not in result.output
+
+
+# -- semantic indexing --------------------------------------------------- #
+
+
+@pytest.fixture(name="recorded_embedder")
+def fixture_recorded_embedder(monkeypatch):
+    """Make the semantic commands run against the recorded vectors of
+    `tests/embeddings.py` instead of loading the real model."""
+    # pylint: disable-next=import-outside-toplevel
+    from embeddings import Embedder
+
+    embed = Embedder()
+    monkeypatch.setattr(bibdeskparser.semantic, "embedder", lambda: embed)
+    return embed
+
+
+@pytest.fixture(name="semantic_bib")
+def fixture_semantic_bib(bibfile, recorded_embedder):
+    """A library with its indexes built, ready for the read-only
+    semantic commands."""
+    Library(bibfile).build_semantic_indexes()
+    return bibfile
+
+
+def test_build_semantic_indexes(runner, bibfile, recorded_embedder):
+    result = _run(runner, "build_semantic_indexes", bibfile)
+    assert result.output.splitlines() == [
+        f"default: {len(_load(bibfile))} embedded, 0 pruned, 0 unchanged"
+    ]
+    assert (bibfile.parent / "refs.semantic" / "default.npz").is_file()
+    result = _run(runner, "build_semantic_indexes", bibfile, "--json")
+    assert json.loads(result.output)["default"]["embedded"] == []
+
+
+#: A query narrow enough to stand out from a library that is entirely
+#: about quantum control (see `test_semantic_search`).
+NARROW_QUERY = "krotov gradient ascent pulse engineering"
+
+
+def test_semantic_search(runner, semantic_bib):
+    result = _run(runner, "semantic_search", semantic_bib, NARROW_QUERY)
+    assert result.output.splitlines()
+    result = _run(
+        runner,
+        "semantic_search",
+        semantic_bib,
+        NARROW_QUERY,
+        "--limit",
+        "3",
+        "--no-hybrid",
+        "--json",
+    )
+    data = json.loads(result.output)
+    assert 0 < len(data) <= 3
+    assert set(data[0]) == {"key", "cosine"}
+    assert all(0.0 < item["cosine"] <= 1.0 for item in data)
+
+
+def test_semantic_search_unbuilt_index(runner, semantic_bib):
+    result = runner.invoke(
+        main,
+        ["semantic_search", str(semantic_bib), "x", "--index", "nope"],
+    )
+    assert result.exit_code == 1
+    assert "undefined semantic index" in result.stderr
+
+
+def test_semantic_score(runner, semantic_bib):
+    result = _run(
+        runner,
+        "semantic_score",
+        semantic_bib,
+        "--title",
+        "Optimal control of a quantum gate",
+        "--abstract",
+        "We optimize a two-qubit gate with a gradient-based method.",
+    )
+    assert 0.0 <= float(result.output.strip()) <= 100.0
+
+
+def test_semantic_score_collection_json(runner, semantic_bib):
+    keys = _run(runner, "keys", semantic_bib, "--type", "phdthesis").output
+    result = _run(
+        runner,
+        "semantic_score",
+        semantic_bib,
+        "--stdin",
+        "--key",
+        " ".join(keys.split()),
+        "--json",
+        input="Optimal control theory\n\nA thesis about quantum control.",
+    )
+    data = json.loads(result.output)
+    assert set(data) == {"score", "nearest", "members"}
+    assert {item["key"] for item in data["nearest"]} <= set(keys.split())
+
+
+def test_semantic_score_needs_exactly_one_candidate(runner, semantic_bib):
+    result = runner.invoke(main, ["semantic_score", str(semantic_bib)])
+    assert result.exit_code == 2
+    assert "exactly one way" in result.stderr
+
+
+def test_semantic_without_the_extra(runner, bibfile, monkeypatch):
+    """Without the extra installed, the command fails with the
+    one-line error the lazy import raises, not a traceback."""
+
+    def missing():
+        raise bibdeskparser.library._MissingExtraError(
+            "semantic indexing requires numpy"
+        )
+
+    monkeypatch.setattr(bibdeskparser.library, "_semantic_backend", missing)
+    result = runner.invoke(main, ["build_semantic_indexes", str(bibfile)])
+    assert result.exit_code == 1
+    assert result.stderr.strip() == ("Error: semantic indexing requires numpy")
+
+
+def test_semantic_with_a_broken_install(runner, bibfile, monkeypatch):
+    """A dependency of the extra that is installed but broken is not
+    an absent extra. Reporting it as one would tell its owner to
+    install what they have, and would drop the traceback that says
+    which import actually failed."""
+
+    def broken():
+        raise ImportError("No module named 'onnxruntime'", name="onnxruntime")
+
+    monkeypatch.setattr(bibdeskparser.library, "_semantic_backend", broken)
+    result = runner.invoke(main, ["build_semantic_indexes", str(bibfile)])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, ImportError)
+    assert "install" not in (result.stderr or "")
+
+
+def test_import_error_elsewhere_keeps_its_traceback(
+    runner, bibfile, monkeypatch
+):
+    """Only the semantic commands report an `ImportError` as a clean
+    one-liner. Anywhere else it means a broken installation, and
+    hiding the traceback would make that indistinguishable from an
+    extra that was never installed."""
+
+    def broken(self, *args, **kwargs):
+        raise ImportError("cannot load onnxruntime")
+
+    monkeypatch.setattr(bibdeskparser.Library, "keys", broken)
+    result = runner.invoke(main, ["keys", str(bibfile)])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, ImportError)
+
+
+def test_semantic_score_skips_stale_group_members(
+    runner, semantic_bib, recorded_embedder
+):
+    """A static group carries on listing an entry whose block was
+    deleted from the .bib file elsewhere, in BibDesk or an editor.
+    The collection to score against is the members still there."""
+    lib = _load(semantic_bib)
+    # Members carrying an abstract, so that all of the surviving ones
+    # can serve as probes and the band needs no apology.
+    members = list(lib.keys(has="abstract"))[:8]
+    lib.groups["Octet"] = tuple(members)
+    lib.save()
+    text, count = re.subn(
+        r"^@\w+\{" + re.escape(members[0]) + r",.*?(?=^@|\Z)",
+        "",
+        semantic_bib.read_text(encoding="utf-8"),
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    assert count == 1
+    semantic_bib.write_text(text, encoding="utf-8")
+    lib = _load(semantic_bib)
+    assert members[0] not in lib and members[0] in lib.groups["Octet"]
+    lib.build_semantic_indexes()
+    result = _run(
+        runner,
+        "semantic_score",
+        semantic_bib,
+        "--title",
+        "Optimal control of a quantum gate",
+        "--group",
+        "Octet",
+        "--json",
+    )
+    data = json.loads(result.output)
+    assert {item["key"] for item in data["nearest"]} <= set(members[1:])
+
+
+def test_semantic_score_group_and_keyword(runner, semantic_bib):
+    """--group and --keyword name a collection directly, and combine
+    with --key into their union."""
+    lib = _load(semantic_bib)
+    lib.groups["Trio"] = tuple(list(lib)[:3])
+    lib.save()
+    result = _run(
+        runner,
+        "semantic_score",
+        semantic_bib,
+        "--title",
+        "Optimal control of a quantum gate",
+        "--group",
+        "Trio",
+        "--keyword",
+        "OCT",
+        "--json",
+    )
+    data = json.loads(result.output)
+    expected = set(lib.groups["Trio"]) | set(lib.keywords["OCT"])
+    assert {item["key"] for item in data["nearest"]} <= expected
+    assert set(data["members"]) == {"q1", "median", "q3"}
+
+
+def test_semantic_score_unknown_group_and_keyword(runner, semantic_bib):
+    for option, value, message in (
+        ("--group", "No Such Group", "unknown static group"),
+        ("--keyword", "no-such-keyword", "unknown keyword"),
+    ):
+        result = runner.invoke(
+            main,
+            [
+                "semantic_score",
+                str(semantic_bib),
+                "--title",
+                "x",
+                option,
+                value,
+            ],
+        )
+        assert result.exit_code == 1, option
+        assert message in result.stderr, option
+
+
+def test_semantic_score_band_warning_only_with_json(runner, semantic_bib):
+    """The thin-band warning is shown when the band is, and not when
+    the command prints only the score."""
+    keys = list(_load(semantic_bib))[:2]
+    args = [
+        "semantic_score",
+        str(semantic_bib),
+        "--title",
+        "Optimal control of a quantum gate",
+        "--key",
+        " ".join(keys),
+    ]
+    plain = runner.invoke(main, args)
+    assert plain.exit_code == 0
+    assert "in-group band" not in plain.stderr
+    as_json = runner.invoke(main, args + ["--json"])
+    assert as_json.exit_code == 0
+    assert "in-group band" in as_json.stderr
