@@ -25,7 +25,7 @@ classifiers = [
 ]
 dependencies = [
     "arxiv>=2.1",
-    "bibtexparser==2.0.0b9",
+    "bibtexparser==2.0.0b10",
     "click>=8",
     "habanero>=2.2",
     "httpx[socks]>=0.27.2",
